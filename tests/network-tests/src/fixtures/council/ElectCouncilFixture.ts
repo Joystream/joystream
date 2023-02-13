@@ -11,7 +11,7 @@ import { Api } from '../../Api'
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
   protected candidatesAddresses: string[] | undefined
 
-  public constructor(api: Api, query: QueryNodeApi, candidatesAddresses: string[] | undefined) {
+  public constructor(api: Api, query: QueryNodeApi, candidatesAddresses: string[] | undefined = undefined) {
     super(api, query)
     this.candidatesAddresses = candidatesAddresses
   }
