@@ -17,10 +17,8 @@ export class BlackListVoteFixture extends StandardizedFixture {
     return Promise.resolve(this.accountsToBlacklist)
   }
 
-  protected getExtrinsics(): Promise<
-    SubmittableExtrinsic<'promise', ISubmittableResult>[] | SubmittableExtrinsic<'promise', ISubmittableResult>[][]
-  > {
-    return Promise.all(this.accountsToBlacklist.map(async () => await this.api.tx.referendum.optOutOfVoting()))
+  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise', ISubmittableResult>[]> {
+    return this.accountsToBlacklist.map(() => this.api.tx.referendum.optOutOfVoting())
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails<unknown>> {
