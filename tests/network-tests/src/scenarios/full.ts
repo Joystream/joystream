@@ -38,6 +38,7 @@ import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
 import channelPayouts from '../flows/proposals/channelPayouts'
 import directChannelPayment from '../flows/content/directChannelPayment'
+import failToElectWithBlacklist from '../flows/council/electWithBlacklist'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -65,6 +66,7 @@ scenario('Full', async ({ job, env }) => {
   // Council (should not interrupt proposalsJob!)
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
+  job('council election failure with blacklist', failToElectWithBlacklist).requires(secondCouncilJob)
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
