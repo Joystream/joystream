@@ -19,7 +19,8 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
   public async execute(): Promise<void> {
     const { api, query } = this
     const councilSize = this.api.consts.council.councilSize
-    const numberOfCandidates = this.candidatesAddresses.length
+    const numberOfExtraCandidates = this.api.consts.council.minNumberOfExtraCandidates
+    const numberOfCandidates = this.candidatesAddresses.length + numberOfExtraCandidates.toNumber()
     const numberOfVoters = numberOfCandidates
 
     // get/create candidates member accounts
