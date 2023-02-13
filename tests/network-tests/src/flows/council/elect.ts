@@ -19,7 +19,7 @@ export default async function electCouncil(props: FlowProps): Promise<void> {
   const councilSize = api.consts.council.councilSize.toNumber()
 
   // if single councilor (playground setting) use custom key
-  const candidates = councilSize === 1 ? createSingleCouncilorAddress(props) : []
+  const candidates = councilSize === 1 ? createSingleCouncilorAddress(props) : undefined
   const electCouncilFixture = new ElectCouncilFixture(api, query, candidates)
   await new FixtureRunner(electCouncilFixture).run()
 
