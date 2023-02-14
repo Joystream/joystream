@@ -1,9 +1,8 @@
 import BN from 'bn.js'
 import { Resource } from '../../Resources'
-import { getWorkingGroupNameByModuleName, workingGroups } from '../../consts'
+import { workingGroupNameByModuleName, workingGroups } from '../../consts'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
-import { TerminateWorkersFixture } from '../../fixtures/workingGroups/TerminateWorkersFixture'
 import { FlowProps } from '../../Flow'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
@@ -18,7 +17,7 @@ export default async function terminateLeads({ api, query, lock }: FlowProps): P
 
       // Terminate lead
       const leadId = await api.getLeaderId(group)
-      const [roleAccount] = (await api.createKeyPairs(3)).map(({ key }) => key.address)
+      const [roleAccount] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
       const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])
       await new FixtureRunner(buyMembershipFixture).run()
       const [memberId] = buyMembershipFixture.getCreatedMembers()
@@ -31,7 +30,7 @@ export default async function terminateLeads({ api, query, lock }: FlowProps): P
           details: createType('PalletProposalsCodexTerminateRoleParameters', {
             'workerId': leadId,
             'slashingAmount': new BN(0),
-            'group': getWorkingGroupNameByModuleName(group),
+            'group': workingGroupNameByModuleName[group],
           }),
           asMember: memberId,
           title: 'Proposal to Hired lead',

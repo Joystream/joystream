@@ -3,11 +3,13 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import fs from 'fs'
 import path from 'path'
 
+
 // paths & env variables
 const dataPath = process.argv.slice(2).toString() || ''
 const specPath = path.join(dataPath, 'chain-spec-raw.json')
 const forkedSpecPath = path.join(dataPath, 'chain-spec-forked.json')
 const storagePath = path.join(dataPath, 'storage.json')
+
 
 // this might not be of much use
 const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'ws://localhost:9944')

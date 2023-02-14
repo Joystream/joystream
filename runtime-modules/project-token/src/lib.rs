@@ -1638,10 +1638,6 @@ impl<T: Config> Module<T> {
                 Error::<T>::AccountInformationDoesNotExist
             );
         }
-        ensure!(
-            T::MembershipInfoProvider::controller_account_id(dst).is_ok(),
-            Error::<T>::TransferDestinationMemberDoesNotExist
-        );
         if dst_acc_data.is_some() {
             Ok(Validated::Existing(dst))
         } else {

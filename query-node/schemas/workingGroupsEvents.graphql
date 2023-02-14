@@ -501,6 +501,39 @@ type BudgetUpdatedEvent implements Event @entity {
   budgetChangeAmount: BigInt!
 }
 
+type BudgetFundedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}"
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted"
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in"
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Related group"
+  group: WorkingGroup!
+
+  "Member that funded the budget"
+  member: Membership!
+
+  "Rationale provided by the member"
+  rationale: String!
+
+  "Amount added to the current budget"
+  amount: BigInt!
+}
+
 type WorkerRewardAccountUpdatedEvent implements Event @entity {
   ### GENERIC DATA ###
 
