@@ -7,13 +7,12 @@ import { assert } from 'chai'
 import { createType, registry } from '@joystream/types'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
-
   protected async createCandidates(numberOfCandidates: number, electionNumber: number): Promise<string[]> {
     const addresses: string[] = []
     for (let i = 0; i < numberOfCandidates; ++i) {
       addresses.push(this.api.createCustomKeyPair('//Candidate//' + electionNumber + '//' + i).address)
     }
-    await Promise.all(addresses.map(( a ) => this.api.treasuryTransferBalance(a, this.api.existentialDeposit())))
+    await Promise.all(addresses.map((a) => this.api.treasuryTransferBalance(a, this.api.existentialDeposit())))
     return addresses
   }
 
