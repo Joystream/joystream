@@ -274,10 +274,11 @@ jobs:
           node-version: '14.x'
       - name: Install artifacts
         uses: actions/download-artifact@v3
+          path: downloaded_artifacts
       - name: load docker images
         run: |
-          docker load --input ${{needs.build_images.outputs.use_artifact}}
-          docker load --input ${{needs.build_master_testing.outputs.use_artifact}}
+          docker load --input downloaded_artifacts/${{needs.build_images.outputs.use_artifact}}
+          docker load --input downloaded_artifacts/${{needs.build_master_testing.outputs.use_artifact}}
           docker images
       - name: Install packages and dependencies
         run: |
