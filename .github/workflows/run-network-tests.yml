@@ -274,9 +274,6 @@ jobs:
           node-version: '14.x'
       - name: Install artifacts
         uses: actions/download-artifact@v3
-        run: |
-          ls ${{needs.build_images.outputs.use_artifact}}
-          ls ${{needs.build_master_testing.outputs.use_artifact}}
       - name: load docker images
         run: |
           docker load --input ${{needs.build_images.outputs.use_artifact}}/${{needs.build_images.outputs.use_artifact}}
