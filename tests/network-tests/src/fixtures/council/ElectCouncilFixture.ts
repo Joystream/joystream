@@ -9,17 +9,15 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
-  protected candidatesAddresses: string[] | undefined
-
-  public constructor(api: Api, query: QueryNodeApi, candidatesAddresses: string[] | undefined = undefined) {
+  public constructor(api: Api, query: QueryNodeApi) {
     super(api, query)
-    this.candidatesAddresses = candidatesAddresses
   }
 
-  protected async createCandidates(): Promise<string[]> {
-    const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
-    const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates)
-    const addresses = (await this.api.createKeyPairs(numberOfCandidates.toNumber())).map(({ key }) => key.address)
+  protected createCandidates(numberOfCandidates: number, electionNumber: number): string[] {
+    const addresses: string[] = []
+    for (let i = 0; i < numberOfCandidates; ++i) {
+      addresses.push(this.api.createCustomKeyPair('//Candidate//' + electionNumber + '//' + i, true).address)
+    }
     return addresses
   }
 
@@ -27,12 +25,13 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const { api, query } = this
 
     // get/create candidates member accounts
-    const candidatesMemberAccounts = this.candidatesAddresses ?? (await this.createCandidates())
-
-    const numberOfCandidates = candidatesMemberAccounts.length
+    const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
+    const electionNumber = await api.query.council.announcementPeriodNr()
+    const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
+    const candidatesMemberAccounts = this.createCandidates(numberOfCandidates, electionNumber.toNumber())
     const numberOfVoters = numberOfCandidates
 
-    const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts!)
+    const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
     await new FixtureRunner(buyMembershipsFixture).run()
     const candidatesMemberIds = buyMembershipsFixture.getCreatedMembers()
 
@@ -98,13 +97,12 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await api.prepareAccountsForFeeExpenses(votersStakingAccounts, votingTxs)
     await api.sendExtrinsicsAndGetResults(revealingTxs, votersStakingAccounts)
 
-    const councilSize = this.api.consts.council.councilSize.toNumber()
-    const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize).map((id) => id.toString())
+    const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
 
     // check intermediate election winners are properly set
     if (this.queryNodeChecksEnabled) {
       await query.tryQueryWithTimeout(
-        () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize),
+        () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
         (qnReferendumIntermediateWinners) => {
           assert.sameMembers(
             qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
