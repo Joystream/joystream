@@ -9,10 +9,6 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
-  public constructor(api: Api, query: QueryNodeApi) {
-    super(api, query)
-  }
-
   protected createCandidates(numberOfCandidates: number, electionNumber: number): string[] {
     const addresses: string[] = []
     for (let i = 0; i < numberOfCandidates; ++i) {
