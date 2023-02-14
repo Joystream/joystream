@@ -128,6 +128,11 @@ export class Utils {
     return !!values && values.length > new Set(values).size
   }
 
+  public static joy(amount: number): BN {
+    const oneJoy = new BN(10_000_000_000)
+    return new BN(amount).mul(oneJoy)
+  }
+
   public static async until(
     name: string,
     conditionFunc: (props: { debug: Debugger.Debugger }) => Promise<boolean>,
