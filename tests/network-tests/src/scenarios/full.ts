@@ -37,7 +37,7 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
-import { createAppActions } from '../flows/content/app'
+import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
 import { deleteApp } from '../flows/content/deleteApp'

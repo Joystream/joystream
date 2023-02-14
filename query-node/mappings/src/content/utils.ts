@@ -50,10 +50,10 @@ import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
 import { BTreeSet } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
-import { getAppById } from './app'
 import { Bytes } from '@polkadot/types/primitive'
 import { u8aToHex, stringToHex } from '@polkadot/util'
 import { createType } from '@joystream/types'
+import { getAppById } from './app'
 
 const ASSET_TYPES = {
   channel: [
@@ -191,8 +191,6 @@ async function checkAppActionNonce<T>(
   }
 
   if (appAction.channelMetadata) {
-    const expected = (await ctx.store.getMany(Channel, { where: { ownerMember: { id: actionOwnerId } } })).length
-    invalidMetadata('Epected nonce', expected)
     return (
       (await ctx.store.getMany(Channel, { where: { ownerMember: { id: actionOwnerId } } })).length ===
       parseInt(appAction.metadata.nonce)
@@ -220,7 +218,7 @@ async function validateAndGetApp<T>(
   const app = await getAppById(ctx.store, appAction.appId)
 
   if (!app || !app.authKey) {
-    invalidMetadata('No app of given id')
+    invalidMetadata('No app of given id found')
     return undefined
   }
 

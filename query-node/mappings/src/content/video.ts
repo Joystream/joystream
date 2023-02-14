@@ -113,7 +113,7 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   await processCreateVideoMessage(
     ctx,
     channel,
-    appAction && 'signature' in appAction ? appAction : contentMetadata?.videoMetadata ?? undefined,
+    contentMetadata?.videoMetadata ?? appAction ?? undefined,
     contentCreatedEventData
   )
 }

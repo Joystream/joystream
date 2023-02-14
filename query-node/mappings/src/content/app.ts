@@ -129,7 +129,7 @@ export async function processDeleteAppMessage(
   logger.info('App has been removed', { appId })
 }
 
-async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
+export async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
   const app = await store.get(App, {
     where: {
       id: appId,
