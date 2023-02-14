@@ -6,6 +6,7 @@ import { QueryNodeApi } from './QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { extendDebug, Debugger } from './Debugger'
 import { AnyQueryNodeEvent, EventDetails } from './types'
+import { BN } from 'bn.js'
 
 export abstract class BaseFixture {
   protected readonly api: Api
@@ -132,12 +133,9 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     const extrinsics = await this.getExtrinsics()
     this.extrinsics = extrinsics.flat()
-    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics, this.decrementalTip ? 10 : 0)
-    this.results = await this.api.sendExtrinsicsAndGetResults(
-      extrinsics,
-      accountOrAccounts,
-      this.decrementalTip ? 10 : 0
-    )
+    const tip = this.decrementalTip ? new BN(100_000_000_000) : new BN(0)
+    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics, tip)
+    this.results = await this.api.sendExtrinsicsAndGetResults(extrinsics, accountOrAccounts, tip)
     if (!this.expectedErrorName) {
       this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
     } else {
