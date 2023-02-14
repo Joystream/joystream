@@ -203,7 +203,6 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       this.proposals.map(async (proposal, i) => {
         let qProposal = qProposals[i]
         if (this.getExpectedProposalStatus(i) === 'ProposalStatusGracing') {
-          const maxProposalWaitTimeMs = 200 * 6 * 1000
           const proposalExecutionBlock = proposal.exactExecutionBlock.isSome
             ? proposal.exactExecutionBlock.unwrap().toNumber()
             : qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber()
