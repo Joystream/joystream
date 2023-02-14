@@ -66,6 +66,7 @@ export type DataObjectInfoFragment = {
         video?: Types.Maybe<{ id: string }>
         subtitle?: Types.Maybe<{ id: string }>
       }
+    | { __typename: 'DataObjectTypeChannelPayoutsPayload' }
     | { __typename: 'DataObjectTypeUnknown' }
 }
 
