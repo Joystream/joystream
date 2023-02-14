@@ -1,6 +1,4 @@
 import buyingMemberships from '../flows/membership/buyingMemberships'
-import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
-import creatingMembers from '../flows/membership/creatingMembers'
 import giftingMemberships from '../flows/membership/giftingMemberships'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
@@ -21,8 +19,6 @@ scenario('Memberships', async ({ job }) => {
   job('buying members', buyingMemberships)
   job('updating member profile', updatingMemberProfile)
   job('updating member accounts', updatingMemberAccounts)
-  job('creating founding members', creatingFoundingMembers)
-  job('creating members', creatingMembers)
   job('gifting members', giftingMemberships)
   job('inviting members', invitingMembers).after(hireLeads)
   job('transferring invites', transferringInvites)
