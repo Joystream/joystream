@@ -26,12 +26,9 @@ import {
   logger,
   saveMetaprotocolTransactionSuccessful,
   saveMetaprotocolTransactionErrored,
-<<<<<<< HEAD
   getMemberById,
   unexpectedData,
-=======
   getWorkingGroupByName,
->>>>>>> master
 } from './common'
 import {
   Membership,
@@ -73,9 +70,7 @@ import {
 } from './content'
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-<<<<<<< HEAD
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
-=======
 import { membershipConfig } from './bootstrap-data'
 import { BN } from 'bn.js'
 
@@ -86,15 +81,6 @@ async function initialInvitationBalance(store: DatabaseManager) {
   })
   return lastInitialInviationBalanceUpdateEvent?.newInitialBalance || new BN(membershipConfig.initialInvitationBalance)
 }
-
-async function getMemberById(store: DatabaseManager, id: MemberId, relations: string[] = []): Promise<Membership> {
-  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
-  if (!member) {
-    throw new Error(`Member(${id}) not found`)
-  }
-  return member
-}
->>>>>>> master
 
 async function saveMembershipExternalResources(
   store: DatabaseManager,
