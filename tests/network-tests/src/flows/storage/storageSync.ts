@@ -68,7 +68,9 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
   // Make sure there are indeed 10_000 channels processed by the QN
   await query.tryQueryWithTimeout(
     () => query.getChannelsCount(),
-    (r) => assert.equal(r, 10_000)
+    (r) => assert.equal(r, 10_000),
+    12,
+    10
   )
 
   // Create channel w/ some data objects
