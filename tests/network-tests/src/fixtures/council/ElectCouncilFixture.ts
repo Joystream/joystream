@@ -5,10 +5,9 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import { GenericAccountId } from '@polkadot/types'
 import { assert } from 'chai'
 import { createType, registry } from '@joystream/types'
-import { QueryNodeApi } from '../../QueryNodeApi'
-import { Api } from '../../Api'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
+
   protected async createCandidates(numberOfCandidates: number, electionNumber: number): Promise<string[]> {
     const addresses: string[] = []
     for (let i = 0; i < numberOfCandidates; ++i) {
@@ -18,14 +17,27 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     return addresses
   }
 
+  // needed since the first election test usually starts in the Announcing period
+  // meanwhile subsequent elections tests start in the Idle period
+  protected async getUpcomingAnnouncingPeriod(): Promise<number> {
+    const stageUpdate = await this.api.query.council.stage()
+    const stage = stageUpdate.stage
+    const announcementPeriodId = await this.api.query.council.announcementPeriodNr()
+    if (stage.isAnnouncing) {
+      return announcementPeriodId.toNumber()
+    } else {
+      return announcementPeriodId.toNumber() + 1
+    }
+  }
+
   public async execute(): Promise<void> {
     const { api, query } = this
 
     // get/create candidates member accounts
     const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
-    const electionNumber = await api.query.council.announcementPeriodNr()
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
-    const candidatesMemberAccounts = await this.createCandidates(numberOfCandidates, electionNumber.toNumber())
+    const announcingPeriod = await this.getUpcomingAnnouncingPeriod()
+    const candidatesMemberAccounts = await this.createCandidates(numberOfCandidates, announcingPeriod)
     const numberOfVoters = numberOfCandidates
 
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
@@ -53,6 +65,8 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
 
     // Announcing stage
     await this.api.untilCouncilStage('Announcing')
+    const x = await this.api.query.council.announcementPeriodNr()
+    this.debug(`announcement period ${x.toNumber()}`)
 
     const applyForCouncilTxs = candidatesMemberIds.map((memberId, i) =>
       api.tx.council.announceCandidacy(
