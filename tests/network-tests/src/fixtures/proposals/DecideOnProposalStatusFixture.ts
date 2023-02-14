@@ -202,11 +202,10 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       this.proposals.map(async (proposal, i) => {
         let qProposal = qProposals[i]
         if (this.getExpectedProposalStatus(i) === 'ProposalStatusGracing') {
-          const maxProposalWaitTimeMs = 200 * 6 * 1000
           const proposalExecutionBlock = proposal.exactExecutionBlock.isSome
             ? proposal.exactExecutionBlock.unwrap().toNumber()
             : qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber()
-          await this.api.untilBlock(proposalExecutionBlock, BLOCKTIME, maxProposalWaitTimeMs)
+          await this.api.untilBlock(proposalExecutionBlock)
           ;[qProposal] = await this.query.tryQueryWithTimeout(
             () => this.query.getProposalsByIds([this.params[i].proposalId]),
             ([p]) => this.assertProposalExecutedAsExpected(p, i)
