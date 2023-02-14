@@ -5,6 +5,8 @@ import "proto/Channel.proto";
 
 message AppActionMetadata {
   optional string nonce = 1;
+  // YouTube video ID
+  optional string video_id  = 2;
 }
 
 message AppAction {

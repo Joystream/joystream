@@ -58,6 +58,7 @@ import {
   videoRelationsForCounters,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor
@@ -113,7 +114,9 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   await processCreateVideoMessage(
     ctx,
     channel,
-    contentMetadata?.videoMetadata ?? appAction ?? undefined,
+    appAction?.contentMetadata && 'videoMetadata' in appAction?.contentMetadata
+      ? appAction
+      : contentMetadata?.videoMetadata ?? undefined,
     contentCreatedEventData
   )
 }
@@ -147,9 +150,12 @@ export async function processCreateVideoMessage(
       metadataToBytes(ContentMetadata, metadata.contentMetadata as IContentMetadata),
       metadataToBytes(AppActionMetadata, metadata.metadata ?? {})
     )
-    await processAppActionMetadata(ctx, video, metadata, { actionOwnerId: channel.id, appCommitment }, (entity) =>
-      processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
-    )
+    await processAppActionMetadata(ctx, video, metadata, { actionOwnerId: channel.id, appCommitment }, (entity) => {
+      if ('entryApp' in entity && metadata.metadata?.videoId) {
+        integrateMeta(entity, { ytVideoId: metadata.metadata.videoId }, ['ytVideoId'])
+      }
+      return processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
+    })
   } else if (metadata) {
     await processVideoMetadata(ctx, video, metadata as DecodedMetadataObject<IVideoMetadata>, newDataObjectIds)
   }
