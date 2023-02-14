@@ -274,6 +274,7 @@ jobs:
           node-version: '14.x'
       - name: Install artifacts
         uses: actions/download-artifact@v3
+        with:
           path: downloaded_artifacts
       - name: load docker images
         run: |
