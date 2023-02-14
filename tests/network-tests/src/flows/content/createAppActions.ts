@@ -33,7 +33,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     platforms: ['web', 'mobile'],
     authKey: appPublicKeyHex,
   }
-  const appOwnedByMember = 'app_owned_by_member'
+  const appOwnedByMember = 'app_owned_by_member_for_actions'
   await api.createApp(appOwnedByMember, appMetadata, member.memberId)
 
   const appFragment = await query.tryQueryWithTimeout(
@@ -43,8 +43,9 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
       assert.equal(appsByName?.[0].authKey, appPublicKeyHex)
     }
   )
-  const createChannelFixture = new CreateChannelsAsMemberFixture(api, query, member.memberId.toNumber(), 2)
 
+  debug('Creating app channel...')
+  const createChannelFixture = new CreateChannelsAsMemberFixture(api, query, member.memberId.toNumber(), 2)
   const channelInput = {
     title: `Channel from ${appFragment?.[0].name} app`,
     description: 'This is the app channel',
@@ -70,7 +71,6 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   }
   const storageBuckets = await createChannelFixture.selectStorageBucketsForNewChannel()
   const distBuckets = await createChannelFixture.selectDistributionBucketsForNewChannel()
-  debug('Creating app channel...')
   const channelId = await api.createMockChannel(
     member.memberId.toNumber(),
     storageBuckets,
@@ -103,6 +103,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const videoAppActionMeta = {
     // first video for this channel
     nonce: '0',
+    videoId: 'video_id_from_yt',
   }
   const appVideoCommitment = generateAppActionCommitment(
     channelId.toString(),
@@ -128,6 +129,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
       assert.equal(video.duration, appVideoInput.contentMetadata?.videoMetadata?.duration)
       assert.equal(video.entryApp?.id, appFragment?.[0].id)
       assert.equal(video.entryApp?.name, appFragment?.[0].name)
+      assert.equal(video.ytVideoId, appVideoInput.metadata?.videoId)
     }
   )
 

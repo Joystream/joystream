@@ -29883,6 +29883,8 @@ export type Video = BaseGraphQlObject & {
   reactionsCountByReactionId: Array<VideoReactionsCountByReactionType>
   /** Reactions count */
   reactionsCount: Scalars['Int']
+  /** Video ID coming from YPP */
+  ytVideoId?: Maybe<Scalars['String']>
   auctionbidcanceledeventvideo?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventvideo?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventvideo?: Maybe<Array<AuctionCanceledEvent>>
@@ -30247,6 +30249,7 @@ export type VideoCreateInput = {
   commentsCount: Scalars['Float']
   isReactionFeatureEnabled: Scalars['Boolean']
   reactionsCount: Scalars['Float']
+  ytVideoId?: Maybe<Scalars['String']>
 }
 
 export type VideoDeletedByModeratorEvent = BaseGraphQlObject & {
@@ -30815,6 +30818,8 @@ export enum VideoOrderByInput {
   IsReactionFeatureEnabledDesc = 'isReactionFeatureEnabled_DESC',
   ReactionsCountAsc = 'reactionsCount_ASC',
   ReactionsCountDesc = 'reactionsCount_DESC',
+  YtVideoIdAsc = 'ytVideoId_ASC',
+  YtVideoIdDesc = 'ytVideoId_DESC',
 }
 
 export type VideoReactedEvent = Event &
@@ -31439,6 +31444,7 @@ export type VideoUpdateInput = {
   commentsCount?: Maybe<Scalars['Float']>
   isReactionFeatureEnabled?: Maybe<Scalars['Boolean']>
   reactionsCount?: Maybe<Scalars['Float']>
+  ytVideoId?: Maybe<Scalars['String']>
 }
 
 export type VideoVisibilitySetByModeratorEvent = BaseGraphQlObject & {
@@ -31673,6 +31679,11 @@ export type VideoWhereInput = {
   reactionsCount_lt?: Maybe<Scalars['Int']>
   reactionsCount_lte?: Maybe<Scalars['Int']>
   reactionsCount_in?: Maybe<Array<Scalars['Int']>>
+  ytVideoId_eq?: Maybe<Scalars['String']>
+  ytVideoId_contains?: Maybe<Scalars['String']>
+  ytVideoId_startsWith?: Maybe<Scalars['String']>
+  ytVideoId_endsWith?: Maybe<Scalars['String']>
+  ytVideoId_in?: Maybe<Array<Scalars['String']>>
   entryApp?: Maybe<AppWhereInput>
   channel?: Maybe<ChannelWhereInput>
   category?: Maybe<VideoCategoryWhereInput>

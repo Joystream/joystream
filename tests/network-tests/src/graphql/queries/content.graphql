@@ -163,6 +163,7 @@ fragment VideoFields on Video {
   isPublic
   isExplicit
   hasMarketing
+  ytVideoId
   entryApp {
     ...AppFields
   }
