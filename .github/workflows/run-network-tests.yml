@@ -223,7 +223,7 @@ jobs:
             docker load --input ~/docker-images/joystream-node-docker-image-master.tar.gz
             cp ~/docker-images/joystream-node-docker-image-master.tar.gz .
           fi
-      
+
       - name: Check we now have an image
         id: check_master_image
         uses: andstor/file-existence-action@v1
