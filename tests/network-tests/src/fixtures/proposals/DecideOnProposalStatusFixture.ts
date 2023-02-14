@@ -12,7 +12,6 @@ import { ProposalId } from '@joystream/types/primitives'
 import { VoteOnProposalsFixture } from './VoteOnProposalsFixture'
 import { ProposalFieldsFragment } from '../../graphql/generated/queries'
 import { assert } from 'chai'
-import { BLOCKTIME } from '../../consts'
 
 export type DecisionStatus = 'Approved' | 'Rejected' | 'Slashed'
 
@@ -208,7 +207,7 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
           const proposalExecutionBlock = proposal.exactExecutionBlock.isSome
             ? proposal.exactExecutionBlock.unwrap().toNumber()
             : qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber()
-          await this.api.untilBlock(proposalExecutionBlock, BLOCKTIME, maxProposalWaitTimeMs)
+          await this.api.untilBlock(proposalExecutionBlock)
           ;[qProposal] = await this.query.tryQueryWithTimeout(
             () => this.query.getProposalsByIds([this.params[i].proposalId]),
             ([p]) => this.assertProposalExecutedAsExpected(p, i)
