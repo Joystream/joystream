@@ -9,11 +9,12 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
-  protected createCandidates(numberOfCandidates: number, electionNumber: number): string[] {
+  protected async createCandidates(numberOfCandidates: number, electionNumber: number): Promise<string[]> {
     const addresses: string[] = []
     for (let i = 0; i < numberOfCandidates; ++i) {
-      addresses.push(this.api.createCustomKeyPair('//Candidate//' + electionNumber + '//' + i, true).address)
+      addresses.push(this.api.createCustomKeyPair('//Candidate//' + electionNumber + '//' + i).address)
     }
+    await Promise.all(addresses.map(( a ) => this.api.treasuryTransferBalance(a, this.api.existentialDeposit())))
     return addresses
   }
 
@@ -24,7 +25,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
     const electionNumber = await api.query.council.announcementPeriodNr()
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
-    const candidatesMemberAccounts = this.createCandidates(numberOfCandidates, electionNumber.toNumber())
+    const candidatesMemberAccounts = await this.createCandidates(numberOfCandidates, electionNumber.toNumber())
     const numberOfVoters = numberOfCandidates
 
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
