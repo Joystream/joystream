@@ -95,8 +95,8 @@ export class VotersOptingOut extends BaseQueryNodeFixture {
       ),
       true
     )
+    failingVotesFixture.setErrorName('AccountAlreadyOptedOutOfVoting')
 
     await new FixtureRunner(failingVotesFixture).run()
-    failingVotesFixture.assertError('AccountAlreadyOptedOutOfVoting')
   }
 }

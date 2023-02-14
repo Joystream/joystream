@@ -107,6 +107,7 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
   protected results: ISubmittableResult[] = []
   protected events: EventDetails[] = []
   protected decrementalTip = false
+  protected expectedErrorName: string | undefined
 
   protected abstract getSignerAccountOrAccounts(): Promise<string | string[]>
   protected abstract getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][]>
@@ -123,6 +124,10 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     })
   }
 
+  public setErrorName(errName: string) {
+    this.expectedErrorName = errName
+  }
+
   public async execute(): Promise<void> {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     const extrinsics = await this.getExtrinsics()
@@ -133,7 +138,15 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
       accountOrAccounts,
       this.decrementalTip ? 10 : 0
     )
-    this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
+    if (!this.expectedErrorName) {
+      this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
+    } else {
+      this.results.map((result) => {
+        this.expectDispatchError(result, 'Error expected but extrinsic succeeded')
+        const errName = this.api.getErrorNameFromExtrinsicFailedRecord(result)
+        assert.deepEqual(errName, this.expectedErrorName, 'Wrong error observed')
+      })
+    }
   }
 }
 
