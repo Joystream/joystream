@@ -36,7 +36,7 @@ import {
   VideoSubtitle,
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
-import { deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { createNft } from './nft'
@@ -283,7 +283,7 @@ export async function content_VideoAssetsDeletedByModerator({
     // load video
     videoId: videoId.toNumber(),
     assetIds: Array.from(dataObjectIds).map((item) => Number(item)),
-    rationale: rationale.toHuman() as string,
+    rationale: bytesToString(rationale),
     actor: await convertContentActor(store, actor),
     areNftAssets: areNftAssets.valueOf(),
   })
@@ -303,7 +303,7 @@ export async function content_VideoDeletedByModerator({ store, event }: EventCon
     ...genericEventFields(event),
 
     videoId: Number(videoId),
-    rationale: rationale.toHuman() as string,
+    rationale: bytesToString(rationale),
     actor: await convertContentActor(store, actor),
   })
 
@@ -347,7 +347,7 @@ export async function content_VideoVisibilitySetByModerator({
 
     videoId: videoId.toNumber(),
     isHidden: isCensored.isTrue,
-    rationale: rationale.toHuman() as string,
+    rationale: bytesToString(rationale),
     actor: await convertContentActor(store, actor),
   })
 
@@ -398,7 +398,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
 
   // Entities in the list should be removed in the order. i.e. all `Comment` relations
   // should be removed in the last after all other referencing relations has been removed
-  const referencingEntities: typeof BaseModel[] = [
+  const referencingEntities: { new (): BaseModel & { video: Partial<Video> } }[] = [
     VideoSubtitle,
     CommentReaction,
     VideoReaction,
@@ -416,7 +416,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
   ]
 
   const referencingRecords = await Promise.all(
-    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, videoId))
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity, videoId))
   )
 
   // beacuse of parentComment references among comments, their deletion must be handled saperately

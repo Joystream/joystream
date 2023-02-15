@@ -589,12 +589,17 @@ export class Api {
     return opening
   }
 
-  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+  public async getLeaderId(group: WorkingGroupModuleName): Promise<WorkerId> {
     const leadId = await this.api.query[group].currentLead()
     if (leadId.isNone) {
       throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
-    return [leadId.unwrap(), (await this.api.query[group].workerById(leadId.unwrap())).unwrap()]
+    return leadId.unwrap()
+  }
+
+  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+    const leadId = await this.getLeaderId(group)
+    return [leadId, (await this.api.query[group].workerById(leadId)).unwrap()]
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
@@ -1012,7 +1017,10 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
+  async createEnglishAuctionParameters(
+    whitelist: number[] = [],
+    options: { extensionPeriod?: BN; duration?: BN } = {}
+  ): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -1022,11 +1030,11 @@ export class Api {
     const boundaries = await this.getAuctionParametersBoundaries()
 
     // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    const auctionDuration = options.duration ?? BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
 
     const startingPrice = boundaries.startingPrice.min
     const minimalBidStep = boundaries.bidStep.min
-    const extensionPeriod = boundaries.extensionPeriod.min
+    const extensionPeriod = options.extensionPeriod ?? boundaries.extensionPeriod.min
 
     const auctionParams = createType('PalletContentNftTypesEnglishAuctionParamsRecord', {
       startingPrice,

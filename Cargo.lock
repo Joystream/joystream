@@ -768,7 +768,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "8.0.0"
+version = "8.1.0"
 dependencies = [
  "async-std",
  "clap 3.2.22",
@@ -2736,7 +2736,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "8.0.0"
+version = "8.1.0"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -2827,7 +2827,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "12.1000.0"
+version = "12.1001.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",

@@ -77,7 +77,8 @@ If you are building a tagged release from `master` branch and want to install th
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
-WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 install joystream-node --path node/ --locked
+# From the project root directory
+WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 install joystream-node --path bin/node/ --locked
 ```
 
 Now you can run and connect to the testnet:
