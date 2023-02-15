@@ -11,6 +11,6 @@ scenario('Council', async ({ job }) => {
   )
 
   const secondCouncilJob = job('electing second council', electCouncil).requires(firstElectionFailureJob)
-  job('council election failure with blacklist', failToElectWithBlacklist).requires(secondCouncilJob)
-  job('council election failures after second council', failToElectCouncil).requires(secondCouncilJob)
+  const secondElectionFailureJob = job('council election failure with blacklist', failToElectWithBlacklist).requires(secondCouncilJob)
+  job('council election failures after second council', failToElectCouncil).requires(secondElectionFailureJob)
 })

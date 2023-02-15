@@ -12,29 +12,8 @@ import { QueryNodeApi } from 'src/QueryNodeApi'
 import BN from 'bn.js'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
-  protected async createCandidates(numberOfCandidates: number, electionNumber: number): Promise<string[]> {
-    const addresses: string[] = []
-    for (let i = 0; i < numberOfCandidates; ++i) {
-      addresses.push(this.api.createCustomKeyPair('//Candidate//' + electionNumber + '//' + i).address)
-    }
-    await Promise.all(addresses.map((a) => this.api.treasuryTransferBalance(a, this.api.existentialDeposit())))
-    return addresses
-  }
-
-  // needed since the first election test usually starts in the Announcing period
-  // meanwhile subsequent elections tests start in the Idle period
-  protected async getUpcomingAnnouncingPeriod(): Promise<number> {
-    const stageUpdate = await this.api.query.council.stage()
-    const stage = stageUpdate.stage
-    const announcementPeriodId = await this.api.query.council.announcementPeriodNr()
-    if (stage.isIdle) {
-      return announcementPeriodId.toNumber() + 1
-    } else {
-      return announcementPeriodId.toNumber() 
-    }
-  }
-
   private _optOutVoters: boolean
+  private councilMembersIds: u64[] | undefined
 
   protected async maybeBlackListVoters(votersStakingAccounts: string[]) {
     if (this._optOutVoters) {
@@ -43,6 +22,16 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       await new FixtureRunner(optOutVotersFixture).run()
       return
     }
+  }
+
+  protected async getCouncilMembersControllerAccounts(): Promise<string[]> {
+    const onChainCouncilMemberAccounts = await Promise.all(
+      this.councilMembersIds!.map(async (id) => {
+        const membership = await this.api.query.members.membershipById(id)
+        return membership.unwrap().controllerAccount.toString()
+      })
+    )
+    return onChainCouncilMemberAccounts
   }
 
   protected async runVoteFixture(
@@ -95,8 +84,7 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     // get/create candidates member accounts
     const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
-    const announcingPeriod = await this.getUpcomingAnnouncingPeriod()
-    const candidatesMemberAccounts = await this.createCandidates(numberOfCandidates, announcingPeriod)
+    const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
     const numberOfVoters = numberOfCandidates
 
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
@@ -184,10 +172,20 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Idle')
 
     const councilMembers = await api.query.council.councilMembers()
+    this.councilMembersIds = councilMembers.map((m) => m.membershipId)
     assert.sameMembers(
-      councilMembers.map((m) => m.membershipId.toString()),
+      this.councilMembersIds.map((id) => id.toString()),
       candidatesToWinIds
     )
+
+    // change accounts to known accounts
+    const oldCouncilMemberAccounts = await this.getCouncilMembersControllerAccounts()
+    const newCouncilMemberAccounts = await this.api.updateCouncillorsAccounts(
+      oldCouncilMemberAccounts,
+      this.councilMembersIds
+    )
+    const onChainCouncilMemberAccounts = await this.getCouncilMembersControllerAccounts()
+    assert.deepEqual(onChainCouncilMemberAccounts, newCouncilMemberAccounts)
   }
 
   public async runQueryNodeChecks(): Promise<void> {
