@@ -22,10 +22,10 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const stageUpdate = await this.api.query.council.stage()
     const stage = stageUpdate.stage
     const announcementPeriodId = await this.api.query.council.announcementPeriodNr()
-    if (stage.isAnnouncing) {
-      return announcementPeriodId.toNumber()
-    } else {
+    if (stage.isIdle) {
       return announcementPeriodId.toNumber() + 1
+    } else {
+      return announcementPeriodId.toNumber() 
     }
   }
 
