@@ -64,7 +64,6 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
 
     // Announcing stage
     await this.api.untilCouncilStage('Announcing')
-    const x = await this.api.query.council.announcementPeriodNr()
 
     const applyForCouncilTxs = candidatesMemberIds.map((memberId, i) =>
       api.tx.council.announceCandidacy(
