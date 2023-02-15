@@ -99,7 +99,6 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
   protected getExpectedProposalStatus(i: number): ResultingProposalStatus {
     const params = this.params[i]
     const proposal = this.proposals[i]
-    // this.debug(`EXAMINING PROPOSAL ${proposal.status}`)
     if (params.status === 'Approved') {
       if (proposal.parameters.constitutionality.toNumber() > proposal.nrOfCouncilConfirmations.toNumber() + 1) {
         return 'ProposalStatusDormant'

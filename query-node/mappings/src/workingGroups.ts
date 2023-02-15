@@ -85,6 +85,7 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
+  BudgetFundedEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -997,6 +998,28 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   await store.save<BudgetSpendingEvent>(budgetSpendingEvent)
 
   group.budget = group.budget.sub(amount)
+
+  await store.save<WorkingGroup>(group)
+}
+
+export async function workingGroups_WorkingGroupBudgetFunded({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [memberId, amount, rationale] = new WorkingGroups.WorkingGroupBudgetFundedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const budgetFundedEvent = new BudgetFundedEvent({
+    ...genericEventFields(event),
+    group,
+    member: new Membership({ id: memberId.toString() }),
+    amount,
+    rationale: bytesToString(rationale),
+  })
+
+  await store.save<BudgetFundedEvent>(budgetFundedEvent)
+
+  group.budget = new BN(group.budget).add(amount)
 
   await store.save<WorkingGroup>(group)
 }

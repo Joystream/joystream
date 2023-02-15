@@ -592,6 +592,14 @@ export class Api {
     return [leadId, (await this.api.query[group].workerById(leadId)).unwrap()]
   }
 
+  public async fundWorkingGroupBudget(group: WorkingGroupModuleName, memberId: u64, amount: BN): Promise<void> {
+    const controllerAccount = await this.getControllerAccountOfMember(memberId)
+    const fundTx = this.api.tx[group].fundWorkingGroupBudget(memberId, amount, 'Test')
+    await this.treasuryTransferBalance(controllerAccount, amount)
+    await this.prepareAccountsForFeeExpenses(controllerAccount, [fundTx])
+    await this.signAndSend(fundTx, controllerAccount)
+  }
+
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
     return (await this.api.query[group].workerById.entries<Worker>()).map(
       ([
