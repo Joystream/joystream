@@ -276,8 +276,10 @@ jobs:
         uses: actions/download-artifact@v3
       - name: load docker images
         run: |
-          docker load --input ${{needs.build_images.outputs.use_artifact}}/${{needs.build_images.outputs.use_artifact}}
-          docker load --input ${{needs.build_master_testing.outputs.use_artifact}}/${{needs.build_master_testing.outputs.use_artifact}}
+          newImage = ls ${{needs.build_images.outputs.use_artifact}}/
+          masterImage = ls ${{needs.build_master_testing.outputs.use_artifact}}
+          docker load --input $newImage
+          docker load --input $masterImage
           docker images
       - name: Install packages and dependencies
         run: |
