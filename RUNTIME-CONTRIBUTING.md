@@ -217,6 +217,7 @@ Although how actual runtime changes are not detailed here, there is a general se
 be followed below:
 
 #### Development cycle
+
   1. Determine the "base" branch to bulid pn. This will typically be the master branch.
   1. Bump the `spec_version` component of the runtime `pub const VERSION` in `runtime/src/lib.rs`
      update the version of the cargo crates (Cargo.toml) for both the runtime and bin/node
@@ -229,16 +230,19 @@ be followed below:
   1. Generate weights for modified/new benchmark functions on reference machine, and checkin the changes of the weights.rs - helper script is available in scripts/generate-weights.sh
   1. Re run code formatting with `cargo fmt --all`
   1. Do another test build with modified benchmarks `yarn cargo-checks && yarn cargo-build`
-  1. Extract the new runtime metadata
+  1. Extract the new runtime metadata `yarn update-chain-metadata`
   1. Build all npm packages: `yarn build:packages`
-  1. Add any new integration tests that cover the changes implemented.
-  1. Build the testing runtime joystream/node docker image and run the full integration test suite.
-  1. Open a PR directly to the base branch of the current runtime release so there is a clear code git diff showing the changes being implemented in the new runtime.
-  1. You should typically wait for community and core dev team to review before taking the next step of creating the proposal as that will require staking a substantial amount of tokens which are at risk of being slashed if the council rejects the proposal.
+  1. Add any new integration tests, query-node mappings that cover the changes implemented.
+  1. Lint typescript `yarn lint`
+  1. Build the testing runtime joystream/node docker image and run the full integration test suite (see Integration tests section below)
+  1. Commit your changes and push new branch to your repo.
+  1. Open a PR from your branch on upstream repo, targetting the current runtime release (master) so there is a clear code git diff showing the changes being implemented in the new runtime.
+
+You should typically wait for community and core dev team to review before taking the next step of creating the runtime upgrade proposal, as that will require staking a substantial amount of tokens which are at risk of being slashed if the council rejects the proposal.
 
 #### Making the proposal
   1. Build the production joystream/node docker image.
-  1. Extract the compressed wasm blob from the docker image image
+  1. Extract the compressed wasm blob from the docker image image.
   1. Create a proposal in [pioneer](https://pioneerapp.xyz/#/proposals/current)
      Follow instructions, and provide reference to the Pull Request, and upload the compressed wasm file.
   
@@ -298,7 +302,16 @@ In addition to cargo unit tests for runtime features, over time we have develope
 
 To run tests we build the joystream/node with the testing runtime profile and execute the test suite:
 
-```
+```sh
 RUNTIME_PROFILE=TESTING ./build-node-docker.sh
 tests/network-tests/run-tests.sh
+```
+
+### Testing playground
+In addition to running automated test, it makes sense to also do some manual testing of apps, like polkadot-js, pioneer, and atlas.
+For you can conveniently run a local playground and point those apps to it:
+
+```sh
+RUNTIME_PROFILE=PLAYGROUND ./build-node-docker.sh
+RUNTIME_PROFILE=PLAYGROUND yarn start
 ```
