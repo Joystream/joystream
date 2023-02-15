@@ -191,7 +191,6 @@ jobs:
 
   build_master_testing:
     name: Build joystream node images for mainnet-testing
-    needs: build_images
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
@@ -279,8 +278,8 @@ jobs:
         uses: actions/download-artifact@v3
       - name: load docker images
         run: |
-          docker load --input ${{needs.build_images.outputs.use_artifact}}/artifact
-          docker load --input ${{needs.build_master_testing.outputs.use_artifact}}/artifact
+          docker load --input ${{needs.build_images.outputs.use_artifact}}/*
+          docker load --input ${{needs.build_master_testing.outputs.use_artifact}}/*
           docker images
       - name: Install packages and dependencies
         run: |
