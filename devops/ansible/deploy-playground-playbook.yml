@@ -79,7 +79,7 @@
       register: job_result
       until: job_result.finished
       # Max number of times to check for status
-      retries: 36
+      retries: 40
       # Check for the status every 100s
       delay: 100
 
