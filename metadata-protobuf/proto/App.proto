@@ -4,7 +4,6 @@ import "proto/Video.proto";
 import "proto/Channel.proto";
 
 message AppActionMetadata {
-  optional string nonce = 1;
   // YouTube video ID
   optional string video_id  = 2;
 }
@@ -13,14 +12,15 @@ message AppAction {
   // ID of application
   optional string app_id = 1;
 
-  // Metadata
-  optional AppActionMetadata metadata = 2;
+  // Metadata in hex
+  optional string metadata = 2;
 
-  // Raw metadata of wrapped action
-  oneof raw_action {
-    ContentMetadata content_metadata  = 3;
-    ChannelMetadata channel_metadata = 4;
-  }
+  // Raw metadata of wrapped action in hex
+  optional string raw_action = 3;
 
-  optional string signature = 5;
+  // Signature over app commitment
+  optional string signature = 4;
+
+  // Nonce to prevent signature reusal
+  optional string nonce = 5;
 }

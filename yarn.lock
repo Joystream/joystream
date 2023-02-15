@@ -2876,7 +2876,7 @@
     "@polkadot/util-crypto" "^9.5.1"
     rxjs "^7.5.5"
 
-"@polkadot/util-crypto@9.5.1", "@polkadot/util-crypto@^10.2.6", "@polkadot/util-crypto@^9.5.1":
+"@polkadot/util-crypto@9.5.1", "@polkadot/util-crypto@^9.5.1":
   version "9.5.1"
   resolved "https://registry.yarnpkg.com/@polkadot/util-crypto/-/util-crypto-9.5.1.tgz#f69bdccd7043620c9bd905b169ec50bf97bf6ffb"
   integrity sha512-4YwJJ2/mXx3PXTy4WLekQOo1MlDtQzYgTZsjOagi3Uz3Q/ITvS+/iu6eF/H6Tz0uEQjwX6t9tsMkM5FWk/XoGg==

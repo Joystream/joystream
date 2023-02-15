@@ -4,7 +4,6 @@ eslint-disable @typescript-eslint/naming-convention
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
   AppAction,
-  AppActionMetadata,
   ChannelMetadata,
   ChannelModeratorRemarked,
   ChannelOwnerRemarked,
@@ -50,7 +49,7 @@ import {
   mapAgentPermission,
   processAppActionMetadata,
   generateAppActionCommitment,
-  metadataToBytes,
+  hexToBytes,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -89,18 +88,21 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap())
 
     if (appAction && Object.keys(appAction).length) {
+      const channelMetadataBytes = hexToBytes(appAction.rawAction ?? '')
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
       const appCommitment = generateAppActionCommitment(
-        channelOwner.ownerMember?.id ?? channelOwner.ownerCuratorGroup?.id ?? '',
+        channelOwner.ownerMember?.totalChannelsCreated ?? -1,
+        channelOwner.ownerMember?.id ? `m:${channelOwner.ownerMember.id}` : `c:${channelOwner.ownerCuratorGroup?.id}`,
         channelCreationParameters.assets.toU8a(),
-        metadataToBytes(ChannelMetadata, appAction.channelMetadata ?? {}),
-        metadataToBytes(AppActionMetadata, appAction.metadata ?? {})
+        appAction.rawAction ? channelMetadataBytes : undefined,
+        appAction.metadata ? hexToBytes(appAction.metadata) : undefined
       )
       await processAppActionMetadata(
         ctx,
         channel,
         appAction,
-        { actionOwnerId: channel.ownerMember?.id, appCommitment },
-        (entity: Channel) => processChannelMetadata(ctx, entity, appAction.channelMetadata ?? {}, dataObjects)
+        { ownerNonce: channelOwner.ownerMember?.totalChannelsCreated, appCommitment },
+        (entity: Channel) => processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
       )
     } else {
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) ?? {}
@@ -110,7 +112,10 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
   // save entity
   await store.save<Channel>(channel)
-
+  if (channelOwner.ownerMember) {
+    channelOwner.ownerMember.totalChannelsCreated += 1
+    await store.save<Membership>(channelOwner.ownerMember)
+  }
   // update channel permissions
   await updateChannelAgentsPermissions(store, channel, channelCreationParameters.collaborators)
 
@@ -146,8 +151,10 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 
     const newMetadata = deserializeMetadata(AppAction, newMetadataBytes)
 
-    if (newMetadata && Object.keys(newMetadata)) {
-      await processChannelMetadata(ctx, channel, newMetadata.channelMetadata ?? {}, newDataObjects)
+    if (newMetadata && 'rawAction' in newMetadata) {
+      const channelMetadataBytes = hexToBytes(newMetadata.rawAction ?? '')
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
+      await processChannelMetadata(ctx, channel, channelMetadata ?? {}, newDataObjects)
     } else {
       const realNewMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes)
       await processChannelMetadata(ctx, channel, realNewMetadata ?? {}, newDataObjects)

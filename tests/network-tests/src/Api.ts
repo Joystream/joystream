@@ -764,7 +764,7 @@ export class Api {
       distributionBucketIndex: number
     }[],
     memberControllerAccount?: string,
-    channelMeta?: IAppAction
+    channelMeta?: Bytes
   ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
@@ -783,7 +783,7 @@ export class Api {
       { Member: memberId },
       {
         assets: null,
-        meta: channelMeta ? Utils.metadataToBytes(AppAction, channelMeta) : null,
+        meta: channelMeta ?? null,
         storageBuckets,
         distributionBuckets,
         ...txParameters,

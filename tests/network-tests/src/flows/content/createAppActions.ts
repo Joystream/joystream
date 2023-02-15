@@ -1,4 +1,5 @@
 import {
+  AppAction,
   AppActionMetadata,
   AppMetadata,
   ChannelMetadata,
@@ -33,62 +34,59 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     platforms: ['web', 'mobile'],
     authKey: appPublicKeyHex,
   }
-  const appOwnedByMember = 'app_owned_by_member_for_actions'
-  await api.createApp(appOwnedByMember, appMetadata, member.memberId)
+  const appOwnedByMemberName = 'app_owned_by_member_for_actions'
+  await api.createApp(appOwnedByMemberName, appMetadata, member.memberId)
 
   const appFragment = await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appOwnedByMember),
+    () => query.getAppsByName(appOwnedByMemberName),
     (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appOwnedByMember)
+      assert.equal(appsByName?.[0]?.name, appOwnedByMemberName)
       assert.equal(appsByName?.[0].authKey, appPublicKeyHex)
     }
   )
+  const appId = appFragment?.[0]?.id as string
 
   debug('Creating app channel...')
-  const createChannelFixture = new CreateChannelsAsMemberFixture(api, query, member.memberId.toNumber(), 2)
   const channelInput = {
-    title: `Channel from ${appFragment?.[0].name} app`,
+    title: `Channel from ${appOwnedByMemberName} app`,
     description: 'This is the app channel',
     isPublic: true,
     language: 'en',
   }
-  const appActionMeta = {
-    // first channel for this member
-    nonce: '0',
-  }
+  const channelNonce = 0
   const appChannelCommitment = generateAppActionCommitment(
-    member.memberId.toString(),
+    channelNonce,
+    `m:${member.memberId.toString()}`,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
-    Utils.metadataToBytes(ChannelMetadata, channelInput),
-    Utils.metadataToBytes(AppActionMetadata, appActionMeta)
+    Utils.metadataToBytes(ChannelMetadata, channelInput)
   )
   const signature = u8aToHex(ed25519Sign(appChannelCommitment, keypair, true))
-  const appChannelInput = {
-    appId: appFragment?.[0].id,
-    channelMetadata: channelInput,
+  const appChannelInput: IAppAction = {
+    appId,
+    rawAction: Utils.metadataToString(ChannelMetadata, channelInput),
     signature,
-    metadata: appActionMeta,
+    nonce: String(channelNonce),
   }
-  const storageBuckets = await createChannelFixture.selectStorageBucketsForNewChannel()
-  const distBuckets = await createChannelFixture.selectDistributionBucketsForNewChannel()
-  const channelId = await api.createMockChannel(
+  const createChannelFixture = new CreateChannelsAsMemberFixture(
+    api,
+    query,
     member.memberId.toNumber(),
-    storageBuckets,
-    distBuckets,
-    undefined,
-    appChannelInput
+    1,
+    Utils.metadataToBytes(AppAction, appChannelInput)
   )
+  await createChannelFixture.execute()
+  const [channelId] = createChannelFixture.getCreatedChannels()
 
   await query.tryQueryWithTimeout(
     () => query.channelById(channelId.toString()),
     (channel) => {
       Utils.assert(channel, 'Channel not found')
-      assert.equal(channel.title, appChannelInput.channelMetadata?.title)
-      assert.equal(channel.description, appChannelInput.channelMetadata?.description)
-      assert.equal(channel.isPublic, appChannelInput.channelMetadata?.isPublic)
-      assert.equal(channel.language?.iso, appChannelInput.channelMetadata?.language)
-      assert.equal(channel.entryApp?.id, appFragment?.[0].id)
-      assert.equal(channel.entryApp?.name, appFragment?.[0].name)
+      assert.equal(channel.title, channelInput.title)
+      assert.equal(channel.description, channelInput.description)
+      assert.equal(channel.isPublic, channelInput.isPublic)
+      assert.equal(channel.language?.iso, channelInput.language)
+      assert.equal(channel.entryApp?.id, appId)
+      assert.equal(channel.entryApp?.name, appOwnedByMemberName)
     }
   )
 
@@ -102,10 +100,11 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   }
   const videoAppActionMeta = {
     // first video for this channel
-    nonce: '0',
     videoId: 'video_id_from_yt',
   }
+  const videoNonce = 0
   const appVideoCommitment = generateAppActionCommitment(
+    videoNonce,
     channelId.toString(),
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
     Utils.metadataToBytes(ContentMetadata, contentMetadata),
@@ -113,10 +112,11 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   )
   const videoSignature = u8aToHex(ed25519Sign(appVideoCommitment, keypair, true))
   const appVideoInput: IAppAction = {
-    appId: appFragment?.[0].id,
-    contentMetadata: contentMetadata,
+    appId,
+    rawAction: Utils.metadataToString(ContentMetadata, contentMetadata),
     signature: videoSignature,
-    metadata: videoAppActionMeta,
+    metadata: Utils.metadataToString(AppActionMetadata, videoAppActionMeta),
+    nonce: String(videoNonce),
   }
   const videoId = await api.createMockVideo(member.memberId.toNumber(), channelId.toNumber(), undefined, appVideoInput)
 
@@ -124,12 +124,12 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     () => query.videoById(videoId.toString()),
     (video) => {
       Utils.assert(video, 'Video not found')
-      assert.equal(video.title, appVideoInput.contentMetadata?.videoMetadata?.title)
-      assert.equal(video.description, appVideoInput.contentMetadata?.videoMetadata?.description)
-      assert.equal(video.duration, appVideoInput.contentMetadata?.videoMetadata?.duration)
-      assert.equal(video.entryApp?.id, appFragment?.[0].id)
-      assert.equal(video.entryApp?.name, appFragment?.[0].name)
-      assert.equal(video.ytVideoId, appVideoInput.metadata?.videoId)
+      assert.equal(video.title, contentMetadata.videoMetadata.title)
+      assert.equal(video.description, contentMetadata.videoMetadata.description)
+      assert.equal(video.duration, contentMetadata.videoMetadata.duration)
+      assert.equal(video.entryApp?.id, appId)
+      assert.equal(video.entryApp?.name, appOwnedByMemberName)
+      assert.equal(video.ytVideoId, videoAppActionMeta.videoId)
     }
   )
 
@@ -137,11 +137,18 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
 }
 
 export function generateAppActionCommitment(
+  nonce: number,
   creatorId: string,
   assets: Uint8Array,
-  rawAction: Bytes,
-  rawAppActionMetadata: Bytes
+  rawAction?: Bytes,
+  rawAppActionMetadata?: Bytes
 ): string {
-  const rawCommitment = [creatorId, u8aToHex(assets), u8aToHex(rawAction), u8aToHex(rawAppActionMetadata)]
+  const rawCommitment = [
+    nonce,
+    creatorId,
+    u8aToHex(assets),
+    ...(rawAction ? u8aToHex(rawAction) : []),
+    ...(rawAppActionMetadata ? u8aToHex(rawAppActionMetadata) : []),
+  ]
   return stringToHex(JSON.stringify(rawCommitment))
 }

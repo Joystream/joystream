@@ -173,44 +173,17 @@ async function processVideoSubtitleAssets(
   }
 }
 
-async function checkAppActionNonce<T>(
-  ctx: EventContext & StoreContext,
-  entity: T,
-  actionOwnerId: string | undefined,
-  appAction: DecodedMetadataObject<IAppAction>
-): Promise<boolean> {
-  if (!appAction.metadata?.nonce || !actionOwnerId) {
-    return false
-  }
-
-  if (appAction.contentMetadata?.videoMetadata) {
-    return (
-      (await ctx.store.getMany(Video, { where: { channel: { ownerMember: { id: actionOwnerId } } } })).length ===
-      parseInt(appAction.metadata.nonce)
-    )
-  }
-
-  if (appAction.channelMetadata) {
-    return (
-      (await ctx.store.getMany(Channel, { where: { ownerMember: { id: actionOwnerId } } })).length ===
-      parseInt(appAction.metadata.nonce)
-    )
-  }
-
-  return false
-}
-
 async function validateAndGetApp<T>(
   ctx: EventContext & StoreContext,
   entity: T,
   validationContext: {
-    actionOwnerId: string | undefined
+    ownerNonce: number | undefined
     appCommitment: string | undefined
   },
   appAction: DecodedMetadataObject<IAppAction>
 ): Promise<App | undefined> {
   // If one is missing we cannot verify the signature
-  if (!appAction.appId || !appAction.signature || !appAction.metadata || !validationContext.appCommitment) {
+  if (!appAction.appId || !appAction.signature || !appAction.nonce || !validationContext.appCommitment) {
     invalidMetadata('Missing action fields to verify app')
     return undefined
   }
@@ -222,7 +195,10 @@ async function validateAndGetApp<T>(
     return undefined
   }
 
-  if (!(await checkAppActionNonce(ctx, entity, validationContext.actionOwnerId, appAction))) {
+  if (
+    typeof validationContext.ownerNonce === 'undefined' ||
+    validationContext.ownerNonce !== parseInt(appAction.nonce)
+  ) {
     invalidMetadata('Invalid app action nonce')
 
     return undefined
@@ -241,7 +217,7 @@ export async function processAppActionMetadata<T extends { entryApp?: App }>(
   entity: T,
   meta: DecodedMetadataObject<IAppAction>,
   validationContext: {
-    actionOwnerId: string | undefined
+    ownerNonce: number | undefined
     appCommitment: string | undefined
   },
   entityMetadataProcessor: (entity: T) => Promise<T>
@@ -780,19 +756,22 @@ export function mapAgentPermission(permission: PalletContentIterableEnumsChannel
 }
 
 export function generateAppActionCommitment(
+  nonce: number,
   creatorId: string,
   assets: Uint8Array,
-  rawAction: Bytes,
-  rawAppActionMetadata: Bytes
+  rawAction?: Bytes,
+  rawAppActionMetadata?: Bytes
 ): string {
-  const rawCommitment = [creatorId, u8aToHex(assets), u8aToHex(rawAction), u8aToHex(rawAppActionMetadata)]
+  const rawCommitment = [
+    nonce,
+    creatorId,
+    u8aToHex(assets),
+    ...(rawAction ? u8aToHex(rawAction) : []),
+    ...(rawAppActionMetadata ? u8aToHex(rawAppActionMetadata) : []),
+  ]
   return stringToHex(JSON.stringify(rawCommitment))
 }
 
-export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
-  return createType('Bytes', metadataToString(metaClass, obj))
-}
-
-export function metadataToString<T>(metaClass: AnyMetadataClass<T>, obj: T): string {
-  return '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex')
+export function hexToBytes(hex: string): Bytes {
+  return createType('Bytes', hex)
 }
