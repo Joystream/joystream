@@ -1,3 +1,6 @@
+#!/usr/bin/env node --experimental-wasm-bigint
+
+// Run script with: node --experimental-wasm-bigint src/inspect-wasm-runtime-version.js ./runtime.wasm
 const fs = require('fs')
 const { decompress } = require('@mongodb-js/zstd')
 const { getRuntimeVersionFromWasm } = require('./helpers/runtimeVersion')
