@@ -208,6 +208,9 @@ jobs:
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
+      - name: Setup cache directory
+        run: mkdir ~/docker-images
+
       - name: Cache docker images
         uses: actions/cache@v3
         env:
