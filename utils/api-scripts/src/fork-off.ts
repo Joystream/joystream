@@ -4,8 +4,6 @@ import fs from 'fs'
 import path from 'path'
 import { execSync } from 'child_process'
 
-// paths & env variables
-const alice = process.env.SUDO_ACCOUNT
 // bad error handling TODO: fix process.env
 const schemaPath = path.join(process.env.DATA_PATH || '', 'schema.json')
 const wasmPath = path.join(process.env.DATA_PATH || '', 'runtime.wasm') || ''
