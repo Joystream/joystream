@@ -214,7 +214,7 @@ jobs:
       - name: Cache docker images
         uses: actions/cache@v3
         env:
-          cache-name: joystream-node-docker
+          cache-name: joystream-node-docker-image-master
         with:
           path: ~/docker-images
           key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
