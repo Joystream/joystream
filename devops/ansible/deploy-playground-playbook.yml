@@ -69,7 +69,7 @@
         TREASURY_ACCOUNT_URI: '{{ treasury_suri }}'
         INITIAL_BALANCES: '{{ initial_balances }}'
         SKIP_NODE: 'true'
-      async: 3600
+      async: 4000
       poll: 0
       register: start_services_result
 
