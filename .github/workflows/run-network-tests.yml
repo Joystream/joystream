@@ -276,7 +276,7 @@ jobs:
         uses: actions/download-artifact@v3
       - name: load docker images
         run: |
-          newImage = ls ${{needs.build_images.outputs.use_artifact}}/
+          newImage = ls ${{needs.build_images.outputs.use_artifact}}
           masterImage = ls ${{needs.build_master_testing.outputs.use_artifact}}
           docker load --input $newImage
           docker load --input $masterImage
