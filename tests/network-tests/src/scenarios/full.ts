@@ -61,7 +61,7 @@ scenario('Full', async ({ job, env }) => {
   // Council (should not interrupt proposalsJob!)
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
-  job('council election failure with blacklist', failToElectWithBlacklist).requires(secondCouncilJob)
+  job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
