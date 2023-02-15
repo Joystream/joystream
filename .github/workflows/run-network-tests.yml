@@ -252,7 +252,7 @@ jobs:
 
       - name: Save joystream/node image to cache
         run: |
-          docker save --output joystream-node-docker-image-master.tar joystream/node
+          docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetDev
           gzip joystream-node-docker-image-master.tar
           cp joystream-node-docker-image-master.tar.gz ~/docker-images/
         if: steps.check_master_image.outputs.files_exists == 'false'
