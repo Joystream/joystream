@@ -271,11 +271,7 @@ jobs:
     needs: [build_master_testing, build_images]
     runs-on: ubuntu-latest
     steps:
-      - name: check out master repo
-        uses: actions/checkout@v3
-        with:
-          repository: Joystream/joystream
-          ref: master
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
@@ -291,6 +287,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace @joystream/js build
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
