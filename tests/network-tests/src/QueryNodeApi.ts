@@ -424,6 +424,9 @@ import {
   GetVideoByIdQuery,
   GetVideoByIdQueryVariables,
   GetVideoById,
+  GetChannelsCount,
+  GetChannelsCountQuery,
+  GetChannelsCountQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1464,5 +1467,15 @@ export class QueryNodeApi {
       GetDistributionFamiliesAdndBucketsQuery,
       GetDistributionFamiliesAdndBucketsQueryVariables
     >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
+  }
+
+  async getChannelsCount(): Promise<number> {
+    const result = await this.uniqueEntityQuery<GetChannelsCountQuery, GetChannelsCountQueryVariables>(
+      GetChannelsCount,
+      {},
+      'channelsConnection'
+    )
+    Utils.assert(result)
+    return result.totalCount
   }
 }
