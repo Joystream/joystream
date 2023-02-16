@@ -21,4 +21,6 @@ type App @entity {
   platforms: [String]
   category: String
   authKey: String
+  appVideos: [Video!] @derivedFrom(field: "entryApp")
+  appChannels: [Channel!] @derivedFrom(field: "entryApp")
 }

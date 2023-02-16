@@ -1,3 +1,4 @@
+import { createAppActions } from '../flows/content/createAppActions'
 import leaderSetup from '../flows/working-groups/leadOpening'
 import initFaucet from '../flows/faucet/initFaucet'
 import { scenario } from '../Scenario'
@@ -12,5 +13,6 @@ scenario('App', async ({ job }) => {
   const leads = job('Set WorkingGroup Leads', leaderSetup(true))
   job('Create app', createApp).after(leads)
   job('Update app', updateApp).after(leads)
+  job('Create app actions', createAppActions).after(leads)
   job('Delete app', deleteApp).after(leads)
 })

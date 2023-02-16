@@ -182,6 +182,8 @@ async function createNewMemberFromParams(
         : undefined,
     isVerified: isFoundingMember,
     inviteCount,
+    totalVideosCreated: 0,
+    totalChannelsCreated: 0,
     boundAccounts: [],
     invitees: [],
     referredMembers: [],

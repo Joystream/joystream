@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, u128, BTreeSet, Option } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option, Bytes } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -64,8 +64,10 @@ import {
 import {
   ContentLeadRemarked,
   CreateApp,
+  AppAction,
   CreateVideoCategory,
   DeleteApp,
+  IAppAction,
   IAppMetadata,
   MemberRemarked,
   UpdateApp,
@@ -761,22 +763,24 @@ export class Api {
       distributionBucketFamilyId: number
       distributionBucketIndex: number
     }[],
-    memberControllerAccount?: string
+    memberControllerAccount?: string,
+    channelMeta?: Bytes
   ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
     // Create a channel without any assets
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
       {
         assets: null,
-        meta: null,
+        meta: channelMeta ?? null,
         storageBuckets,
         distributionBuckets,
+        expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectPerMegabyteFee(),
+        expectedChannelStateBloatBond: await this.api.query.content.channelStateBloatBondValue(),
       }
     )
 
@@ -787,17 +791,24 @@ export class Api {
   }
 
   // Create a mock video, throws on failure
-  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+  async createMockVideo(
+    memberId: number,
+    channelId: number,
+    memberControllerAccount?: string,
+    videoMeta?: IAppAction
+  ): Promise<VideoId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
     // Create a video without any assets
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
       assets: null,
-      meta: null,
+      meta: videoMeta ? Utils.metadataToBytes(AppAction, videoMeta) : null,
+      storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
+      expectedVideoStateBloatBond: await this.getVideoStateBloatBond(),
+      expectedDataObjectStateBloatBond: await this.getDataObjectStateBloatBond(),
     })
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)

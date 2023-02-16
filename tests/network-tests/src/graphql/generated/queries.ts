@@ -92,6 +92,7 @@ export type ChannelFieldsFragment = {
   isCensored: boolean
   rewardAccount: string
   language?: Types.Maybe<{ iso: string }>
+  entryApp?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -160,9 +161,11 @@ export type VideoFieldsFragment = {
   isPublic?: Types.Maybe<boolean>
   isExplicit?: Types.Maybe<boolean>
   hasMarketing?: Types.Maybe<boolean>
+  ytVideoId?: Types.Maybe<string>
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  entryApp?: Types.Maybe<AppFieldsFragment>
   license?: Types.Maybe<LicenseFieldsFragment>
   mediaMetadata?: Types.Maybe<VideoMediaMetadataFieldsFragment>
   media?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -1315,6 +1318,41 @@ export type GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables = T
 
 export type GetMemberVerificationStatusUpdatedEventsByEventIdsQuery = {
   memberVerificationStatusUpdatedEvents: Array<MemberVerificationStatusUpdatedEventFieldsFragment>
+}
+
+type MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment = {
+  __typename: 'MetaprotocolTransactionSuccessful'
+  commentCreated?: Types.Maybe<CommentFieldsFragment>
+  commentDeleted?: Types.Maybe<CommentFieldsFragment>
+}
+
+type MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment = {
+  __typename: 'MetaprotocolTransactionErrored'
+  message: string
+}
+
+export type MetaprotocolTransactionStatusFieldsFragment =
+  | MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment
+  | MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment
+
+export type MetaprotocolTransactionStatusEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  status:
+    | MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment
+    | MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment
+}
+
+export type GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetMetaprotocolTransactionalStatusEventsByEventIdsQuery = {
+  metaprotocolTransactionStatusEvents: Array<MetaprotocolTransactionStatusEventFieldsFragment>
 }
 
 type ProposalStatusFields_ProposalStatusDeciding_Fragment = {
@@ -2601,6 +2639,9 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
+    entryApp {
+      ...AppFields
+    }
     ownerMember {
       id
     }
@@ -2618,6 +2659,7 @@ export const ChannelFields = gql`
     }
     rewardAccount
   }
+  ${AppFields}
   ${StorageDataObjectFields}
 `
 export const LicenseFields = gql`
@@ -2717,6 +2759,10 @@ export const VideoFields = gql`
     isPublic
     isExplicit
     hasMarketing
+    ytVideoId
+    entryApp {
+      ...AppFields
+    }
     license {
       ...LicenseFields
     }
@@ -2751,6 +2797,7 @@ export const VideoFields = gql`
       ...VideoSubtitleFields
     }
   }
+  ${AppFields}
   ${LicenseFields}
   ${VideoMediaMetadataFields}
   ${StorageDataObjectFields}
@@ -3820,6 +3867,37 @@ export const MemberVerificationStatusUpdatedEventFields = gql`
     }
     isVerified
   }
+`
+export const MetaprotocolTransactionStatusFields = gql`
+  fragment MetaprotocolTransactionStatusFields on MetaprotocolTransactionStatus {
+    __typename
+    ... on MetaprotocolTransactionSuccessful {
+      commentCreated {
+        ...CommentFields
+      }
+      commentDeleted {
+        ...CommentFields
+      }
+    }
+    ... on MetaprotocolTransactionErrored {
+      message
+    }
+  }
+  ${CommentFields}
+`
+export const MetaprotocolTransactionStatusEventFields = gql`
+  fragment MetaprotocolTransactionStatusEventFields on MetaprotocolTransactionStatusEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    status {
+      ...MetaprotocolTransactionStatusFields
+    }
+  }
+  ${MetaprotocolTransactionStatusFields}
 `
 export const ApplicationFormQuestionFields = gql`
   fragment ApplicationFormQuestionFields on ApplicationFormQuestion {
@@ -5437,6 +5515,14 @@ export const GetMemberVerificationStatusUpdatedEventsByEventIds = gql`
     }
   }
   ${MemberVerificationStatusUpdatedEventFields}
+`
+export const GetMetaprotocolTransactionalStatusEventsByEventIds = gql`
+  query getMetaprotocolTransactionalStatusEventsByEventIds($eventIds: [ID!]) {
+    metaprotocolTransactionStatusEvents(where: { id_in: $eventIds }) {
+      ...MetaprotocolTransactionStatusEventFields
+    }
+  }
+  ${MetaprotocolTransactionStatusEventFields}
 `
 export const GetProposalsByIds = gql`
   query getProposalsByIds($ids: [ID!]) {

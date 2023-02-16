@@ -170,6 +170,8 @@ export type App = BaseGraphQlObject & {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  appVideos: Array<Video>
+  appChannels: Array<Channel>
 }
 
 export type AppConnection = {
@@ -338,6 +340,12 @@ export type AppWhereInput = {
   authKey_endsWith?: Maybe<Scalars['String']>
   authKey_in?: Maybe<Array<Scalars['String']>>
   ownerMember?: Maybe<MembershipWhereInput>
+  appVideos_none?: Maybe<VideoWhereInput>
+  appVideos_some?: Maybe<VideoWhereInput>
+  appVideos_every?: Maybe<VideoWhereInput>
+  appChannels_none?: Maybe<ChannelWhereInput>
+  appChannels_some?: Maybe<ChannelWhereInput>
+  appChannels_every?: Maybe<ChannelWhereInput>
   AND?: Maybe<Array<AppWhereInput>>
   OR?: Maybe<Array<AppWhereInput>>
   NOT?: Maybe<Array<AppWhereInput>>
@@ -6334,6 +6342,8 @@ export type Channel = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['ID']>
   version: Scalars['Int']
+  entryApp?: Maybe<App>
+  entryAppId?: Maybe<Scalars['String']>
   ownerMember?: Maybe<Membership>
   ownerMemberId?: Maybe<Scalars['String']>
   ownerCuratorGroup?: Maybe<CuratorGroup>
@@ -6533,6 +6543,7 @@ export type ChannelConnection = {
 }
 
 export type ChannelCreateInput = {
+  entryApp?: Maybe<Scalars['ID']>
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
@@ -6818,6 +6829,8 @@ export enum ChannelOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  EntryAppAsc = 'entryApp_ASC',
+  EntryAppDesc = 'entryApp_DESC',
   OwnerMemberAsc = 'ownerMember_ASC',
   OwnerMemberDesc = 'ownerMember_DESC',
   OwnerCuratorGroupAsc = 'ownerCuratorGroup_ASC',
@@ -6849,6 +6862,7 @@ export enum ChannelOrderByInput {
 }
 
 export type ChannelUpdateInput = {
+  entryApp?: Maybe<Scalars['ID']>
   ownerMember?: Maybe<Scalars['ID']>
   ownerCuratorGroup?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
@@ -7083,6 +7097,7 @@ export type ChannelWhereInput = {
   privilegeLevel_lt?: Maybe<Scalars['Int']>
   privilegeLevel_lte?: Maybe<Scalars['Int']>
   privilegeLevel_in?: Maybe<Array<Scalars['Int']>>
+  entryApp?: Maybe<AppWhereInput>
   ownerMember?: Maybe<MembershipWhereInput>
   ownerCuratorGroup?: Maybe<CuratorGroupWhereInput>
   coverPhoto?: Maybe<StorageDataObjectWhereInput>
@@ -29818,6 +29833,8 @@ export type Video = BaseGraphQlObject & {
   deletedAt?: Maybe<Scalars['DateTime']>
   deletedById?: Maybe<Scalars['ID']>
   version: Scalars['Int']
+  entryApp?: Maybe<App>
+  entryAppId?: Maybe<Scalars['String']>
   channel: Channel
   channelId: Scalars['String']
   category?: Maybe<VideoCategory>
@@ -29866,6 +29883,8 @@ export type Video = BaseGraphQlObject & {
   reactionsCountByReactionId: Array<VideoReactionsCountByReactionType>
   /** Reactions count */
   reactionsCount: Scalars['Int']
+  /** Video ID coming from YPP */
+  ytVideoId?: Maybe<Scalars['String']>
   auctionbidcanceledeventvideo?: Maybe<Array<AuctionBidCanceledEvent>>
   auctionbidmadeeventvideo?: Maybe<Array<AuctionBidMadeEvent>>
   auctioncanceledeventvideo?: Maybe<Array<AuctionCanceledEvent>>
@@ -30207,6 +30226,7 @@ export type VideoConnection = {
 }
 
 export type VideoCreateInput = {
+  entryApp?: Maybe<Scalars['ID']>
   channel: Scalars['ID']
   category?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
@@ -30229,6 +30249,7 @@ export type VideoCreateInput = {
   commentsCount: Scalars['Float']
   isReactionFeatureEnabled: Scalars['Boolean']
   reactionsCount: Scalars['Float']
+  ytVideoId?: Maybe<Scalars['String']>
 }
 
 export type VideoDeletedByModeratorEvent = BaseGraphQlObject & {
@@ -30751,6 +30772,8 @@ export enum VideoOrderByInput {
   UpdatedAtDesc = 'updatedAt_DESC',
   DeletedAtAsc = 'deletedAt_ASC',
   DeletedAtDesc = 'deletedAt_DESC',
+  EntryAppAsc = 'entryApp_ASC',
+  EntryAppDesc = 'entryApp_DESC',
   ChannelAsc = 'channel_ASC',
   ChannelDesc = 'channel_DESC',
   CategoryAsc = 'category_ASC',
@@ -30795,6 +30818,8 @@ export enum VideoOrderByInput {
   IsReactionFeatureEnabledDesc = 'isReactionFeatureEnabled_DESC',
   ReactionsCountAsc = 'reactionsCount_ASC',
   ReactionsCountDesc = 'reactionsCount_DESC',
+  YtVideoIdAsc = 'ytVideoId_ASC',
+  YtVideoIdDesc = 'ytVideoId_DESC',
 }
 
 export type VideoReactedEvent = Event &
@@ -31396,6 +31421,7 @@ export type VideoSubtitleWhereUniqueInput = {
 }
 
 export type VideoUpdateInput = {
+  entryApp?: Maybe<Scalars['ID']>
   channel?: Maybe<Scalars['ID']>
   category?: Maybe<Scalars['ID']>
   title?: Maybe<Scalars['String']>
@@ -31418,6 +31444,7 @@ export type VideoUpdateInput = {
   commentsCount?: Maybe<Scalars['Float']>
   isReactionFeatureEnabled?: Maybe<Scalars['Boolean']>
   reactionsCount?: Maybe<Scalars['Float']>
+  ytVideoId?: Maybe<Scalars['String']>
 }
 
 export type VideoVisibilitySetByModeratorEvent = BaseGraphQlObject & {
@@ -31652,6 +31679,12 @@ export type VideoWhereInput = {
   reactionsCount_lt?: Maybe<Scalars['Int']>
   reactionsCount_lte?: Maybe<Scalars['Int']>
   reactionsCount_in?: Maybe<Array<Scalars['Int']>>
+  ytVideoId_eq?: Maybe<Scalars['String']>
+  ytVideoId_contains?: Maybe<Scalars['String']>
+  ytVideoId_startsWith?: Maybe<Scalars['String']>
+  ytVideoId_endsWith?: Maybe<Scalars['String']>
+  ytVideoId_in?: Maybe<Array<Scalars['String']>>
+  entryApp?: Maybe<AppWhereInput>
   channel?: Maybe<ChannelWhereInput>
   category?: Maybe<VideoCategoryWhereInput>
   thumbnailPhoto?: Maybe<StorageDataObjectWhereInput>
