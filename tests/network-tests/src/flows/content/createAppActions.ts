@@ -147,8 +147,8 @@ export function generateAppActionCommitment(
     nonce,
     creatorId,
     u8aToHex(assets),
-    ...(rawAction ? u8aToHex(rawAction) : []),
-    ...(rawAppActionMetadata ? u8aToHex(rawAppActionMetadata) : []),
+    ...(rawAction ? [u8aToHex(rawAction)] : []),
+    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
   ]
   return stringToHex(JSON.stringify(rawCommitment))
 }
