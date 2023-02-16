@@ -175,7 +175,6 @@ async function processVideoSubtitleAssets(
 
 async function validateAndGetApp<T>(
   ctx: EventContext & StoreContext,
-  entity: T,
   validationContext: {
     ownerNonce: number | undefined
     appCommitment: string | undefined
@@ -222,7 +221,7 @@ export async function processAppActionMetadata<T extends { entryApp?: App }>(
   },
   entityMetadataProcessor: (entity: T) => Promise<T>
 ): Promise<T> {
-  const app = await validateAndGetApp(ctx, entity, validationContext, meta)
+  const app = await validateAndGetApp(ctx, validationContext, meta)
   if (!app) {
     return entityMetadataProcessor(entity)
   }
@@ -772,6 +771,6 @@ export function generateAppActionCommitment(
   return stringToHex(JSON.stringify(rawCommitment))
 }
 
-export function hexToBytes(hex: string): Bytes {
-  return createType('Bytes', hex)
+export function u8aToBytes(array?: DecodedMetadataObject<Uint8Array> | null): Bytes {
+  return createType('Bytes', array ? u8aToHex(array as Uint8Array) : '')
 }

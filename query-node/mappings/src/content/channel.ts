@@ -49,7 +49,7 @@ import {
   mapAgentPermission,
   processAppActionMetadata,
   generateAppActionCommitment,
-  hexToBytes,
+  u8aToBytes,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -88,14 +88,14 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap())
 
     if (appAction && Object.keys(appAction).length) {
-      const channelMetadataBytes = hexToBytes(appAction.rawAction ?? '')
+      const channelMetadataBytes = u8aToBytes(appAction.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
       const appCommitment = generateAppActionCommitment(
         channelOwner.ownerMember?.totalChannelsCreated ?? -1,
         channelOwner.ownerMember?.id ? `m:${channelOwner.ownerMember.id}` : `c:${channelOwner.ownerCuratorGroup?.id}`,
         channelCreationParameters.assets.toU8a(),
         appAction.rawAction ? channelMetadataBytes : undefined,
-        appAction.metadata ? hexToBytes(appAction.metadata) : undefined
+        appAction.metadata ? u8aToBytes(appAction.metadata) : undefined
       )
       await processAppActionMetadata(
         ctx,
@@ -152,7 +152,7 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
     const newMetadata = deserializeMetadata(AppAction, newMetadataBytes)
 
     if (newMetadata && 'rawAction' in newMetadata) {
-      const channelMetadataBytes = hexToBytes(newMetadata.rawAction ?? '')
+      const channelMetadataBytes = u8aToBytes(newMetadata.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
       await processChannelMetadata(ctx, channel, channelMetadata ?? {}, newDataObjects)
     } else {

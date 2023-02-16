@@ -63,7 +63,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const signature = u8aToHex(ed25519Sign(appChannelCommitment, keypair, true))
   const appChannelInput: IAppAction = {
     appId,
-    rawAction: Utils.metadataToString(ChannelMetadata, channelInput),
+    rawAction: Utils.metadataToBytes(ChannelMetadata, channelInput),
     signature,
     nonce: String(channelNonce),
   }
@@ -113,9 +113,9 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const videoSignature = u8aToHex(ed25519Sign(appVideoCommitment, keypair, true))
   const appVideoInput: IAppAction = {
     appId,
-    rawAction: Utils.metadataToString(ContentMetadata, contentMetadata),
+    rawAction: Utils.metadataToBytes(ContentMetadata, contentMetadata),
     signature: videoSignature,
-    metadata: Utils.metadataToString(AppActionMetadata, videoAppActionMeta),
+    metadata: Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta),
     nonce: String(videoNonce),
   }
   const videoId = await api.createMockVideo(member.memberId.toNumber(), channelId.toNumber(), undefined, appVideoInput)

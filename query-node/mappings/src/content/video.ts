@@ -47,7 +47,7 @@ import {
   generateAppActionCommitment,
   processAppActionMetadata,
   processVideoMetadata,
-  hexToBytes,
+  u8aToBytes,
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
@@ -135,9 +135,9 @@ export async function processCreateVideoMessage(
   })
 
   if (metadata && 'rawAction' in metadata) {
-    const contentMetadataBytes = hexToBytes(metadata.rawAction ?? '')
+    const contentMetadataBytes = u8aToBytes(metadata.rawAction)
     const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata ?? {}
-    const appActionMetadataBytes = metadata.metadata ? hexToBytes(metadata.metadata) : undefined
+    const appActionMetadataBytes = metadata.metadata ? u8aToBytes(metadata.metadata) : undefined
 
     const appCommitment = generateAppActionCommitment(
       channel.ownerMember?.totalVideosCreated ?? -1,
@@ -227,7 +227,7 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   if (video) {
     const appAction = newMeta.isSome ? deserializeMetadata(AppAction, newMeta.unwrap()) : undefined
     if (appAction && 'signature' in appAction) {
-      const contentMetadataBytes = hexToBytes(appAction?.rawAction ?? '')
+      const contentMetadataBytes = u8aToBytes(appAction?.rawAction)
       const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata
       await processUpdateVideoMessage(ctx, video, videoMetadata ?? undefined, contentUpdatedEventData)
     } else {

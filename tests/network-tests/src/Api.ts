@@ -771,13 +771,6 @@ export class Api {
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
-    const txParameters = channelMeta
-      ? {
-          expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectPerMegabyteFee(),
-          expectedChannelStateBloatBond: await this.api.query.content.channelStateBloatBondValue(),
-        }
-      : {}
     // Create a channel without any assets
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
@@ -786,7 +779,8 @@ export class Api {
         meta: channelMeta ?? null,
         storageBuckets,
         distributionBuckets,
-        ...txParameters,
+        expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectPerMegabyteFee(),
+        expectedChannelStateBloatBond: await this.api.query.content.channelStateBloatBondValue(),
       }
     )
 
@@ -808,19 +802,13 @@ export class Api {
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
-    const txParameters = videoMeta
-      ? {
-          storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
-          expectedVideoStateBloatBond: await this.getVideoStateBloatBond(),
-          expectedDataObjectStateBloatBond: await this.getDataObjectStateBloatBond(),
-        }
-      : {}
     // Create a video without any assets
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
       assets: null,
       meta: videoMeta ? Utils.metadataToBytes(AppAction, videoMeta) : null,
-      ...txParameters,
+      storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
+      expectedVideoStateBloatBond: await this.getVideoStateBloatBond(),
+      expectedDataObjectStateBloatBond: await this.getDataObjectStateBloatBond(),
     })
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)

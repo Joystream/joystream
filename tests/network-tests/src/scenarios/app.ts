@@ -11,8 +11,8 @@ scenario('App', async ({ job }) => {
   job('Initialize Faucet', initFaucet)
 
   const leads = job('Set WorkingGroup Leads', leaderSetup(true))
-  // job('Create app', createApp).after(leads)
-  // job('Update app', updateApp).after(leads)
+  job('Create app', createApp).after(leads)
+  job('Update app', updateApp).after(leads)
   job('Create app actions', createAppActions).after(leads)
-  // job('Delete app', deleteApp).after(leads)
+  job('Delete app', deleteApp).after(leads)
 })
