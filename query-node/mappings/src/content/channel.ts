@@ -85,9 +85,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap())
+    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap(), { skipWarning: true })
 
-    if (appAction && Object.keys(appAction).length) {
+    if (appAction) {
       const channelMetadataBytes = u8aToBytes(appAction.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
       const appCommitment = generateAppActionCommitment(
@@ -149,9 +149,9 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes)
+    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes, { skipWarning: true })
 
-    if (newMetadata && 'rawAction' in newMetadata) {
+    if (newMetadata) {
       const channelMetadataBytes = u8aToBytes(newMetadata.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
       await processChannelMetadata(ctx, channel, channelMetadata ?? {}, newDataObjects)

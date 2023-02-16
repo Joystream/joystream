@@ -60,12 +60,12 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
     Utils.metadataToBytes(ChannelMetadata, channelInput)
   )
-  const signature = u8aToHex(ed25519Sign(appChannelCommitment, keypair, true))
+  const signature = ed25519Sign(appChannelCommitment, keypair, true)
   const appChannelInput: IAppAction = {
     appId,
     rawAction: Utils.metadataToBytes(ChannelMetadata, channelInput),
     signature,
-    nonce: String(channelNonce),
+    nonce: channelNonce,
   }
   const createChannelFixture = new CreateChannelsAsMemberFixture(
     api,
@@ -110,13 +110,13 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     Utils.metadataToBytes(ContentMetadata, contentMetadata),
     Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta)
   )
-  const videoSignature = u8aToHex(ed25519Sign(appVideoCommitment, keypair, true))
+  const videoSignature = ed25519Sign(appVideoCommitment, keypair, true)
   const appVideoInput: IAppAction = {
     appId,
     rawAction: Utils.metadataToBytes(ContentMetadata, contentMetadata),
     signature: videoSignature,
     metadata: Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta),
-    nonce: String(videoNonce),
+    nonce: videoNonce,
   }
   const videoId = await api.createMockVideo(member.memberId.toNumber(), channelId.toNumber(), undefined, appVideoInput)
 

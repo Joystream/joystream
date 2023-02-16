@@ -44,7 +44,7 @@ import {
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentIterableEnumsChannelActionPermission,
 } from '@polkadot/types/lookup'
-import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
@@ -173,7 +173,7 @@ async function processVideoSubtitleAssets(
   }
 }
 
-async function validateAndGetApp<T>(
+async function validateAndGetApp(
   ctx: EventContext & StoreContext,
   validationContext: {
     ownerNonce: number | undefined
@@ -182,7 +182,12 @@ async function validateAndGetApp<T>(
   appAction: DecodedMetadataObject<IAppAction>
 ): Promise<App | undefined> {
   // If one is missing we cannot verify the signature
-  if (!appAction.appId || !appAction.signature || !appAction.nonce || !validationContext.appCommitment) {
+  if (
+    !appAction.appId ||
+    !appAction.signature ||
+    typeof appAction.nonce !== 'number' ||
+    !validationContext.appCommitment
+  ) {
     invalidMetadata('Missing action fields to verify app')
     return undefined
   }
@@ -194,17 +199,24 @@ async function validateAndGetApp<T>(
     return undefined
   }
 
-  if (
-    typeof validationContext.ownerNonce === 'undefined' ||
-    validationContext.ownerNonce !== parseInt(appAction.nonce)
-  ) {
+  if (typeof validationContext.ownerNonce === 'undefined' || validationContext.ownerNonce !== appAction.nonce) {
     invalidMetadata('Invalid app action nonce')
 
     return undefined
   }
 
   try {
-    return ed25519Verify(validationContext.appCommitment, appAction.signature, app.authKey) ? app : undefined
+    const isSignatureValid = ed25519Verify(
+      validationContext.appCommitment,
+      appAction.signature as Uint8Array,
+      app.authKey
+    )
+
+    if (!isSignatureValid) {
+      invalidMetadata('Invalid app action signature')
+    }
+
+    return isSignatureValid ? app : undefined
   } catch (e) {
     invalidMetadata((e as Error)?.message)
     return undefined

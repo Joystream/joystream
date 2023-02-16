@@ -1,8 +1,5 @@
 syntax = "proto2";
 
-import "proto/Video.proto";
-import "proto/Channel.proto";
-
 message AppActionMetadata {
   // YouTube video ID
   optional string video_id  = 2;
@@ -19,8 +16,8 @@ message AppAction {
   optional bytes raw_action = 3;
 
   // Signature over app commitment
-  optional string signature = 4;
+  optional bytes signature = 4;
 
   // Nonce to prevent signature reusal
-  optional string nonce = 5;
+  optional uint32 nonce = 5;
 }

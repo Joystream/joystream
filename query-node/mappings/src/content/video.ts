@@ -98,19 +98,16 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   }
 
   // deserialize & process metadata
-  const appAction = meta.isSome ? deserializeMetadata(AppAction, meta.unwrap()) : undefined
-  const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
-
+  const appAction = meta.isSome ? deserializeMetadata(AppAction, meta.unwrap(), { skipWarning: true }) : undefined
   // Content Creation Preference
   // 1. metadata == `VideoMetadata` || undefined -> create Video
   // 1. metadata == `PlaylistMetadata` -> create Playlist (Not Supported Yet)
-
-  await processCreateVideoMessage(
-    ctx,
-    channel,
-    appAction?.rawAction ? appAction : contentMetadata?.videoMetadata ?? undefined,
-    contentCreatedEventData
-  )
+  if (appAction) {
+    await processCreateVideoMessage(ctx, channel, appAction, contentCreatedEventData)
+  } else {
+    const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
+    await processCreateVideoMessage(ctx, channel, contentMetadata?.videoMetadata ?? undefined, contentCreatedEventData)
+  }
 }
 
 export async function processCreateVideoMessage(
@@ -134,7 +131,7 @@ export async function processCreateVideoMessage(
     reactionsCount: 0,
   })
 
-  if (metadata && 'rawAction' in metadata) {
+  if (metadata && 'appId' in metadata) {
     const contentMetadataBytes = u8aToBytes(metadata.rawAction)
     const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata ?? {}
     const appActionMetadataBytes = metadata.metadata ? u8aToBytes(metadata.metadata) : undefined
@@ -225,9 +222,11 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   })
 
   if (video) {
-    const appAction = newMeta.isSome ? deserializeMetadata(AppAction, newMeta.unwrap()) : undefined
-    if (appAction && 'signature' in appAction) {
-      const contentMetadataBytes = u8aToBytes(appAction?.rawAction)
+    const appAction = newMeta.isSome
+      ? deserializeMetadata(AppAction, newMeta.unwrap(), { skipWarning: true })
+      : undefined
+    if (appAction) {
+      const contentMetadataBytes = u8aToBytes(appAction.rawAction)
       const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata
       await processUpdateVideoMessage(ctx, video, videoMetadata ?? undefined, contentUpdatedEventData)
     } else {

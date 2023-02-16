@@ -114,7 +114,10 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 
 export function deserializeMetadata<T>(
   metadataType: AnyMetadataClass<T>,
-  metadataBytes: Bytes
+  metadataBytes: Bytes,
+  opts = {
+    skipWarning: false,
+  }
 ): DecodedMetadataObject<T> | null {
   try {
     const message = metadataType.decode(metadataBytes.toU8a(true))
@@ -125,7 +128,9 @@ export function deserializeMetadata<T>(
     })
     return metaToObject(metadataType, message)
   } catch (e) {
-    invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
+    if (!opts.skipWarning) {
+      invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
+    }
     return null
   }
 }
