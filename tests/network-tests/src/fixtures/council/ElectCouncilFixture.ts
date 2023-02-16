@@ -13,7 +13,6 @@ import BN from 'bn.js'
 
 export class ElectCouncilFixture extends BaseQueryNodeFixture {
   private _optOutVoters: boolean
-  private councilMembersIds: u64[] | undefined
 
   protected async maybeBlackListVoters(votersStakingAccounts: string[]) {
     if (this._optOutVoters) {
@@ -25,8 +24,9 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
   }
 
   protected async getCouncilMembersControllerAccounts(): Promise<string[]> {
+    const memberIds = (await this.api.query.council.councilMembers()).map((m) => m.membershipId)
     const onChainCouncilMemberAccounts = await Promise.all(
-      this.councilMembersIds!.map(async (id) => {
+      memberIds.map(async (id) => {
         const membership = await this.api.query.members.membershipById(id)
         return membership.unwrap().controllerAccount.toString()
       })
@@ -170,18 +170,13 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     await this.api.untilCouncilStage('Idle')
 
     const councilMembers = await api.query.council.councilMembers()
-    this.councilMembersIds = councilMembers.map((m) => m.membershipId)
     assert.sameMembers(
-      this.councilMembersIds.map((id) => id.toString()),
+      councilMembers.map((m) => m.membershipId.toString()),
       candidatesToWinIds
     )
 
     // change accounts to known accounts
-    const oldCouncilMemberAccounts = await this.getCouncilMembersControllerAccounts()
-    const newCouncilMemberAccounts = await this.api.updateCouncillorsAccounts(
-      oldCouncilMemberAccounts,
-      this.councilMembersIds
-    )
+    const newCouncilMemberAccounts = await this.api.updateCouncillorsAccounts()
     const onChainCouncilMemberAccounts = await this.getCouncilMembersControllerAccounts()
     assert.deepEqual(onChainCouncilMemberAccounts, newCouncilMemberAccounts)
   }

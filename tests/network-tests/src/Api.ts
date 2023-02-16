@@ -873,11 +873,14 @@ export class Api {
     return this.sender.signAndSend(updateControllerAccount, oldAccount)
   }
 
-  async updateCouncillorsAccounts(
-    oldAccounts: string[],
-    memberIds: MemberId[],
-    initialBalance = KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE
-  ): Promise<string[]> {
+  async updateCouncillorsAccounts(initialBalance = KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE): Promise<string[]> {
+    const memberIds = (await this.query.council.councilMembers()).map((m) => m.membershipId)
+    const memberRootAccounts = await Promise.all(
+      memberIds.map(async (id) => {
+        const membership = await this.query.members.membershipById(id)
+        return membership.unwrap().rootAccount.toString()
+      })
+    )
     // path to append to base SURI
     const debug = extendDebug('api-factory')
     debug(`assigning Well Known Councillors Account`)
@@ -887,7 +890,7 @@ export class Api {
     })
     await Promise.all(
       memberIds.map(async (id, i) => {
-        await this.updateMemberControllerAccount(oldAccounts[i], id, newAccounts[i])
+        await this.updateMemberControllerAccount(memberRootAccounts[i], id, newAccounts[i])
         await this.treasuryTransferBalance(newAccounts[i], initialBalance)
       })
     )
