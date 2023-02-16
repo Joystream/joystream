@@ -21,12 +21,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: checks
       run: |
-        yarn install --frozen-lockfile
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
-        yarn workspace query-node-root build
-        yarn workspace @joystream/cli build
-        yarn workspace network-tests build
+        yarn build:packages
 
   tests_build_osx:
     name: MacOS Checks
@@ -42,12 +37,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: checks
       run: |
-        yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
-        yarn workspace query-node-root build
-        yarn workspace @joystream/cli build
-        yarn workspace network-tests build
+        yarn build:packages
 
   build_images:
     name: Build joystream/node
@@ -174,11 +164,7 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace query-node-root build
-          yarn workspace @joystream/cli build
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
@@ -208,11 +194,7 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace query-node-root build
-          yarn workspace @joystream/cli build
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
