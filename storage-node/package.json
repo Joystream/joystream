@@ -144,7 +144,7 @@
     "lint": "eslint ./src --ext .ts",
     "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/queryNode/codegen.yml",
-    "generate:types:json-schema": "yarn ts-node ./src/services/metadata/generateTypes.ts",
+    "generate:types:json-schema": "yarn ts-node --transpile-only ./src/services/metadata/generateTypes.ts",
     "generate:types:api": "yarn openapi-typescript ./src/api-spec/openapi.yaml -o ./src/services/webApi/types/generated.ts -c ../prettierrc.js",
     "generate:types:all": "yarn generate:types:graphql && yarn generate:types:json-schema && yarn generate:types:api",
     "generate:client": "yarn openapi-generator-cli generate -i ./src/api-spec/openapi.yaml -g typescript-axios -o ./client",
