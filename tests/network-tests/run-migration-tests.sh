@@ -105,6 +105,10 @@ function set_new_runtime_wasm_path() {
 function fork_off_init() {
     # chain-spec-raw already existing
 
+    # http endpoint where to get metadata from mainnet
+    if [[ -z $WS_RPC_ENDPOINT ]]; then
+        export WS_RPC_ENDPOINT="wss://rpc.joystream.org:9944"
+    fi
     # http endpoint where to download storage data
     if [[ -z $HTTP_RPC_ENDPOINT ]]; then
         export HTTP_RPC_ENDPOINT="http://mainnet-rpc-1.joystream.org:9933"
@@ -119,7 +123,7 @@ function fork_off_init() {
         echo >&2 "storage trie downloaded at ${DATA_PATH}/storage.json"
     fi
 
-    yarn workspace api-scripts tsnode-strict src/fork-off.ts ${DATA_PATH}
+    yarn workspace api-scripts tsnode-strict src/fork-off.ts ${DATA_PATH} ${WS_RPC_ENDPOINT}
 }
 
 #######################################
@@ -176,6 +180,7 @@ function main {
     fi
     # 5. start node
     start_old_joystream_node
+    echo >&2 "mainnet node started"
 
     # wait 30 seconds
     sleep 30

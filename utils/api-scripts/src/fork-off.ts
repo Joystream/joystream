@@ -5,14 +5,16 @@ import path from 'path'
 
 
 // paths & env variables
-const dataPath = process.argv.slice(2).toString() || ''
+const cmdArgs = process.argv.slice(2)
+const dataPath = cmdArgs[0].toString() || ''
 const specPath = path.join(dataPath, 'chain-spec-raw.json')
 const forkedSpecPath = path.join(dataPath, 'chain-spec-forked.json')
 const storagePath = path.join(dataPath, 'storage.json')
 
 
 // this might not be of much use
-const provider = new WsProvider(process.env.WS_RPC_ENDPOINT || 'ws://localhost:9944')
+const rpcRemoteEndpoint = cmdArgs[1].toString() || 'ws://localhost:9944'
+const provider = new WsProvider(rpcRemoteEndpoint)
 /**
  * All module prefixes except those mentioned in the skippedModulesPrefix will be added to this by the script.
  * If you want to add any past module or part of a skipped module, add the prefix here manually.
