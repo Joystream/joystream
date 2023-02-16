@@ -150,7 +150,7 @@
     "generate:all": "yarn generate:types:all && yarn generate:client && yarn generate:docs:all",
     "build:client": "tsc --build ./client/tsconfig.json",
     "build:node": "tsc --build tsconfig.json",
-    "build": "yarn build:client && yarn build:node",
+    "build": "yarn generate:types:all && yarn build:client && yarn build:node",
     "lint": "eslint ./src --ext .ts",
     "format": "prettier ./ --write",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
