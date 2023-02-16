@@ -26,10 +26,6 @@ type DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment = {
   subtitle?: Types.Maybe<{ id: string; video: { id: string } }>
 }
 
-type DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment = {
-  __typename: 'DataObjectTypeChannelPayoutsPayload'
-}
-
 type DataObjectTypeFields_DataObjectTypeUnknown_Fragment = { __typename: 'DataObjectTypeUnknown' }
 
 export type DataObjectTypeFieldsFragment =
@@ -38,7 +34,6 @@ export type DataObjectTypeFieldsFragment =
   | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
   | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
-  | DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment
   | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 
 export type StorageDataObjectFieldsFragment = {
@@ -55,7 +50,6 @@ export type StorageDataObjectFieldsFragment = {
     | DataObjectTypeFields_DataObjectTypeVideoMedia_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoThumbnail_Fragment
     | DataObjectTypeFields_DataObjectTypeVideoSubtitle_Fragment
-    | DataObjectTypeFields_DataObjectTypeChannelPayoutsPayload_Fragment
     | DataObjectTypeFields_DataObjectTypeUnknown_Fragment
 }
 
@@ -1558,10 +1552,6 @@ type ProposalDetailsFields_VetoProposalDetails_Fragment = {
   proposal?: Types.Maybe<{ id: string }>
 }
 
-type ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment = {
-  __typename: 'UpdateChannelPayoutsProposalDetails'
-}
-
 export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SignalProposalDetails_Fragment
   | ProposalDetailsFields_RuntimeUpgradeProposalDetails_Fragment
@@ -1584,7 +1574,6 @@ export type ProposalDetailsFieldsFragment =
   | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
   | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
   | ProposalDetailsFields_VetoProposalDetails_Fragment
-  | ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment
 
 export type ProposalFieldsFragment = {
   id: string
@@ -1618,7 +1607,6 @@ export type ProposalFieldsFragment = {
     | ProposalDetailsFields_SetMembershipLeadInvitationQuotaProposalDetails_Fragment
     | ProposalDetailsFields_SetReferralCutProposalDetails_Fragment
     | ProposalDetailsFields_VetoProposalDetails_Fragment
-    | ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment
   creator: { id: string }
   proposalStatusUpdates: Array<{
     id: string
