@@ -67,8 +67,8 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
   await query.tryQueryWithTimeout(
     () => query.getChannelsCount(),
     (r) => assert.equal(r, 10_000),
-    9,
-    100 // 9 * 100 = 900s = 15 minutes timeout
+    10_000,
+    30 // 10s * 30 = 300s = 5 minutes timeout
   )
 
   // Create channel w/ some data objects
