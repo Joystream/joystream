@@ -16,9 +16,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: lint
       run: |
-        yarn install --frozen-lockfile
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
+        yarn build:packages
         yarn lint
 
   lint_osx:
@@ -35,7 +33,5 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: lint
       run: |
-        yarn install --frozen-lockfile
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
+        yarn build:packages
         yarn lint

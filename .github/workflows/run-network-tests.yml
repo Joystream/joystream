@@ -24,6 +24,7 @@ jobs:
         yarn install --frozen-lockfile
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
+        yarn workspace query-node-root build
         yarn workspace @joystream/cli build
         yarn workspace network-tests build
 
@@ -44,6 +45,7 @@ jobs:
         yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace @joystream/types build
         yarn workspace @joystream/metadata-protobuf build
+        yarn workspace query-node-root build
         yarn workspace @joystream/cli build
         yarn workspace network-tests build
 
@@ -175,6 +177,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace query-node-root build
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
@@ -208,6 +211,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn workspace @joystream/types build
           yarn workspace @joystream/metadata-protobuf build
+          yarn workspace query-node-root build
           yarn workspace @joystream/cli build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
