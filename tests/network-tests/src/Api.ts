@@ -885,8 +885,8 @@ export class Api {
     const debug = extendDebug('api-factory')
     debug(`assigning Well Known Councillors Account`)
     const newAccounts = memberIds.map((id) => {
-      const uri = `//Councillor//` + id.toString()
-      return this.createCustomKeyPair(uri).address
+      const uri = `Councillor//` + id.toString()
+      return this.createCustomKeyPair(uri, false).address
     })
     await Promise.all(
       memberIds.map(async (id, i) => {
