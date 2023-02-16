@@ -195,7 +195,8 @@ jobs:
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
-      - uses: actions/checkout@v3
+      - name: check out master repo
+        uses: actions/checkout@v3
         with:
           repository: Joystream/joystream
           ref: master
@@ -270,7 +271,11 @@ jobs:
     needs: [build_master_testing, build_images]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: check out master repo
+        uses: actions/checkout@v3
+        with:
+          repository: Joystream/joystream
+          ref: master
       - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
