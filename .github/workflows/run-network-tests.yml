@@ -191,7 +191,6 @@ jobs:
 
   build_master_testing:
     name: Build joystream node images for mainnet-testing
-    needs: tests_build_ubuntu
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz

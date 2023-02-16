@@ -177,8 +177,8 @@ function main {
     # 5. start node
     start_old_joystream_node
 
-    # wait 10 seconds
-    sleep 10
+    # wait 30 seconds
+    sleep 30
 
     ./run-test-scenario.sh runtimeUpgrade
 
