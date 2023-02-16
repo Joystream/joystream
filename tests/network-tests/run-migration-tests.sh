@@ -82,7 +82,7 @@ function start_old_joystream_node {
 }
 
 #######################################
-# Perform substrate forkless upgrade by replacing the runtime.wasm
+# Copy the new wasm to the data directory
 # Globals:
 #   TARGET_RUNTIME
 #   DATA_PATH
@@ -105,11 +105,7 @@ function set_new_runtime_wasm_path() {
 function fork_off_init() {
     # chain-spec-raw already existing
 
-    # RPC endpoint for live RUNTIME testnet
-    if [[ -z $WS_RPC_ENDPOINT ]]; then
-        export WS_RPC_ENDPOINT="wss://rpc.joystream.org:9944"
-    fi
-
+    # http endpoint where to download storage data
     if [[ -z $HTTP_RPC_ENDPOINT ]]; then
         export HTTP_RPC_ENDPOINT="http://mainnet-rpc-1.joystream.org:9933"
     fi
@@ -172,7 +168,7 @@ function main {
             echo >&2 "storage downloaded & dumped into the raw chainspec"
             # 3. set path to new runtime.wasm
             set_new_runtime_wasm_path
-            echo >&2 "new wasm path: ${RUNTIME_UPGRADE_TARGET_WASM_PATH}"
+            echo >&2 "new wasm path set"
             # 4. copy chainspec to disk
             export_chainspec_file_to_disk
             echo >&2 "chainspec exported"
@@ -181,8 +177,12 @@ function main {
     # 5. start node
     start_old_joystream_node
 
-    trap cleanup EXIT
+    # wait 10 seconds
+    sleep 10
+
     ./run-test-scenario.sh runtimeUpgrade
+
+    trap cleanup EXIT
 }
 
 # main entrypoint
