@@ -1,3 +1,12 @@
+### 1.0.1
+
+- Added missing `WorkingGroupBudgetFunded` event mapping
+
+### 1.0.0
+
+- First major version bump (`1.0.0`) due to mainnet release
+- Hydra dependencies updated from `4.0.0-alpha.9` to `4.0.0-alpha.11`
+
 ## Giza vs Olympia
 
 ### Event mappings
