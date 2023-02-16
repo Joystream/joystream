@@ -70,6 +70,7 @@
     "@types/node-cleanup": "^2.1.1",
     "@types/send": "^0.17.0",
     "@types/mime": "^3.0.1",
+    "@types/ws": "^5.1.2",
     "chai": "^4",
     "globby": "^10",
     "json-schema-to-typescript": "^10.1.4",
