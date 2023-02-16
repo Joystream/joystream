@@ -22,11 +22,18 @@ export function asValidatedMetadata<T>(metaClass: AnyMetadataClass<T>, anyObject
 
 // Return hex commitment for any app action
 export function generateAppActionCommitment(
+  nonce: number,
   creatorId: string,
   assets: Uint8Array,
-  rawAction: Bytes,
-  rawAppActionMetadata: Bytes
+  rawAction?: Bytes,
+  rawAppActionMetadata?: Bytes
 ): string {
-  const rawCommitment = [creatorId, u8aToHex(assets), u8aToHex(rawAction), u8aToHex(rawAppActionMetadata)]
+  const rawCommitment = [
+    nonce,
+    creatorId,
+    u8aToHex(assets),
+    ...(rawAction ? [u8aToHex(rawAction)] : []),
+    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
+  ]
   return stringToHex(JSON.stringify(rawCommitment))
 }
