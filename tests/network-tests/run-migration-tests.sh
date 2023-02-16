@@ -179,10 +179,10 @@ function main {
 
     # wait 30 seconds
     sleep 30
+    
+    trap cleanup EXIT
 
     ./run-test-scenario.sh runtimeUpgrade
-
-    trap cleanup EXIT
 }
 
 # main entrypoint
