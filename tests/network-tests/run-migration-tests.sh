@@ -180,10 +180,10 @@ function main {
     fi
     # 5. start node
     start_old_joystream_node
-    echo >&2 "mainnet node started"
+    echo >&2 "mainnet node starting"
 
-    # wait 30 seconds
-    sleep 30
+    # wait 1 minute
+    sleep 60
     
     trap cleanup EXIT
 
