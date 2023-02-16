@@ -1,6 +1,7 @@
 ### 1.0.0
 
 - Adds connected query-node's state information to the `/status` endpoint.
+- Bumps the major version of the node since it's now Joystream mainnet compatible.
 
 ### 0.2.0
 

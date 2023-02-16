@@ -1,6 +1,7 @@
 ### 3.1.0
 
 - Adds connected query-node's state information to the `/status` endpoint.
+- Refactors `QueryNodeApi` initialization (single instance instead of multiple ones) to have persistent apollo client caching, since previously a new client was being initialized for each request leading to entirely new cache object every time.
 
 ### 3.0.1
 

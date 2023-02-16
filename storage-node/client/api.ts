@@ -205,100 +205,6 @@ export interface VersionResponse {
 }
 
 /**
- * DefaultApi - axios parameter creator
- * @export
- */
-export const DefaultApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * Returns json object describing current node status.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        stateApiGetStatus: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/status`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * DefaultApi - functional programming interface
- * @export
- */
-export const DefaultApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = DefaultApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * Returns json object describing current node status.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async stateApiGetStatus(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<StatusResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.stateApiGetStatus(options);
-            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
-        },
-    }
-};
-
-/**
- * DefaultApi - factory interface
- * @export
- */
-export const DefaultApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = DefaultApiFp(configuration)
-    return {
-        /**
-         * Returns json object describing current node status.
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        stateApiGetStatus(options?: any): AxiosPromise<StatusResponse> {
-            return localVarFp.stateApiGetStatus(options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * DefaultApi - object-oriented interface
- * @export
- * @class DefaultApi
- * @extends {BaseAPI}
- */
-export class DefaultApi extends BaseAPI {
-    /**
-     * Returns json object describing current node status.
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof DefaultApi
-     */
-    public stateApiGetStatus(options?: AxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).stateApiGetStatus(options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
-
-/**
  * FilesApi - axios parameter creator
  * @export
  */
@@ -658,6 +564,35 @@ export const StateApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
+         * Returns json object describing current node status.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetStatus: async (options: AxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/status`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Returns server version.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -725,6 +660,15 @@ export const StateApiFp = function(configuration?: Configuration) {
             return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
         },
         /**
+         * Returns json object describing current node status.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async stateApiGetStatus(options?: AxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<StatusResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.stateApiGetStatus(options);
+            return createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration);
+        },
+        /**
          * Returns server version.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -767,6 +711,14 @@ export const StateApiFactory = function (configuration?: Configuration, basePath
          */
         stateApiGetLocalDataStats(options?: any): AxiosPromise<DataStatsResponse> {
             return localVarFp.stateApiGetLocalDataStats(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns json object describing current node status.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        stateApiGetStatus(options?: any): AxiosPromise<StatusResponse> {
+            return localVarFp.stateApiGetStatus(options).then((request) => request(axios, basePath));
         },
         /**
          * Returns server version.
@@ -815,6 +767,16 @@ export class StateApi extends BaseAPI {
      */
     public stateApiGetLocalDataStats(options?: AxiosRequestConfig) {
         return StateApiFp(this.configuration).stateApiGetLocalDataStats(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns json object describing current node status.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof StateApi
+     */
+    public stateApiGetStatus(options?: AxiosRequestConfig) {
+        return StateApiFp(this.configuration).stateApiGetStatus(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

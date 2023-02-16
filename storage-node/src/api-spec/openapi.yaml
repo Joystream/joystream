@@ -211,6 +211,8 @@ paths:
     get:
       operationId: stateApi.getStatus
       description: Returns json object describing current node status.
+      tags:
+        - state
       responses:
         200:
           description: OK
