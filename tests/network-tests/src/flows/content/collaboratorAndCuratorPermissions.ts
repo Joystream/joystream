@@ -10,6 +10,7 @@ import {
   CreateMembersFixture,
   CuratorGroupParams,
   UpdateChannelCollaboratorsFixture,
+  DeleteChannelWithVideosFixture,
 } from '../../fixtures/content'
 import { createJoystreamCli } from '../utils'
 
@@ -101,6 +102,10 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
     nextCollaborators
   )
   await new FixtureRunner(updateChannelCollaboratorsFixture).run()
+
+  // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
+  const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, [channelId])
+  await new FixtureRunner(deleteChannelWithVideosFixture).run()
 
   debug('Done')
 }

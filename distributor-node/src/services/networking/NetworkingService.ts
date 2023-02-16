@@ -13,6 +13,7 @@ import {
   DataObjectInfo,
   StorageNodeDownloadResponse,
   DownloadData,
+  StatusResponse,
 } from '../../types'
 import queue from 'queue'
 import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
@@ -434,6 +435,20 @@ export class NetworkingService {
         const message = err instanceof Error ? err.message : 'Unknown'
         this.logger.error(`${endpoint} check unexpected error: ${message}`, { endpoint, err, '@pauseFor': 900 })
       }
+    }
+  }
+
+  async getQueryNodeStatus(): Promise<StatusResponse['queryNodeStatus']> {
+    const qnState = await this.queryNodeApi.getQueryNodeState()
+
+    if (qnState === null) {
+      this.logger.error("Couldn't fetch the state from connected query-node")
+    }
+
+    return {
+      url: this.config.endpoints.queryNode,
+      chainHead: qnState?.chainHead || 0,
+      blocksProcessed: qnState?.lastCompleteBlock || 0,
     }
   }
 }

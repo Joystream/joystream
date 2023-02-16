@@ -91,6 +91,7 @@ import {
   LeaderSetEvent,
   WorkerStatusLeaving,
   MetaprotocolTransactionSuccessful,
+  BudgetFundedEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
@@ -1051,4 +1052,26 @@ async function processContentLeadRemarked(
 
   // unknown message type
   return inconsistentState('Unsupported message type in lead_remark action', decodedMetadata)
+}
+
+export async function workingGroups_WorkingGroupBudgetFunded({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [memberId, amount, rationale] = new WorkingGroups.WorkingGroupBudgetFundedEvent(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const budgetFundedEvent = new BudgetFundedEvent({
+    ...genericEventFields(event),
+    group,
+    member: new Membership({ id: memberId.toString() }),
+    amount,
+    rationale: bytesToString(rationale),
+  })
+
+  await store.save<BudgetFundedEvent>(budgetFundedEvent)
+
+  group.budget = group.budget.add(amount)
+
+  await store.save<WorkingGroup>(group)
 }

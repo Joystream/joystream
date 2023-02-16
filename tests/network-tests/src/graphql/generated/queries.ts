@@ -98,6 +98,7 @@ export type ChannelFieldsFragment = {
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   bannedMembers: Array<{ id: string }>
+  videos: Array<VideoFieldsFragment>
 }
 
 export type VideoCategoryFieldsFragment = { id: string; name?: Types.Maybe<string>; activeVideosCounter: number }
@@ -204,7 +205,7 @@ export type OwnedNftFieldsFragment = {
   transactionalStatus?: Types.Maybe<
     | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
-    | { __typename: 'TransactionalStatusBuyNow'; price: number }
+    | { __typename: 'TransactionalStatusBuyNow'; price: any }
   >
   transactionalStatusAuction?: Types.Maybe<{
     startsAtBlock: number
@@ -217,7 +218,7 @@ export type OwnedNftFieldsFragment = {
           extensionPeriod: number
           duration: number
           plannedEndAtBlock: number
-          minimalBidStep: number
+          minimalBidStep: any
         }
       | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
     bids: Array<BidFieldsFragment>
@@ -258,6 +259,10 @@ export type GetChannelsByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
+
+export type GetChannelsCountQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelsCountQuery = { channelsConnection: { totalCount: number } }
 
 export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
@@ -1320,41 +1325,6 @@ export type GetMemberVerificationStatusUpdatedEventsByEventIdsQuery = {
   memberVerificationStatusUpdatedEvents: Array<MemberVerificationStatusUpdatedEventFieldsFragment>
 }
 
-type MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment = {
-  __typename: 'MetaprotocolTransactionSuccessful'
-  commentCreated?: Types.Maybe<CommentFieldsFragment>
-  commentDeleted?: Types.Maybe<CommentFieldsFragment>
-}
-
-type MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment = {
-  __typename: 'MetaprotocolTransactionErrored'
-  message: string
-}
-
-export type MetaprotocolTransactionStatusFieldsFragment =
-  | MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment
-  | MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment
-
-export type MetaprotocolTransactionStatusEventFieldsFragment = {
-  id: string
-  createdAt: any
-  inBlock: number
-  network: Types.Network
-  inExtrinsic?: Types.Maybe<string>
-  indexInBlock: number
-  status:
-    | MetaprotocolTransactionStatusFields_MetaprotocolTransactionSuccessful_Fragment
-    | MetaprotocolTransactionStatusFields_MetaprotocolTransactionErrored_Fragment
-}
-
-export type GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables = Types.Exact<{
-  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
-}>
-
-export type GetMetaprotocolTransactionalStatusEventsByEventIdsQuery = {
-  metaprotocolTransactionStatusEvents: Array<MetaprotocolTransactionStatusEventFieldsFragment>
-}
-
 type ProposalStatusFields_ProposalStatusDeciding_Fragment = {
   __typename: 'ProposalStatusDeciding'
   proposalStatusUpdatedEvent?: Types.Maybe<{
@@ -1522,9 +1492,9 @@ type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
 
 type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
   __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
-  stakeAmount: number
+  stakeAmount: any
   unstakingPeriod: number
-  rewardPerBlock: number
+  rewardPerBlock: any
   metadata?: Types.Maybe<OpeningMetadataFieldsFragment>
   group?: Types.Maybe<{ id: string }>
 }
@@ -1537,31 +1507,31 @@ type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment =
 
 type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
   __typename: 'UpdateWorkingGroupBudgetProposalDetails'
-  amount: number
+  amount: any
   group?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
   __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
-  amount: number
+  amount: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'SlashWorkingGroupLeadProposalDetails'
-  amount: number
+  amount: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
   __typename: 'SetWorkingGroupLeadRewardProposalDetails'
-  newRewardPerBlock: number
+  newRewardPerBlock: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'TerminateWorkingGroupLeadProposalDetails'
-  slashingAmount?: Types.Maybe<number>
+  slashingAmount?: Types.Maybe<any>
   lead?: Types.Maybe<{ id: string }>
 }
 
@@ -1577,22 +1547,22 @@ type ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
 
 type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
   __typename: 'SetMembershipPriceProposalDetails'
-  newPrice: number
+  newPrice: any
 }
 
 type ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment = {
   __typename: 'SetCouncilBudgetIncrementProposalDetails'
-  newAmount: number
+  newAmount: any
 }
 
 type ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment = {
   __typename: 'SetCouncilorRewardProposalDetails'
-  newRewardPerBlock: number
+  newRewardPerBlock: any
 }
 
 type ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment = {
   __typename: 'SetInitialInvitationBalanceProposalDetails'
-  newInitialInvitationBalance: number
+  newInitialInvitationBalance: any
 }
 
 type ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment = {
@@ -2559,6 +2529,25 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export type BudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  amount: any
+  group: { name: string }
+  member: { id: string }
+}
+
+export type GetBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetFundedEventsByEventIdsQuery = { budgetFundedEvents: Array<BudgetFundedEventFieldsFragment> }
+
 export const AppFields = gql`
   fragment AppFields on App {
     id
@@ -2627,40 +2616,6 @@ export const StorageDataObjectFields = gql`
     storageBagId
   }
   ${DataObjectTypeFields}
-`
-export const ChannelFields = gql`
-  fragment ChannelFields on Channel {
-    id
-    activeVideosCounter
-    title
-    description
-    isPublic
-    language {
-      iso
-    }
-    isCensored
-    entryApp {
-      ...AppFields
-    }
-    ownerMember {
-      id
-    }
-    ownerCuratorGroup {
-      id
-    }
-    avatarPhoto {
-      ...StorageDataObjectFields
-    }
-    coverPhoto {
-      ...StorageDataObjectFields
-    }
-    bannedMembers {
-      id
-    }
-    rewardAccount
-  }
-  ${AppFields}
-  ${StorageDataObjectFields}
 `
 export const LicenseFields = gql`
   fragment LicenseFields on License {
@@ -2805,6 +2760,44 @@ export const VideoFields = gql`
   ${CommentFields}
   ${VideoReactionFields}
   ${VideoSubtitleFields}
+`
+export const ChannelFields = gql`
+  fragment ChannelFields on Channel {
+    id
+    activeVideosCounter
+    title
+    description
+    isPublic
+    language {
+      iso
+    }
+    isCensored
+    entryApp {
+      ...AppFields
+    }
+    ownerMember {
+      id
+    }
+    ownerCuratorGroup {
+      id
+    }
+    avatarPhoto {
+      ...StorageDataObjectFields
+    }
+    coverPhoto {
+      ...StorageDataObjectFields
+    }
+    bannedMembers {
+      id
+    }
+    rewardAccount
+    videos {
+      ...VideoFields
+    }
+  }
+  ${AppFields}
+  ${StorageDataObjectFields}
+  ${VideoFields}
 `
 export const BidFields = gql`
   fragment BidFields on Bid {
@@ -3867,37 +3860,6 @@ export const MemberVerificationStatusUpdatedEventFields = gql`
     }
     isVerified
   }
-`
-export const MetaprotocolTransactionStatusFields = gql`
-  fragment MetaprotocolTransactionStatusFields on MetaprotocolTransactionStatus {
-    __typename
-    ... on MetaprotocolTransactionSuccessful {
-      commentCreated {
-        ...CommentFields
-      }
-      commentDeleted {
-        ...CommentFields
-      }
-    }
-    ... on MetaprotocolTransactionErrored {
-      message
-    }
-  }
-  ${CommentFields}
-`
-export const MetaprotocolTransactionStatusEventFields = gql`
-  fragment MetaprotocolTransactionStatusEventFields on MetaprotocolTransactionStatusEvent {
-    id
-    createdAt
-    inBlock
-    network
-    inExtrinsic
-    indexInBlock
-    status {
-      ...MetaprotocolTransactionStatusFields
-    }
-  }
-  ${MetaprotocolTransactionStatusFields}
 `
 export const ApplicationFormQuestionFields = gql`
   fragment ApplicationFormQuestionFields on ApplicationFormQuestion {
@@ -4968,6 +4930,24 @@ export const BudgetSpendingEventFields = gql`
     rationale
   }
 `
+export const BudgetFundedEventFields = gql`
+  fragment BudgetFundedEventFields on BudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    group {
+      name
+    }
+    member {
+      id
+    }
+    rationale
+    amount
+  }
+`
 export const GetAppById = gql`
   query getAppById($id: ID!) {
     appByUniqueInput(where: { id: $id }) {
@@ -4999,6 +4979,13 @@ export const GetChannelsByIds = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetChannelsCount = gql`
+  query getChannelsCount {
+    channelsConnection {
+      totalCount
+    }
+  }
 `
 export const GetVideoCategoryById = gql`
   query getVideoCategoryById($id: ID!) {
@@ -5516,14 +5503,6 @@ export const GetMemberVerificationStatusUpdatedEventsByEventIds = gql`
   }
   ${MemberVerificationStatusUpdatedEventFields}
 `
-export const GetMetaprotocolTransactionalStatusEventsByEventIds = gql`
-  query getMetaprotocolTransactionalStatusEventsByEventIds($eventIds: [ID!]) {
-    metaprotocolTransactionStatusEvents(where: { id_in: $eventIds }) {
-      ...MetaprotocolTransactionStatusEventFields
-    }
-  }
-  ${MetaprotocolTransactionStatusEventFields}
-`
 export const GetProposalsByIds = gql`
   query getProposalsByIds($ids: [ID!]) {
     proposals(where: { id_in: $ids }) {
@@ -5881,4 +5860,12 @@ export const GetBudgetSpendingEventsByEventIds = gql`
     }
   }
   ${BudgetSpendingEventFields}
+`
+export const GetBudgetFundedEventsByEventIds = gql`
+  query getBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    budgetFundedEvents(where: { id_in: $eventIds }) {
+      ...BudgetFundedEventFields
+    }
+  }
+  ${BudgetFundedEventFields}
 `

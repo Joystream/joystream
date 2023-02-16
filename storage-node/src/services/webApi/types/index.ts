@@ -34,3 +34,6 @@ export type VersionResponse = components['schemas']['VersionResponse']
 export type DataStatsResponse = components['schemas']['DataStatsResponse']
 
 export type ErrorResponse = components['schemas']['ErrorResponse']
+
+// stateApi.getStatus
+export type StatusResponse = components['schemas']['StatusResponse']

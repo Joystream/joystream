@@ -54,6 +54,7 @@ typegen:
     - storageWorkingGroup.NewMissedRewardLevelReached
     - storageWorkingGroup.LeadRemarked
     - storageWorkingGroup.WorkerRemarked
+    - storageWorkingGroup.WorkingGroupBudgetFunded
     # Proposals
     - proposalsCodex.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
@@ -288,6 +289,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: storageWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: storageWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Forum working group
     - event: forumWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -337,6 +340,8 @@ mappings:
       handler: workingGroups_LeadRemarked
     - event: forumWorkingGroup.WorkerRemarked
       handler: workingGroups_WorkerRemarked
+    - event: forumWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Membership working group
     - event: membershipWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -382,6 +387,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: membershipWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: membershipWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Content directory working group
     - event: contentWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -429,6 +436,8 @@ mappings:
       handler: workingGroups_WorkerStartedLeaving
     - event: contentWorkingGroup.LeadRemarked
       handler: contentWorkingGroups_LeadRemarked
+    - event: contentWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group alpha
     - event: operationsWorkingGroupAlpha.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -474,6 +483,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: operationsWorkingGroupAlpha.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: operationsWorkingGroupAlpha.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group beta
     - event: operationsWorkingGroupBeta.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -519,6 +530,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: operationsWorkingGroupBeta.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: operationsWorkingGroupBeta.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group gamma
     - event: operationsWorkingGroupGamma.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -564,6 +577,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: operationsWorkingGroupGamma.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: operationsWorkingGroupGamma.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Distribution working group
     - event: distributionWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -609,6 +624,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: distributionWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: distributionWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Apps working group
     - event: appWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -654,6 +671,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: appWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: appWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Proposals
     - event: proposalsCodex.ProposalCreated
       handler: proposalsCodex_ProposalCreated
