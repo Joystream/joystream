@@ -1,3 +1,8 @@
+### 3.1.0
+
+- Adds connected query-node's state information to the `/status` endpoint.
+- Refactors `QueryNodeApi` initialization (single instance instead of multiple ones) to have persistent apollo client caching, since previously a new client was being initialized for each request leading to entirely new cache object every time.
+
 ### 3.0.1
 
 - **FIX** `getAllAssignedDataObjects`: The query to get all assigned objects during sync has been refactored into smaller queries. Each query will now provide no more than 1000 storage bag ids in the input to avoid hitting the request size limit (see: https://github.com/Joystream/joystream/issues/4615).
