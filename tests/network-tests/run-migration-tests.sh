@@ -158,6 +158,7 @@ function main {
         ../../query-node/start.sh
     fi
 
+    CONTAINER_ID=""
     export JOYSTREAM_NODE_TAG=${RUNTIME}
     if [ $TARGET_RUNTIME != $RUNTIME ]; then
         if ! [[ -f ${DATA_PATH}/chain-spec-raw.json ]]; then
@@ -179,7 +180,7 @@ function main {
         fi
     fi
     # 5. start node
-    start_old_joystream_node
+    CONTAINER_ID=$(start_old_joystream_node)
     echo >&2 "mainnet node starting"
 
     # wait 1 minute
