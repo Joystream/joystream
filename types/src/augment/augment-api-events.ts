@@ -1296,7 +1296,7 @@ declare module '@polkadot/api-base/types/events' {
       LeaderInvitationQuotaUpdated: AugmentedEvent<ApiType, [u32]>;
       MemberAccountsUpdated: AugmentedEvent<ApiType, [u64, Option<AccountId32>, Option<AccountId32>]>;
       MemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateMemberParameters, u32]>;
-      MemberInvited: AugmentedEvent<ApiType, [u64, PalletMembershipInviteMembershipParameters]>;
+      MemberInvited: AugmentedEvent<ApiType, [u64, PalletMembershipInviteMembershipParameters, u128]>;
       MemberProfileUpdated: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
       MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes, Option<ITuple<[AccountId32, u128]>>]>;
       MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters, u32]>;
