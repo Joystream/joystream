@@ -106,3 +106,14 @@ query getActiveStorageBucketOperatorsData($limit: Int!, $lastCursor: String) {
     ...StorageBucketsConnectionFields
   }
 }
+
+fragment QueryNodeStateFields on ProcessorState {
+  chainHead
+  lastCompleteBlock
+}
+
+subscription queryNodeState {
+  stateSubscription {
+    ...QueryNodeStateFields
+  }
+}

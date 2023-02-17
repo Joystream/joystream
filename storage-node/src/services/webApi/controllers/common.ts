@@ -4,6 +4,7 @@ import { BagIdValidationError } from '../../helpers/bagTypes'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ErrorResponse } from '../types'
+import { QueryNodeApi } from '../../../services/queryNode/api'
 
 /**
  * Dedicated error for the web api requests.
@@ -96,6 +97,11 @@ export type AppConfig = {
   api: ApiPromise
 
   /**
+   * Query Node Api
+   */
+  qnApi: QueryNodeApi
+
+  /**
    * KeyringPair instance
    */
   storageProviderAccount: KeyringPair
@@ -121,11 +127,6 @@ export type AppConfig = {
     version: string
     userAgent: string
   }
-
-  /**
-   * Query Node endpoint URL
-   */
-  queryNodeEndpoint: string
 
   /**
    * Enables uploading auth-schema validation

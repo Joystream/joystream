@@ -444,7 +444,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
 
   // Entities in the list should be removed in the order. i.e. all `Comment` relations
   // should be removed in the last after all other referencing relations has been removed
-  const referencingEntities: typeof BaseModel[] = [
+  const referencingEntities: { new (): BaseModel & { video: Partial<Video> } }[] = [
     VideoSubtitle,
     CommentReaction,
     VideoReaction,
@@ -462,7 +462,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
   ]
 
   const referencingRecords = await Promise.all(
-    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, videoId))
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity, videoId))
   )
 
   // beacuse of parentComment references among comments, their deletion must be handled saperately

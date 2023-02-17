@@ -73,6 +73,9 @@ fragment ChannelFields on Channel {
     id
   }
   rewardAccount
+  videos {
+    ...VideoFields
+  }
 }
 
 fragment VideoCategoryFields on VideoCategory {
@@ -329,6 +332,12 @@ query getChannelById($id: ID!) {
 query getChannelsByIds($ids: [ID!]) {
   channels(where: { id_in: $ids }) {
     ...ChannelFields
+  }
+}
+
+query getChannelsCount {
+  channelsConnection {
+    totalCount
   }
 }
 
