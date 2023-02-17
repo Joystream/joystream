@@ -455,6 +455,9 @@ import {
   GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery,
   GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables,
   GetChannelRewardClaimedAndWithdrawnEventsByEventIds,
+  GetChannelsCount,
+  GetChannelsCountQuery,
+  GetChannelsCountQueryVariables,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -1566,5 +1569,15 @@ export class QueryNodeApi {
       GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
       GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables
     >(GetMetaprotocolTransactionalStatusEventsByEventIds, { eventIds }, 'metaprotocolTransactionStatusEvents')
+  }
+
+  async getChannelsCount(): Promise<number> {
+    const result = await this.uniqueEntityQuery<GetChannelsCountQuery, GetChannelsCountQueryVariables>(
+      GetChannelsCount,
+      {},
+      'channelsConnection'
+    )
+    Utils.assert(result)
+    return result.totalCount
   }
 }

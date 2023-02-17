@@ -87,7 +87,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('inviting members', invitingMembers).after(coreJob).requires(groupBudgetSet)
+  job('inviting members', invitingMembers).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
