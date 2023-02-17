@@ -7,11 +7,13 @@ import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,
+  IContentLeadRemarked,
   IOpeningMetadata,
   IRemoveUpcomingOpening,
   ISetGroupMetadata,
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
+  ContentLeadRemarked,
   OpeningMetadata,
   RemarkMetadataAction,
   WorkingGroupMetadataAction,
@@ -29,6 +31,10 @@ import {
   getWorkingGroupByName,
   getWorkingGroupLead,
   invalidMetadata,
+  logger,
+  saveMetaprotocolTransactionSuccessful,
+  saveMetaprotocolTransactionErrored,
+  unexpectedData,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -85,12 +91,14 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
+  MetaprotocolTransactionSuccessful,
   BudgetFundedEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { moderatePost } from './forum'
+import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -689,6 +697,26 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
+export async function contentWorkingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [metadataBytes] = new WorkingGroups.LeadRemarkedEvent(event).params
+  try {
+    const metadata = deserializeMetadata(ContentLeadRemarked, metadataBytes)
+
+    const metaTransactionInfo = await processContentLeadRemarked(store, event, metadata)
+
+    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
+
+    // emit log event
+    logger.info('Content lead remarked', { metadata })
+  } catch (e) {
+    // emit log event
+    logger.info(`Bad metadata for content lead's remark`, { e })
+
+    // save metaprotocol info
+    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for content lead's remark`)
+  }
+}
+
 export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
   const [metadataByte] = new WorkingGroups.LeadRemarkedEvent(event).params
   const group = await getWorkingGroup(store, event)
@@ -1002,6 +1030,31 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   await store.save<WorkingGroup>(group)
 }
 
+async function processContentLeadRemarked(
+  store: DatabaseManager,
+  event: SubstrateEvent,
+  decodedMetadata: DecodedMetadataObject<IContentLeadRemarked> | null
+): Promise<Partial<MetaprotocolTransactionSuccessful>> {
+  if (decodedMetadata?.createApp) {
+    await processCreateAppMessage(store, event, decodedMetadata.createApp)
+
+    return {}
+  }
+  if (decodedMetadata?.updateApp) {
+    await processUpdateAppMessage(store, event, decodedMetadata.updateApp)
+
+    return {}
+  }
+  if (decodedMetadata?.deleteApp) {
+    await processDeleteAppMessage(store, event, decodedMetadata.deleteApp)
+
+    return {}
+  }
+
+  // unknown message type
+  return unexpectedData('Unsupported message type in lead_remark action', decodedMetadata)
+}
+
 export async function workingGroups_WorkingGroupBudgetFunded({
   store,
   event,
@@ -1019,7 +1072,7 @@ export async function workingGroups_WorkingGroupBudgetFunded({
 
   await store.save<BudgetFundedEvent>(budgetFundedEvent)
 
-  group.budget = new BN(group.budget).add(amount)
+  group.budget = group.budget.add(amount)
 
   await store.save<WorkingGroup>(group)
 }

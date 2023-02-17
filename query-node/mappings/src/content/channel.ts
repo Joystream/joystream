@@ -3,10 +3,11 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
+  IMakeChannelPayment,
+  AppAction,
   ChannelMetadata,
   ChannelModeratorRemarked,
   ChannelOwnerRemarked,
-  IMakeChannelPayment,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
 import {
@@ -62,6 +63,9 @@ import {
   processChannelMetadata,
   unsetAssetRelations,
   mapAgentPermission,
+  processAppActionMetadata,
+  generateAppActionCommitment,
+  u8aToBytes,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -69,12 +73,16 @@ import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/typ
 import BN from 'bn.js'
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
 import { BaseModel } from '@joystream/warthog'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
     new Content.ChannelCreatedEvent(event).params
+
+  // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
+  const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
 
   // create entity
   const channel = new Channel({
@@ -84,10 +92,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     videos: [],
     createdInBlock: event.blockNumber,
     activeVideosCounter: 0,
-
-    // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
-
+    ...channelOwner,
     rewardAccount: rewardAccount.toString(),
     channelStateBloatBond: channelStateBloatBond.amount,
   })
@@ -100,13 +105,37 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
-    await processChannelMetadata(ctx, channel, metadata, dataObjects)
+    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap(), { skipWarning: true })
+
+    if (appAction) {
+      const channelMetadataBytes = u8aToBytes(appAction.rawAction)
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
+      const appCommitment = generateAppActionCommitment(
+        channelOwner.ownerMember?.totalChannelsCreated ?? -1,
+        channelOwner.ownerMember?.id ? `m:${channelOwner.ownerMember.id}` : `c:${channelOwner.ownerCuratorGroup?.id}`,
+        channelCreationParameters.assets.toU8a(),
+        appAction.rawAction ? channelMetadataBytes : undefined,
+        appAction.metadata ? u8aToBytes(appAction.metadata) : undefined
+      )
+      await processAppActionMetadata(
+        ctx,
+        channel,
+        appAction,
+        { ownerNonce: channelOwner.ownerMember?.totalChannelsCreated, appCommitment },
+        (entity: Channel) => processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
+      )
+    } else {
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) ?? {}
+      await processChannelMetadata(ctx, channel, channelMetadata, dataObjects)
+    }
   }
 
   // save entity
   await store.save<Channel>(channel)
-
+  if (channelOwner.ownerMember) {
+    channelOwner.ownerMember.totalChannelsCreated += 1
+    await store.save<Membership>(channelOwner.ownerMember)
+  }
   // update channel permissions
   await updateChannelAgentsPermissions(store, channel, channelCreationParameters.collaborators)
 
@@ -140,8 +169,16 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, newDataObjects)
+    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes, { skipWarning: true })
+
+    if (newMetadata) {
+      const channelMetadataBytes = u8aToBytes(newMetadata.rawAction)
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
+      await processChannelMetadata(ctx, channel, channelMetadata ?? {}, newDataObjects)
+    } else {
+      const realNewMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes)
+      await processChannelMetadata(ctx, channel, realNewMetadata ?? {}, newDataObjects)
+    }
   }
 
   // save channel
@@ -299,7 +336,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
-
     const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
@@ -570,7 +606,7 @@ export async function processChannelPaymentFromMember(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: IMakeChannelPayment,
+  message: DecodedMetadataObject<IMakeChannelPayment>,
   [payeeAccount, amount]: [AccountId32, Balance]
 ): Promise<ChannelPaymentMadeEvent> {
   const member = await getMemberById(store, memberId)
@@ -583,7 +619,7 @@ export async function processChannelPaymentFromMember(
   }
 
   // Get payment context from the metadata
-  const getPaymentContext = async (msg: IMakeChannelPayment) => {
+  const getPaymentContext = async (msg: DecodedMetadataObject<IMakeChannelPayment>) => {
     if (msg.videoId) {
       const paymentContext = new PaymentContextVideo()
       const video = await store.get(Video, {

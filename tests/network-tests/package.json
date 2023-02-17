@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
-    "@joystream/distributor-node-client": "^0.2.0",
+    "@joystream/distributor-node-client": "^1.0.0",
     "@joystream/types": "^0.20.6",
     "@polkadot/api": "8.9.1",
     "@polkadot/keyring": "9.5.1",

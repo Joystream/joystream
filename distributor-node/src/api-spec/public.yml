@@ -166,6 +166,7 @@ components:
         - storageUsed
         - uptime
         - downloadsInProgress
+        - queryNodeStatus
       properties:
         id:
           type: string
@@ -186,6 +187,21 @@ components:
         downloadsInProgress:
           type: integer
           minimum: 0
+        queryNodeStatus:
+          type: object
+          required:
+            - 'url'
+            - 'chainHead'
+            - 'blocksProcessed'
+          properties:
+            url:
+              type: string
+            chainHead:
+              type: integer
+              minimum: 0
+            blocksProcessed:
+              type: integer
+              minimum: 0
     BucketsResponse:
       oneOf:
         - type: object
