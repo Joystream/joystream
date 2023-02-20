@@ -13,11 +13,6 @@ export async function processCreateAppMessage(
 ): Promise<void> {
   const { name, appMetadata } = metadata
 
-  // memberId is required for MemberRemark, but not for LeadRemark
-  if (event.method === 'MemberRemarked' && !memberId) {
-    inconsistentState("memberId wasn't provided")
-  }
-
   const appId = `${event.blockNumber}-${event.indexInBlock}`
 
   const isAppExists = await store.get(App, {
@@ -52,7 +47,6 @@ export async function processCreateAppMessage(
 
 export async function processUpdateAppMessage(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IUpdateApp>,
   memberId: string
 ): Promise<void> {
@@ -90,7 +84,6 @@ export async function processUpdateAppMessage(
 
 export async function processDeleteAppMessage(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IDeleteApp>,
   memberId: string
 ): Promise<void> {
