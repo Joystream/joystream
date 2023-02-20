@@ -301,6 +301,7 @@ export class PublicApiController {
       storageUsed: this.content.usedSpace,
       uptime: Math.floor(process.uptime()),
       downloadsInProgress: this.stateCache.getPendingDownloadsCount(),
+      queryNodeStatus: await this.networking.getQueryNodeStatus(),
     }
     res.status(200).json(data)
   }

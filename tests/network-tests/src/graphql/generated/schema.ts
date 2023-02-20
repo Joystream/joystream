@@ -1211,7 +1211,7 @@ export type AuctionTypeEnglish = {
   /** Block when auction is supposed to end */
   plannedEndAtBlock: Scalars['Int']
   /** Minimal step between auction bids */
-  minimalBidStep: Scalars['Float']
+  minimalBidStep: Scalars['BigInt']
 }
 
 export type AuctionTypeOpen = {
@@ -2461,7 +2461,7 @@ export type BountyEntryStatusRejected = {
 }
 
 export type BountyEntryStatusWinner = {
-  reward: Scalars['Float']
+  reward: Scalars['BigInt']
 }
 
 export type BountyEntryStatusWithdrawn = {
@@ -2657,16 +2657,16 @@ export type BountyFundedEventWhereUniqueInput = {
 
 export type BountyFundingLimited = {
   /** Minimum amount of funds for a successful bounty */
-  minFundingAmount: Scalars['Float']
+  minFundingAmount: Scalars['BigInt']
   /** Upper boundary for a bounty funding */
-  maxFundingAmount: Scalars['Float']
+  maxFundingAmount: Scalars['BigInt']
   /** Maximum allowed funding period */
   fundingPeriod: Scalars['Int']
 }
 
 export type BountyFundingPerpetual = {
   /** Desired funding */
-  target: Scalars['Float']
+  target: Scalars['BigInt']
 }
 
 export type BountyFundingType = BountyFundingPerpetual | BountyFundingLimited
@@ -3463,6 +3463,160 @@ export type BudgetBalanceSetEventWhereInput = {
 }
 
 export type BudgetBalanceSetEventWhereUniqueInput = {
+  id: Scalars['ID']
+}
+
+export type BudgetFundedEvent = Event &
+  BaseGraphQlObject & {
+    id: Scalars['ID']
+    createdAt: Scalars['DateTime']
+    createdById: Scalars['ID']
+    updatedAt?: Maybe<Scalars['DateTime']>
+    updatedById?: Maybe<Scalars['ID']>
+    deletedAt?: Maybe<Scalars['DateTime']>
+    deletedById?: Maybe<Scalars['ID']>
+    version: Scalars['Int']
+    /** Hash of the extrinsic which caused the event to be emitted */
+    inExtrinsic?: Maybe<Scalars['String']>
+    /** Blocknumber of the block in which the event was emitted. */
+    inBlock: Scalars['Int']
+    /** Network the block was produced in */
+    network: Network
+    /** Index of event in block from which it was emitted. */
+    indexInBlock: Scalars['Int']
+    /** Filtering options for interface implementers */
+    type?: Maybe<EventTypeOptions>
+    group: WorkingGroup
+    groupId: Scalars['String']
+    member: Membership
+    memberId: Scalars['String']
+    /** Rationale provided by the member */
+    rationale: Scalars['String']
+    /** Amount added to the current budget */
+    amount: Scalars['BigInt']
+  }
+
+export type BudgetFundedEventConnection = {
+  totalCount: Scalars['Int']
+  edges: Array<BudgetFundedEventEdge>
+  pageInfo: PageInfo
+}
+
+export type BudgetFundedEventCreateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock: Scalars['Float']
+  network: Network
+  indexInBlock: Scalars['Float']
+  group: Scalars['ID']
+  member: Scalars['ID']
+  rationale: Scalars['String']
+  amount: Scalars['String']
+}
+
+export type BudgetFundedEventEdge = {
+  node: BudgetFundedEvent
+  cursor: Scalars['String']
+}
+
+export enum BudgetFundedEventOrderByInput {
+  CreatedAtAsc = 'createdAt_ASC',
+  CreatedAtDesc = 'createdAt_DESC',
+  UpdatedAtAsc = 'updatedAt_ASC',
+  UpdatedAtDesc = 'updatedAt_DESC',
+  DeletedAtAsc = 'deletedAt_ASC',
+  DeletedAtDesc = 'deletedAt_DESC',
+  InExtrinsicAsc = 'inExtrinsic_ASC',
+  InExtrinsicDesc = 'inExtrinsic_DESC',
+  InBlockAsc = 'inBlock_ASC',
+  InBlockDesc = 'inBlock_DESC',
+  NetworkAsc = 'network_ASC',
+  NetworkDesc = 'network_DESC',
+  IndexInBlockAsc = 'indexInBlock_ASC',
+  IndexInBlockDesc = 'indexInBlock_DESC',
+  GroupAsc = 'group_ASC',
+  GroupDesc = 'group_DESC',
+  MemberAsc = 'member_ASC',
+  MemberDesc = 'member_DESC',
+  RationaleAsc = 'rationale_ASC',
+  RationaleDesc = 'rationale_DESC',
+  AmountAsc = 'amount_ASC',
+  AmountDesc = 'amount_DESC',
+}
+
+export type BudgetFundedEventUpdateInput = {
+  inExtrinsic?: Maybe<Scalars['String']>
+  inBlock?: Maybe<Scalars['Float']>
+  network?: Maybe<Network>
+  indexInBlock?: Maybe<Scalars['Float']>
+  group?: Maybe<Scalars['ID']>
+  member?: Maybe<Scalars['ID']>
+  rationale?: Maybe<Scalars['String']>
+  amount?: Maybe<Scalars['String']>
+}
+
+export type BudgetFundedEventWhereInput = {
+  id_eq?: Maybe<Scalars['ID']>
+  id_in?: Maybe<Array<Scalars['ID']>>
+  createdAt_eq?: Maybe<Scalars['DateTime']>
+  createdAt_lt?: Maybe<Scalars['DateTime']>
+  createdAt_lte?: Maybe<Scalars['DateTime']>
+  createdAt_gt?: Maybe<Scalars['DateTime']>
+  createdAt_gte?: Maybe<Scalars['DateTime']>
+  createdById_eq?: Maybe<Scalars['ID']>
+  createdById_in?: Maybe<Array<Scalars['ID']>>
+  updatedAt_eq?: Maybe<Scalars['DateTime']>
+  updatedAt_lt?: Maybe<Scalars['DateTime']>
+  updatedAt_lte?: Maybe<Scalars['DateTime']>
+  updatedAt_gt?: Maybe<Scalars['DateTime']>
+  updatedAt_gte?: Maybe<Scalars['DateTime']>
+  updatedById_eq?: Maybe<Scalars['ID']>
+  updatedById_in?: Maybe<Array<Scalars['ID']>>
+  deletedAt_all?: Maybe<Scalars['Boolean']>
+  deletedAt_eq?: Maybe<Scalars['DateTime']>
+  deletedAt_lt?: Maybe<Scalars['DateTime']>
+  deletedAt_lte?: Maybe<Scalars['DateTime']>
+  deletedAt_gt?: Maybe<Scalars['DateTime']>
+  deletedAt_gte?: Maybe<Scalars['DateTime']>
+  deletedById_eq?: Maybe<Scalars['ID']>
+  deletedById_in?: Maybe<Array<Scalars['ID']>>
+  inExtrinsic_eq?: Maybe<Scalars['String']>
+  inExtrinsic_contains?: Maybe<Scalars['String']>
+  inExtrinsic_startsWith?: Maybe<Scalars['String']>
+  inExtrinsic_endsWith?: Maybe<Scalars['String']>
+  inExtrinsic_in?: Maybe<Array<Scalars['String']>>
+  inBlock_eq?: Maybe<Scalars['Int']>
+  inBlock_gt?: Maybe<Scalars['Int']>
+  inBlock_gte?: Maybe<Scalars['Int']>
+  inBlock_lt?: Maybe<Scalars['Int']>
+  inBlock_lte?: Maybe<Scalars['Int']>
+  inBlock_in?: Maybe<Array<Scalars['Int']>>
+  network_eq?: Maybe<Network>
+  network_in?: Maybe<Array<Network>>
+  indexInBlock_eq?: Maybe<Scalars['Int']>
+  indexInBlock_gt?: Maybe<Scalars['Int']>
+  indexInBlock_gte?: Maybe<Scalars['Int']>
+  indexInBlock_lt?: Maybe<Scalars['Int']>
+  indexInBlock_lte?: Maybe<Scalars['Int']>
+  indexInBlock_in?: Maybe<Array<Scalars['Int']>>
+  rationale_eq?: Maybe<Scalars['String']>
+  rationale_contains?: Maybe<Scalars['String']>
+  rationale_startsWith?: Maybe<Scalars['String']>
+  rationale_endsWith?: Maybe<Scalars['String']>
+  rationale_in?: Maybe<Array<Scalars['String']>>
+  amount_eq?: Maybe<Scalars['BigInt']>
+  amount_gt?: Maybe<Scalars['BigInt']>
+  amount_gte?: Maybe<Scalars['BigInt']>
+  amount_lt?: Maybe<Scalars['BigInt']>
+  amount_lte?: Maybe<Scalars['BigInt']>
+  amount_in?: Maybe<Array<Scalars['BigInt']>>
+  group?: Maybe<WorkingGroupWhereInput>
+  member?: Maybe<MembershipWhereInput>
+  AND?: Maybe<Array<BudgetFundedEventWhereInput>>
+  OR?: Maybe<Array<BudgetFundedEventWhereInput>>
+  NOT?: Maybe<Array<BudgetFundedEventWhereInput>>
+}
+
+export type BudgetFundedEventWhereUniqueInput = {
   id: Scalars['ID']
 }
 
@@ -8539,14 +8693,14 @@ export type CouncilStage = CouncilStageAnnouncing | CouncilStageElection | Counc
 
 export type CouncilStageAnnouncing = {
   /** Number of candidates aspiring to be elected as council members. */
-  candidatesCount: Scalars['Float']
+  candidatesCount: Scalars['BigInt']
   /** Block number at which the stage ends */
   endsAt: Scalars['Int']
 }
 
 export type CouncilStageElection = {
   /** Number of candidates aspiring to be elected as council members. */
-  candidatesCount: Scalars['Float']
+  candidatesCount: Scalars['BigInt']
 }
 
 export type CouncilStageIdle = {
@@ -8790,11 +8944,11 @@ export type CreateWorkingGroupLeadOpeningProposalDetails = {
   /** The opening metadata */
   metadata?: Maybe<WorkingGroupOpeningMetadata>
   /** Min. application / role stake amount */
-  stakeAmount: Scalars['Float']
+  stakeAmount: Scalars['BigInt']
   /** Role stake unstaking period in blocks */
   unstakingPeriod: Scalars['Int']
   /** Initial workers' reward per block */
-  rewardPerBlock: Scalars['Float']
+  rewardPerBlock: Scalars['BigInt']
   /** Related working group */
   group?: Maybe<WorkingGroup>
 }
@@ -9184,7 +9338,7 @@ export type DecreaseWorkingGroupLeadStakeProposalDetails = {
   /** The lead that should be affected */
   lead?: Maybe<Worker>
   /** Amount to decrease the stake by */
-  amount: Scalars['Float']
+  amount: Scalars['BigInt']
 }
 
 export type DeleteResponse = {
@@ -10473,6 +10627,7 @@ export enum EventTypeOptions {
   BountyRemovedEvent = 'BountyRemovedEvent',
   BountyVetoedEvent = 'BountyVetoedEvent',
   BudgetBalanceSetEvent = 'BudgetBalanceSetEvent',
+  BudgetFundedEvent = 'BudgetFundedEvent',
   BudgetIncrementUpdatedEvent = 'BudgetIncrementUpdatedEvent',
   BudgetRefillEvent = 'BudgetRefillEvent',
   BudgetRefillPlannedEvent = 'BudgetRefillPlannedEvent',
@@ -13672,6 +13827,7 @@ export type Membership = BaseGraphQlObject & {
   bountyoracle?: Maybe<Array<Bounty>>
   bountycontributioncontributor?: Maybe<Array<BountyContribution>>
   bountyentryworker?: Maybe<Array<BountyEntry>>
+  budgetfundedeventmember?: Maybe<Array<BudgetFundedEvent>>
   buynowcanceledeventownerMember?: Maybe<Array<BuyNowCanceledEvent>>
   buynowpriceupdatedeventownerMember?: Maybe<Array<BuyNowPriceUpdatedEvent>>
   commentauthor?: Maybe<Array<Comment>>
@@ -14560,6 +14716,9 @@ export type MembershipWhereInput = {
   bountyentryworker_none?: Maybe<BountyEntryWhereInput>
   bountyentryworker_some?: Maybe<BountyEntryWhereInput>
   bountyentryworker_every?: Maybe<BountyEntryWhereInput>
+  budgetfundedeventmember_none?: Maybe<BudgetFundedEventWhereInput>
+  budgetfundedeventmember_some?: Maybe<BudgetFundedEventWhereInput>
+  budgetfundedeventmember_every?: Maybe<BudgetFundedEventWhereInput>
   buynowcanceledeventownerMember_none?: Maybe<BuyNowCanceledEventWhereInput>
   buynowcanceledeventownerMember_some?: Maybe<BuyNowCanceledEventWhereInput>
   buynowcanceledeventownerMember_every?: Maybe<BuyNowCanceledEventWhereInput>
@@ -20439,6 +20598,9 @@ export type Query = {
   budgetBalanceSetEvents: Array<BudgetBalanceSetEvent>
   budgetBalanceSetEventByUniqueInput?: Maybe<BudgetBalanceSetEvent>
   budgetBalanceSetEventsConnection: BudgetBalanceSetEventConnection
+  budgetFundedEvents: Array<BudgetFundedEvent>
+  budgetFundedEventByUniqueInput?: Maybe<BudgetFundedEvent>
+  budgetFundedEventsConnection: BudgetFundedEventConnection
   budgetIncrementUpdatedEvents: Array<BudgetIncrementUpdatedEvent>
   budgetIncrementUpdatedEventByUniqueInput?: Maybe<BudgetIncrementUpdatedEvent>
   budgetIncrementUpdatedEventsConnection: BudgetIncrementUpdatedEventConnection
@@ -21467,6 +21629,26 @@ export type QueryBudgetBalanceSetEventsConnectionArgs = {
   before?: Maybe<Scalars['String']>
   where?: Maybe<BudgetBalanceSetEventWhereInput>
   orderBy?: Maybe<Array<BudgetBalanceSetEventOrderByInput>>
+}
+
+export type QueryBudgetFundedEventsArgs = {
+  offset?: Maybe<Scalars['Int']>
+  limit?: Maybe<Scalars['Int']>
+  where?: Maybe<BudgetFundedEventWhereInput>
+  orderBy?: Maybe<Array<BudgetFundedEventOrderByInput>>
+}
+
+export type QueryBudgetFundedEventByUniqueInputArgs = {
+  where: BudgetFundedEventWhereUniqueInput
+}
+
+export type QueryBudgetFundedEventsConnectionArgs = {
+  first?: Maybe<Scalars['Int']>
+  after?: Maybe<Scalars['String']>
+  last?: Maybe<Scalars['Int']>
+  before?: Maybe<Scalars['String']>
+  where?: Maybe<BudgetFundedEventWhereInput>
+  orderBy?: Maybe<Array<BudgetFundedEventOrderByInput>>
 }
 
 export type QueryBudgetIncrementUpdatedEventsArgs = {
@@ -26536,17 +26718,17 @@ export type SearchSearchResult = Channel | Video
 
 export type SetCouncilBudgetIncrementProposalDetails = {
   /** New (proposed) amount the council budget should be increased by per each budget period */
-  newAmount: Scalars['Float']
+  newAmount: Scalars['BigInt']
 }
 
 export type SetCouncilorRewardProposalDetails = {
   /** New (proposed) council members' reward per block */
-  newRewardPerBlock: Scalars['Float']
+  newRewardPerBlock: Scalars['BigInt']
 }
 
 export type SetInitialInvitationBalanceProposalDetails = {
   /** The new (proposed) initial balance credited to controller account of an invitee (locked for transaction fee payments only) */
-  newInitialInvitationBalance: Scalars['Float']
+  newInitialInvitationBalance: Scalars['BigInt']
 }
 
 export type SetInitialInvitationCountProposalDetails = {
@@ -26566,7 +26748,7 @@ export type SetMembershipLeadInvitationQuotaProposalDetails = {
 
 export type SetMembershipPriceProposalDetails = {
   /** New (proposed) membership price */
-  newPrice: Scalars['Float']
+  newPrice: Scalars['BigInt']
 }
 
 export type SetReferralCutProposalDetails = {
@@ -26578,7 +26760,7 @@ export type SetWorkingGroupLeadRewardProposalDetails = {
   /** The lead that should be affected */
   lead?: Maybe<Worker>
   /** Lead's new (proposed) reward per block */
-  newRewardPerBlock: Scalars['Float']
+  newRewardPerBlock: Scalars['BigInt']
 }
 
 export type SignalProposalDetails = {
@@ -26590,7 +26772,7 @@ export type SlashWorkingGroupLeadProposalDetails = {
   /** The lead that should be affected */
   lead?: Maybe<Worker>
   /** Amount to slash the stake by */
-  amount: Scalars['Float']
+  amount: Scalars['BigInt']
 }
 
 export type StakeDecreasedEvent = Event &
@@ -28269,7 +28451,7 @@ export type TerminateWorkingGroupLeadProposalDetails = {
   /** Lead that's supposed to be terminated */
   lead?: Maybe<Worker>
   /** Optionally - the amount to slash the lead's stake by */
-  slashingAmount?: Maybe<Scalars['Float']>
+  slashingAmount?: Maybe<Scalars['BigInt']>
 }
 
 export type TerminatedLeaderEvent = Event &
@@ -29308,7 +29490,7 @@ export type TransactionalStatus =
   | TransactionalStatusBuyNow
 
 export type TransactionalStatusBuyNow = {
-  price: Scalars['Float']
+  price: Scalars['BigInt']
 }
 
 export type TransactionalStatusIdle = {
@@ -29320,7 +29502,7 @@ export type TransactionalStatusInitiatedOfferToMember = {
   /** Member identifier */
   memberId: Scalars['Int']
   /** Whether member should pay to accept offer (optional) */
-  price?: Maybe<Scalars['Float']>
+  price?: Maybe<Scalars['BigInt']>
 }
 
 export type TransactionalStatusUpdate = BaseGraphQlObject & {
@@ -29562,7 +29744,7 @@ export type UpcomingWorkingGroupOpeningWhereUniqueInput = {
 
 export type UpdateWorkingGroupBudgetProposalDetails = {
   /** Amount to increase / decrease the working group budget by (will be decudted from / appended to council budget accordingly) */
-  amount: Scalars['Float']
+  amount: Scalars['BigInt']
   /** Related working group */
   group?: Maybe<WorkingGroup>
 }
@@ -33618,6 +33800,7 @@ export type WorkingGroup = BaseGraphQlObject & {
   budget: Scalars['BigInt']
   applicationwithdrawneventgroup?: Maybe<Array<ApplicationWithdrawnEvent>>
   appliedonopeningeventgroup?: Maybe<Array<AppliedOnOpeningEvent>>
+  budgetfundedeventgroup?: Maybe<Array<BudgetFundedEvent>>
   budgetseteventgroup?: Maybe<Array<BudgetSetEvent>>
   budgetspendingeventgroup?: Maybe<Array<BudgetSpendingEvent>>
   budgetupdatedeventgroup?: Maybe<Array<BudgetUpdatedEvent>>
@@ -34379,6 +34562,9 @@ export type WorkingGroupWhereInput = {
   appliedonopeningeventgroup_none?: Maybe<AppliedOnOpeningEventWhereInput>
   appliedonopeningeventgroup_some?: Maybe<AppliedOnOpeningEventWhereInput>
   appliedonopeningeventgroup_every?: Maybe<AppliedOnOpeningEventWhereInput>
+  budgetfundedeventgroup_none?: Maybe<BudgetFundedEventWhereInput>
+  budgetfundedeventgroup_some?: Maybe<BudgetFundedEventWhereInput>
+  budgetfundedeventgroup_every?: Maybe<BudgetFundedEventWhereInput>
   budgetseteventgroup_none?: Maybe<BudgetSetEventWhereInput>
   budgetseteventgroup_some?: Maybe<BudgetSetEventWhereInput>
   budgetseteventgroup_every?: Maybe<BudgetSetEventWhereInput>

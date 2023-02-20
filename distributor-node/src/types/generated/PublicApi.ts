@@ -34,6 +34,11 @@ export interface components {
       'storageUsed': number
       'uptime': number
       'downloadsInProgress': number
+      'queryNodeStatus': {
+        'url': string
+        'chainHead': number
+        'blocksProcessed': number
+      }
     }
     'BucketsResponse':
       | {

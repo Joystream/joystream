@@ -172,7 +172,7 @@ export type OwnedNftFieldsFragment = {
   transactionalStatus?: Types.Maybe<
     | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
-    | { __typename: 'TransactionalStatusBuyNow'; price: number }
+    | { __typename: 'TransactionalStatusBuyNow'; price: any }
   >
   transactionalStatusAuction?: Types.Maybe<{
     startsAtBlock: number
@@ -185,7 +185,7 @@ export type OwnedNftFieldsFragment = {
           extensionPeriod: number
           duration: number
           plannedEndAtBlock: number
-          minimalBidStep: number
+          minimalBidStep: any
         }
       | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
     bids: Array<BidFieldsFragment>
@@ -1459,9 +1459,9 @@ type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
 
 type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
   __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
-  stakeAmount: number
+  stakeAmount: any
   unstakingPeriod: number
-  rewardPerBlock: number
+  rewardPerBlock: any
   metadata?: Types.Maybe<OpeningMetadataFieldsFragment>
   group?: Types.Maybe<{ id: string }>
 }
@@ -1474,31 +1474,31 @@ type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment =
 
 type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
   __typename: 'UpdateWorkingGroupBudgetProposalDetails'
-  amount: number
+  amount: any
   group?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
   __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
-  amount: number
+  amount: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'SlashWorkingGroupLeadProposalDetails'
-  amount: number
+  amount: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
   __typename: 'SetWorkingGroupLeadRewardProposalDetails'
-  newRewardPerBlock: number
+  newRewardPerBlock: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'TerminateWorkingGroupLeadProposalDetails'
-  slashingAmount?: Types.Maybe<number>
+  slashingAmount?: Types.Maybe<any>
   lead?: Types.Maybe<{ id: string }>
 }
 
@@ -1514,22 +1514,22 @@ type ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
 
 type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
   __typename: 'SetMembershipPriceProposalDetails'
-  newPrice: number
+  newPrice: any
 }
 
 type ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment = {
   __typename: 'SetCouncilBudgetIncrementProposalDetails'
-  newAmount: number
+  newAmount: any
 }
 
 type ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment = {
   __typename: 'SetCouncilorRewardProposalDetails'
-  newRewardPerBlock: number
+  newRewardPerBlock: any
 }
 
 type ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment = {
   __typename: 'SetInitialInvitationBalanceProposalDetails'
-  newInitialInvitationBalance: number
+  newInitialInvitationBalance: any
 }
 
 type ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment = {
@@ -2495,6 +2495,25 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
+
+export type BudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  amount: any
+  group: { name: string }
+  member: { id: string }
+}
+
+export type GetBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetFundedEventsByEventIdsQuery = { budgetFundedEvents: Array<BudgetFundedEventFieldsFragment> }
 
 export const DataObjectTypeFields = gql`
   fragment DataObjectTypeFields on DataObjectType {
@@ -4848,6 +4867,24 @@ export const BudgetSpendingEventFields = gql`
     rationale
   }
 `
+export const BudgetFundedEventFields = gql`
+  fragment BudgetFundedEventFields on BudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    group {
+      name
+    }
+    member {
+      id
+    }
+    rationale
+    amount
+  }
+`
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {
     channelByUniqueInput(where: { id: $id }) {
@@ -5744,4 +5781,12 @@ export const GetBudgetSpendingEventsByEventIds = gql`
     }
   }
   ${BudgetSpendingEventFields}
+`
+export const GetBudgetFundedEventsByEventIds = gql`
+  query getBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    budgetFundedEvents(where: { id_in: $eventIds }) {
+      ...BudgetFundedEventFields
+    }
+  }
+  ${BudgetFundedEventFields}
 `
