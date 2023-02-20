@@ -1019,7 +1019,7 @@ export async function workingGroups_WorkingGroupBudgetFunded({
 
   await store.save<BudgetFundedEvent>(budgetFundedEvent)
 
-  group.budget = new BN(group.budget).add(amount)
+  group.budget = group.budget.add(amount)
 
   await store.save<WorkingGroup>(group)
 }

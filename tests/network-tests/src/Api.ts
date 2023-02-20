@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option, Bytes } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -62,7 +62,16 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
+import {
+  CreateApp,
+  AppAction,
+  CreateVideoCategory,
+  DeleteApp,
+  IAppAction,
+  IAppMetadata,
+  MemberRemarked,
+  UpdateApp,
+} from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -758,22 +767,24 @@ export class Api {
       distributionBucketFamilyId: number
       distributionBucketIndex: number
     }[],
-    memberControllerAccount?: string
+    memberControllerAccount?: string,
+    channelMeta?: Bytes
   ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
     // Create a channel without any assets
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
       {
         assets: null,
-        meta: null,
+        meta: channelMeta ?? null,
         storageBuckets,
         distributionBuckets,
+        expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectPerMegabyteFee(),
+        expectedChannelStateBloatBond: await this.api.query.content.channelStateBloatBondValue(),
       }
     )
 
@@ -784,23 +795,86 @@ export class Api {
   }
 
   // Create a mock video, throws on failure
-  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+  async createMockVideo(
+    memberId: number,
+    channelId: number,
+    memberControllerAccount?: string,
+    videoMeta?: IAppAction
+  ): Promise<VideoId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
     // Create a video without any assets
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
       assets: null,
-      meta: null,
+      meta: videoMeta ? Utils.metadataToBytes(AppAction, videoMeta) : null,
+      storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
+      expectedVideoStateBloatBond: await this.getVideoStateBloatBond(),
+      expectedDataObjectStateBloatBond: await this.getDataObjectStateBloatBond(),
     })
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)
 
     const event = this.getEvent(result.events, 'content', 'VideoCreated')
     return event.data[2]
+  }
+
+  async createApp(name: string, appMetadata: IAppMetadata, memberId: u64): Promise<ISubmittableResult> {
+    const account = await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!account) {
+      throw new Error('invalid account')
+    }
+    const meta = new MemberRemarked({
+      createApp: new CreateApp({
+        name,
+        appMetadata,
+      }),
+    })
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
+      account.toString()
+    )
+  }
+
+  async updateApp(appId: string, appMetadata: IAppMetadata, memberId: u64): Promise<ISubmittableResult> {
+    const account = await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!account) {
+      throw new Error('invalid account')
+    }
+
+    const meta = new MemberRemarked({
+      updateApp: new UpdateApp({
+        appId,
+        appMetadata,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
+      account.toString()
+    )
+  }
+
+  async deleteApp(appId: string, memberId: u64): Promise<ISubmittableResult> {
+    const account = await this.getMemberControllerAccount(memberId.toNumber())
+
+    if (!account) {
+      throw new Error('invalid account')
+    }
+
+    const meta = new MemberRemarked({
+      deleteApp: new DeleteApp({
+        appId,
+      }),
+    })
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
+      account.toString()
+    )
   }
 
   async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {

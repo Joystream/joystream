@@ -120,6 +120,37 @@ export interface StatusResponse {
      * @memberof StatusResponse
      */
     'downloadsInProgress': number;
+    /**
+     * 
+     * @type {StatusResponseQueryNodeStatus}
+     * @memberof StatusResponse
+     */
+    'queryNodeStatus': StatusResponseQueryNodeStatus;
+}
+/**
+ * 
+ * @export
+ * @interface StatusResponseQueryNodeStatus
+ */
+export interface StatusResponseQueryNodeStatus {
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'url': string;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'chainHead': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'blocksProcessed': number;
 }
 
 /**
