@@ -57,6 +57,7 @@ import {
 import {
   BLOCKTIME,
   KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
+  KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE,
   proposalTypeToProposalParamsKey,
   workingGroupNameByModuleName,
 } from './consts'
@@ -672,6 +673,7 @@ export class Api {
     blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
+    const stageTimeoutMs = 100 * 6 * 1000
     await Utils.until(
       `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
       async ({ debug }) => {
@@ -707,7 +709,8 @@ export class Api {
           announcementPeriodNr === currentAnnouncementPeriodNr
         )
       },
-      intervalMs
+      intervalMs,
+      stageTimeoutMs
     )
   }
 
@@ -857,6 +860,42 @@ export class Api {
       this.assignWorkerRoleAccount(group, workerId, account),
       this.treasuryTransferBalance(account, initialBalance),
     ])
+  }
+
+  // Membership
+  async updateMemberControllerAccount(
+    oldAccount: string,
+    memberId: MemberId,
+    newAccount: string
+  ): Promise<ISubmittableResult> {
+    const updateControllerAccount = this.api.tx.members.updateAccounts(memberId, newAccount, newAccount)
+    await this.prepareAccountsForFeeExpenses(oldAccount, [updateControllerAccount])
+    return this.sender.signAndSend(updateControllerAccount, oldAccount)
+  }
+
+  async updateCouncillorsAccounts(initialBalance = KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE): Promise<string[]> {
+    const memberIds = (await this.query.council.councilMembers()).map((m) => m.membershipId)
+    const memberRootAccounts = await Promise.all(
+      memberIds.map(async (id) => {
+        const membership = await this.query.members.membershipById(id)
+        return membership.unwrap().rootAccount.toString()
+      })
+    )
+    // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Well Known Councillors Account`)
+    const newAccounts = memberIds.map((id) => {
+      const uri = `Councillor//` + id.toString()
+      return this.createCustomKeyPair(uri, false).address
+    })
+    await Promise.all(
+      memberIds.map(async (id, i) => {
+        await this.updateMemberControllerAccount(memberRootAccounts[i], id, newAccounts[i])
+        await this.treasuryTransferBalance(newAccounts[i], initialBalance)
+      })
+    )
+
+    return newAccounts
   }
 
   // Storage

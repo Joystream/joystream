@@ -23,6 +23,17 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     }
   }
 
+  protected async getCouncilMembersControllerAccounts(): Promise<string[]> {
+    const memberIds = (await this.api.query.council.councilMembers()).map((m) => m.membershipId)
+    const onChainCouncilMemberAccounts = await Promise.all(
+      memberIds.map(async (id) => {
+        const membership = await this.api.query.members.membershipById(id)
+        return membership.unwrap().controllerAccount.toString()
+      })
+    )
+    return onChainCouncilMemberAccounts
+  }
+
   protected async runVoteFixture(
     votersStakingAccounts: string[],
     candidatesMemberIds: u64[],
@@ -69,12 +80,11 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
 
   public async execute(): Promise<void> {
     const { api, query } = this
-    const { councilSize, minNumberOfExtraCandidates } = api.consts.council
+    const { councilSize, minNumberOfExtraCandidates } = this.api.consts.council
     const numberOfCandidates = councilSize.add(minNumberOfExtraCandidates).toNumber()
+    const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
     const numberOfVoters = numberOfCandidates
 
-    // Prepare memberships
-    const candidatesMemberAccounts = (await this.api.createKeyPairs(numberOfCandidates)).map(({ key }) => key.address)
     const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, candidatesMemberAccounts)
     await new FixtureRunner(buyMembershipsFixture).run()
     const candidatesMemberIds = buyMembershipsFixture.getCreatedMembers()
@@ -164,6 +174,11 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
       councilMembers.map((m) => m.membershipId.toString()),
       candidatesToWinIds
     )
+
+    // change accounts to known accounts
+    const newCouncilMemberAccounts = await this.api.updateCouncillorsAccounts()
+    const onChainCouncilMemberAccounts = await this.getCouncilMembersControllerAccounts()
+    assert.deepEqual(onChainCouncilMemberAccounts, newCouncilMemberAccounts)
   }
 
   public async runQueryNodeChecks(): Promise<void> {
