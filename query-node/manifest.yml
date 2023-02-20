@@ -434,8 +434,6 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
-    - event: contentWorkingGroup.LeadRemarked
-      handler: contentWorkingGroups_LeadRemarked
     - event: contentWorkingGroup.WorkingGroupBudgetFunded
       handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group alpha

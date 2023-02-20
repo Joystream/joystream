@@ -3,9 +3,8 @@ type App @entity {
   id: ID!
   "The name of the App"
   name: String!
-  "Member owning the App (if any)"
-  ownerMember: Membership
-  isLeadOwned: Boolean
+  "Member owning the App"
+  ownerMember: Membership!
   "Url where user can read more about the project or company for this app"
   websiteUrl: String
   "Url to the app"

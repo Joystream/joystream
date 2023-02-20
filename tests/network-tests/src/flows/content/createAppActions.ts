@@ -34,13 +34,13 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     platforms: ['web', 'mobile'],
     authKey: appPublicKeyHex,
   }
-  const appOwnedByMemberName = 'app_owned_by_member_for_actions'
-  await api.createApp(appOwnedByMemberName, appMetadata, member.memberId)
+  const appName = 'app_for_actions'
+  await api.createApp(appName, appMetadata, member.memberId)
 
   const appFragment = await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appOwnedByMemberName),
+    () => query.getAppsByName(appName),
     (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appOwnedByMemberName)
+      assert.equal(appsByName?.[0]?.name, appName)
       assert.equal(appsByName?.[0].authKey, appPublicKeyHex)
     }
   )
@@ -48,7 +48,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
 
   debug('Creating app channel...')
   const channelInput = {
-    title: `Channel from ${appOwnedByMemberName} app`,
+    title: `Channel from ${appName} app`,
     description: 'This is the app channel',
     isPublic: true,
     language: 'en',
@@ -86,7 +86,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
       assert.equal(channel.isPublic, channelInput.isPublic)
       assert.equal(channel.language?.iso, channelInput.language)
       assert.equal(channel.entryApp?.id, appId)
-      assert.equal(channel.entryApp?.name, appOwnedByMemberName)
+      assert.equal(channel.entryApp?.name, appName)
     }
   )
 
@@ -128,7 +128,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
       assert.equal(video.description, contentMetadata.videoMetadata.description)
       assert.equal(video.duration, contentMetadata.videoMetadata.duration)
       assert.equal(video.entryApp?.id, appId)
-      assert.equal(video.entryApp?.name, appOwnedByMemberName)
+      assert.equal(video.entryApp?.name, appName)
       assert.equal(video.ytVideoId, videoAppActionMeta.videoId)
     }
   )

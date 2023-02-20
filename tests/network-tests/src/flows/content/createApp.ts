@@ -21,37 +21,15 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  // app created by member
-  const appOwnedByMember = 'app_owned_by_member'
+  const appName = 'test_app'
 
-  await api.createApp(appOwnedByMember, appMetadata, member.memberId)
-
-  await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appOwnedByMember),
-    (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appOwnedByMember)
-      assert.equal(appsByName?.[0].ownerMember?.id, member.memberId.toString())
-      assert.equal(appsByName?.[0].isLeadOwned, false)
-      assert.equal(appsByName?.[0]?.category, appMetadata.category)
-      assert.equal(appsByName?.[0]?.oneLiner, appMetadata.oneLiner)
-      assert.equal(appsByName?.[0]?.description, appMetadata.description)
-      assert.equal(appsByName?.[0]?.termsOfService, null)
-      assert.equal(appsByName?.[0]?.websiteUrl, null)
-      assert.deepEqual(appsByName?.[0]?.platforms, appMetadata.platforms)
-    }
-  )
-
-  // app created by lead
-
-  const appOwnedByLead = 'app_owned_by_lead'
-  await api.createApp(appOwnedByLead, appMetadata)
+  await api.createApp(appName, appMetadata, member.memberId)
 
   await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appOwnedByLead),
+    () => query.getAppsByName(appName),
     (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appOwnedByLead)
-      assert.equal(appsByName?.[0].ownerMember?.id, null)
-      assert.equal(appsByName?.[0].isLeadOwned, true)
+      assert.equal(appsByName?.[0]?.name, appName)
+      assert.equal(appsByName?.[0].ownerMember.id, member.memberId.toString())
       assert.equal(appsByName?.[0]?.category, appMetadata.category)
       assert.equal(appsByName?.[0]?.oneLiner, appMetadata.oneLiner)
       assert.equal(appsByName?.[0]?.description, appMetadata.description)
