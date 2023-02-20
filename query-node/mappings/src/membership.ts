@@ -607,13 +607,13 @@ async function processMemberRemark(
   }
 
   if (decodedMetadata?.updateApp) {
-    await processUpdateAppMessage(store, event, decodedMetadata.updateApp, memberId.toString())
+    await processUpdateAppMessage(store, decodedMetadata.updateApp, memberId.toString())
 
     return {}
   }
 
   if (decodedMetadata?.deleteApp) {
-    await processDeleteAppMessage(store, event, decodedMetadata.deleteApp, memberId.toString())
+    await processDeleteAppMessage(store, decodedMetadata.deleteApp, memberId.toString())
 
     return {}
   }

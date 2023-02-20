@@ -4,7 +4,6 @@ fragment AppFields on App {
   ownerMember {
     id
   }
-  isLeadOwned
   websiteUrl
   useUri
   smallIcon

@@ -62,7 +62,6 @@ import {
 } from './consts'
 
 import {
-  ContentLeadRemarked,
   CreateApp,
   AppAction,
   CreateVideoCategory,
@@ -819,106 +818,60 @@ export class Api {
     return event.data[2]
   }
 
-  async createApp(name: string, appMetadata?: IAppMetadata, memberId?: u64): Promise<ISubmittableResult> {
-    const account = memberId
-      ? await this.getMemberControllerAccount(memberId.toNumber())
-      : await this.getLeadRoleKey('contentWorkingGroup')
+  async createApp(name: string, appMetadata: IAppMetadata, memberId: u64): Promise<ISubmittableResult> {
+    const account = await this.getMemberControllerAccount(memberId.toNumber())
 
     if (!account) {
       throw new Error('invalid account')
     }
-    if (memberId) {
-      const meta = new MemberRemarked({
-        createApp: new CreateApp({
-          name,
-          appMetadata,
-        }),
-      })
-      return this.sender.signAndSend(
-        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
-        account.toString()
-      )
-    } else {
-      const meta = new ContentLeadRemarked({
-        createApp: new CreateApp({
-          name,
-          appMetadata,
-        }),
-      })
-      return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
-        account.toString()
-      )
-    }
+    const meta = new MemberRemarked({
+      createApp: new CreateApp({
+        name,
+        appMetadata,
+      }),
+    })
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
+      account.toString()
+    )
   }
 
-  async updateApp(appId: string, appMetadata: IAppMetadata, memberId?: u64): Promise<ISubmittableResult> {
-    const account = memberId
-      ? await this.getMemberControllerAccount(memberId.toNumber())
-      : await this.getLeadRoleKey('contentWorkingGroup')
+  async updateApp(appId: string, appMetadata: IAppMetadata, memberId: u64): Promise<ISubmittableResult> {
+    const account = await this.getMemberControllerAccount(memberId.toNumber())
 
     if (!account) {
       throw new Error('invalid account')
     }
 
-    if (memberId) {
-      const meta = new MemberRemarked({
-        updateApp: new UpdateApp({
-          appId,
-          appMetadata,
-        }),
-      })
+    const meta = new MemberRemarked({
+      updateApp: new UpdateApp({
+        appId,
+        appMetadata,
+      }),
+    })
 
-      return this.sender.signAndSend(
-        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
-        account.toString()
-      )
-    } else {
-      const meta = new ContentLeadRemarked({
-        updateApp: new UpdateApp({
-          appId,
-          appMetadata,
-        }),
-      })
-
-      return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
-        account.toString()
-      )
-    }
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
+      account.toString()
+    )
   }
 
-  async deleteApp(appId: string, memberId?: u64): Promise<ISubmittableResult> {
-    const account = memberId
-      ? await this.getMemberControllerAccount(memberId.toNumber())
-      : await this.getLeadRoleKey('contentWorkingGroup')
+  async deleteApp(appId: string, memberId: u64): Promise<ISubmittableResult> {
+    const account = await this.getMemberControllerAccount(memberId.toNumber())
 
     if (!account) {
       throw new Error('invalid account')
     }
 
-    if (memberId) {
-      const meta = new MemberRemarked({
-        deleteApp: new DeleteApp({
-          appId,
-        }),
-      })
-      return this.sender.signAndSend(
-        this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
-        account.toString()
-      )
-    } else {
-      const meta = new ContentLeadRemarked({
-        deleteApp: new DeleteApp({
-          appId,
-        }),
-      })
-
-      return this.sender.signAndSend(
-        this.api.tx.contentWorkingGroup.leadRemark(Utils.metadataToBytes(ContentLeadRemarked, meta)),
-        account.toString()
-      )
-    }
+    const meta = new MemberRemarked({
+      deleteApp: new DeleteApp({
+        appId,
+      }),
+    })
+    return this.sender.signAndSend(
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
+      account.toString()
+    )
   }
 
   async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {

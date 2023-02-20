@@ -4,7 +4,6 @@ import gql from 'graphql-tag'
 export type AppFieldsFragment = {
   id: string
   name: string
-  isLeadOwned?: Types.Maybe<boolean>
   websiteUrl?: Types.Maybe<string>
   useUri?: Types.Maybe<string>
   smallIcon?: Types.Maybe<string>
@@ -16,7 +15,7 @@ export type AppFieldsFragment = {
   category?: Types.Maybe<string>
   authKey?: Types.Maybe<string>
   platforms?: Types.Maybe<Array<string>>
-  ownerMember?: Types.Maybe<{ id: string }>
+  ownerMember: { id: string }
 }
 
 export type GetAppByIdQueryVariables = Types.Exact<{
@@ -2733,7 +2732,6 @@ export const AppFields = gql`
     ownerMember {
       id
     }
-    isLeadOwned
     websiteUrl
     useUri
     smallIcon

@@ -14,59 +14,28 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   await new FixtureRunner(createMembersFixture).run()
   const [member] = createMembersFixture.getCreatedItems().members
 
-  // app created by member
-  const appToDeleteNameOwnedByMember = 'delete_app_owned_by_member'
-  const appToDeleteMetadataOwnedByMember: Partial<AppMetadata> = {
+  const appToDeleteName = 'app_to_delete'
+  const appToDeleteMetadata: Partial<AppMetadata> = {
     category: 'blockchain',
     oneLiner: 'best blokchain video platform',
     description: 'long description',
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(appToDeleteNameOwnedByMember, appToDeleteMetadataOwnedByMember, member.memberId)
+  await api.createApp(appToDeleteName, appToDeleteMetadata, member.memberId)
 
-  const appsCreatedByMember = await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appToDeleteNameOwnedByMember),
+  const appsByName = await query.tryQueryWithTimeout(
+    () => query.getAppsByName(appToDeleteName),
     (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appToDeleteNameOwnedByMember)
+      assert.equal(appsByName?.[0]?.name, appToDeleteName)
     }
   )
 
-  if (appsCreatedByMember?.[0]?.id) {
-    await api.deleteApp(appsCreatedByMember?.[0]?.id, member.memberId)
+  if (appsByName?.[0]?.id) {
+    await api.deleteApp(appsByName?.[0]?.id, member.memberId)
 
     await query.tryQueryWithTimeout(
-      () => query.getAppsByName(appToDeleteNameOwnedByMember),
-      (appsByName) => {
-        assert.equal(appsByName?.length, 0)
-      }
-    )
-  }
-
-  // app created by lead
-
-  const appToDeleteNameOwnedByLead = 'delete_app_owned_by_lead'
-  const appToDeleteMetadataOwnedByLead: Partial<AppMetadata> = {
-    category: 'blockchain',
-    oneLiner: 'best blokchain video platform',
-    description: 'long description',
-    platforms: ['web', 'mobile'],
-  }
-
-  await api.createApp(appToDeleteNameOwnedByLead, appToDeleteMetadataOwnedByLead)
-
-  const appsCreatedByLead = await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appToDeleteNameOwnedByLead),
-    (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appToDeleteNameOwnedByLead)
-    }
-  )
-
-  if (appsCreatedByLead?.[0]?.id) {
-    await api.deleteApp(appsCreatedByLead?.[0]?.id)
-
-    await query.tryQueryWithTimeout(
-      () => query.getAppsByName(appToDeleteNameOwnedByLead),
+      () => query.getAppsByName(appToDeleteName),
       (appsByName) => {
         assert.equal(appsByName?.length, 0)
       }
