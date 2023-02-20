@@ -151,7 +151,6 @@ export class JoystreamCLI extends CLI {
 
   async deleteVideo(videoId: number): Promise<void> {
     await this.run('content:deleteVideo', ['-v', videoId.toString(), '-f'])
-
   }
 
   /**
