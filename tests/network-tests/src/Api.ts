@@ -256,7 +256,7 @@ export class Api {
     sender: AccountId | string | AccountId[] | string[],
     // Including decremental tip allows ensuring that the submitted transactions within a batch are processed in the expected order
     // even when we're using different accounts
-    decrementalTipAmount = 0
+    decrementalTipAmount = new BN(0)
   ): Promise<ISubmittableResult[]> {
     let results: ISubmittableResult[] = []
     const batches = (Array.isArray(txs[0]) ? txs : [txs]) as SubmittableExtrinsic<'promise'>[][]
@@ -265,7 +265,7 @@ export class Api {
       results = results.concat(
         await Promise.all(
           batch.map((tx, j) => {
-            const tip = Array.isArray(sender) ? decrementalTipAmount * (batch.length - 1 - j) : 0
+            const tip = Array.isArray(sender) ? decrementalTipAmount.muln(batch.length - 1 - j) : 0
             return this.sender.signAndSend(
               tx,
               Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender,
@@ -435,7 +435,7 @@ export class Api {
     extrinsics: SubmittableExtrinsic<'promise'>[],
     // Including decremental tip allows ensuring that the submitted transactions are processed in the expected order
     // even when we're using different accounts
-    decrementalTipAmount = 0
+    decrementalTipAmount = new BN(0)
   ): Promise<void> {
     const fees = await Promise.all(
       extrinsics.map((tx, i) =>
@@ -448,7 +448,7 @@ export class Api {
         fees.map((fee, i) =>
           this.treasuryTransferBalance(
             accountOrAccounts[i],
-            fee.addn(decrementalTipAmount * (accountOrAccounts.length - 1 - i))
+            fee.add(decrementalTipAmount.muln(accountOrAccounts.length - 1 - i))
           )
         )
       )
@@ -590,6 +590,14 @@ export class Api {
   public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
     const leadId = await this.getLeaderId(group)
     return [leadId, (await this.api.query[group].workerById(leadId)).unwrap()]
+  }
+
+  public async fundWorkingGroupBudget(group: WorkingGroupModuleName, memberId: u64, amount: BN): Promise<void> {
+    const controllerAccount = await this.getControllerAccountOfMember(memberId)
+    const fundTx = this.api.tx[group].fundWorkingGroupBudget(memberId, amount, 'Test')
+    await this.treasuryTransferBalance(controllerAccount, amount)
+    await this.prepareAccountsForFeeExpenses(controllerAccount, [fundTx])
+    await this.signAndSend(fundTx, controllerAccount)
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
