@@ -1,7 +1,7 @@
 import { BaseQueryNodeFixture } from '../Fixture'
 import { Api } from '../Api'
 import { ChannelId, DistributionBucketFamilyId } from '@joystream/types/primitives'
-import { QueryNodeApi } from 'src/QueryNodeApi'
+import { QueryNodeApi } from '../QueryNodeApi'
 
 export class CreateChannelsAsMemberFixture extends BaseQueryNodeFixture {
   // Member that will be channel owner

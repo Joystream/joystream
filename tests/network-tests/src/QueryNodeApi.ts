@@ -458,6 +458,10 @@ import {
   GetChannelsCount,
   GetChannelsCountQuery,
   GetChannelsCountQueryVariables,
+  BudgetFundedEventFieldsFragment,
+  GetBudgetFundedEventsByEventIdsQuery,
+  GetBudgetFundedEventsByEventIdsQueryVariables,
+  GetBudgetFundedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -964,6 +968,14 @@ export class QueryNodeApi {
       { eventIds },
       'budgetSetEvents'
     )
+  }
+
+  public async getBudgetFundedEvents(events: EventDetails[]): Promise<BudgetFundedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetBudgetFundedEventsByEventIdsQuery,
+      GetBudgetFundedEventsByEventIdsQueryVariables
+    >(GetBudgetFundedEventsByEventIds, { eventIds }, 'budgetFundedEvents')
   }
 
   public async getBudgetSpendingEvents(events: EventDetails[]): Promise<BudgetSpendingEventFieldsFragment[]> {

@@ -2674,6 +2674,25 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export type BudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  amount: any
+  group: { name: string }
+  member: { id: string }
+}
+
+export type GetBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetFundedEventsByEventIdsQuery = { budgetFundedEvents: Array<BudgetFundedEventFieldsFragment> }
+
 export const LicenseFields = gql`
   fragment LicenseFields on License {
     code
@@ -5174,6 +5193,24 @@ export const BudgetSpendingEventFields = gql`
     rationale
   }
 `
+export const BudgetFundedEventFields = gql`
+  fragment BudgetFundedEventFields on BudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    group {
+      name
+    }
+    member {
+      id
+    }
+    rationale
+    amount
+  }
+`
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {
     channelByUniqueInput(where: { id: $id }) {
@@ -6126,4 +6163,12 @@ export const GetBudgetSpendingEventsByEventIds = gql`
     }
   }
   ${BudgetSpendingEventFields}
+`
+export const GetBudgetFundedEventsByEventIds = gql`
+  query getBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    budgetFundedEvents(where: { id_in: $eventIds }) {
+      ...BudgetFundedEventFields
+    }
+  }
+  ${BudgetFundedEventFields}
 `
