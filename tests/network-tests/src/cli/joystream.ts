@@ -151,6 +151,18 @@ export class JoystreamCLI extends CLI {
 
   async deleteVideo(videoId: number): Promise<void> {
     await this.run('content:deleteVideo', ['-v', videoId.toString(), '-f'])
+
+  }
+
+  /**
+    Deletes a channel.
+  */
+  async deleteChannel(channelId: number): Promise<void> {
+    const { stderr, exitCode } = await this.run('content:deleteChannel', ['-c', channelId.toString(), '-f'])
+
+    if (exitCode) {
+      throw new Error(`Unexpected CLI failure on deleting channel: "${stderr}"`)
+    }
   }
 
   /**

@@ -57,6 +57,7 @@ import {
 import {
   BLOCKTIME,
   KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
+  KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE,
   proposalTypeToProposalParamsKey,
   workingGroupNameByModuleName,
 } from './consts'
@@ -256,7 +257,7 @@ export class Api {
     sender: AccountId | string | AccountId[] | string[],
     // Including decremental tip allows ensuring that the submitted transactions within a batch are processed in the expected order
     // even when we're using different accounts
-    decrementalTipAmount = 0
+    decrementalTipAmount = new BN(0)
   ): Promise<ISubmittableResult[]> {
     let results: ISubmittableResult[] = []
     const batches = (Array.isArray(txs[0]) ? txs : [txs]) as SubmittableExtrinsic<'promise'>[][]
@@ -265,7 +266,7 @@ export class Api {
       results = results.concat(
         await Promise.all(
           batch.map((tx, j) => {
-            const tip = Array.isArray(sender) ? decrementalTipAmount * (batch.length - 1 - j) : 0
+            const tip = Array.isArray(sender) ? decrementalTipAmount.muln(batch.length - 1 - j) : 0
             return this.sender.signAndSend(
               tx,
               Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender,
@@ -435,7 +436,7 @@ export class Api {
     extrinsics: SubmittableExtrinsic<'promise'>[],
     // Including decremental tip allows ensuring that the submitted transactions are processed in the expected order
     // even when we're using different accounts
-    decrementalTipAmount = 0
+    decrementalTipAmount = new BN(0)
   ): Promise<void> {
     const fees = await Promise.all(
       extrinsics.map((tx, i) =>
@@ -448,7 +449,7 @@ export class Api {
         fees.map((fee, i) =>
           this.treasuryTransferBalance(
             accountOrAccounts[i],
-            fee.addn(decrementalTipAmount * (accountOrAccounts.length - 1 - i))
+            fee.add(decrementalTipAmount.muln(accountOrAccounts.length - 1 - i))
           )
         )
       )
@@ -669,7 +670,7 @@ export class Api {
   public async untilCouncilStage(
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
     announcementPeriodNr: number | null = null,
-    blocksReserve = 1, // TODO dynamically adjust this as it stuck the election process
+    blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
     const stageTimeoutMs = 100 * 6 * 1000
@@ -859,6 +860,42 @@ export class Api {
       this.assignWorkerRoleAccount(group, workerId, account),
       this.treasuryTransferBalance(account, initialBalance),
     ])
+  }
+
+  // Membership
+  async updateMemberControllerAccount(
+    oldAccount: string,
+    memberId: MemberId,
+    newAccount: string
+  ): Promise<ISubmittableResult> {
+    const updateControllerAccount = this.api.tx.members.updateAccounts(memberId, newAccount, newAccount)
+    await this.prepareAccountsForFeeExpenses(oldAccount, [updateControllerAccount])
+    return this.sender.signAndSend(updateControllerAccount, oldAccount)
+  }
+
+  async updateCouncillorsAccounts(initialBalance = KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE): Promise<string[]> {
+    const memberIds = (await this.query.council.councilMembers()).map((m) => m.membershipId)
+    const memberRootAccounts = await Promise.all(
+      memberIds.map(async (id) => {
+        const membership = await this.query.members.membershipById(id)
+        return membership.unwrap().rootAccount.toString()
+      })
+    )
+    // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Well Known Councillors Account`)
+    const newAccounts = memberIds.map((id) => {
+      const uri = `Councillor//` + id.toString()
+      return this.createCustomKeyPair(uri, false).address
+    })
+    await Promise.all(
+      memberIds.map(async (id, i) => {
+        await this.updateMemberControllerAccount(memberRootAccounts[i], id, newAccounts[i])
+        await this.treasuryTransferBalance(newAccounts[i], initialBalance)
+      })
+    )
+
+    return newAccounts
   }
 
   // Storage
