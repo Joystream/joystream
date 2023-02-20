@@ -152,9 +152,8 @@ export type App = BaseGraphQlObject & {
   version: Scalars['Int']
   /** The name of the App */
   name: Scalars['String']
-  ownerMember?: Maybe<Membership>
-  ownerMemberId?: Maybe<Scalars['String']>
-  isLeadOwned?: Maybe<Scalars['Boolean']>
+  ownerMember: Membership
+  ownerMemberId: Scalars['String']
   /** Url where user can read more about the project or company for this app */
   websiteUrl?: Maybe<Scalars['String']>
   /** Url to the app */
@@ -182,8 +181,7 @@ export type AppConnection = {
 
 export type AppCreateInput = {
   name: Scalars['String']
-  ownerMember?: Maybe<Scalars['ID']>
-  isLeadOwned?: Maybe<Scalars['Boolean']>
+  ownerMember: Scalars['ID']
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -213,8 +211,6 @@ export enum AppOrderByInput {
   NameDesc = 'name_DESC',
   OwnerMemberAsc = 'ownerMember_ASC',
   OwnerMemberDesc = 'ownerMember_DESC',
-  IsLeadOwnedAsc = 'isLeadOwned_ASC',
-  IsLeadOwnedDesc = 'isLeadOwned_DESC',
   WebsiteUrlAsc = 'websiteUrl_ASC',
   WebsiteUrlDesc = 'websiteUrl_DESC',
   UseUriAsc = 'useUri_ASC',
@@ -240,7 +236,6 @@ export enum AppOrderByInput {
 export type AppUpdateInput = {
   name?: Maybe<Scalars['String']>
   ownerMember?: Maybe<Scalars['ID']>
-  isLeadOwned?: Maybe<Scalars['Boolean']>
   websiteUrl?: Maybe<Scalars['String']>
   useUri?: Maybe<Scalars['String']>
   smallIcon?: Maybe<Scalars['String']>
@@ -284,8 +279,6 @@ export type AppWhereInput = {
   name_startsWith?: Maybe<Scalars['String']>
   name_endsWith?: Maybe<Scalars['String']>
   name_in?: Maybe<Array<Scalars['String']>>
-  isLeadOwned_eq?: Maybe<Scalars['Boolean']>
-  isLeadOwned_in?: Maybe<Array<Scalars['Boolean']>>
   websiteUrl_eq?: Maybe<Scalars['String']>
   websiteUrl_contains?: Maybe<Scalars['String']>
   websiteUrl_startsWith?: Maybe<Scalars['String']>

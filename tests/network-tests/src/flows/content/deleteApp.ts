@@ -43,35 +43,5 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
     )
   }
 
-  // app created by lead
-
-  const appToDeleteNameOwnedByLead = 'delete_app_owned_by_lead'
-  const appToDeleteMetadataOwnedByLead: Partial<AppMetadata> = {
-    category: 'blockchain',
-    oneLiner: 'best blokchain video platform',
-    description: 'long description',
-    platforms: ['web', 'mobile'],
-  }
-
-  await api.createApp(appToDeleteNameOwnedByLead, appToDeleteMetadataOwnedByLead)
-
-  const appsCreatedByLead = await query.tryQueryWithTimeout(
-    () => query.getAppsByName(appToDeleteNameOwnedByLead),
-    (appsByName) => {
-      assert.equal(appsByName?.[0]?.name, appToDeleteNameOwnedByLead)
-    }
-  )
-
-  if (appsCreatedByLead?.[0]?.id) {
-    await api.deleteApp(appsCreatedByLead?.[0]?.id)
-
-    await query.tryQueryWithTimeout(
-      () => query.getAppsByName(appToDeleteNameOwnedByLead),
-      (appsByName) => {
-        assert.equal(appsByName?.length, 0)
-      }
-    )
-  }
-
   debug('done')
 }

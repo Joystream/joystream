@@ -9,7 +9,7 @@ export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   metadata: DecodedMetadataObject<ICreateApp>,
-  memberId?: string
+  memberId: string
 ): Promise<void> {
   const { name, appMetadata } = metadata
 
@@ -33,8 +33,7 @@ export async function processCreateAppMessage(
   const newApp = new App({
     name,
     id: appId,
-    ownerMember: memberId ? new Membership({ id: memberId }) : undefined,
-    isLeadOwned: !memberId,
+    ownerMember: new Membership({ id: memberId }),
     websiteUrl: appMetadata?.websiteUrl || undefined,
     useUri: appMetadata?.useUri || undefined,
     smallIcon: appMetadata?.smallIcon || undefined,
@@ -55,14 +54,9 @@ export async function processUpdateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   metadata: DecodedMetadataObject<IUpdateApp>,
-  memberId?: string
+  memberId: string
 ): Promise<void> {
   const { appId, appMetadata } = metadata
-
-  // memberId is required for MemberRemark, but not for LeadRemark
-  if (event.method === 'MemberRemarked' && !memberId) {
-    inconsistentState("memberId wasn't provided")
-  }
 
   const app = await getAppById(store, appId)
 
@@ -70,12 +64,8 @@ export async function processUpdateAppMessage(
     inconsistentState("App doesn't exists", { appId })
   }
 
-  if (memberId && app?.ownerMember?.id !== memberId) {
+  if (app.ownerMember.id !== memberId) {
     inconsistentState("App doesn't belong to the member", { appId, memberId })
-  }
-
-  if (event.method === 'LeadRemarked' && app.ownerMember?.id) {
-    inconsistentState("App doesn't belong to the lead", { appId })
   }
 
   if (appMetadata) {
@@ -102,14 +92,9 @@ export async function processDeleteAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   metadata: DecodedMetadataObject<IDeleteApp>,
-  memberId?: string
+  memberId: string
 ): Promise<void> {
   const { appId } = metadata
-
-  // memberId is required for MemberRemark, but not for LeadRemark
-  if (event.method === 'MemberRemarked' && !memberId) {
-    inconsistentState("memberId wasn't provided")
-  }
 
   const app = await getAppById(store, appId)
 
@@ -117,12 +102,8 @@ export async function processDeleteAppMessage(
     inconsistentState("App doesn't exists", { appId })
   }
 
-  if (memberId && app?.ownerMember?.id !== memberId) {
+  if (app.ownerMember.id !== memberId) {
     inconsistentState("App doesn't belong to the member", { appId, memberId })
-  }
-
-  if (event.method === 'LeadRemarked' && app.ownerMember?.id) {
-    inconsistentState("App doesn't belong to the lead", { appId })
   }
 
   await store.remove<App>(app)
