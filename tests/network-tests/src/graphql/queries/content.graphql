@@ -53,6 +53,9 @@ fragment ChannelFields on Channel {
     iso
   }
   isCensored
+  entryApp {
+    ...AppFields
+  }
   ownerMember {
     id
   }
@@ -164,6 +167,10 @@ fragment VideoFields on Video {
   isPublic
   isExplicit
   hasMarketing
+  ytVideoId
+  entryApp {
+    ...AppFields
+  }
   license {
     ...LicenseFields
   }

@@ -30,6 +30,10 @@ export interface paths {
     /** Returns local uploading directory stats. */
     'get': operations['stateApi.getLocalDataStats']
   }
+  '/status': {
+    /** Returns json object describing current node status. */
+    'get': operations['stateApi.getStatus']
+  }
 }
 
 export interface components {
@@ -64,6 +68,14 @@ export interface components {
     'VersionResponse': {
       'version': string
       'userAgent'?: string
+    }
+    'StatusResponse': {
+      'version': string
+      'queryNodeStatus': {
+        'url': string
+        'chainHead': number
+        'blocksProcessed': number
+      }
     }
     'DataObjectResponse': string[]
   }
@@ -217,6 +229,19 @@ export interface operations {
           'application/json': components['schemas']['DataStatsResponse']
         }
       }
+    }
+  }
+  /** Returns json object describing current node status. */
+  'stateApi.getStatus': {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          'application/json': components['schemas']['StatusResponse']
+        }
+      }
+      /** Unexpected server error */
+      500: unknown
     }
   }
 }
