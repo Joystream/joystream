@@ -8,8 +8,8 @@
 //
 
 const script = async ({ api, keyring, userAddress }) => {
-  const sudoAddress = (await api.query.sudo.key()).toString()
-  const destination = userAddress || sudoAddress
+  const alice = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY'
+  const destination = userAddress || alice
   let sender
   if (typeof window === 'undefined') {
     // In node, get the keyPair if the keyring was provided
