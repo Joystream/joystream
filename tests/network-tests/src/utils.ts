@@ -141,7 +141,7 @@ export class Utils {
   ): Promise<void> {
     const debug = extendDebug(`awaiting:${name}`)
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timoeut reached`)), timeoutMs)
+      const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timeout reached`)), timeoutMs)
       const check = async () => {
         if (await conditionFunc({ debug })) {
           clearInterval(interval)

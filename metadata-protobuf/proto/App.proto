@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+message AppActionMetadata {
+  // YouTube video ID
+  optional string video_id  = 2;
+}
+
+message AppAction {
+  // ID of application
+  required string app_id = 999;
+
+  // Metadata
+  optional bytes metadata = 2;
+
+  // Raw metadata of wrapped action
+  optional bytes raw_action = 3;
+
+  // Signature over app commitment
+  optional bytes signature = 4;
+
+  // Nonce to prevent signature reusal
+  optional uint32 nonce = 5;
+}
