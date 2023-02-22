@@ -62,15 +62,13 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
     await api.sendExtrinsicsAndGetResults(createChannelTxBatch, memberAddr)
   }
 
-  debug('Giving the query node 2 minutes to sync...')
-  await Utils.wait(120_000)
-
+  debug('Waiting until the query node processes 10_000 channels...')
   // Make sure there are indeed 10_000 channels processed by the QN
   await query.tryQueryWithTimeout(
     () => query.getChannelsCount(),
     (r) => assert.equal(r, 10_000),
-    12,
-    10
+    10_000,
+    30 // 10s * 30 = 300s = 5 minutes timeout
   )
 
   // Create channel w/ some data objects
