@@ -202,14 +202,6 @@ tar -czf joystream.tar.gz \
     bin
 ```
 
-## Creating the proposal
-
-### Pioneer web app
-Link to handbook -> creating proposals in pioneer.
-
-### joystream-cli
-Currently there is no command to create a runtime proposal.
-
 ## Implementing a new runtime
 
 ### General workflow
@@ -240,7 +232,7 @@ be followed below:
 
 You should typically wait for community and core dev team to review before taking the next step of creating the runtime upgrade proposal, as that will require staking a substantial amount of tokens which are at risk of being slashed if the council rejects the proposal.
 
-#### Making the proposal
+#### Creating the proposal
   1. Build the production joystream/node docker image.
   1. Extract the compressed wasm blob from the docker image image.
   1. Create a proposal in [pioneer](https://pioneerapp.xyz/#/proposals/current)
@@ -273,30 +265,32 @@ When introducing new state storage that is configurable at genesus, keep in mind
 A custom [OnRuntimeUpgrade](https://github.com/Joystream/joystream/blob/master/runtime/src/runtime_api.rs#L63) is executed once when the runtime upgrades to the new version.
 
 This is where we can execute migration code, or any the logic such as setting new storage values if necessary.
-It is important in this function to keep the invocation of`ProposalsEngine::cancel_active_and_pending_proposals()` to cancels all proposals, as there is no guarantee that the encoded calls for the proposal still reflect the original pallet, extrinsic and arguments expected.
+It is important in this function to keep the invocation of`ProposalsEngine::cancel_active_and_pending_proposals()` to cancels all proposals, as there is no guarantee that the encoded calls for the proposal still reflect the original pallet, extrinsic and arguments expected. [Related issue](https://github.com/Joystream/joystream/issues/4654)
 
 On a related note, there is a new approach seen in substrate code where the pallet id and method index can be hardcoded with rust decoration macros that can offer a better guarnatee between runtimes that encoded call would still dispatch the correct call.
 This should be researched.
 
 ### Joystream fork of substrate
-By inspecting Cargo.toml of runtime/, runtime-modules/ and bin/ you will not that the dependencies on substrate comes https://github.com/Joystream/substrate/tree/update-carthage-to-v0.9.24-1 
+By inspecting Cargo.toml of runtime/, runtime-modules/ and bin/ you will note that the dependencies on substrate comes from:
+https://github.com/Joystream/substrate/tree/update-carthage-to-v0.9.24-1 
+
 It is important that the custom implementation of the vesting and staking be maintained to be compatible with joystream runtime.
   - [vesting pallet](https://github.com/Joystream/substrate/pull/7)
   - [staking bonding](https://github.com/Joystream/substrate/pull/8)
 
-At time of writing the modifications for vesting pallet have been ported to newer versions of substrate upstream, but no the staking pallet.
+At time of writing the modifications for vesting pallet have been ported to newer versions of substrate upstream, but not the staking pallet.
 
 This should be kept in mind when planning a runtime upgrade that also updates the core version of substrate.
 
 ### Running integration tests
-The best experience for doing development and testing is on a linux/ubuntu machine, especially when it comes to working with docker.
+The best experience for doing development and testing is on a linux/ubuntu amd64 architecture machine, especially when it comes to working with docker.
 
 ### Runtime profiles
-The runtime can be compiled with several cargo-feature flags, to produce slightly different versions.
-The main difference between these versions is around the election periods lenghts, proposal voting periods, and block interval.
+The runtime can be compiled with several cargo feature flags, to produce slightly different configurations.
+The main difference between these configurations is around the council election periods lenghts, proposal periods (voting and gracing), and block production interval.
 
 There are 4 profiles:
- - production: used in production mainnet (this is the default )
+ - production: used in production mainnet (this is the default when no explicit feature flag is provided)
  - staging: used on long running staging testnets
  - playground: used when deploying simple shared development testnets
  - testing: used when running integration tests
@@ -312,17 +306,22 @@ RUNTIME_PROFILE=TESTING ./build-node-docker.sh
 tests/network-tests/run-tests.sh
 ```
 
-### Testing playground
+### Running a Testing playground
 In addition to running automated test, it makes sense to also do some manual testing of apps, like polkadot-js, pioneer, and atlas.
 For you can conveniently run a local playground and point those apps to it:
 
 ```sh
+# build node with the playground profile
 RUNTIME_PROFILE=PLAYGROUND ./build-node-docker.sh
-RUNTIME_PROFILE=PLAYGROUND yarn start
+
+# start a local playground with 1 storage node and 1 distributor node
+RUNTIME_PROFILE=PLAYGROUND ./start.sh
+# or start a loca playground with 2 storage nodes and 2 distributor nodes
+RUNTIME_PROFILE=PLAYGROUND ./start-multistorage.sh
 ```
 
 ### Upgrade Testing
-In addition to testing the new runtime in isolation, it is imperative that it should also be tested through performing an actual upgrade of the existing runtime. This would be done on a test network or playground. To make it practical the proposal needs to be executed in a short period in these test environments so using a testing profile or playground profile would be best.
+In addition to testing the new runtime in isolation, it is imperative that it be tested through performing an actual upgrade of the existing runtime. This would be done on a test network or playground. To make it practical the proposal needs to be executed in a short period in these test environments so using a testing profile or playground profile would be best.
 
 Specific test scenario should be written to test for any state migration code performed after the upgrade, or for any custom decoding implemented for old types.
 
@@ -332,8 +331,7 @@ but they should also be executed locally.
 
 The tool is being updated for Ephesus network: https://github.com/Joystream/joystream/pull/4569
 
-
 ### Additional Resources
-Some tooling that would be useful to add to our runtime to add more testing capabilities:
+Some tooling that would be useful to add to our node and runtime to improve testing capabilities:
 - https://docs.substrate.io/reference/how-to-guides/tools/use-try-runtime/
 - https://docs.substrate.io/reference/command-line-tools/try-runtime/
