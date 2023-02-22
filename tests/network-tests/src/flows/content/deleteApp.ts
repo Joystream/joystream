@@ -5,6 +5,7 @@ import { FixtureRunner } from '../../Fixture'
 import { CreateMembersFixture } from '../../fixtures/content'
 import { assert } from 'chai'
 import { AppMetadata } from '@joystream/metadata-protobuf'
+import { createJoystreamCli } from '../utils'
 
 export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:delete-app')
@@ -22,7 +23,11 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
     platforms: ['web', 'mobile'],
   }
 
-  await api.createApp(appToDeleteName, appToDeleteMetadata, member.memberId)
+  const joystreamCli = await createJoystreamCli()
+  await joystreamCli.init()
+  await joystreamCli.importAccount(member.keyringPair)
+
+  await joystreamCli.createApp(member.memberId.toString(), { name: appToDeleteName, ...appToDeleteMetadata })
 
   const appsByName = await query.tryQueryWithTimeout(
     () => query.getAppsByName(appToDeleteName),
@@ -32,7 +37,7 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   )
 
   if (appsByName?.[0]?.id) {
-    await api.deleteApp(appsByName?.[0]?.id, member.memberId)
+    await joystreamCli.deleteApp(member.memberId.toString(), appsByName?.[0]?.id)
 
     await query.tryQueryWithTimeout(
       () => query.getAppsByName(appToDeleteName),

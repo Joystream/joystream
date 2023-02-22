@@ -3,8 +3,9 @@ import BN from 'bn.js'
 import { assert } from 'chai'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
-import { CreateMembersFixture } from '../../fixtures/content'
 import { FlowProps } from '../../Flow'
+import { createJoystreamCli } from '../utils'
+import { CreateMembersFixture } from '../../fixtures/content'
 
 export async function createApp({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:create-app')
@@ -13,6 +14,10 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
   const createMembersFixture = new CreateMembersFixture(api, query, 1, 0, new BN(10_000_000_000))
   await new FixtureRunner(createMembersFixture).run()
   const [member] = createMembersFixture.getCreatedItems().members
+
+  const joystreamCli = await createJoystreamCli()
+  await joystreamCli.init()
+  await joystreamCli.importAccount(member.keyringPair)
 
   const appMetadata: Partial<AppMetadata> = {
     category: 'blockchain',
@@ -23,7 +28,7 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
 
   const appName = 'test_app'
 
-  await api.createApp(appName, appMetadata, member.memberId)
+  await joystreamCli.createApp(member.memberId.toString(), { name: appName, ...appMetadata })
 
   await query.tryQueryWithTimeout(
     () => query.getAppsByName(appName),
