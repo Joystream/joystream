@@ -4,6 +4,7 @@ import { IAppMetadata, IMemberRemarked, MemberRemarked } from '@joystream/metada
 import { metadataToBytes } from '../../helpers/serialization'
 import { getInputJson } from '../../helpers/InputOutput'
 import AppCommandBase from '../../base/AppCommandBase'
+import MembershipsCommandBase from '../../base/MembershipsCommandBase'
 
 export default class GenerateAppCreationMessage extends AppCommandBase {
   static description = 'App creation message factory'
@@ -18,16 +19,21 @@ export default class GenerateAppCreationMessage extends AppCommandBase {
       required: true,
       description: `ID of the app to update`,
     }),
+    skip: flags.boolean({
+      char: 's',
+      description: "If true command won't prompt missing fields",
+    }),
+    ...MembershipsCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    let createAppRemarked: IMemberRemarked | null
-    const { input, appId } = this.parse(GenerateAppCreationMessage).flags
+    let updateAppRemarked: IMemberRemarked | null
+    const { input, appId, skip } = this.parse(GenerateAppCreationMessage).flags
     if (input) {
       const inputBody = await getInputJson<IAppMetadata>(input)
-      const appMetadata = await this.promptAppMetadata(inputBody)
+      const appMetadata = skip ? inputBody : await this.promptAppMetadata(inputBody)
 
-      createAppRemarked = {
+      updateAppRemarked = {
         updateApp: {
           appId,
           appMetadata,
@@ -36,13 +42,16 @@ export default class GenerateAppCreationMessage extends AppCommandBase {
     } else {
       const appMetadata = await this.promptAppMetadata()
 
-      createAppRemarked = {
+      updateAppRemarked = {
         updateApp: {
           appId,
           appMetadata,
         },
       }
     }
-    this.log(chalk.green(`App commitment: ${metadataToBytes(MemberRemarked, createAppRemarked)}`))
+
+    const updateAppMessage = metadataToBytes(MemberRemarked, updateAppRemarked)
+    await this.sendRemark(updateAppMessage)
+    this.log(chalk.green(`Updated App with ID: ${appId}`))
   }
 }
