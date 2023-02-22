@@ -254,24 +254,29 @@ Below are some points to watch out for, what you can/cannot do.. and work around
 No changes should be made to the block interval.
 
 ### Runtime type changes
-As much as possible avoid changing the types that are stord in state storage. If changes are made there must be either accompanying migration code, or custom decoding implementation for the type to ensure reading state does not fail. Adding new types is encouraged.
+As much as possible avoid changing the types that are stord in state storage. If changes are made there must be either accompanying migration code, or custom decoding implementation for the type to ensure reading existing state from storage does not fail to decode. Adding new types and migrating state from old types is encouraged.
+
+Ref: guide on how migrations can be done: https://docs.substrate.io/reference/how-to-guides/storage-migrations/basic-storage-migration/
 
 ### Runtime event types
-It is generally safe to modify runtime event type. The primary consumer of events is the query node.
-The current version of they query node does not have a built in mechanism to correctly handle changing of the event type structure through runtime changes, and it should generally be avoided.
+It is generally not safe to modify runtime event type. The primary consumer of events is the query node,
+and the current implementation of they query node does not have a built in mechanism to correctly handle changing of the event type structure through runtime changes, and it should generally be avoided.
 
-If absolutely necessary the graphql schema and event handler must be aware of such change and be written an a backwards compatible way.
+If absolutely necessary the graphql schema and event handler must be aware of such change and be written in a backwards compatible way.
 
-Question: Can indexer - re-indexing handle changing metadata and correctly store and decode events across runtime changes?
+The issue is being worked on: https://github.com/Joystream/joystream/issues/4650
 
 ### New Genesis configurable state storage
 When introducing new state storage that is configurable at genesus, keep in mind that the genesis build function for the pallet will not be executed and will not be assigned. Initialing such values must be done in the `on_runtime_upgrade()` hook of the runtime.
 
 ### OnRuntimeUpgrade hook
-A custom [OnRuntimeUpgrade](https://github.com/Joystream/joystream/blob/master/runtime/src/runtime_api.rs#L63) is executed once when the runtime upgrade to the new version.
+A custom [OnRuntimeUpgrade](https://github.com/Joystream/joystream/blob/master/runtime/src/runtime_api.rs#L63) is executed once when the runtime upgrades to the new version.
+
 This is where we can execute migration code, or any the logic such as setting new storage values if necessary.
 It is important in this function to keep the invocation of`ProposalsEngine::cancel_active_and_pending_proposals()` to cancels all proposals, as there is no guarantee that the encoded calls for the proposal still reflect the original pallet, extrinsic and arguments expected.
-On a side note, there is a new approach seen in substrate code where the pallet id and method index can be hardcoded with rust decoration macros that can offer guarnatee. This should be researched.
+
+On a related note, there is a new approach seen in substrate code where the pallet id and method index can be hardcoded with rust decoration macros that can offer a better guarnatee between runtimes that encoded call would still dispatch the correct call.
+This should be researched.
 
 ### Joystream fork of substrate
 By inspecting Cargo.toml of runtime/, runtime-modules/ and bin/ you will not that the dependencies on substrate comes https://github.com/Joystream/substrate/tree/update-carthage-to-v0.9.24-1 
@@ -291,7 +296,7 @@ The runtime can be compiled with several cargo-feature flags, to produce slightl
 The main difference between these versions is around the election periods lenghts, proposal voting periods, and block interval.
 
 There are 4 profiles:
- - production: used in production mainnet
+ - production: used in production mainnet (this is the default )
  - staging: used on long running staging testnets
  - playground: used when deploying simple shared development testnets
  - testing: used when running integration tests
@@ -315,3 +320,20 @@ For you can conveniently run a local playground and point those apps to it:
 RUNTIME_PROFILE=PLAYGROUND ./build-node-docker.sh
 RUNTIME_PROFILE=PLAYGROUND yarn start
 ```
+
+### Upgrade Testing
+In addition to testing the new runtime in isolation, it is imperative that it should also be tested through performing an actual upgrade of the existing runtime. This would be done on a test network or playground. To make it practical the proposal needs to be executed in a short period in these test environments so using a testing profile or playground profile would be best.
+
+Specific test scenario should be written to test for any state migration code performed after the upgrade, or for any custom decoding implemented for old types.
+
+#### Automated runtime upgrade testing
+There are some scripts in `tests/network-tests/run-migration-tests.sh` that are executed by github workflow to perform such tests,
+but they should also be executed locally.
+
+The tool is being updated for Ephesus network: https://github.com/Joystream/joystream/pull/4569
+
+
+### Additional Resources
+Some tooling that would be useful to add to our runtime to add more testing capabilities:
+- https://docs.substrate.io/reference/how-to-guides/tools/use-try-runtime/
+- https://docs.substrate.io/reference/command-line-tools/try-runtime/
