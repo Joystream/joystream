@@ -269,6 +269,7 @@ jobs:
   runtime_upgrade:
     name: Runtime Upgrade From Mainnet To Ephesus
     needs: [build_master_testing, build_images]
+    if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
