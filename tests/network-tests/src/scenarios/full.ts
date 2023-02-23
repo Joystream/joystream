@@ -43,16 +43,19 @@ scenario('Full', async ({ job, env }) => {
   // Runtime upgrade should always be first job
   // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
   const councilJob = job('electing council', electCouncil)
+  const runtimeUpgradeProposalJob = job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+
+  const coreJob = councilJob || runtimeUpgradeProposalJob
 
   // Membership:
-  job('buying members', buyingMemberships).after(councilJob)
-  job('updating member profile', updatingMemberProfile).after(councilJob)
-  job('updating member accounts', updatingMemberAccounts).after(councilJob)
-  job('transferring invites', transferringInvites).after(councilJob)
-  job('managing staking accounts', managingStakingAccounts).after(councilJob)
+  job('buying members', buyingMemberships).after(coreJob)
+  job('updating member profile', updatingMemberProfile).after(coreJob)
+  job('updating member accounts', updatingMemberAccounts).after(coreJob)
+  job('transferring invites', transferringInvites).after(coreJob)
+  job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
-  const secondCouncilJob = job('electing second council', electCouncil).requires(councilJob)
+  const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
   job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
 
@@ -76,7 +79,7 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
   job('worker actions', workerActions).requires(hireLeads)
-  const groupBudgetSet = job('group budget', groupBudget).after(councilJob).requires(hireLeads)
+  const groupBudgetSet = job('group budget', groupBudget).after(coreJob).requires(hireLeads)
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
