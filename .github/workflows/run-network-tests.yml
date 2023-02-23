@@ -300,4 +300,4 @@ jobs:
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
-          tests/network-tests/run-migration-tests.sh
+          tests/network-tests/run-runtime-upgrade-tests.sh
