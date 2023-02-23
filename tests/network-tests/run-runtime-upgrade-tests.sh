@@ -58,13 +58,11 @@ function generate_config_files() {
 # Create a chain spec file
 function create_raw_chain_spec() {
     docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
-        new \
-        --fund-accounts \
-        --authorities //Alice \
-        --sudo-account ${SUDO_ACCOUNT} \
+        generate \
+        --authorities 1 \
         --deployment dev \
         --chain-spec-path /spec/chain-spec.json \
-        --initial-balances-path /spec/initial-balances.json
+        --keystore-path /spec/keystore
 
     # Convert the chain spec file to a raw chainspec file
     docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
@@ -76,9 +74,10 @@ function create_raw_chain_spec() {
 function start_old_joystream_node {
     docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
         -p 9944:9944 -p 9933:9933 joystream-node \
-        --alice --validator --unsafe-ws-external --unsafe-rpc-external \
+        --validator --unsafe-ws-external --unsafe-rpc-external \
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
-        --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry
+        --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
+        -keystore-path /spec/keystore
 }
 
 #######################################
