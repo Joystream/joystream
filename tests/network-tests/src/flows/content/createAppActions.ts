@@ -38,7 +38,6 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const appName = 'app_for_actions'
 
   const joystreamCli = await createJoystreamCli()
-  await joystreamCli.init()
   await joystreamCli.importAccount(member.keyringPair)
 
   await joystreamCli.createApp(member.memberId.toString(), { name: appName, ...appMetadata })

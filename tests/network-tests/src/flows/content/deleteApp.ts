@@ -24,7 +24,6 @@ export async function deleteApp({ api, query }: FlowProps): Promise<void> {
   }
 
   const joystreamCli = await createJoystreamCli()
-  await joystreamCli.init()
   await joystreamCli.importAccount(member.keyringPair)
 
   await joystreamCli.createApp(member.memberId.toString(), { name: appToDeleteName, ...appToDeleteMetadata })

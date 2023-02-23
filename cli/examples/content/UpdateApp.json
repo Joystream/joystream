@@ -1,0 +1,9 @@
+{
+  "name": "Updated exmaple app",
+  "description": "Updated exmaple app description",
+  "category": "trading",
+  "oneLiner": "best trading video platform",
+  "platforms": [
+    "web"
+  ]
+}

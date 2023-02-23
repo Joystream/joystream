@@ -1,13 +1,14 @@
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
-import { IAppMetadata, IMemberRemarked, MemberRemarked } from '@joystream/metadata-protobuf'
+import { IMemberRemarked, MemberRemarked } from '@joystream/metadata-protobuf'
 import { metadataToBytes } from '../../helpers/serialization'
 import { getInputJson } from '../../helpers/InputOutput'
 import AppCommandBase from '../../base/AppCommandBase'
 import MembershipsCommandBase from '../../base/MembershipsCommandBase'
+import { AppInputDetails } from '../../Types'
 
-export default class GenerateAppCreationMessage extends AppCommandBase {
-  static description = 'App creation message factory'
+export default class UpdateApp extends AppCommandBase {
+  static description = 'Updates app of given ID'
 
   static flags = {
     input: flags.string({
@@ -22,36 +23,32 @@ export default class GenerateAppCreationMessage extends AppCommandBase {
     skip: flags.boolean({
       char: 's',
       description: "If true command won't prompt missing fields",
+      dependsOn: ['input'],
     }),
     ...MembershipsCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    let updateAppRemarked: IMemberRemarked | null
-    const { input, appId, skip } = this.parse(GenerateAppCreationMessage).flags
-    if (input) {
-      const inputBody = await getInputJson<IAppMetadata>(input)
-      const appMetadata = skip ? inputBody : await this.promptAppMetadata(inputBody)
+    const { input, appId, skip } = this.parse(UpdateApp).flags
+    await this.getRequiredMemberContext(true)
 
-      updateAppRemarked = {
-        updateApp: {
-          appId,
-          appMetadata,
+    const defaults: Partial<AppInputDetails> = input ? await getInputJson<Partial<AppInputDetails>>(input) : {}
+    const appMetadata = skip ? defaults : await this.promptAppMetadata(defaults)
+    const updateAppRemarked: IMemberRemarked = {
+      updateApp: {
+        appId,
+        appMetadata: {
+          ...appMetadata,
+          description: undefined,
         },
-      }
-    } else {
-      const appMetadata = await this.promptAppMetadata()
-
-      updateAppRemarked = {
-        updateApp: {
-          appId,
-          appMetadata,
-        },
-      }
+      },
     }
+
+    this.jsonPrettyPrint(JSON.stringify(appMetadata))
+    await this.requireConfirmation('Do you confirm the provided input?', true)
 
     const updateAppMessage = metadataToBytes(MemberRemarked, updateAppRemarked)
     await this.sendRemark(updateAppMessage)
-    this.log(chalk.green(`Updated App with ID: ${appId}`))
+    this.log(chalk.green(`Member remark transaction successful!`))
   }
 }

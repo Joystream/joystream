@@ -5,8 +5,8 @@ import { metadataToBytes } from '../../helpers/serialization'
 import AppCommandBase from '../../base/AppCommandBase'
 import MembershipsCommandBase from '../../base/MembershipsCommandBase'
 
-export default class GenerateAppCreationMessage extends AppCommandBase {
-  static description = 'App creation message factory'
+export default class DeleteApp extends AppCommandBase {
+  static description = 'Deletes app of given ID'
 
   static flags = {
     appId: flags.string({
@@ -17,15 +17,19 @@ export default class GenerateAppCreationMessage extends AppCommandBase {
   }
 
   async run(): Promise<void> {
-    const { appId } = this.parse(GenerateAppCreationMessage).flags
+    const { appId } = this.parse(DeleteApp).flags
+    await this.getRequiredMemberContext(true)
+
     const deleteAppRemarked: IMemberRemarked = {
       deleteApp: {
         appId,
       },
     }
 
+    await this.requireConfirmation(`Are you sure you want to remove app ${chalk.magentaBright(appId)}?`)
+
     const deleteAppMessage = metadataToBytes(MemberRemarked, deleteAppRemarked)
     await this.sendRemark(deleteAppMessage)
-    this.log(chalk.green(`Deleted app with ID: ${appId}`))
+    this.log(chalk.green(`Member remark transaction successful!`))
   }
 }

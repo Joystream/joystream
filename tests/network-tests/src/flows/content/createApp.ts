@@ -16,7 +16,6 @@ export async function createApp({ api, query }: FlowProps): Promise<void> {
   const [member] = createMembersFixture.getCreatedItems().members
 
   const joystreamCli = await createJoystreamCli()
-  await joystreamCli.init()
   await joystreamCli.importAccount(member.keyringPair)
 
   const appMetadata: Partial<AppMetadata> = {
