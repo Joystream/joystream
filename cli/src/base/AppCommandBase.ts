@@ -45,7 +45,7 @@ export default abstract class AppCommandBase extends MembershipsCommandBase {
       membership: { controllerAccount },
     } = await this.getRequiredMemberContext(true)
     const keypair = await this.getDecodedPair(controllerAccount)
-    const result = await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [id, message, null])
+    const result = await this.sendAndFollowNamedTx(keypair, 'members', 'memberRemark', [id, message])
 
     const [memberId] = this.getEvent(result, 'members', 'MemberRemarked').data
 
