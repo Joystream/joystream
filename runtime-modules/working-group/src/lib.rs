@@ -1215,7 +1215,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T,I>::lead_remark(to_kb(msg.len() as u32))]
         pub fn lead_remark(origin, msg: Vec<u8>) {
-            let _ = checks::ensure_origin_is_active_leader::<T, I>(origin);
+            checks::ensure_origin_is_active_leader::<T, I>(origin)?;
 
             //
             // == MUTATION SAFE ==
@@ -1236,7 +1236,7 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T,I>::worker_remark(to_kb(msg.len() as u32))]
         pub fn worker_remark(origin, worker_id: WorkerId<T>,msg: Vec<u8>) {
-            let _ = checks::ensure_worker_signed::<T, I>(origin, &worker_id).map(|_| ());
+            checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
 
             //
             // == MUTATION SAFE ==
