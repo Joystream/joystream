@@ -50,7 +50,7 @@ export class Sender {
     const addr = this.keyring.encodeAddress(account)
     const senderKeyPair: KeyringPair = this.keyring.getPair(addr)
 
-    let unsunscribe: () => void
+    let unsubscribe: () => void
     let finalized: { (result: ISubmittableResult): void }
     const whenFinalized: Promise<ISubmittableResult> = new Promise((resolve, reject) => {
       finalized = resolve
@@ -125,8 +125,8 @@ export class Sender {
       // Always resolve irrespective of success or failure. Error handling should
       // be dealt with by caller.
       if (success || failed) {
-        if (unsunscribe) {
-          unsunscribe()
+        if (unsubscribe) {
+          unsubscribe()
         }
         finalized(result)
       }
@@ -147,7 +147,7 @@ export class Sender {
       sentTx = signedTx.toHuman()
       const { method, section } = signedTx.method
       try {
-        unsunscribe = await signedTx.send(handleEvents)
+        unsubscribe = await signedTx.send(handleEvents)
         if (this.logs === LogLevel.Verbose) {
           this.debug('Submitted tx:', `${section}.${method} (nonce: ${nonce}, tip: ${formatBalance(tip)})`)
         }
