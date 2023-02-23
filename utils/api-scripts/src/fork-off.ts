@@ -3,18 +3,6 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import fs from 'fs'
 import path from 'path'
 
-
-// paths & env variables
-const cmdArgs = process.argv.slice(2)
-const dataPath = cmdArgs[0].toString() || ''
-const specPath = path.join(dataPath, 'chain-spec-raw.json')
-const forkedSpecPath = path.join(dataPath, 'chain-spec-forked.json')
-const storagePath = path.join(dataPath, 'storage.json')
-
-
-// this might not be of much use
-const rpcRemoteEndpoint = cmdArgs[1].toString() || 'ws://localhost:9944'
-const provider = new WsProvider(rpcRemoteEndpoint)
 /**
  * All module prefixes except those mentioned in the skippedModulesPrefix will be added to this by the script.
  * If you want to add any past module or part of a skipped module, add the prefix here manually.
@@ -43,6 +31,15 @@ const skippedModulesPrefix = [
 ]
 
 async function main() {
+  // paths & env variables
+  const cmdArgs = process.argv.slice(2)
+  const dataPath = cmdArgs[0].toString() || ''
+  const specPath = path.join(dataPath, 'chain-spec-raw.json')
+  const forkedSpecPath = path.join(dataPath, 'chain-spec-forked.json')
+  const storagePath = path.join(dataPath, 'storage.json')
+  const rpcRemoteEndpoint = cmdArgs[1].toString() || 'ws://localhost:9944'
+  const provider = new WsProvider(rpcRemoteEndpoint)
+
   const api = await ApiPromise.create({ provider })
 
   const metadata = await api.rpc.state.getMetadata()

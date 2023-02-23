@@ -13,8 +13,8 @@ DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
 # The latest docker image tag to use for joystream/node (testing profile)
-RUNTIME=${RUNTIME:=mainnetDev}
-TARGET_RUNTIME=${TARGET_RUNTIME:=ephesus}
+RUNTIME=${RUNTIME:=current}
+TARGET_RUNTIME=${TARGET_RUNTIME:=target}
 
 # Initial account balance for sudo account
 SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
@@ -56,7 +56,7 @@ function generate_config_files() {
 }
 
 # Create a chain spec file
-function create_hex_chain_spec() {
+function create_raw_chain_spec() {
     docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
         new \
         --fund-accounts \
@@ -160,32 +160,33 @@ function main {
 
     CONTAINER_ID=""
     export JOYSTREAM_NODE_TAG=${RUNTIME}
-    if [ $TARGET_RUNTIME != $RUNTIME ]; then
-        if ! [[ -f ${DATA_PATH}/chain-spec-raw.json ]]; then
-            # 0. Generate config files
-            generate_config_files
-            echo >&2 "config files generated"
-            # 1. create empty raw chainspec
-            create_hex_chain_spec
-            echo >&2 "chainspec generated"
-            # 2. clone live chainspec with fork it
-            fork_off_init
-            echo >&2 "storage downloaded & dumped into the raw chainspec"
-            # 3. set path to new runtime.wasm
-            set_new_runtime_wasm_path
-            echo >&2 "new wasm path set"
-            # 4. copy chainspec to disk
-            export_chainspec_file_to_disk
-            echo >&2 "chainspec exported"
-        fi
+    if [ $TARGET_RUNTIME == $RUNTIME ]; then
+        echo >&2 "Same tag for runtime and target runtime aborting..."
+        exit 1
     fi
+
+    # 0. Generate config files
+    generate_config_files
+    echo >&2 "config files generated"
+    # 1. create empty raw chainspec
+    create_raw_chain_spec
+    echo >&2 "chainspec generated"
+    # 2. clone live chainspec with fork it
+    fork_off_init
+    echo >&2 "storage downloaded & dumped into the raw chainspec"
+    # 3. set path to new runtime.wasm
+    set_new_runtime_wasm_path
+    echo >&2 "new wasm path set"
+    # 4. copy chainspec to disk
+    export_chainspec_file_to_disk
+    echo >&2 "chainspec exported"
     # 5. start node
     CONTAINER_ID=$(start_old_joystream_node)
     echo >&2 "mainnet node starting"
 
     # wait 1 minute
     sleep 60
-    
+
     trap cleanup EXIT
 
     ./run-test-scenario.sh runtimeUpgrade
