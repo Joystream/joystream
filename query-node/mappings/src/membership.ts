@@ -66,17 +66,7 @@ import {
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
-import { membershipConfig } from './bootstrap-data'
-import { BN } from 'bn.js'
 import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
-
-// FIXME: Should be emitted as part of MemberInvited event, but this requires a runtime upgrade
-async function initialInvitationBalance(store: DatabaseManager) {
-  const lastInitialInviationBalanceUpdateEvent = await store.get(InitialInvitationBalanceUpdatedEvent, {
-    order: { inBlock: 'DESC', indexInBlock: 'DESC' },
-  })
-  return lastInitialInviationBalanceUpdateEvent?.newInitialBalance || new BN(membershipConfig.initialInvitationBalance)
-}
 
 async function saveMembershipExternalResources(
   store: DatabaseManager,
@@ -407,7 +397,7 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
 }
 
 export async function members_MemberInvited({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId, inviteMembershipParameters] = new Members.MemberInvitedEvent(event).params
+  const [memberId, inviteMembershipParameters, invitedMemberBalance] = new Members.MemberInvitedEvent(event).params
   const entryMethod = new MembershipEntryInvited()
   const invitedMember = await createNewMemberFromParams(
     store,
@@ -425,7 +415,6 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
 
   // Decrease working group budget
   const membershipWg = await getWorkingGroupByName(store, 'membershipWorkingGroup')
-  const invitedMemberBalance = await initialInvitationBalance(store)
   membershipWg.budget = membershipWg.budget.sub(invitedMemberBalance)
   await store.save<WorkingGroup>(membershipWg)
 
@@ -437,6 +426,7 @@ export async function members_MemberInvited({ store, event }: EventContext & Sto
     rootAccount: invitedMember.rootAccount,
     controllerAccount: invitedMember.controllerAccount,
     metadata: await saveMembershipMetadata(store, invitedMember),
+    initialBalance: invitedMemberBalance,
   })
 
   await store.save<MemberInvitedEvent>(memberInvitedEvent)

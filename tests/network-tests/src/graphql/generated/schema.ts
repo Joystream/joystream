@@ -14394,6 +14394,8 @@ export type MemberInvitedEvent = Event &
     handle: Scalars['String']
     metadata: MemberMetadata
     metadataId: Scalars['String']
+    /** Member's initial, invitation-locked balance */
+    initialBalance: Scalars['BigInt']
   }
 
 export type MemberInvitedEventConnection = {
@@ -14413,6 +14415,7 @@ export type MemberInvitedEventCreateInput = {
   controllerAccount: Scalars['String']
   handle: Scalars['String']
   metadata: Scalars['ID']
+  initialBalance: Scalars['String']
 }
 
 export type MemberInvitedEventEdge = {
@@ -14447,6 +14450,8 @@ export enum MemberInvitedEventOrderByInput {
   HandleDesc = 'handle_DESC',
   MetadataAsc = 'metadata_ASC',
   MetadataDesc = 'metadata_DESC',
+  InitialBalanceAsc = 'initialBalance_ASC',
+  InitialBalanceDesc = 'initialBalance_DESC',
 }
 
 export type MemberInvitedEventUpdateInput = {
@@ -14460,6 +14465,7 @@ export type MemberInvitedEventUpdateInput = {
   controllerAccount?: Maybe<Scalars['String']>
   handle?: Maybe<Scalars['String']>
   metadata?: Maybe<Scalars['ID']>
+  initialBalance?: Maybe<Scalars['String']>
 }
 
 export type MemberInvitedEventWhereInput = {
@@ -14521,6 +14527,12 @@ export type MemberInvitedEventWhereInput = {
   handle_startsWith?: Maybe<Scalars['String']>
   handle_endsWith?: Maybe<Scalars['String']>
   handle_in?: Maybe<Array<Scalars['String']>>
+  initialBalance_eq?: Maybe<Scalars['BigInt']>
+  initialBalance_gt?: Maybe<Scalars['BigInt']>
+  initialBalance_gte?: Maybe<Scalars['BigInt']>
+  initialBalance_lt?: Maybe<Scalars['BigInt']>
+  initialBalance_lte?: Maybe<Scalars['BigInt']>
+  initialBalance_in?: Maybe<Array<Scalars['BigInt']>>
   invitingMember?: Maybe<MembershipWhereInput>
   newMember?: Maybe<MembershipWhereInput>
   metadata?: Maybe<MemberMetadataWhereInput>

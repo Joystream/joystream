@@ -74,6 +74,9 @@ type MemberInvitedEvent implements Event @entity {
 
   "New member metadata"
   metadata: MemberMetadata!
+
+  "Member's initial, invitation-locked balance"
+  initialBalance: BigInt!
 }
 
 type MembershipGiftedEvent implements Event @entity {

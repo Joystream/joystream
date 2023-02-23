@@ -492,7 +492,7 @@ export default {
    **/
   PalletMembershipRawEvent: {
     _enum: {
-      MemberInvited: '(u64,PalletMembershipInviteMembershipParameters)',
+      MemberInvited: '(u64,PalletMembershipInviteMembershipParameters,u128)',
       MembershipGifted: '(u64,PalletMembershipGiftMembershipParameters)',
       MembershipBought: '(u64,PalletMembershipBuyMembershipParameters,u32)',
       MemberProfileUpdated: '(u64,Option<Bytes>,Option<Bytes>)',

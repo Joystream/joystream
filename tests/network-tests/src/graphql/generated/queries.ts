@@ -1278,6 +1278,7 @@ export type MemberInvitedEventFieldsFragment = {
   rootAccount: string
   controllerAccount: string
   handle: string
+  initialBalance: any
   invitingMember: { id: string }
   newMember: { id: string }
   metadata: MemberMetadataFieldsFragment
@@ -4028,6 +4029,7 @@ export const MemberInvitedEventFields = gql`
     metadata {
       ...MemberMetadataFields
     }
+    initialBalance
   }
   ${MemberMetadataFields}
 `
