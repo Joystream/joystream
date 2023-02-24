@@ -77,7 +77,7 @@ function start_old_joystream_node {
         --validator --unsafe-ws-external --unsafe-rpc-external \
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
         --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
-        -keystore-path /spec/keystore
+        --keystore-path /spec/keystore
 }
 
 #######################################
