@@ -15,6 +15,7 @@ export type AppFieldsFragment = {
   category?: Types.Maybe<string>
   authKey?: Types.Maybe<string>
   platforms?: Types.Maybe<Array<string>>
+  isDeleted: boolean
   ownerMember: { id: string }
 }
 
@@ -2565,6 +2566,7 @@ export const AppFields = gql`
     category
     authKey
     platforms
+    isDeleted
   }
 `
 export const DataObjectTypeFields = gql`

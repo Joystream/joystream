@@ -15,6 +15,7 @@ fragment AppFields on App {
   category
   authKey
   platforms
+  isDeleted
 }
 
 query getAppById($id: ID!) {

@@ -169,6 +169,7 @@ export type App = BaseGraphQlObject & {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  isDeleted: Scalars['Boolean']
   appVideos: Array<Video>
   appChannels: Array<Channel>
 }
@@ -193,6 +194,7 @@ export type AppCreateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  isDeleted: Scalars['Boolean']
 }
 
 export type AppEdge = {
@@ -231,6 +233,8 @@ export enum AppOrderByInput {
   CategoryDesc = 'category_DESC',
   AuthKeyAsc = 'authKey_ASC',
   AuthKeyDesc = 'authKey_DESC',
+  IsDeletedAsc = 'isDeleted_ASC',
+  IsDeletedDesc = 'isDeleted_DESC',
 }
 
 export type AppUpdateInput = {
@@ -247,6 +251,7 @@ export type AppUpdateInput = {
   platforms?: Maybe<Array<Scalars['String']>>
   category?: Maybe<Scalars['String']>
   authKey?: Maybe<Scalars['String']>
+  isDeleted?: Maybe<Scalars['Boolean']>
 }
 
 export type AppWhereInput = {
@@ -332,6 +337,8 @@ export type AppWhereInput = {
   authKey_startsWith?: Maybe<Scalars['String']>
   authKey_endsWith?: Maybe<Scalars['String']>
   authKey_in?: Maybe<Array<Scalars['String']>>
+  isDeleted_eq?: Maybe<Scalars['Boolean']>
+  isDeleted_in?: Maybe<Array<Scalars['Boolean']>>
   ownerMember?: Maybe<MembershipWhereInput>
   appVideos_none?: Maybe<VideoWhereInput>
   appVideos_some?: Maybe<VideoWhereInput>
