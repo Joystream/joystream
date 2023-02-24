@@ -40,6 +40,7 @@ export async function processCreateAppMessage(
     platforms: appMetadata?.platforms || undefined,
     category: appMetadata?.category || undefined,
     authKey: appMetadata?.authKey || undefined,
+    isDeleted: false,
   })
   await store.save<App>(newApp)
   logger.info('App has been created', { name })
@@ -98,8 +99,8 @@ export async function processDeleteAppMessage(
   if (app.ownerMember.id !== memberId) {
     inconsistentState("App doesn't belong to the member", { appId, memberId })
   }
-
-  await store.remove<App>(app)
+  app.isDeleted = true
+  await store.save<App>(app)
   logger.info('App has been removed', { appId })
 }
 

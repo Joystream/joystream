@@ -20,6 +20,7 @@ type App @entity {
   platforms: [String]
   category: String
   authKey: String
+  isDeleted: Boolean!
   appVideos: [Video!] @derivedFrom(field: "entryApp")
   appChannels: [Channel!] @derivedFrom(field: "entryApp")
 }

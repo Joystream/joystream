@@ -194,8 +194,8 @@ async function validateAndGetApp(
 
   const app = await getAppById(ctx.store, appAction.appId)
 
-  if (!app || !app.authKey) {
-    invalidMetadata('No app of given id found')
+  if (!app || !app.authKey || app.isDeleted) {
+    invalidMetadata('App not found, missing auth key or deleted')
     return undefined
   }
 
