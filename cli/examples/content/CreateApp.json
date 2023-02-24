@@ -1,0 +1,9 @@
+{
+  "name": "Exmaple app",
+  "description": "Exmaple app description",
+  "category": "blockchain",
+  "oneLiner": "best blokchain video platform",
+  "platforms": [
+    "web", "mobile"
+  ]
+}

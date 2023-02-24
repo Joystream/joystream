@@ -18,6 +18,7 @@ import { ed25519PairFromString, ed25519Sign } from '@polkadot/util-crypto'
 import { u8aToHex, stringToHex } from '@polkadot/util'
 import { CreateChannelsAsMemberFixture } from '../../misc/createChannelsAsMemberFixture'
 import { Bytes } from '@polkadot/types'
+import { createJoystreamCli } from '../utils'
 
 export async function createAppActions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:create-app-actions')
@@ -35,7 +36,11 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     authKey: appPublicKeyHex,
   }
   const appName = 'app_for_actions'
-  await api.createApp(appName, appMetadata, member.memberId)
+
+  const joystreamCli = await createJoystreamCli()
+  await joystreamCli.importAccount(member.keyringPair)
+
+  await joystreamCli.createApp(member.memberId.toString(), { name: appName, ...appMetadata })
 
   const appFragment = await query.tryQueryWithTimeout(
     () => query.getAppsByName(appName),
