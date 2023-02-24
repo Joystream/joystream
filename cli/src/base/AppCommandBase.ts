@@ -41,7 +41,7 @@ export default abstract class AppCommandBase extends MembershipsCommandBase {
 
   processValue(key: string, value: string): string | string[] {
     if (value === '-') {
-      return ''
+      return key === 'platforms' ? [''] : ''
     }
     if (key === 'platforms') {
       return value.split(',').map((str: string) => str.trim())

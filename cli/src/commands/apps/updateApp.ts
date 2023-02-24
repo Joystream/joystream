@@ -39,7 +39,6 @@ export default class UpdateApp extends AppCommandBase {
         appId,
         appMetadata: {
           ...appMetadata,
-          description: undefined,
         },
       },
     }
