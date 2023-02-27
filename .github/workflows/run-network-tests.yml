@@ -267,7 +267,7 @@ jobs:
           path: joystream-node-docker-image-master.tar.gz
 
   runtime_upgrade:
-    name: Runtime Upgrade From Mainnet To Ephesus
+    name: Runtime Upgrade From production runtime
     needs: [build_master_testing, build_images]
     if: github.ref != 'refs/heads/master'
     runs-on: ubuntu-latest
