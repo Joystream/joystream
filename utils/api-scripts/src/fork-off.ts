@@ -25,6 +25,7 @@ const skippedModulesPrefix = [
   'GrandpaFinality',
   'FinalityTracker',
   'Authorship',
+  'Sudo',
   // Joystream specific
   'Council', // empty council
   'Referendum',
@@ -38,6 +39,7 @@ async function main() {
   const forkedSpecPath = path.join(dataPath, 'chain-spec-forked.json')
   const storagePath = path.join(dataPath, 'storage.json')
   const rpcRemoteEndpoint = cmdArgs[1].toString() || 'ws://localhost:9944'
+  console.log(`fork-off provider at ${rpcRemoteEndpoint}`)
   const provider = new WsProvider(rpcRemoteEndpoint)
 
   const api = await ApiPromise.create({ provider })
@@ -62,9 +64,6 @@ async function main() {
   storage.result
     .filter((i) => prefixes.some((prefix) => i[0].startsWith(prefix)))
     .forEach(([key, value]) => (chainSpec.genesis.raw.top[key] = value))
-
-  // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
-  delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']
 
   // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
   delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']

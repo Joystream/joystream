@@ -16,11 +16,6 @@ mkdir -p ${DATA_PATH}
 RUNTIME=${RUNTIME:=current}
 TARGET_RUNTIME=${TARGET_RUNTIME:=target}
 
-# Initial account balance for sudo account
-SUDO_INITIAL_BALANCE=${SUDO_INITIAL_BALANCE:="100000000"}
-SUDO_ACCOUNT_URI=${SUDO_ACCOUNT_URI:="//Alice"}
-SUDO_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${SUDO_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
-
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
@@ -79,7 +74,8 @@ function start_old_joystream_node {
         --validator --unsafe-ws-external --unsafe-rpc-external \
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
         --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
-        --keystore-path /spec/keystore
+        --keystore-path /spec/keystore/auth-0
+    # --base-path /spec/alice
 }
 
 #######################################
