@@ -233,8 +233,8 @@ jobs:
         run: |
           if ! [ -f joystream-node-docker-image-master.tar.gz ]; then
             docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:mainnetTest
-            docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetTest
+            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:mainnetDev
+            docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetDev
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image-master.tar.gz ~/docker-images/
           fi
@@ -260,14 +260,14 @@ jobs:
             CARGO_FEATURES=testing-runtime
             CODE_SHASUM=${{ steps.compute_shasum_master.outputs.shasum }}
           push: false
-          tags: joystream/node:mainnetTest
+          tags: joystream/node:mainnetDev
           builder: ${{ steps.builder2.outputs.name }}
           load: true
         if: steps.check_master_image.outputs.files_exists == 'false'
 
       - name: Save joystream/node image to cache
         run: |
-          docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetTest
+          docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetDev
           gzip joystream-node-docker-image-master.tar
           cp joystream-node-docker-image-master.tar.gz ~/docker-images/
         if: steps.check_master_image.outputs.files_exists == 'false'
@@ -306,7 +306,7 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         env:
-          RUNTIME: mainnetTest
+          RUNTIME: mainnetDev
           TARGET_RUNTIME: latest
         run: |
           export HOME=${PWD}
