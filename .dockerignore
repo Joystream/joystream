@@ -7,3 +7,5 @@ query-node/lib
 tests/
 !tests/network-tests/proposal-parameters.json
 devops/
+!devops/eslint-config
+!devops/prettier-config
