@@ -1,3 +1,14 @@
+### 1.1.0
+
+- Added support for _Apps_ functionality with accordance to a specification from: https://github.com/Joystream/joystream/issues/4307:
+  - New entity: `App`
+  - Updated `@joystream/metadata-protobuf` dependency to `2.7.0` (includes `App` related protobuf messages)
+  - Support for creating and updating `App`s through `MemberRemark`
+  - Support for connecting `Video` and `Channel` entities to `App` via a new `entryApp` relationship
+  - `Membership` entity now includes new `totalChannelsCreated` and `totalVideosCreated` fields 
+- FIX: `deserializeMetadata` now used instead of `MemberRemarked.decode` in `MemberRemark` event handler.
+- `deserializeMetadata`: added a new, optional `skipWarning` property
+
 ### 1.0.1
 
 - Added missing `WorkingGroupBudgetFunded` event mapping
