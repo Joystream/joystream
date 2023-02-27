@@ -33,7 +33,6 @@ echo >&2 "treasury account from suri: ${TREASURY_ACCOUNT}"
 function generate_config_files() {
     echo "{
   \"balances\":[
-    [\"$SUDO_ACCOUNT\", $SUDO_INITIAL_BALANCE],
     [\"$TREASURY_ACCOUNT\", $TREASURY_INITIAL_BALANCE]
   ],
   \"vesting\":[]
@@ -60,6 +59,9 @@ function create_raw_chain_spec() {
     docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
         generate \
         --authorities 1 \
+        --nominators 1 \
+        --endowed 1 \
+        --initial-balances-path /spec/initial-balances.json \
         --deployment dev \
         --chain-spec-path /spec/chain-spec.json \
         --keystore-path /spec/keystore
