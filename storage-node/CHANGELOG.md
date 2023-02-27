@@ -1,3 +1,7 @@
+### 3.1.1
+
+- `@joystream/types` dependency version bump for consistency with mainnet release versioning
+
 ### 3.1.0
 
 - Adds connected query-node's state information to the `/status` endpoint.
