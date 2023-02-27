@@ -212,11 +212,4 @@ export class JoystreamCLI extends CLI {
 
     await this.run('apps:updateApp', ['--appId', appId, '-i', jsonFile, '-s', '--useMemberId', memberId])
   }
-
-  /**
-   Deletes an app.
-   */
-  async deleteApp(memberId: string, appId: string): Promise<void> {
-    await this.run('apps:deleteApp', ['--appId', appId, '--useMemberId', memberId])
-  }
 }
