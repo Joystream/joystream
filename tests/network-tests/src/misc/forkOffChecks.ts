@@ -14,7 +14,7 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
 
   assert(nextMemberId > new BN(1000), 'next member id')
   assert(nextVideoId > new BN(100), 'next video id')
-  assert(councilors.length == 0, 'council is not empty')
+  assert(councilors.length === 0, 'council is not empty')
 
   debug('Done')
 }
