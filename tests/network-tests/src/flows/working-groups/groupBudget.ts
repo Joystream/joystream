@@ -2,48 +2,28 @@ import BN from 'bn.js'
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
-import { getWorkingGroupNameByModuleName, workingGroups } from '../../consts'
-import { SpendBudgetFixture } from '../../fixtures/workingGroups/SpendBudgetFixture'
+import { workingGroups } from '../../consts'
+import { SpendBudgetFixture, FundWorkingGroupBudgetFixture } from '../../fixtures/workingGroups'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { Resource } from '../../Resources'
-import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
-import { createType } from '@joystream/types'
 
-export default async function groupBudget({ api, query, lock }: FlowProps): Promise<void> {
+export default async function groupBudget({ api, query }: FlowProps): Promise<void> {
   await Promise.all(
     workingGroups.map(async (group) => {
-      const budget = new BN(1000000)
-
       const debug = extendDebug(`flow:group-budget:${group}`)
       debug('Started')
       api.enableDebugTxLogs()
 
-      const [roleAccount] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
-      const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, [roleAccount])
+      const funderAccounts = (await api.createKeyPairs(3)).map(({ key }) => key.address)
+      const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, funderAccounts)
       await new FixtureRunner(buyMembershipFixture).run()
-      const [memberId] = buyMembershipFixture.getCreatedMembers()
+      const funderMembers = buyMembershipFixture.getCreatedMembers()
 
-      const unlock = await lock(Resource.Proposals)
-      const updateWgBudgetProposalFixture = new CreateProposalsFixture(api, query, [
-        {
-          type: 'UpdateWorkingGroupBudget',
-          details: createType('(u128, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletCommonBalanceKind)', [
-            budget,
-            getWorkingGroupNameByModuleName(group),
-            createType('PalletCommonBalanceKind', 'Positive'),
-          ]),
-          asMember: memberId,
-          title: 'Proposal to set budget',
-          description: `Proposal to set budget for ${group}`,
-        },
+      const fundWorkingGroupBudgetFixture = new FundWorkingGroupBudgetFixture(api, query, group, [
+        { memberId: funderMembers[0], amount: new BN(110_000) },
+        { memberId: funderMembers[1], amount: new BN(5_000) },
+        { memberId: funderMembers[2], amount: new BN(35_000) },
       ])
-      await new FixtureRunner(updateWgBudgetProposalFixture).run()
-      const [updateWgBudgetProposalId] = updateWgBudgetProposalFixture.getCreatedProposalsIds()
-      const decideOnUpdateWgBudgetProposalStatusFixture = new DecideOnProposalStatusFixture(api, query, [
-        { proposalId: updateWgBudgetProposalId, status: 'Approved', expectExecutionFailure: false },
-      ])
-      await new FixtureRunner(decideOnUpdateWgBudgetProposalStatusFixture).run()
-      unlock()
+      await new FixtureRunner(fundWorkingGroupBudgetFixture).runWithQueryNodeChecks()
 
       const recievers = (await api.createKeyPairs(5)).map(({ key }) => key.address)
       const amounts = recievers.map((reciever, i) => new BN(10000 * (i + 1)))

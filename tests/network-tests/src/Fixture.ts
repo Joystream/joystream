@@ -6,6 +6,7 @@ import { QueryNodeApi } from './QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { extendDebug, Debugger } from './Debugger'
 import { AnyQueryNodeEvent, EventDetails } from './types'
+import { BN } from 'bn.js'
 
 export abstract class BaseFixture {
   protected readonly api: Api
@@ -106,6 +107,8 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
   protected extrinsics: SubmittableExtrinsic<'promise'>[] = []
   protected results: ISubmittableResult[] = []
   protected events: EventDetails[] = []
+  protected decrementalTip = false
+  protected expectedErrorName: string | undefined
 
   protected abstract getSignerAccountOrAccounts(): Promise<string | string[]>
   protected abstract getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][]>
@@ -122,21 +125,26 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     })
   }
 
-  private flattenExtrinsics(
-    extrinsics: SubmittableExtrinsic<'promise'>[] | SubmittableExtrinsic<'promise'>[][]
-  ): SubmittableExtrinsic<'promise'>[] {
-    return Array.isArray(extrinsics[0])
-      ? (extrinsics as SubmittableExtrinsic<'promise'>[][]).reduce((res, batch) => res.concat(batch), [])
-      : (extrinsics as SubmittableExtrinsic<'promise'>[])
+  public setErrorName(errName: string) {
+    this.expectedErrorName = errName
   }
 
   public async execute(): Promise<void> {
     const accountOrAccounts = await this.getSignerAccountOrAccounts()
     const extrinsics = await this.getExtrinsics()
-    this.extrinsics = this.flattenExtrinsics(extrinsics)
-    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics)
-    this.results = await this.api.sendExtrinsicsAndGetResults(extrinsics, accountOrAccounts)
-    this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
+    this.extrinsics = extrinsics.flat()
+    const tip = this.decrementalTip ? new BN(100_000_000_000) : new BN(0)
+    await this.api.prepareAccountsForFeeExpenses(accountOrAccounts, this.extrinsics, tip)
+    this.results = await this.api.sendExtrinsicsAndGetResults(extrinsics, accountOrAccounts, tip)
+    if (!this.expectedErrorName) {
+      this.events = await Promise.all(this.results.map((r) => this.getEventFromResult(r)))
+    } else {
+      this.results.map((result) => {
+        this.expectDispatchError(result, 'Error expected but extrinsic succeeded')
+        const errName = this.api.getErrorNameFromExtrinsicFailedRecord(result)
+        assert.deepEqual(errName, this.expectedErrorName, 'Wrong error observed')
+      })
+    }
   }
 }
 

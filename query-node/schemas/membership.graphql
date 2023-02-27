@@ -180,6 +180,12 @@ type Membership @entity {
   "NFTs owned by this member in various channels."
   nftCollectorInChannels: [ChannelNftCollectors!]! @derivedFrom(field: "member")
 
+  "Number of channels ever created by this member"
+  totalChannelsCreated: Int!
+
+  "Number of videos ever created by this member"
+  totalVideosCreated: Int!
+
   # Required for EnglishAuctionSettledEvent->members Many-to-Many relationship
   "Member as bidder in EnglishAuctionSettledEvent/s."
   memberEnglishAuctionSettledEvents: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")

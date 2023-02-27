@@ -1,6 +1,35 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type AppFieldsFragment = {
+  id: string
+  name: string
+  websiteUrl?: Types.Maybe<string>
+  useUri?: Types.Maybe<string>
+  smallIcon?: Types.Maybe<string>
+  mediumIcon?: Types.Maybe<string>
+  bigIcon?: Types.Maybe<string>
+  oneLiner?: Types.Maybe<string>
+  description?: Types.Maybe<string>
+  termsOfService?: Types.Maybe<string>
+  category?: Types.Maybe<string>
+  authKey?: Types.Maybe<string>
+  platforms?: Types.Maybe<Array<string>>
+  ownerMember: { id: string }
+}
+
+export type GetAppByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<AppFieldsFragment> }
+
+export type GetAppsByNameQueryVariables = Types.Exact<{
+  name: Types.Scalars['String']
+}>
+
+export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
+
 type DataObjectTypeFields_DataObjectTypeChannelAvatar_Fragment = {
   __typename: 'DataObjectTypeChannelAvatar'
   channel?: Types.Maybe<{ id: string }>
@@ -69,11 +98,13 @@ export type ChannelFieldsFragment = {
   rewardAccount: string
   cumulativeRewardClaimed?: Types.Maybe<any>
   language?: Types.Maybe<{ iso: string }>
+  entryApp?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   coverPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
   bannedMembers: Array<{ id: string }>
+  videos: Array<VideoFieldsFragment>
 }
 
 export type VideoCategoryFieldsFragment = { id: string; name?: Types.Maybe<string>; activeVideosCounter: number }
@@ -137,9 +168,11 @@ export type VideoFieldsFragment = {
   isPublic?: Types.Maybe<boolean>
   isExplicit?: Types.Maybe<boolean>
   hasMarketing?: Types.Maybe<boolean>
+  ytVideoId?: Types.Maybe<string>
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  entryApp?: Types.Maybe<AppFieldsFragment>
   license?: Types.Maybe<LicenseFieldsFragment>
   mediaMetadata?: Types.Maybe<VideoMediaMetadataFieldsFragment>
   media?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -178,7 +211,7 @@ export type OwnedNftFieldsFragment = {
   transactionalStatus?: Types.Maybe<
     | { __typename: 'TransactionalStatusIdle'; dummy?: Types.Maybe<number> }
     | { __typename: 'TransactionalStatusInitiatedOfferToMember' }
-    | { __typename: 'TransactionalStatusBuyNow'; price: number }
+    | { __typename: 'TransactionalStatusBuyNow'; price: any }
   >
   transactionalStatusAuction?: Types.Maybe<{
     startsAtBlock: number
@@ -191,7 +224,7 @@ export type OwnedNftFieldsFragment = {
           extensionPeriod: number
           duration: number
           plannedEndAtBlock: number
-          minimalBidStep: number
+          minimalBidStep: any
         }
       | { __typename: 'AuctionTypeOpen'; bidLockDuration: number }
     bids: Array<BidFieldsFragment>
@@ -232,6 +265,10 @@ export type GetChannelsByIdsQueryVariables = Types.Exact<{
 }>
 
 export type GetChannelsByIdsQuery = { channels: Array<ChannelFieldsFragment> }
+
+export type GetChannelsCountQueryVariables = Types.Exact<{ [key: string]: never }>
+
+export type GetChannelsCountQuery = { channelsConnection: { totalCount: number } }
 
 export type GetVideoCategoryByIdQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']
@@ -611,7 +648,7 @@ export type ChannelRewardClaimedAndWithdrawnEventFieldsFragment = {
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
   amount: any
-  account: string
+  account?: Types.Maybe<string>
   channel: { id: string }
 }
 
@@ -631,7 +668,7 @@ export type ChannelFundsWithdrawnEventFieldsFragment = {
   inExtrinsic?: Types.Maybe<string>
   indexInBlock: number
   amount: any
-  account: string
+  account?: Types.Maybe<string>
   channel: { id: string }
 }
 
@@ -1241,6 +1278,7 @@ export type MemberInvitedEventFieldsFragment = {
   rootAccount: string
   controllerAccount: string
   handle: string
+  initialBalance: any
   invitingMember: { id: string }
   newMember: { id: string }
   metadata: MemberMetadataFieldsFragment
@@ -1622,9 +1660,9 @@ type ProposalDetailsFields_SetMaxValidatorCountProposalDetails_Fragment = {
 
 type ProposalDetailsFields_CreateWorkingGroupLeadOpeningProposalDetails_Fragment = {
   __typename: 'CreateWorkingGroupLeadOpeningProposalDetails'
-  stakeAmount: number
+  stakeAmount: any
   unstakingPeriod: number
-  rewardPerBlock: number
+  rewardPerBlock: any
   metadata?: Types.Maybe<OpeningMetadataFieldsFragment>
   group?: Types.Maybe<{ id: string }>
 }
@@ -1637,31 +1675,31 @@ type ProposalDetailsFields_FillWorkingGroupLeadOpeningProposalDetails_Fragment =
 
 type ProposalDetailsFields_UpdateWorkingGroupBudgetProposalDetails_Fragment = {
   __typename: 'UpdateWorkingGroupBudgetProposalDetails'
-  amount: number
+  amount: any
   group?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_DecreaseWorkingGroupLeadStakeProposalDetails_Fragment = {
   __typename: 'DecreaseWorkingGroupLeadStakeProposalDetails'
-  amount: number
+  amount: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SlashWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'SlashWorkingGroupLeadProposalDetails'
-  amount: number
+  amount: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_SetWorkingGroupLeadRewardProposalDetails_Fragment = {
   __typename: 'SetWorkingGroupLeadRewardProposalDetails'
-  newRewardPerBlock: number
+  newRewardPerBlock: any
   lead?: Types.Maybe<{ id: string }>
 }
 
 type ProposalDetailsFields_TerminateWorkingGroupLeadProposalDetails_Fragment = {
   __typename: 'TerminateWorkingGroupLeadProposalDetails'
-  slashingAmount?: Types.Maybe<number>
+  slashingAmount?: Types.Maybe<any>
   lead?: Types.Maybe<{ id: string }>
 }
 
@@ -1677,22 +1715,22 @@ type ProposalDetailsFields_CancelWorkingGroupLeadOpeningProposalDetails_Fragment
 
 type ProposalDetailsFields_SetMembershipPriceProposalDetails_Fragment = {
   __typename: 'SetMembershipPriceProposalDetails'
-  newPrice: number
+  newPrice: any
 }
 
 type ProposalDetailsFields_SetCouncilBudgetIncrementProposalDetails_Fragment = {
   __typename: 'SetCouncilBudgetIncrementProposalDetails'
-  newAmount: number
+  newAmount: any
 }
 
 type ProposalDetailsFields_SetCouncilorRewardProposalDetails_Fragment = {
   __typename: 'SetCouncilorRewardProposalDetails'
-  newRewardPerBlock: number
+  newRewardPerBlock: any
 }
 
 type ProposalDetailsFields_SetInitialInvitationBalanceProposalDetails_Fragment = {
   __typename: 'SetInitialInvitationBalanceProposalDetails'
-  newInitialInvitationBalance: number
+  newInitialInvitationBalance: any
 }
 
 type ProposalDetailsFields_SetInitialInvitationCountProposalDetails_Fragment = {
@@ -1718,8 +1756,8 @@ type ProposalDetailsFields_VetoProposalDetails_Fragment = {
 type ProposalDetailsFields_UpdateChannelPayoutsProposalDetails_Fragment = {
   __typename: 'UpdateChannelPayoutsProposalDetails'
   commitment?: Types.Maybe<string>
-  minCashoutAllowed?: Types.Maybe<number>
-  maxCashoutAllowed?: Types.Maybe<number>
+  minCashoutAllowed?: Types.Maybe<any>
+  maxCashoutAllowed?: Types.Maybe<any>
   channelCashoutsEnabled?: Types.Maybe<boolean>
 }
 
@@ -2669,6 +2707,45 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export type BudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  amount: any
+  group: { name: string }
+  member: { id: string }
+}
+
+export type GetBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetFundedEventsByEventIdsQuery = { budgetFundedEvents: Array<BudgetFundedEventFieldsFragment> }
+
+export const AppFields = gql`
+  fragment AppFields on App {
+    id
+    name
+    ownerMember {
+      id
+    }
+    websiteUrl
+    useUri
+    smallIcon
+    mediumIcon
+    bigIcon
+    oneLiner
+    description
+    termsOfService
+    category
+    authKey
+    platforms
+  }
+`
 export const LicenseFields = gql`
   fragment LicenseFields on License {
     code
@@ -2814,6 +2891,10 @@ export const VideoFields = gql`
     isPublic
     isExplicit
     hasMarketing
+    ytVideoId
+    entryApp {
+      ...AppFields
+    }
     license {
       ...LicenseFields
     }
@@ -2848,6 +2929,7 @@ export const VideoFields = gql`
       ...VideoSubtitleFields
     }
   }
+  ${AppFields}
   ${LicenseFields}
   ${VideoMediaMetadataFields}
   ${StorageDataObjectFields}
@@ -3258,6 +3340,9 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
+    entryApp {
+      ...AppFields
+    }
     ownerMember {
       id
     }
@@ -3275,8 +3360,13 @@ export const ChannelFields = gql`
     }
     rewardAccount
     cumulativeRewardClaimed
+    videos {
+      ...VideoFields
+    }
   }
+  ${AppFields}
   ${StorageDataObjectFields}
+  ${VideoFields}
 `
 export const MemberMetadataFields = gql`
   fragment MemberMetadataFields on MemberMetadata {
@@ -3939,6 +4029,7 @@ export const MemberInvitedEventFields = gql`
     metadata {
       ...MemberMetadataFields
     }
+    initialBalance
   }
   ${MemberMetadataFields}
 `
@@ -5165,6 +5256,40 @@ export const BudgetSpendingEventFields = gql`
     rationale
   }
 `
+export const BudgetFundedEventFields = gql`
+  fragment BudgetFundedEventFields on BudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    group {
+      name
+    }
+    member {
+      id
+    }
+    rationale
+    amount
+  }
+`
+export const GetAppById = gql`
+  query getAppById($id: ID!) {
+    appByUniqueInput(where: { id: $id }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
+export const GetAppsByName = gql`
+  query getAppsByName($name: String!) {
+    apps(where: { name_eq: $name }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {
     channelByUniqueInput(where: { id: $id }) {
@@ -5180,6 +5305,13 @@ export const GetChannelsByIds = gql`
     }
   }
   ${ChannelFields}
+`
+export const GetChannelsCount = gql`
+  query getChannelsCount {
+    channelsConnection {
+      totalCount
+    }
+  }
 `
 export const GetVideoCategoryById = gql`
   query getVideoCategoryById($id: ID!) {
@@ -6110,4 +6242,12 @@ export const GetBudgetSpendingEventsByEventIds = gql`
     }
   }
   ${BudgetSpendingEventFields}
+`
+export const GetBudgetFundedEventsByEventIds = gql`
+  query getBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    budgetFundedEvents(where: { id_in: $eventIds }) {
+      ...BudgetFundedEventFields
+    }
+  }
+  ${BudgetFundedEventFields}
 `

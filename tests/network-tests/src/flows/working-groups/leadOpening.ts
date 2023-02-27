@@ -8,7 +8,7 @@ import { WorkingGroupModuleName } from '../../types'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { AddStakingAccountsHappyCaseFixture, BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { getWorkingGroupNameByModuleName, workingGroups } from '../../consts'
+import { workingGroupNameByModuleName, workingGroups } from '../../consts'
 import { createType } from '@joystream/types'
 import { CreateProposalsFixture, DecideOnProposalStatusFixture } from '../../fixtures/proposals'
 import { Resource } from '../../Resources'
@@ -49,7 +49,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
                 'leavingUnstakingPeriod': openingParams.unstakingPeriod,
               }),
               'rewardPerBlock': openingParams.reward,
-              'group': getWorkingGroupNameByModuleName(group),
+              'group': workingGroupNameByModuleName[group],
             }),
             asMember: memberId,
             title: 'Proposal to Hired lead',
@@ -113,7 +113,7 @@ export default (skipIfAlreadySet = false, groups: WorkingGroupModuleName[] = wor
             details: createType('PalletProposalsCodexFillOpeningParameters', {
               openingId,
               applicationId,
-              workingGroup: getWorkingGroupNameByModuleName(group),
+              workingGroup: workingGroupNameByModuleName[group],
             }),
             asMember: memberId,
             title: 'Proposal to Fill lead opening',

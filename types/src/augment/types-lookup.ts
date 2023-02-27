@@ -537,7 +537,7 @@ declare module '@polkadot/types/lookup' {
   /** @name PalletMembershipRawEvent (67) */
   export interface PalletMembershipRawEvent extends Enum {
     readonly isMemberInvited: boolean;
-    readonly asMemberInvited: ITuple<[u64, PalletMembershipInviteMembershipParameters]>;
+    readonly asMemberInvited: ITuple<[u64, PalletMembershipInviteMembershipParameters, u128]>;
     readonly isMembershipGifted: boolean;
     readonly asMembershipGifted: ITuple<[u64, PalletMembershipGiftMembershipParameters]>;
     readonly isMembershipBought: boolean;

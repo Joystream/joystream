@@ -1,22 +1,19 @@
-import {
-  PalletCommonWorkingGroupIterableEnumsWorkingGroup,
-  PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup,
-} from '@polkadot/types/lookup'
 import { AugmentedConsts } from '@polkadot/api/types'
 import BN from 'bn.js'
 import { ProposalType, WorkingGroupModuleName } from './types'
-import { createType } from '@joystream/types'
+import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WorkingGroup } from '@polkadot/types/lookup'
 
 export const debuggingCli = false // set to true to see CLI commands run
 
 // Dummy const type validation function (see: https://stackoverflow.com/questions/57069802/as-const-is-ignored-when-there-is-a-type-definition)
-export const validateType = <T>(obj: T) => obj
+export const validateType = <T>(obj: T): T => obj
 
 // Test chain blocktime
 export const BLOCKTIME = 1000
 
 // Known worker role account default balance (JOY)
 export const KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE = new BN(1000000000000)
+export const KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE = new BN(1000000000000)
 
 export const ALL_BYTES = '0x' + Array.from({ length: 256 }, (v, i) => Buffer.from([i]).toString('hex')).join('')
 
@@ -42,33 +39,8 @@ export const workingGroupNameByModuleName = {
   'distributionWorkingGroup': 'Distribution',
   'operationsWorkingGroupBeta': 'OperationsBeta',
   'operationsWorkingGroupGamma': 'OperationsGamma',
-}
+} as const
 validateType<{ [k in WorkingGroupModuleName]: string }>(workingGroupNameByModuleName)
-
-export function getWorkingGroupNameByModuleName(
-  group: WorkingGroupModuleName
-): PalletCommonWorkingGroupIterableEnumsWorkingGroup {
-  switch (group) {
-    case 'storageWorkingGroup':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Storage')
-    case 'contentWorkingGroup':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Content')
-    case 'forumWorkingGroup':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Forum')
-    case 'membershipWorkingGroup':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Membership')
-    case 'operationsWorkingGroupAlpha':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'OperationsAlpha')
-    case 'appWorkingGroup':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'App')
-    case 'operationsWorkingGroupBeta':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'OperationsBeta')
-    case 'distributionWorkingGroup':
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'Distribution')
-    default:
-      return createType('PalletCommonWorkingGroupIterableEnumsWorkingGroup', 'OperationsGamma')
-  }
-}
 
 export function getWorkingGroupModuleName(group: WorkingGroup): WorkingGroupModuleName {
   if (group.isContent) {

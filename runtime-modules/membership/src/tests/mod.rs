@@ -732,6 +732,7 @@ fn invite_member_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
             invitee_member_id,
             fixture.get_invite_membership_parameters(),
+            initial_invitation_balance,
         ));
     });
 }
@@ -795,6 +796,7 @@ fn invite_member_succeeds_with_additional_checks() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
             invitee_member_id,
             fixture.get_invite_membership_parameters(),
+            initial_invitation_balance,
         ));
     });
 }

@@ -2,7 +2,7 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { ContentMetadata, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { AppAction, AppActionMetadata, ContentMetadata, IAppAction, IVideoMetadata } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
 import {
   PalletContentPermissionsContentActor as ContentActor,
@@ -34,6 +34,7 @@ import {
   VideoDeletedEvent,
   VideoVisibilitySetByModeratorEvent,
   VideoSubtitle,
+  Membership,
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
@@ -43,11 +44,15 @@ import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
+  generateAppActionCommitment,
+  processAppActionMetadata,
   processVideoMetadata,
+  u8aToBytes,
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
 import { BTreeSet } from '@polkadot/types'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor
@@ -93,19 +98,22 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   }
 
   // deserialize & process metadata
-  const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
-
+  const appAction = meta.isSome ? deserializeMetadata(AppAction, meta.unwrap(), { skipWarning: true }) : undefined
   // Content Creation Preference
   // 1. metadata == `VideoMetadata` || undefined -> create Video
   // 1. metadata == `PlaylistMetadata` -> create Playlist (Not Supported Yet)
-
-  await processCreateVideoMessage(ctx, channel, contentMetadata?.videoMetadata || undefined, contentCreatedEventData)
+  if (appAction) {
+    await processCreateVideoMessage(ctx, channel, appAction, contentCreatedEventData)
+  } else {
+    const contentMetadata = meta.isSome ? deserializeMetadata(ContentMetadata, meta.unwrap()) : undefined
+    await processCreateVideoMessage(ctx, channel, contentMetadata?.videoMetadata ?? undefined, contentCreatedEventData)
+  }
 }
 
 export async function processCreateVideoMessage(
   ctx: EventContext & StoreContext,
   channel: Channel,
-  metadata: DecodedMetadataObject<IVideoMetadata> | undefined,
+  metadata: DecodedMetadataObject<IAppAction> | DecodedMetadataObject<IVideoMetadata> | undefined,
   contentCreatedEventData: ContentCreatedEventData
 ): Promise<void> {
   const { store, event } = ctx
@@ -123,12 +131,42 @@ export async function processCreateVideoMessage(
     reactionsCount: 0,
   })
 
-  if (metadata) {
-    await processVideoMetadata(ctx, video, metadata, newDataObjectIds)
+  if (metadata && 'appId' in metadata) {
+    const contentMetadataBytes = u8aToBytes(metadata.rawAction)
+    const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata ?? {}
+    const appActionMetadataBytes = metadata.metadata ? u8aToBytes(metadata.metadata) : undefined
+
+    const appCommitment = generateAppActionCommitment(
+      channel.ownerMember?.totalVideosCreated ?? -1,
+      channel.id ?? '',
+      contentCreationParameters.assets.toU8a(),
+      metadata.rawAction ? contentMetadataBytes : undefined,
+      appActionMetadataBytes
+    )
+    await processAppActionMetadata(
+      ctx,
+      video,
+      metadata,
+      { ownerNonce: channel.ownerMember?.totalVideosCreated, appCommitment },
+      (entity) => {
+        if ('entryApp' in entity && appActionMetadataBytes) {
+          const appActionMetadata = deserializeMetadata(AppActionMetadata, appActionMetadataBytes)
+
+          appActionMetadata?.videoId && integrateMeta(entity, { ytVideoId: appActionMetadata.videoId }, ['ytVideoId'])
+        }
+        return processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
+      }
+    )
+  } else if (metadata) {
+    await processVideoMetadata(ctx, video, metadata as DecodedMetadataObject<IVideoMetadata>, newDataObjectIds)
   }
 
   // save video
   await store.save<Video>(video)
+  if (channel.ownerMember) {
+    channel.ownerMember.totalVideosCreated += 1
+    await store.save<Membership>(channel.ownerMember)
+  }
 
   if (contentCreationParameters.autoIssueNft.isSome) {
     const issuanceParameters = contentCreationParameters.autoIssueNft.unwrap()
@@ -184,9 +222,17 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
   })
 
   if (video) {
-    const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
-
-    await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
+    const appAction = newMeta.isSome
+      ? deserializeMetadata(AppAction, newMeta.unwrap(), { skipWarning: true })
+      : undefined
+    if (appAction) {
+      const contentMetadataBytes = u8aToBytes(appAction.rawAction)
+      const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata
+      await processUpdateVideoMessage(ctx, video, videoMetadata ?? undefined, contentUpdatedEventData)
+    } else {
+      const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
+      await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
+    }
     return
   }
 
@@ -398,7 +444,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
 
   // Entities in the list should be removed in the order. i.e. all `Comment` relations
   // should be removed in the last after all other referencing relations has been removed
-  const referencingEntities: typeof BaseModel[] = [
+  const referencingEntities: { new (): BaseModel & { video: Partial<Video> } }[] = [
     VideoSubtitle,
     CommentReaction,
     VideoReaction,
@@ -416,7 +462,7 @@ async function removeVideoReferencingRelations(store: DatabaseManager, videoId: 
   ]
 
   const referencingRecords = await Promise.all(
-    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity as any, videoId))
+    referencingEntities.map(async (entity) => await loadReferencingEntities(store, entity, videoId))
   )
 
   // beacuse of parentComment references among comments, their deletion must be handled saperately

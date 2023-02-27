@@ -123,14 +123,12 @@ export async function getStorageObligationsFromRuntime(
 /**
  * Get storage bucket IDs assigned to the worker.
  *
- * @param queryNodeUrl - Query Node URL
+ * @param qnApi - Query Node Api
  * @param workerId - worker ID
  * @returns storage bucket IDs
  */
-export async function getStorageBucketIdsByWorkerId(queryNodeUrl: string, workerId: number): Promise<string[]> {
-  const api = new QueryNodeApi(queryNodeUrl)
-
-  const idFragments = await api.getStorageBucketIdsByWorkerId(workerId.toString())
+export async function getStorageBucketIdsByWorkerId(qnApi: QueryNodeApi, workerId: number): Promise<string[]> {
+  const idFragments = await qnApi.getStorageBucketIdsByWorkerId(workerId.toString())
   const ids = idFragments.map((frag) => frag.id)
 
   return ids
@@ -139,13 +137,12 @@ export async function getStorageBucketIdsByWorkerId(queryNodeUrl: string, worker
 /**
  * Get IDs of the data objects assigned to the bag ID.
  *
- * @param api - initialiazed QueryNodeApi instance
+ * @param qnApi - initialized QueryNodeApi instance
  * @param bagId - bag ID
  * @returns data object IDs
  */
-export async function getDataObjectIDsByBagId(queryNodeUrl: string, bagId: string): Promise<string[]> {
-  const api = new QueryNodeApi(queryNodeUrl)
-  const dataObjects = await getAllAssignedDataObjects(api, [bagId])
+export async function getDataObjectIDsByBagId(qnApi: QueryNodeApi, bagId: string): Promise<string[]> {
+  const dataObjects = await getAllAssignedDataObjects(qnApi, [bagId])
 
   return dataObjects.map((obj) => obj.id)
 }

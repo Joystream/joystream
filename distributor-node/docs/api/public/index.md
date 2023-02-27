@@ -83,7 +83,12 @@ Returns json object describing current node status.
   "storageLimit": 0,
   "storageUsed": 0,
   "uptime": 0,
-  "downloadsInProgress": 0
+  "downloadsInProgress": 0,
+  "queryNodeStatus": {
+    "url": "string",
+    "chainHead": 0,
+    "blocksProcessed": 0
+  }
 }
 ```
 
@@ -332,7 +337,12 @@ This operation does not require authentication
   "storageLimit": 0,
   "storageUsed": 0,
   "uptime": 0,
-  "downloadsInProgress": 0
+  "downloadsInProgress": 0,
+  "queryNodeStatus": {
+    "url": "string",
+    "chainHead": 0,
+    "blocksProcessed": 0
+  }
 }
 
 ```
@@ -348,6 +358,10 @@ This operation does not require authentication
 |storageUsed|integer|true|none|none|
 |uptime|integer|true|none|none|
 |downloadsInProgress|integer|true|none|none|
+|queryNodeStatus|object|true|none|none|
+|» url|string|true|none|none|
+|» chainHead|integer|true|none|none|
+|» blocksProcessed|integer|true|none|none|
 
 <h2 id="tocS_BucketsResponse">BucketsResponse</h2>
 

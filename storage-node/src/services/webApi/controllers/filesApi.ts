@@ -25,6 +25,7 @@ import {
   GetFileRequestParams,
   GetFileHeadersRequestParams,
 } from '../types'
+import { QueryNodeApi } from '../../../services/queryNode/api'
 const fsPromises = fs.promises
 
 /**
@@ -315,13 +316,13 @@ export async function getVersion(req: express.Request, res: express.Response<unk
  * Validates the storage bucket ID obligations for the worker (storage provider).
  * It throws an error when storage bucket doesn't belong to the worker.
  *
- * @param queryNodeUrl - Query Node URL
+ * @param qnApi - Query Node Api
  * @param workerId - worker(storage provider) ID
  * @param bucketId - storage bucket ID
  * @returns void promise.
  */
-export async function verifyBucketId(queryNodeUrl: string, workerId: number, bucketId: BN): Promise<void> {
-  const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUrl, workerId)
+export async function verifyBucketId(qnApi: QueryNodeApi, workerId: number, bucketId: BN): Promise<void> {
+  const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
 
   if (!bucketIds.includes(bucketId.toString())) {
     throw new WebApiError('Incorrect storage bucket ID.', 400)

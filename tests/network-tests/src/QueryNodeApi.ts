@@ -455,6 +455,20 @@ import {
   GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery,
   GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables,
   GetChannelRewardClaimedAndWithdrawnEventsByEventIds,
+  GetAppByIdQuery,
+  GetAppByIdQueryVariables,
+  GetAppById,
+  AppFieldsFragment,
+  GetAppsByNameQuery,
+  GetAppsByNameQueryVariables,
+  GetAppsByName,
+  GetChannelsCount,
+  GetChannelsCountQuery,
+  GetChannelsCountQueryVariables,
+  BudgetFundedEventFieldsFragment,
+  GetBudgetFundedEventsByEventIdsQuery,
+  GetBudgetFundedEventsByEventIdsQueryVariables,
+  GetBudgetFundedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -961,6 +975,14 @@ export class QueryNodeApi {
       { eventIds },
       'budgetSetEvents'
     )
+  }
+
+  public async getBudgetFundedEvents(events: EventDetails[]): Promise<BudgetFundedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetBudgetFundedEventsByEventIdsQuery,
+      GetBudgetFundedEventsByEventIdsQueryVariables
+    >(GetBudgetFundedEventsByEventIds, { eventIds }, 'budgetFundedEvents')
   }
 
   public async getBudgetSpendingEvents(events: EventDetails[]): Promise<BudgetSpendingEventFieldsFragment[]> {
@@ -1566,5 +1588,23 @@ export class QueryNodeApi {
       GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
       GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables
     >(GetMetaprotocolTransactionalStatusEventsByEventIds, { eventIds }, 'metaprotocolTransactionStatusEvents')
+  }
+
+  public async getAppById(id: string): Promise<AppFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetAppByIdQuery, GetAppByIdQueryVariables>(GetAppById, { id }, 'appByUniqueInput')
+  }
+
+  public async getAppsByName(name: string): Promise<AppFieldsFragment[] | null> {
+    return this.multipleEntitiesQuery<GetAppsByNameQuery, GetAppsByNameQueryVariables>(GetAppsByName, { name }, 'apps')
+  }
+
+  async getChannelsCount(): Promise<number> {
+    const result = await this.uniqueEntityQuery<GetChannelsCountQuery, GetChannelsCountQueryVariables>(
+      GetChannelsCount,
+      {},
+      'channelsConnection'
+    )
+    Utils.assert(result)
+    return result.totalCount
   }
 }

@@ -35,7 +35,12 @@ import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
 import channelPayouts from '../flows/proposals/channelPayouts'
 import directChannelPayment from '../flows/content/directChannelPayment'
+import failToElectWithBlacklist from '../flows/council/electWithBlacklist'
 import invitingMembers from '../flows/membership/invitingMembers'
+import { createAppActions } from '../flows/content/createAppActions'
+import { createApp } from '../flows/content/createApp'
+import { updateApp } from '../flows/content/updateApp'
+import { deleteApp } from '../flows/content/deleteApp'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -60,6 +65,7 @@ scenario('Full', async ({ job, env }) => {
   // Council (should not interrupt proposalsJob!)
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
+  job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
@@ -74,7 +80,7 @@ scenario('Full', async ({ job, env }) => {
   const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
-  const hireLeads = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+  const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
     channelPayoutsProposalJob
   )
   job('openings and applications', openingsAndApplications).requires(hireLeads)
@@ -85,7 +91,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('inviting members', invitingMembers).after(coreJob).requires(groupBudgetSet)
+  job('inviting members', invitingMembers).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
@@ -109,6 +115,12 @@ scenario('Full', async ({ job, env }) => {
   const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
     commentsAndReactionsJob
   )
+
+  // Apps
+  job('create app', createApp).after(hireLeads)
+  job('update app', updateApp).after(hireLeads)
+  job('create app actions', createAppActions).after(hireLeads)
+  job('delete app', deleteApp).after(hireLeads)
 
   const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
 

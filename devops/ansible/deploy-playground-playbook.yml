@@ -69,7 +69,7 @@
         TREASURY_ACCOUNT_URI: '{{ treasury_suri }}'
         INITIAL_BALANCES: '{{ initial_balances }}'
         SKIP_NODE: 'true'
-      async: 1800
+      async: 4000
       poll: 0
       register: start_services_result
 
@@ -79,7 +79,7 @@
       register: job_result
       until: job_result.finished
       # Max number of times to check for status
-      retries: 18
+      retries: 40
       # Check for the status every 100s
       delay: 100
 
