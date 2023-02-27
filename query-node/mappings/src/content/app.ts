@@ -1,5 +1,5 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
-import { ICreateApp, IDeleteApp, IUpdateApp } from '@joystream/metadata-protobuf'
+import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { App, Membership } from 'query-node/dist/model'
@@ -80,27 +80,6 @@ export async function processUpdateAppMessage(
 
   await store.save<App>(app)
   logger.info('App has been updated', { appId })
-}
-
-export async function processDeleteAppMessage(
-  store: DatabaseManager,
-  metadata: DecodedMetadataObject<IDeleteApp>,
-  memberId: string
-): Promise<void> {
-  const { appId } = metadata
-
-  const app = await getAppById(store, appId)
-
-  if (!app) {
-    inconsistentState("App doesn't exists", { appId })
-  }
-
-  if (app.ownerMember.id !== memberId) {
-    inconsistentState("App doesn't belong to the member", { appId, memberId })
-  }
-
-  await store.remove<App>(app)
-  logger.info('App has been removed', { appId })
 }
 
 export async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
