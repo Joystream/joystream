@@ -4,6 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { AppAction, AppActionMetadata, ContentMetadata, IAppAction, IVideoMetadata } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 import {
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentVideoCreationParametersRecord as VideoCreationParameters,
@@ -44,7 +45,6 @@ import { createNft } from './nft'
 import {
   convertContentActor,
   convertContentActorToChannelOrNftOwner,
-  generateAppActionCommitment,
   processAppActionMetadata,
   processVideoMetadata,
   u8aToBytes,

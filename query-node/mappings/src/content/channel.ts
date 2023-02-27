@@ -9,6 +9,7 @@ import {
   ChannelOwnerRemarked,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId } from '@joystream/types/primitives'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 import {
   Channel,
   Collaborator,
@@ -50,7 +51,6 @@ import {
   unsetAssetRelations,
   mapAgentPermission,
   processAppActionMetadata,
-  generateAppActionCommitment,
   u8aToBytes,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'

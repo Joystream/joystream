@@ -51,7 +51,7 @@ import { getSortedDataObjectsByIds } from '../storage/utils'
 import { BTreeSet } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
 import { Bytes } from '@polkadot/types/primitive'
-import { u8aToHex, stringToHex } from '@polkadot/util'
+import { u8aToHex } from '@polkadot/util'
 import { createType } from '@joystream/types'
 import { getAppById } from './app'
 
@@ -764,23 +764,6 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
-}
-
-export function generateAppActionCommitment(
-  nonce: number,
-  creatorId: string,
-  assets: Uint8Array,
-  rawAction?: Bytes,
-  rawAppActionMetadata?: Bytes
-): string {
-  const rawCommitment = [
-    nonce,
-    creatorId,
-    u8aToHex(assets),
-    ...(rawAction ? [u8aToHex(rawAction)] : []),
-    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
-  ]
-  return stringToHex(JSON.stringify(rawCommitment))
 }
 
 export function u8aToBytes(array?: DecodedMetadataObject<Uint8Array> | null): Bytes {
