@@ -15,9 +15,9 @@ import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
 import { createType } from '@joystream/types'
 import { ed25519PairFromString, ed25519Sign } from '@polkadot/util-crypto'
-import { u8aToHex, stringToHex } from '@polkadot/util'
+import { u8aToHex } from '@polkadot/util'
 import { CreateChannelsAsMemberFixture } from '../../misc/createChannelsAsMemberFixture'
-import { Bytes } from '@polkadot/types'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 import { createJoystreamCli } from '../utils'
 
 export async function createAppActions({ api, query }: FlowProps): Promise<void> {
@@ -139,21 +139,4 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   )
 
   debug('done')
-}
-
-export function generateAppActionCommitment(
-  nonce: number,
-  creatorId: string,
-  assets: Uint8Array,
-  rawAction?: Bytes,
-  rawAppActionMetadata?: Bytes
-): string {
-  const rawCommitment = [
-    nonce,
-    creatorId,
-    u8aToHex(assets),
-    ...(rawAction ? [u8aToHex(rawAction)] : []),
-    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
-  ]
-  return stringToHex(JSON.stringify(rawCommitment))
 }
