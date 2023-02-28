@@ -15,7 +15,7 @@ import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
 import { createType } from '@joystream/types'
 import { ed25519PairFromString, ed25519Sign } from '@polkadot/util-crypto'
-import { u8aToHex, stringToHex } from '@polkadot/util'
+import { stringToHex, u8aToHex } from '@polkadot/util'
 import { CreateChannelsAsMemberFixture } from '../../misc/createChannelsAsMemberFixture'
 import { Bytes } from '@polkadot/types'
 import { createJoystreamCli } from '../utils'
@@ -62,6 +62,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const appChannelCommitment = generateAppActionCommitment(
     channelNonce,
     `m:${member.memberId.toString()}`,
+    AppAction.ActionType.CREATE_CHANNEL,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
     Utils.metadataToBytes(ChannelMetadata, channelInput)
   )
@@ -111,6 +112,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const appVideoCommitment = generateAppActionCommitment(
     videoNonce,
     channelId.toString(),
+    AppAction.ActionType.CREATE_VIDEO,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
     Utils.metadataToBytes(ContentMetadata, contentMetadata),
     Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta)
@@ -144,6 +146,7 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
 export function generateAppActionCommitment(
   nonce: number,
   creatorId: string,
+  type: AppAction.ActionType,
   assets: Uint8Array,
   rawAction?: Bytes,
   rawAppActionMetadata?: Bytes
@@ -151,6 +154,7 @@ export function generateAppActionCommitment(
   const rawCommitment = [
     nonce,
     creatorId,
+    type,
     u8aToHex(assets),
     ...(rawAction ? [u8aToHex(rawAction)] : []),
     ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
