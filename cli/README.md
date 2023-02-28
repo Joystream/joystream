@@ -102,7 +102,6 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
 - [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
 - [`joystream-cli apps:createApp`](#joystream-cli-appscreateapp)
-- [`joystream-cli apps:deleteApp`](#joystream-cli-appsdeleteapp)
 - [`joystream-cli apps:updateApp`](#joystream-cli-appsupdateapp)
 - [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
 - [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
@@ -658,21 +657,6 @@ OPTIONS
 ```
 
 _See code: [src/commands/apps/createApp.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/apps/createApp.ts)_
-
-## `joystream-cli apps:deleteApp`
-
-Deletes app of given ID
-
-```
-USAGE
-  $ joystream-cli apps:deleteApp
-
-OPTIONS
-  --appId=appId              (required) ID of the app to delete
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-```
-
-_See code: [src/commands/apps/deleteApp.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/apps/deleteApp.ts)_
 
 ## `joystream-cli apps:updateApp`
 
