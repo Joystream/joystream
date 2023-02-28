@@ -128,7 +128,7 @@ message AppMetadata {
     optional string auth_key = 10;
     // List of platforms on which the app will be available, e.g. [mobile, web, native]
     repeated string platforms = 11;
-    // E.g messaging, adult 
+    // E.g messaging, adult
     optional string category = 12;
   }
 
@@ -139,9 +139,6 @@ message CreateApp {
 message UpdateApp {
     required string app_id = 1;
     optional AppMetadata app_metadata = 2;
-}
-message DeleteApp {
-    required string app_id = 1;
 }
 
 message MemberRemarked {
@@ -156,7 +153,6 @@ message MemberRemarked {
         CreateVideoCategory create_video_category = 6;
         CreateApp create_app = 7;
         UpdateApp update_app = 8;
-        DeleteApp delete_app = 9;
     }
 }
 
