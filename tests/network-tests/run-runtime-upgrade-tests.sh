@@ -76,8 +76,6 @@ function start_old_joystream_node {
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
         --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
         --keystore-path /spec/keystore/auth-0
-
-    docker exec -it joystream-node rm -rf ${DATA_PATH}/spec/keystore
 }
 
 #######################################
@@ -185,11 +183,11 @@ function main {
     echo >&2 "mainnet node starting"
 
     # wait 1 minute
-    # sleep 60
+    sleep 60
 
     trap cleanup EXIT
 
-    # ./run-test-scenario.sh runtimeUpgrade
+    ./run-test-scenario.sh runtimeUpgrade
 }
 
 # main entrypoint
