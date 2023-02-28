@@ -2,8 +2,6 @@ import { xxhashAsHex } from '@polkadot/util-crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import fs from 'fs'
 import path from 'path'
-import { Metadata } from '@polkadot/types'
-import { assert } from '@polkadot/util/assert'
 
 /**
  * All module prefixes except those mentioned in the skippedModulesPrefix will be added to this by the script.
@@ -53,20 +51,6 @@ const skippedModulesPrefix = [
   'Referendum',
 ]
 
-function checkMetadataAndStorageKeyCompatibility(storageKeyPairs: Array<[string, string]>, metadata: Metadata) {
-  let palletNameHashes = metadata.asLatest.pallets.map((pallet) => [
-    xxhashAsHex(pallet.name.toString(), 128),
-    pallet.name.toString(),
-  ])
-  let isMetadataPalletNameInStorageKey = (palletNameHash: string, palletName: string) => {
-    const isPrefix = storageKeyPairs.some(([key]) => key.startsWith(palletNameHash))
-    assert(isPrefix, `error: ${palletName} is not contained in live storage keypairs`)
-  }
-  palletNameHashes.forEach(([palletNameHash, palletName]) =>
-    isMetadataPalletNameInStorageKey(palletNameHash, palletName)
-  )
-}
-
 async function main() {
   // paths & env variables
   const cmdArgs = process.argv.slice(2)
@@ -84,9 +68,10 @@ async function main() {
   // Populate the prefixes array
   const pallets = metadata.asLatest.pallets
   pallets.forEach((pallet) => {
-    if (pallet.storage) {
-      if (!skippedModulesPrefix.includes(pallet.name.toString())) {
-        prefixes.push(xxhashAsHex(pallet.name.toString(), 128))
+    if (pallet.storage.isSome) {
+      const storagePrefix = pallet.storage.unwrap().prefix.toString()
+      if (!skippedModulesPrefix.includes(storagePrefix)) {
+        prefixes.push(xxhashAsHex(storagePrefix, 128))
       }
     }
   })
@@ -94,9 +79,6 @@ async function main() {
   // blank starting chainspec guaranteed to exist
   const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
   const chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
-
-  // check that metadata pallets module key-prefix is contained in storage keys
-  checkMetadataAndStorageKeyCompatibility(storage.result, metadata)
 
   // Grab the items to be moved, then iterate through and insert into storage
   storage.result
