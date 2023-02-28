@@ -65,6 +65,7 @@ function create_raw_chain_spec() {
     docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
         --raw --disable-default-bootnode \
         --chain /spec/chain-spec.json >${DATA_PATH}/chain-spec-raw.json
+
 }
 
 # Start a chain with generated chain spec
@@ -145,6 +146,7 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker rm --volumes target-node
     docker-compose -f ../../docker-compose.yml down -v
+    chmod +w ${DATA_PATH}
     rm -rf ${DATA_PATH}
 }
 
