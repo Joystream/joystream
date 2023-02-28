@@ -61,16 +61,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import {
-  CreateApp,
-  AppAction,
-  CreateVideoCategory,
-  DeleteApp,
-  IAppAction,
-  IAppMetadata,
-  MemberRemarked,
-  UpdateApp,
-} from '@joystream/metadata-protobuf'
+import { AppAction, CreateVideoCategory, IAppAction, MemberRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
