@@ -11,31 +11,31 @@ import {
 import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
+  ChannelAssetsDeletedByModeratorEvent,
+  ChannelDeletedByModeratorEvent,
+  ChannelNftCollectors,
+  ChannelVisibilitySetByModeratorEvent,
   Collaborator,
   ContentActor,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
+  MemberBannedFromChannelEvent,
   Membership,
   MetaprotocolTransactionSuccessful,
   StorageBag,
   StorageDataObject,
-  ChannelAssetsDeletedByModeratorEvent,
-  ChannelDeletedByModeratorEvent,
-  ChannelVisibilitySetByModeratorEvent,
-  ChannelNftCollectors,
-  MemberBannedFromChannelEvent,
 } from 'query-node/dist/model'
-import { In, FindOptionsWhere } from 'typeorm'
+import { FindOptionsWhere, In } from 'typeorm'
 import { Content } from '../../generated/types'
 import {
-  deserializeMetadata,
-  inconsistentState,
-  genericEventFields,
-  logger,
-  saveMetaprotocolTransactionSuccessful,
-  saveMetaprotocolTransactionErrored,
   bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  inconsistentState,
+  logger,
+  saveMetaprotocolTransactionErrored,
+  saveMetaprotocolTransactionSuccessful,
 } from '../common'
 import {
   processBanOrUnbanMemberFromChannelMessage,
@@ -46,12 +46,12 @@ import {
 import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
-  processChannelMetadata,
-  unsetAssetRelations,
+  generateAppActionCommitment,
   mapAgentPermission,
   processAppActionMetadata,
-  generateAppActionCommitment,
+  processChannelMetadata,
   u8aToBytes,
+  unsetAssetRelations,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -96,6 +96,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       const appCommitment = generateAppActionCommitment(
         channelOwner.ownerMember?.totalChannelsCreated ?? -1,
         channelOwner.ownerMember?.id ? `m:${channelOwner.ownerMember.id}` : `c:${channelOwner.ownerCuratorGroup?.id}`,
+        AppAction.ActionType.CREATE_CHANNEL,
         channelCreationParameters.assets.toU8a(),
         appAction.rawAction ? channelMetadataBytes : undefined,
         appAction.metadata ? u8aToBytes(appAction.metadata) : undefined

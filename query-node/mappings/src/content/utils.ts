@@ -7,6 +7,7 @@ import {
   IChannelMetadata,
   ISubtitleMetadata,
   IAppAction,
+  AppAction,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { ed25519Verify } from '@polkadot/util-crypto'
@@ -769,6 +770,7 @@ export function mapAgentPermission(permission: PalletContentIterableEnumsChannel
 export function generateAppActionCommitment(
   nonce: number,
   creatorId: string,
+  type: AppAction.ActionType,
   assets: Uint8Array,
   rawAction?: Bytes,
   rawAppActionMetadata?: Bytes
@@ -776,6 +778,7 @@ export function generateAppActionCommitment(
   const rawCommitment = [
     nonce,
     creatorId,
+    type,
     u8aToHex(assets),
     ...(rawAction ? [u8aToHex(rawAction)] : []),
     ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
