@@ -76,7 +76,8 @@ function start_old_joystream_node {
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
         --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
         --keystore-path /spec/keystore/auth-0
-    # --base-path /spec/alice
+
+    docker exec -v ${DATA_PATH}:/spec -it joystream-node rm -rf /spec/keystore
 }
 
 #######################################
