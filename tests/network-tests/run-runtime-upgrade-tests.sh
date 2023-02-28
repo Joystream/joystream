@@ -77,7 +77,7 @@ function start_old_joystream_node {
         --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
         --keystore-path /spec/keystore/auth-0
 
-    docker exec -v ${DATA_PATH}:/spec -it joystream-node rm -rf /spec/keystore
+    docker exec -it joystream-node rm -rf ${DATA_PATH}/spec/keystore
 }
 
 #######################################
@@ -146,8 +146,8 @@ function export_chainspec_file_to_disk() {
 function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker rm --volumes target-node
-    docker-compose -f ../../docker-compose.yml down -v
-    rm -rf ${DATA_PATH}/keystore/auth-0
+    docker-compose -f ../../docker-compose.yml down -v --remove-orphans
+    docker volume prune -f # sometimes volumes are still running
     rm -rf ${DATA_PATH}
 }
 
@@ -185,11 +185,11 @@ function main {
     echo >&2 "mainnet node starting"
 
     # wait 1 minute
-    sleep 60
+    # sleep 60
 
     trap cleanup EXIT
 
-    ./run-test-scenario.sh runtimeUpgrade
+    # ./run-test-scenario.sh runtimeUpgrade
 }
 
 # main entrypoint
