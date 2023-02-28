@@ -146,7 +146,7 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker rm --volumes target-node
     docker-compose -f ../../docker-compose.yml down -v
-    rm -rf ${DATA_PATH}/keystore
+    rm -rf ${DATA_PATH}/keystore/auth-0
     rm -rf ${DATA_PATH}
 }
 
