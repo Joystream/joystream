@@ -146,7 +146,6 @@ function cleanup() {
     docker rm --volumes target-node
     docker-compose -f ../../docker-compose.yml down -v --remove-orphans
     docker volume prune -f # sometimes volumes are still running
-    rm -rf ${DATA_PATH}
 }
 
 # entrypoint
