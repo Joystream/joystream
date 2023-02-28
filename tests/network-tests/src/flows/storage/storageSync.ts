@@ -107,8 +107,8 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
   Utils.assert(channel && channel.coverPhoto && channel.avatarPhoto, `Channel ${channelId} has missing assets`)
   Utils.assert(colossus1Endpoint && colossus2Endpoint, `Colossus endpoints not set`)
 
-  debug('Giving nodes 120 seconds to sync...')
-  await Utils.wait(120_000)
+  debug('Giving nodes 300 seconds to sync...')
+  await Utils.wait(300_000)
 
   // Verify that both storage nodes have the right assets
   const colossus1Api = new ColossusApi(urljoin(colossus1Endpoint, 'api/v1'))
