@@ -96,9 +96,9 @@ scenario('Full', async ({ job, env }) => {
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(memberInvitationJob)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
-    videoCategoriesJob && memberInvitationJob
+    videoCategoriesJob
   )
   job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(channelsAndVideosCliJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(channelsAndVideosCliJob)
