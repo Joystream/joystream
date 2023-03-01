@@ -37,7 +37,6 @@ import channelPayouts from '../flows/proposals/channelPayouts'
 import directChannelPayment from '../flows/content/directChannelPayment'
 import failToElectWithBlacklist from '../flows/council/electWithBlacklist'
 import invitingMembers from '../flows/membership/invitingMembers'
-import terminateLeads from '../flows/working-groups/terminateLeads'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
@@ -81,10 +80,9 @@ scenario('Full', async ({ job, env }) => {
   const memberInvitationJob = job('inviting members', invitingMembers).after(channelPayoutsProposalJob)
 
   // Working groups, after having leads terminated
-  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).after(
-    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(memberInvitationJob)
+  const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+    memberInvitationJob
   )
-  const hireLeads = job('sudo lead opening', leadOpening(true)).after(terminateLeadsJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
