@@ -47,7 +47,7 @@ scenario('Full', async ({ job, env }) => {
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
 
-  const coreJob = councilJob || runtimeUpgradeProposalJob
+  const coreJob = runtimeUpgradeProposalJob || councilJob
 
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
