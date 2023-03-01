@@ -290,6 +290,7 @@ services:
       - ORION_FEATURED_CONTENT_SECRET=password123
       - ORION_ADMIN_SECRET=password123
       - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
+      - APP_PRIVATE_KEY=secret123
     ports:
       - "6116:6116"
     depends_on:

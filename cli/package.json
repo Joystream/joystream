@@ -123,6 +123,9 @@
       "api": {
         "description": "Inspect the substrate node api, perform lower-level api calls or change the current api provider uri"
       },
+      "apps": {
+        "description": "Commands for creating and updating a metaprotocol App entity"
+      },
       "working-groups": {
         "description": "Working group lead and worker actions"
       },
@@ -157,9 +160,9 @@
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "yarn lint",
-    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "prepack": "yarn build && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
-    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "build": "rm -rf lib && yarn generate:all && tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",

@@ -10,3 +10,4 @@ yarn workspace query-node-root build
 yarn workspace @joystream/cli build
 yarn workspace storage-node build
 yarn workspace @joystream/distributor-cli build
+yarn workspace network-tests build

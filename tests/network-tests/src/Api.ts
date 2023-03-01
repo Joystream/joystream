@@ -62,16 +62,7 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import {
-  CreateApp,
-  AppAction,
-  CreateVideoCategory,
-  DeleteApp,
-  IAppAction,
-  IAppMetadata,
-  MemberRemarked,
-  UpdateApp,
-} from '@joystream/metadata-protobuf'
+import { AppAction, CreateVideoCategory, IAppAction, MemberRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -819,62 +810,6 @@ export class Api {
 
     const event = this.getEvent(result.events, 'content', 'VideoCreated')
     return event.data[2]
-  }
-
-  async createApp(name: string, appMetadata: IAppMetadata, memberId: u64): Promise<ISubmittableResult> {
-    const account = await this.getMemberControllerAccount(memberId.toNumber())
-
-    if (!account) {
-      throw new Error('invalid account')
-    }
-    const meta = new MemberRemarked({
-      createApp: new CreateApp({
-        name,
-        appMetadata,
-      }),
-    })
-    return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
-      account.toString()
-    )
-  }
-
-  async updateApp(appId: string, appMetadata: IAppMetadata, memberId: u64): Promise<ISubmittableResult> {
-    const account = await this.getMemberControllerAccount(memberId.toNumber())
-
-    if (!account) {
-      throw new Error('invalid account')
-    }
-
-    const meta = new MemberRemarked({
-      updateApp: new UpdateApp({
-        appId,
-        appMetadata,
-      }),
-    })
-
-    return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
-      account.toString()
-    )
-  }
-
-  async deleteApp(appId: string, memberId: u64): Promise<ISubmittableResult> {
-    const account = await this.getMemberControllerAccount(memberId.toNumber())
-
-    if (!account) {
-      throw new Error('invalid account')
-    }
-
-    const meta = new MemberRemarked({
-      deleteApp: new DeleteApp({
-        appId,
-      }),
-    })
-    return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
-      account.toString()
-    )
   }
 
   async createVideoCategory(memberId: u64, name: string): Promise<ISubmittableResult> {

@@ -14,19 +14,14 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: checks
-        run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/js build
-          yarn workspace @joystream/cli build
-          yarn workspace network-tests build
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn build:packages
 
   tests_build_osx:
     name: MacOS Checks
@@ -35,19 +30,14 @@ jobs:
       matrix:
         node-version: [14.x]
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: checks
-        run: |
-          yarn install --frozen-lockfile --network-timeout 120000
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/js build
-          yarn workspace @joystream/cli build
-          yarn workspace network-tests build
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn build:packages
 
   build_images:
     name: Build joystream/node
@@ -176,11 +166,7 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/js build
-          yarn workspace @joystream/cli build
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
@@ -210,10 +196,7 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/cli build
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests

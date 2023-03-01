@@ -66,7 +66,7 @@ import {
 import { createVideoCategory } from './content/videoCategory'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
-import { processCreateAppMessage, processDeleteAppMessage, processUpdateAppMessage } from './content/app'
+import { processCreateAppMessage, processUpdateAppMessage } from './content/app'
 
 async function saveMembershipExternalResources(
   store: DatabaseManager,
@@ -598,12 +598,6 @@ async function processMemberRemark(
 
   if (decodedMetadata?.updateApp) {
     await processUpdateAppMessage(store, decodedMetadata.updateApp, memberId.toString())
-
-    return {}
-  }
-
-  if (decodedMetadata?.deleteApp) {
-    await processDeleteAppMessage(store, decodedMetadata.deleteApp, memberId.toString())
 
     return {}
   }
