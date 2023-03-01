@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.10.0 darwin-x64 node-v14.16.1
+@joystream/cli/1.1.0 linux-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -101,6 +101,8 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
 - [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
 - [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
+- [`joystream-cli apps:createApp`](#joystream-cli-appscreateapp)
+- [`joystream-cli apps:updateApp`](#joystream-cli-appsupdateapp)
 - [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
 - [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
 - [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
@@ -639,6 +641,39 @@ ARGUMENTS
 ```
 
 _See code: [src/commands/api/setUri.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/setUri.ts)_
+
+## `joystream-cli apps:createApp`
+
+Creates app for current member
+
+```
+USAGE
+  $ joystream-cli apps:createApp
+
+OPTIONS
+  -i, --input=input          Path to JSON file containing app details
+  -s, --skip                 If true command won't prompt missing fields
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/apps/createApp.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/apps/createApp.ts)_
+
+## `joystream-cli apps:updateApp`
+
+Updates app of given ID
+
+```
+USAGE
+  $ joystream-cli apps:updateApp
+
+OPTIONS
+  -i, --input=input          Path to JSON file containing app details
+  -s, --skip                 If true command won't prompt missing fields
+  --appId=appId              (required) ID of the app to update
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/apps/updateApp.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/apps/updateApp.ts)_
 
 ## `joystream-cli autocomplete [SHELL]`
 
