@@ -85,7 +85,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('inviting members', invitingMembers).requires(groupBudgetSet)
+  const memberInvitationJob = job('inviting members', invitingMembers).after(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
@@ -98,7 +98,7 @@ scenario('Full', async ({ job, env }) => {
   // following jobs must be run sequentially due to some QN queries that could interfere
   const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
-    videoCategoriesJob
+    videoCategoriesJob && memberInvitationJob
   )
   job('add and update video subtitles', addAndUpdateVideoSubtitles).requires(channelsAndVideosCliJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).requires(channelsAndVideosCliJob)
