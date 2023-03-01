@@ -1,20 +1,14 @@
 import { flags } from '@oclif/command'
-import * as allMessages from '@joystream/metadata-protobuf'
-import DefaultCommandBase from '../../base/DefaultCommandBase'
-import { AnyMetadataClass } from '@joystream/metadata-protobuf/types'
 import { metadataToBytes } from '../../helpers/serialization'
 import { getInputJson } from '../../helpers/InputOutput'
 import ExitCodes from '../../ExitCodes'
+import ProtobufMessageCommandBase from '../../base/ProtobufMessageCommandBase'
 
-export default class EncodeMessageCommand extends DefaultCommandBase {
+export default class EncodeMessageCommand extends ProtobufMessageCommandBase {
   static description = 'Encode a protobuf message (from json to hex)'
 
   static flags = {
-    type: flags.enum({
-      options: Object.keys(allMessages),
-      required: true,
-      description: 'Type of the message',
-    }),
+    ...super.flags,
     jsonString: flags.string({
       required: false,
       description: `JSON-encoded message input (eg. '${JSON.stringify({ videoId: 1 })}'`,
@@ -29,14 +23,13 @@ export default class EncodeMessageCommand extends DefaultCommandBase {
   }
 
   async run(): Promise<void> {
-    const { type, jsonString, input } = this.parse(EncodeMessageCommand).flags
-    const metaClass = allMessages[type as keyof typeof allMessages] as AnyMetadataClass<unknown>
+    const { jsonString, input } = this.parse(EncodeMessageCommand).flags
     const jsonObj = input
       ? await getInputJson(input)
       : jsonString
       ? JSON.parse(jsonString)
       : this.error('Either --input or --jsonString must be provided!', { exit: ExitCodes.InvalidInput })
-    const bytes = metadataToBytes(metaClass, jsonObj)
+    const bytes = metadataToBytes(this.MessageClass, jsonObj)
 
     this.output(bytes.toHex())
   }

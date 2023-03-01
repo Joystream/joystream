@@ -6,6 +6,7 @@ export type AnyMessage<T> = T & {
 }
 
 export type AnyMetadataClass<T> = {
+  new (): T
   name: string
   decode(binary: Uint8Array): AnyMessage<T>
   encode(obj: T): { finish(): Uint8Array }
