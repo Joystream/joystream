@@ -9,7 +9,7 @@ import {
   PalletContentVideoCreationParametersRecord as VideoCreationParameters,
   PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
 } from '@polkadot/types/lookup'
-import { In, FindOptionsWhere } from 'typeorm'
+import { FindOptionsWhere, In } from 'typeorm'
 import { BaseModel } from '@joystream/warthog'
 import {
   Channel,
@@ -22,19 +22,19 @@ import {
   CommentReaction,
   CommentReactionsCountByReactionId,
   CommentTextUpdatedEvent,
+  Membership,
   NftIssuedEvent,
+  StorageDataObject,
   Video,
+  VideoAssetsDeletedByModeratorEvent,
+  VideoDeletedByModeratorEvent,
+  VideoDeletedEvent,
   VideoReactedEvent,
   VideoReaction,
   VideoReactionsCountByReactionType,
   VideoReactionsPreferenceEvent,
-  StorageDataObject,
-  VideoAssetsDeletedByModeratorEvent,
-  VideoDeletedByModeratorEvent,
-  VideoDeletedEvent,
-  VideoVisibilitySetByModeratorEvent,
   VideoSubtitle,
-  Membership,
+  VideoVisibilitySetByModeratorEvent,
 } from 'query-node/dist/model'
 import { Content } from '../../generated/types'
 import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
@@ -139,6 +139,7 @@ export async function processCreateVideoMessage(
     const appCommitment = generateAppActionCommitment(
       channel.ownerMember?.totalVideosCreated ?? -1,
       channel.id ?? '',
+      AppAction.ActionType.CREATE_VIDEO,
       contentCreationParameters.assets.toU8a(),
       metadata.rawAction ? contentMetadataBytes : undefined,
       appActionMetadataBytes
