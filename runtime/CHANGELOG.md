@@ -1,3 +1,17 @@
+### Version 12.2001.0 - Ephesus release
+  - Bug fix in update_channel_payouts implementation
+    - proposal creator pays for upload of payload not arbitrary specified account
+  - Enabled `UpdateChannelPayouts` proposal creation
+  - Exposed content pallet `MinimumCashoutAllowedLimit` and `MaximumCashoutAllowedLimit` constants
+  - `membership:MemberInvited` event payload contains initial balance
+  - Add support for payments with membership:member_remark()
+  - Referendum: Add "Opt Out of Voting" feature [#2927](https://github.com/Joystream/joystream/issues/2927)
+  - Removed `sudo` pallet - aka "Liberated" [#4478](https://github.com/Joystream/joystream/pull/4478)
+  - Adjust constitutionality to max 2 for all proposals [#4655](https://github.com/Joystream/joystream/issues/4655#issuecomment-1443238442)
+
+### Version 12.1001.0 - Mainnet Supervised
+  - Unlocked all pallets transactions
+
 ### Version 12.1000.0 - Mainnet
   - Disabled channel payouts proposal
   - Renamed 'Gateway' working group to 'App' working group
