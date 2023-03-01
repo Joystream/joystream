@@ -78,9 +78,11 @@ scenario('Full', async ({ job, env }) => {
 
   const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
+  const memberInvitationJob = job('inviting members', invitingMembers).after(channelPayoutsProposalJob)
+
   // Working groups, after having leads terminated
   const terminateLeadsJob = job('terminate working-group leads', terminateLeads).after(
-    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(channelPayoutsProposalJob)
+    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(memberInvitationJob)
   )
   const hireLeads = job('sudo lead opening', leadOpening(true)).after(terminateLeadsJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
@@ -91,7 +93,6 @@ scenario('Full', async ({ job, env }) => {
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  const memberInvitationJob = job('inviting members', invitingMembers).after(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
@@ -102,7 +103,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(memberInvitationJob)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )
