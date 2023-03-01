@@ -37,6 +37,7 @@ import channelPayouts from '../flows/proposals/channelPayouts'
 import directChannelPayment from '../flows/content/directChannelPayment'
 import failToElectWithBlacklist from '../flows/council/electWithBlacklist'
 import invitingMembers from '../flows/membership/invitingMembers'
+import terminateLeads from 'src/flows/working-groups/terminateLeads'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -73,10 +74,11 @@ scenario('Full', async ({ job, env }) => {
 
   const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
-  // Working groups
-  const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob
+  // Working groups, after having leads terminated
+  const terminateLeadsJob = job('terminate working-group leads', terminateLeads).after(
+    job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(channelPayoutsProposalJob)
   )
+  const hireLeads = job('sudo lead opening', leadOpening(true)).after(terminateLeadsJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
