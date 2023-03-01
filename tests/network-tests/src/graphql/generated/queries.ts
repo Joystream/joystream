@@ -1,6 +1,35 @@
 import * as Types from './schema'
 
 import gql from 'graphql-tag'
+export type AppFieldsFragment = {
+  id: string
+  name: string
+  websiteUrl?: Types.Maybe<string>
+  useUri?: Types.Maybe<string>
+  smallIcon?: Types.Maybe<string>
+  mediumIcon?: Types.Maybe<string>
+  bigIcon?: Types.Maybe<string>
+  oneLiner?: Types.Maybe<string>
+  description?: Types.Maybe<string>
+  termsOfService?: Types.Maybe<string>
+  category?: Types.Maybe<string>
+  authKey?: Types.Maybe<string>
+  platforms?: Types.Maybe<Array<string>>
+  ownerMember: { id: string }
+}
+
+export type GetAppByIdQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID']
+}>
+
+export type GetAppByIdQuery = { appByUniqueInput?: Types.Maybe<AppFieldsFragment> }
+
+export type GetAppsByNameQueryVariables = Types.Exact<{
+  name: Types.Scalars['String']
+}>
+
+export type GetAppsByNameQuery = { apps: Array<AppFieldsFragment> }
+
 type DataObjectTypeFields_DataObjectTypeChannelAvatar_Fragment = {
   __typename: 'DataObjectTypeChannelAvatar'
   channel?: Types.Maybe<{ id: string }>
@@ -69,6 +98,7 @@ export type ChannelFieldsFragment = {
   rewardAccount: string
   cumulativeRewardClaimed?: Types.Maybe<any>
   language?: Types.Maybe<{ iso: string }>
+  entryApp?: Types.Maybe<AppFieldsFragment>
   ownerMember?: Types.Maybe<{ id: string }>
   ownerCuratorGroup?: Types.Maybe<{ id: string }>
   avatarPhoto?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -138,9 +168,11 @@ export type VideoFieldsFragment = {
   isPublic?: Types.Maybe<boolean>
   isExplicit?: Types.Maybe<boolean>
   hasMarketing?: Types.Maybe<boolean>
+  ytVideoId?: Types.Maybe<string>
   commentsCount: number
   reactionsCount: number
   isCommentSectionEnabled: boolean
+  entryApp?: Types.Maybe<AppFieldsFragment>
   license?: Types.Maybe<LicenseFieldsFragment>
   mediaMetadata?: Types.Maybe<VideoMediaMetadataFieldsFragment>
   media?: Types.Maybe<StorageDataObjectFieldsFragment>
@@ -1246,6 +1278,7 @@ export type MemberInvitedEventFieldsFragment = {
   rootAccount: string
   controllerAccount: string
   handle: string
+  initialBalance: any
   invitingMember: { id: string }
   newMember: { id: string }
   metadata: MemberMetadataFieldsFragment
@@ -2674,6 +2707,45 @@ export type GetBudgetSpendingEventsByEventIdsQueryVariables = Types.Exact<{
 
 export type GetBudgetSpendingEventsByEventIdsQuery = { budgetSpendingEvents: Array<BudgetSpendingEventFieldsFragment> }
 
+export type BudgetFundedEventFieldsFragment = {
+  id: string
+  createdAt: any
+  inBlock: number
+  network: Types.Network
+  inExtrinsic?: Types.Maybe<string>
+  indexInBlock: number
+  rationale: string
+  amount: any
+  group: { name: string }
+  member: { id: string }
+}
+
+export type GetBudgetFundedEventsByEventIdsQueryVariables = Types.Exact<{
+  eventIds?: Types.Maybe<Array<Types.Scalars['ID']> | Types.Scalars['ID']>
+}>
+
+export type GetBudgetFundedEventsByEventIdsQuery = { budgetFundedEvents: Array<BudgetFundedEventFieldsFragment> }
+
+export const AppFields = gql`
+  fragment AppFields on App {
+    id
+    name
+    ownerMember {
+      id
+    }
+    websiteUrl
+    useUri
+    smallIcon
+    mediumIcon
+    bigIcon
+    oneLiner
+    description
+    termsOfService
+    category
+    authKey
+    platforms
+  }
+`
 export const LicenseFields = gql`
   fragment LicenseFields on License {
     code
@@ -2819,6 +2891,10 @@ export const VideoFields = gql`
     isPublic
     isExplicit
     hasMarketing
+    ytVideoId
+    entryApp {
+      ...AppFields
+    }
     license {
       ...LicenseFields
     }
@@ -2853,6 +2929,7 @@ export const VideoFields = gql`
       ...VideoSubtitleFields
     }
   }
+  ${AppFields}
   ${LicenseFields}
   ${VideoMediaMetadataFields}
   ${StorageDataObjectFields}
@@ -3263,6 +3340,9 @@ export const ChannelFields = gql`
       iso
     }
     isCensored
+    entryApp {
+      ...AppFields
+    }
     ownerMember {
       id
     }
@@ -3284,6 +3364,7 @@ export const ChannelFields = gql`
       ...VideoFields
     }
   }
+  ${AppFields}
   ${StorageDataObjectFields}
   ${VideoFields}
 `
@@ -3948,6 +4029,7 @@ export const MemberInvitedEventFields = gql`
     metadata {
       ...MemberMetadataFields
     }
+    initialBalance
   }
   ${MemberMetadataFields}
 `
@@ -5174,6 +5256,40 @@ export const BudgetSpendingEventFields = gql`
     rationale
   }
 `
+export const BudgetFundedEventFields = gql`
+  fragment BudgetFundedEventFields on BudgetFundedEvent {
+    id
+    createdAt
+    inBlock
+    network
+    inExtrinsic
+    indexInBlock
+    group {
+      name
+    }
+    member {
+      id
+    }
+    rationale
+    amount
+  }
+`
+export const GetAppById = gql`
+  query getAppById($id: ID!) {
+    appByUniqueInput(where: { id: $id }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
+export const GetAppsByName = gql`
+  query getAppsByName($name: String!) {
+    apps(where: { name_eq: $name }) {
+      ...AppFields
+    }
+  }
+  ${AppFields}
+`
 export const GetChannelById = gql`
   query getChannelById($id: ID!) {
     channelByUniqueInput(where: { id: $id }) {
@@ -6126,4 +6242,12 @@ export const GetBudgetSpendingEventsByEventIds = gql`
     }
   }
   ${BudgetSpendingEventFields}
+`
+export const GetBudgetFundedEventsByEventIds = gql`
+  query getBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+    budgetFundedEvents(where: { id_in: $eventIds }) {
+      ...BudgetFundedEventFields
+    }
+  }
+  ${BudgetFundedEventFields}
 `

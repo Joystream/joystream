@@ -405,7 +405,7 @@ decl_event! {
         BalanceOf<T>,
       >,
     {
-        MemberInvited(MemberId, InviteMembershipParameters),
+        MemberInvited(MemberId, InviteMembershipParameters, Balance),
         MembershipGifted(MemberId, GiftMembershipParameters),
         MembershipBought(MemberId, BuyMembershipParameters, u32),
         MemberProfileUpdated(
@@ -810,7 +810,9 @@ decl_module! {
             );
 
             // Fire the event.
-            Self::deposit_event(RawEvent::MemberInvited(invited_member_id, params));
+            Self::deposit_event(
+                RawEvent::MemberInvited(invited_member_id, params, invitation_balance)
+            );
         }
 
         /// Gift a membership using own funds. Gifter does not need to be a member.

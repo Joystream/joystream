@@ -7,9 +7,9 @@ pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 use frame_system::RawOrigin;
 
 use crate::tests::fixtures::{
-    set_invitation_lock, CancelOpeningFixture, DecreaseWorkerStakeFixture,
-    FundWorkingGroupBudgetFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
-    SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
+    get_current_lead_account_id, set_invitation_lock, CancelOpeningFixture,
+    DecreaseWorkerStakeFixture, FundWorkingGroupBudgetFixture, IncreaseWorkerStakeFixture,
+    SetBudgetFixture, SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
     UpdateRewardAccountFixture, UpdateRewardAmountFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
@@ -29,6 +29,7 @@ use fixtures::{
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
 use frame_support::StorageMap;
+use frame_support::{assert_noop, assert_ok};
 use mock::{run_to_block, Balances, RewardPeriod, TestWorkingGroup, ACTOR_ORIGIN_ERROR};
 use sp_runtime::traits::Hash;
 use sp_std::collections::btree_map::BTreeMap;
@@ -2640,5 +2641,123 @@ fn fund_wg_budget_fails_with_zero_amount() {
             .with_member_id(member_id)
             .with_amount(amount)
             .call_and_assert(Err(Error::<Test, DefaultInstance>::ZeroTokensFunding.into()));
+    });
+}
+
+#[test]
+fn lead_remark_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        HireLeadFixture::default().hire_lead();
+        assert_noop!(
+            TestWorkingGroup::lead_remark(RawOrigin::None.into(), Vec::new()),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn lead_remark_fails_when_lead_not_hired() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        let account_id = 0u64;
+        assert_noop!(
+            TestWorkingGroup::lead_remark(RawOrigin::Signed(account_id).into(), Vec::new()),
+            Error::<Test, DefaultInstance>::CurrentLeadNotSet
+        );
+    });
+}
+
+#[test]
+fn lead_remark_fails_with_invalid_signer() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        let worker_acc = TestWorkingGroup::worker_by_id(worker_id)
+            .unwrap()
+            .role_account_id;
+        assert_noop!(
+            TestWorkingGroup::lead_remark(RawOrigin::Signed(worker_acc).into(), Vec::new()),
+            Error::<Test, DefaultInstance>::IsNotLeadAccount
+        );
+    });
+}
+
+#[test]
+fn lead_remark_ok() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        HireLeadFixture::default().hire_lead();
+        let lead_acc = get_current_lead_account_id();
+        assert_ok!(TestWorkingGroup::lead_remark(
+            RawOrigin::Signed(lead_acc).into(),
+            Vec::new()
+        ));
+        EventFixture::assert_last_crate_event(RawEvent::LeadRemarked(Vec::new()));
+    });
+}
+
+#[test]
+fn worker_remark_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        assert_noop!(
+            TestWorkingGroup::worker_remark(RawOrigin::None.into(), worker_id, Vec::new()),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn worker_remark_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        let worker_acc = TestWorkingGroup::worker_by_id(worker_id)
+            .unwrap()
+            .role_account_id;
+        assert_noop!(
+            TestWorkingGroup::worker_remark(
+                RawOrigin::Signed(worker_acc).into(),
+                worker_id + 1,
+                Vec::new()
+            ),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist
+        );
+    });
+}
+
+#[test]
+fn worker_remark_fails_with_invalid_signer() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        let lead_acc = get_current_lead_account_id();
+        assert_noop!(
+            TestWorkingGroup::worker_remark(
+                RawOrigin::Signed(lead_acc).into(),
+                worker_id,
+                Vec::new()
+            ),
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount
+        );
+    });
+}
+
+#[test]
+fn worker_remark_ok() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+        let worker_id = HireRegularWorkerFixture::default().hire();
+        let worker_acc = TestWorkingGroup::worker_by_id(worker_id)
+            .unwrap()
+            .role_account_id;
+        assert_ok!(TestWorkingGroup::worker_remark(
+            RawOrigin::Signed(worker_acc).into(),
+            worker_id,
+            Vec::new()
+        ));
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRemarked(worker_id, Vec::new()));
     });
 }

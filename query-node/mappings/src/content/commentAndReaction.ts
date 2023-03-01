@@ -4,8 +4,8 @@ import {
   IBanOrUnbanMemberFromChannel,
   ICreateComment,
   IDeleteComment,
-  IModerateComment,
   IEditComment,
+  IModerateComment,
   IPinOrUnpinComment,
   IReactComment,
   IReactVideo,
@@ -14,7 +14,8 @@ import {
   ReactVideo,
   VideoReactionsPreference,
 } from '@joystream/metadata-protobuf'
-import { MemberId, ChannelId } from '@joystream/types/primitives'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { ChannelId, MemberId } from '@joystream/types/primitives'
 import {
   Channel,
   Comment,
@@ -192,9 +193,9 @@ export async function processReactVideoMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: IReactVideo
+  metadata: DecodedMetadataObject<IReactVideo>
 ): Promise<void> {
-  const { videoId, reaction } = message
+  const { videoId, reaction } = metadata
   const reactionResult = parseVideoReaction(reaction)
 
   const changeOrRemovePreviousReaction = async (
@@ -290,9 +291,9 @@ export async function processReactCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: IReactComment
+  metadata: DecodedMetadataObject<IReactComment>
 ): Promise<void> {
-  const { commentId, reactionId } = message
+  const { commentId, reactionId } = metadata
 
   // load comment
   const comment = await getComment(store, commentId, ['video', 'video.channel', 'video.channel.bannedMembers'])
@@ -356,10 +357,9 @@ export async function processCreateCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: ICreateComment
+  metadata: DecodedMetadataObject<ICreateComment>
 ): Promise<Comment> {
-  // in case of null `parentCommentId` protobuf would assign it a default value i.e. ''
-  const { videoId, parentCommentId, body } = message
+  const { videoId, parentCommentId, body } = metadata
 
   // load video
   const video = await getVideo(store, videoId.toString(), ['channel', 'channel.bannedMembers'])
@@ -426,9 +426,9 @@ export async function processEditCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: IEditComment
+  metadata: DecodedMetadataObject<IEditComment>
 ): Promise<Comment> {
-  const { commentId, newBody } = message
+  const { commentId, newBody } = metadata
 
   // load comment
   const comment = await getComment(store, commentId, [
@@ -476,9 +476,9 @@ export async function processDeleteCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   memberId: MemberId,
-  message: IDeleteComment
+  metadata: DecodedMetadataObject<IDeleteComment>
 ): Promise<Comment> {
-  const { commentId } = message
+  const { commentId } = metadata
 
   // load comment
   const comment = await getComment(store, commentId, [

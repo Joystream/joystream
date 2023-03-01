@@ -505,7 +505,13 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
 
-        assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id, invite_params).into());
+        assert_last_event::<T>(
+            RawEvent::MemberInvited(
+                invited_member_id,
+                invite_params,
+                default_invitation_balance,
+            ).into()
+        );
 
     }
 
