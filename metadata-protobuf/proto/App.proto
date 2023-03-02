@@ -18,14 +18,14 @@ message AppAction {
   // Signature over app commitment
   optional bytes signature = 4;
 
-  // Nonce to prevent signature reusal
-  optional uint32 nonce = 5;
-
   enum ActionType {
     CREATE_VIDEO = 0;
     CREATE_CHANNEL = 1;
   }
 
-  // Type of the runtime-level action to be performed
-  optional ActionType action_type = 6;
+  enum CreatorType {
+    CHANNEL = 0;
+    MEMBER = 1;
+    CURATOR_GROUP = 2;
+  }
 }

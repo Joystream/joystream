@@ -144,7 +144,6 @@ async function saveMembershipMetadata(
 
 async function createNewMemberFromParams(
   store: DatabaseManager,
-  event: SubstrateEvent,
   memberId: MemberId,
   entryMethod: typeof MembershipEntryMethod,
   params: BuyMembershipParameters | InviteMembershipParameters | GiftMembershipParameters | CreateMemberParameters,
@@ -167,7 +166,6 @@ async function createNewMemberFromParams(
         : undefined,
     isVerified: isFoundingMember,
     inviteCount,
-    totalVideosCreated: 0,
     totalChannelsCreated: 0,
     boundAccounts: [],
     invitees: [],
@@ -200,7 +198,6 @@ export async function members_MembershipBought({ store, event }: EventContext & 
   const memberEntry = new MembershipEntryPaid()
   const member = await createNewMemberFromParams(
     store,
-    event,
     memberId,
     memberEntry,
     buyMembershipParameters,
@@ -228,7 +225,7 @@ export async function members_MembershipGifted({ store, event }: EventContext & 
   const [memberId, giftMembershipParameters] = new Members.MembershipGiftedEvent(event).params
 
   const memberEntry = new MembershipEntryGifted()
-  const member = await createNewMemberFromParams(store, event, memberId, memberEntry, giftMembershipParameters, 0)
+  const member = await createNewMemberFromParams(store, memberId, memberEntry, giftMembershipParameters, 0)
 
   const membershipGiftedEvent = new MembershipGiftedEvent({
     ...genericEventFields(event),
@@ -252,7 +249,6 @@ export async function members_MemberCreated({ store, event }: EventContext & Sto
   const memberEntry = new MembershipEntryMemberCreated()
   const member = await createNewMemberFromParams(
     store,
-    event,
     memberId,
     memberEntry,
     memberParameters,
@@ -399,14 +395,7 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
 export async function members_MemberInvited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, inviteMembershipParameters, invitedMemberBalance] = new Members.MemberInvitedEvent(event).params
   const entryMethod = new MembershipEntryInvited()
-  const invitedMember = await createNewMemberFromParams(
-    store,
-    event,
-    memberId,
-    entryMethod,
-    inviteMembershipParameters,
-    0
-  )
+  const invitedMember = await createNewMemberFromParams(store, memberId, entryMethod, inviteMembershipParameters, 0)
 
   // Decrease invite count of inviting member
   const invitingMember = await getMemberById(store, inviteMembershipParameters.invitingMemberId)

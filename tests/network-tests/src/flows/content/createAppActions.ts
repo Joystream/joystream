@@ -61,17 +61,17 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const channelNonce = 0
   const appChannelCommitment = generateAppActionCommitment(
     channelNonce,
-    `m:${member.memberId.toString()}`,
+    member.memberId.toString(),
     AppAction.ActionType.CREATE_CHANNEL,
+    AppAction.CreatorType.MEMBER,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
-    Utils.metadataToBytes(ChannelMetadata, channelInput)
+    Utils.metadataToBytes(ChannelMetadata, channelInput).toU8a(true)
   )
   const signature = ed25519Sign(appChannelCommitment, keypair, true)
   const appChannelInput: IAppAction = {
     appId,
     rawAction: Utils.metadataToBytes(ChannelMetadata, channelInput),
     signature,
-    nonce: channelNonce,
   }
   const createChannelFixture = new CreateChannelsAsMemberFixture(
     api,
@@ -113,9 +113,10 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     videoNonce,
     channelId.toString(),
     AppAction.ActionType.CREATE_VIDEO,
+    AppAction.CreatorType.CHANNEL,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
-    Utils.metadataToBytes(ContentMetadata, contentMetadata),
-    Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta)
+    Utils.metadataToBytes(ContentMetadata, contentMetadata).toU8a(true),
+    Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta).toU8a(true)
   )
   const videoSignature = ed25519Sign(appVideoCommitment, keypair, true)
   const appVideoInput: IAppAction = {
@@ -123,7 +124,6 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     rawAction: Utils.metadataToBytes(ContentMetadata, contentMetadata),
     signature: videoSignature,
     metadata: Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta),
-    nonce: videoNonce,
   }
   const videoId = await api.createMockVideo(member.memberId.toNumber(), channelId.toNumber(), undefined, appVideoInput)
 
@@ -146,18 +146,24 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
 export function generateAppActionCommitment(
   nonce: number,
   creatorId: string,
-  type: AppAction.ActionType,
+  actionType: AppAction.ActionType,
+  creatorType: AppAction.CreatorType,
   assets: Uint8Array,
-  rawAction?: Bytes,
-  rawAppActionMetadata?: Bytes
+  rawAction?: Uint8Array,
+  rawAppActionMetadata?: Uint8Array
 ): string {
   const rawCommitment = [
     nonce,
     creatorId,
-    type,
+    actionType,
+    creatorType,
     u8aToHex(assets),
-    ...(rawAction ? [u8aToHex(rawAction)] : []),
-    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
+    u8aToHex(rawAction),
+    u8aToHex(rawAppActionMetadata),
   ]
   return stringToHex(JSON.stringify(rawCommitment))
+}
+
+export function u8aToBytes(array?: Uint8Array | null): Bytes {
+  return createType('Bytes', array ? u8aToHex(array) : '')
 }
