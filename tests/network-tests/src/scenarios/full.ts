@@ -53,6 +53,8 @@ scenario('Full', async ({ job, env }) => {
 
   const coreJob = runtimeUpgradeProposalJob || councilJob
 
+  // All other jobs should be executed after coreJob
+
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
@@ -65,8 +67,6 @@ scenario('Full', async ({ job, env }) => {
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
   job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
 
-  const memberInvitationJob = job('inviting members', invitingMembers).after(councilFailuresJob)
-
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
     proposals,
@@ -75,11 +75,11 @@ scenario('Full', async ({ job, env }) => {
     exactExecutionBlock,
     expireProposal,
     proposalsDiscussion,
-  ]).requires(memberInvitationJob)
+  ]).requires(councilFailuresJob)
 
   const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
-  // Working groups, after having leads terminated
+  // Working groups
   const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
     channelPayoutsProposalJob
   )
@@ -87,10 +87,11 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
   job('worker actions', workerActions).requires(hireLeads)
-  job('group budget', groupBudget).requires(hireLeads)
+  const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job('inviting members', invitingMembers).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
