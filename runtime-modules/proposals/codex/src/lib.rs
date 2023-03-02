@@ -393,7 +393,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// Proposal codex substrate module Call
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 

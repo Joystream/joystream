@@ -414,7 +414,7 @@ impl<T: Config<I>, I: Instance> From<BadOrigin> for Error<T, I> {
 
 decl_module! {
     pub struct Module<T: Config<I>, I: Instance = DefaultInstance> for enum Call
-        where origin: T::Origin {
+        where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T, I>;
 
@@ -632,14 +632,14 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
-impl<T: Config<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>
-    for Module<T, I>
+impl<T: Config<I>, I: Instance>
+    ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash> for Module<T, I>
 {
     type VotePower = T::VotePower;
 
     // Start new referendum run.
     fn start_referendum(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         extra_winning_target_count: u32,
         cycle_id: u64,
     ) -> Result<(), ()> {
@@ -959,7 +959,7 @@ struct EnsureChecks<T: Config<I>, I: Instance> {
 impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
     /////////////////// Common checks //////////////////////////////////////////
 
-    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+    fn ensure_regular_user(origin: T::RuntimeOrigin) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
 
         Ok(account_id)
@@ -967,7 +967,7 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_referendum(origin: T::Origin) -> Result<(), ()> {
+    fn can_start_referendum(origin: T::RuntimeOrigin) -> Result<(), ()> {
         T::ManagerOrigin::ensure_origin(origin).map_err(|_| ())?;
 
         // ensure referendum is not already running
@@ -980,7 +980,7 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
     }
 
     fn can_vote(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         stake: &BalanceOf<T>,
     ) -> Result<(u64, T::AccountId), Error<T, I>> {
         fn prevent_repeated_vote<T: Config<I>, I: Instance>(
@@ -1036,8 +1036,10 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
         Ok((current_cycle_id, account_id))
     }
 
-    fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>(
-        origin: T::Origin,
+    fn can_reveal_vote<
+        R: ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash>,
+    >(
+        origin: T::RuntimeOrigin,
         salt: &[u8],
         vote_option_id: &<T as common::membership::MembershipTypes>::MemberId,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
@@ -1086,7 +1088,7 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
         Ok((stage_data, account_id, cast_vote))
     }
 
-    fn can_release_vote_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+    fn can_release_vote_stake(origin: T::RuntimeOrigin) -> Result<T::AccountId, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 

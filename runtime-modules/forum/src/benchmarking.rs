@@ -134,7 +134,7 @@ where
     let (caller_id, member_id) = member_funded_account::<T>(id as u32);
 
     let (opening_id, application_id) = add_and_apply_opening::<T>(
-        &T::Origin::from(RawOrigin::Root),
+        &T::RuntimeOrigin::from(RawOrigin::Root),
         &caller_id,
         &member_id,
         &OpeningType::Leader,
@@ -159,7 +159,7 @@ where
 }
 
 fn add_and_apply_opening<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
@@ -173,7 +173,7 @@ fn add_and_apply_opening<T: Config + working_group::Config<ForumWorkingGroupInst
 }
 
 fn add_opening_helper<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     ForumGroup::<T>::add_opening(

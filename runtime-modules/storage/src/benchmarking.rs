@@ -175,7 +175,7 @@ where
     let (caller_id, member_id) = member_funded_account::<T>(id.saturated_into());
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Root),
+        &T::RuntimeOrigin::from(RawOrigin::Root),
         &caller_id,
         &member_id,
         &OpeningType::Leader,
@@ -211,7 +211,7 @@ where
     let leader_origin = RawOrigin::Signed(leader_account_id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(leader_origin.clone()),
+        &T::RuntimeOrigin::from(leader_origin.clone()),
         &caller_id,
         &member_id,
         &OpeningType::Regular,
@@ -262,7 +262,7 @@ where
 }
 
 fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
@@ -276,7 +276,7 @@ fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
 }
 
 fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     working_group::Module::<T, I>::add_opening(

@@ -201,7 +201,7 @@ decl_storage! { generate_storage_info
 decl_module! {
     pub struct Module<T: Config> for enum Call
     where
-        origin: T::Origin
+        origin: T::RuntimeOrigin
     {
 
         /// Default deposit_event() handler

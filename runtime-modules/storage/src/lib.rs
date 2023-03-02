@@ -1705,7 +1705,7 @@ decl_error! {
 
 decl_module! {
     /// _Storage_ substrate module.
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 

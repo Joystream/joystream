@@ -430,7 +430,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1375,7 +1375,7 @@ impl<T: Config> Module<T> {
 
     // Ensure origin corresponds to the controller account of the member.
     fn ensure_member_controller_account_origin_signed(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         member_id: &T::MemberId,
     ) -> Result<Membership<T>, Error<T>> {
         // Ensure transaction is signed.
@@ -1453,9 +1453,9 @@ impl<T: Config> common::StakingAccountValidator<T> for Module<T> {
     }
 }
 
-impl<T: Config> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
+impl<T: Config> MemberOriginValidator<T::RuntimeOrigin, T::MemberId, T::AccountId> for Module<T> {
     fn ensure_member_controller_account_origin(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         actor_id: T::MemberId,
     ) -> Result<T::AccountId, DispatchError> {
         let signer_account_id = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;

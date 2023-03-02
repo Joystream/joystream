@@ -310,7 +310,7 @@ decl_storage! { generate_storage_info
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -4321,7 +4321,7 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_can_claim_channel_reward(
-        origin: &T::Origin,
+        origin: &T::RuntimeOrigin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         item: &PullPayment<T>,
         proof: &[ProofElement<T>],

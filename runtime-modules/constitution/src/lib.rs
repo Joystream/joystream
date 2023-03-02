@@ -74,7 +74,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         fn deposit_event() = default;
 
         /// Sets the current constitution hash. Requires root origin.

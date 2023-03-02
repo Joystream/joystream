@@ -78,7 +78,7 @@
 //! pub trait Config: engine::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
 //!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
@@ -414,7 +414,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// 'Proposal engine' substrate module
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -887,7 +887,7 @@ impl<T: Config> Module<T> {
                 execution_code_weight = proposal_code.get_dispatch_info().weight;
 
                 if let Err(dispatch_error) =
-                    proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
+                    proposal_code.dispatch_bypass_filter(T::RuntimeOrigin::from(RawOrigin::Root))
                 {
                     ExecutionStatus::failed_execution(Self::parse_dispatch_error(
                         dispatch_error.error,

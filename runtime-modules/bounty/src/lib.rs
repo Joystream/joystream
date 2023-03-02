@@ -912,7 +912,7 @@ decl_error! {
 
 decl_module! {
     /// Bounty pallet Substrate Module
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1930,7 +1930,7 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_switch_oracle_actors(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         current_oracle: BountyActor<MemberId<T>>,
         new_oracle: BountyActor<MemberId<T>>,
     ) -> Result<BountyActor<MemberId<T>>, DispatchError> {

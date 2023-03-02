@@ -127,7 +127,7 @@ decl_storage! { generate_storage_info
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         fn deposit_event() = default;
 
         /// Predefined errors

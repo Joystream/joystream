@@ -338,7 +338,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// _Working group_ substrate module.
-    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::RuntimeOrigin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -1627,11 +1627,11 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
     for Module<T, I>
 {
-    fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
+    fn ensure_worker_origin(origin: T::RuntimeOrigin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 
-    fn ensure_leader_origin(origin: T::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: T::RuntimeOrigin) -> DispatchResult {
         checks::ensure_origin_is_active_leader::<T, I>(origin)
     }
 

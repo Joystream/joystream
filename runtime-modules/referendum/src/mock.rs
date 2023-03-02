@@ -372,9 +372,9 @@ impl<T: Config<I>, I: Instance> InstanceMockUtils<T, I>
 where
     T::BlockNumber: From<u64> + Into<u64>,
 {
-    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
+    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::RuntimeOrigin {
         match origin {
-            OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
+            OriginType::Signed(account_id) => T::RuntimeOrigin::from(RawOrigin::Signed(account_id)),
             OriginType::Root => RawOrigin::Root.into(),
             OriginType::None => RawOrigin::None.into(),
             //_ => panic!("not implemented"),

@@ -483,7 +483,7 @@ decl_event!(
 );
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
 
         /// Predefined errors
         type Error = Error<T>;

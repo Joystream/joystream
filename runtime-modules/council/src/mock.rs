@@ -567,9 +567,9 @@ where
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 {
-    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
+    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::RuntimeOrigin {
         match origin {
-            OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
+            OriginType::Signed(account_id) => T::RuntimeOrigin::from(RawOrigin::Signed(account_id)),
             OriginType::Root => RawOrigin::Root.into(),
             //_ => panic!("not implemented"),
         }
@@ -682,9 +682,9 @@ where
 
     T::Hash: From<<Runtime as frame_system::Config>::Hash>
         + Into<<Runtime as frame_system::Config>::Hash>,
-    T::Origin: From<<Runtime as frame_system::Config>::Origin>
+    T::RuntimeOrigin: From<<Runtime as frame_system::Config>::Origin>
         + Into<<Runtime as frame_system::Config>::Origin>,
-    <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
+    <T::Referendum as ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MemberId: Into<T::AccountId>,
 {
@@ -740,7 +740,7 @@ where
             OptionResult<
                 T::MemberId,
                 <T::Referendum as ReferendumManager<
-                    T::Origin,
+                    T::RuntimeOrigin,
                     T::AccountId,
                     T::MemberId,
                     T::Hash,
@@ -749,7 +749,7 @@ where
         >,
         intermediate_results: BTreeMap<
             u64,
-            <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower,
+            <T::Referendum as ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash>>::VotePower,
         >,
         expected_update_block_number: T::BlockNumber,
     ) {
