@@ -94,7 +94,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     if (appAction) {
       const channelMetadataBytes = u8aToBytes(appAction.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
-      const creatorType = channel.ownerMember ? AppAction.CreatorType.MEMBER : AppAction.CreatorType.CURAOTR_GROUP
+      const creatorType = channel.ownerMember ? AppAction.CreatorType.MEMBER : AppAction.CreatorType.CURATOR_GROUP
       const creatorId = (channel.ownerMember ? channel.ownerMember.id : channel.ownerCuratorGroup?.id) ?? ''
       const expectedCommitment = generateAppActionCommitment(
         // Note: Curator channels not supported yet
