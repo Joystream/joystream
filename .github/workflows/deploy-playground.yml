@@ -63,7 +63,8 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          # When changing region double check ami image is available in deploy step
+          aws-region: eu-central-1
 
       - name: Check if CloudFormation stack exists
         id: stack_exists
@@ -82,7 +83,8 @@ jobs:
           name: ${{ env.STACK_NAME }}
           template: devops/aws/cloudformation/single-instance.yml
           no-fail-on-empty-changeset: '1'
-          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=t2.large'
+          # Make sure ami image is available in the region specified in configure aws creds step
+          parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=t2.xlarge,EC2AMI=ami-06b4d9ba1f23a8da4'
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2

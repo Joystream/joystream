@@ -15,9 +15,10 @@ import { FlowProps } from '../../Flow'
 import { Utils } from '../../utils'
 import { createType } from '@joystream/types'
 import { ed25519PairFromString, ed25519Sign } from '@polkadot/util-crypto'
-import { u8aToHex, stringToHex } from '@polkadot/util'
+import { stringToHex, u8aToHex } from '@polkadot/util'
 import { CreateChannelsAsMemberFixture } from '../../misc/createChannelsAsMemberFixture'
 import { Bytes } from '@polkadot/types'
+import { createJoystreamCli } from '../utils'
 
 export async function createAppActions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:create-app-actions')
@@ -35,7 +36,11 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     authKey: appPublicKeyHex,
   }
   const appName = 'app_for_actions'
-  await api.createApp(appName, appMetadata, member.memberId)
+
+  const joystreamCli = await createJoystreamCli()
+  await joystreamCli.importAccount(member.keyringPair)
+
+  await joystreamCli.createApp(member.memberId.toString(), { name: appName, ...appMetadata })
 
   const appFragment = await query.tryQueryWithTimeout(
     () => query.getAppsByName(appName),
@@ -56,16 +61,17 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const channelNonce = 0
   const appChannelCommitment = generateAppActionCommitment(
     channelNonce,
-    `m:${member.memberId.toString()}`,
+    member.memberId.toString(),
+    AppAction.ActionType.CREATE_CHANNEL,
+    AppAction.CreatorType.MEMBER,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
-    Utils.metadataToBytes(ChannelMetadata, channelInput)
+    Utils.metadataToBytes(ChannelMetadata, channelInput).toU8a(true)
   )
   const signature = ed25519Sign(appChannelCommitment, keypair, true)
   const appChannelInput: IAppAction = {
     appId,
     rawAction: Utils.metadataToBytes(ChannelMetadata, channelInput),
     signature,
-    nonce: channelNonce,
   }
   const createChannelFixture = new CreateChannelsAsMemberFixture(
     api,
@@ -106,9 +112,11 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
   const appVideoCommitment = generateAppActionCommitment(
     videoNonce,
     channelId.toString(),
+    AppAction.ActionType.CREATE_VIDEO,
+    AppAction.CreatorType.CHANNEL,
     createType('Option<PalletContentStorageAssetsRecord>', null).toU8a(),
-    Utils.metadataToBytes(ContentMetadata, contentMetadata),
-    Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta)
+    Utils.metadataToBytes(ContentMetadata, contentMetadata).toU8a(true),
+    Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta).toU8a(true)
   )
   const videoSignature = ed25519Sign(appVideoCommitment, keypair, true)
   const appVideoInput: IAppAction = {
@@ -116,7 +124,6 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
     rawAction: Utils.metadataToBytes(ContentMetadata, contentMetadata),
     signature: videoSignature,
     metadata: Utils.metadataToBytes(AppActionMetadata, videoAppActionMeta),
-    nonce: videoNonce,
   }
   const videoId = await api.createMockVideo(member.memberId.toNumber(), channelId.toNumber(), undefined, appVideoInput)
 
@@ -139,16 +146,24 @@ export async function createAppActions({ api, query }: FlowProps): Promise<void>
 export function generateAppActionCommitment(
   nonce: number,
   creatorId: string,
+  actionType: AppAction.ActionType,
+  creatorType: AppAction.CreatorType,
   assets: Uint8Array,
-  rawAction?: Bytes,
-  rawAppActionMetadata?: Bytes
+  rawAction?: Uint8Array,
+  rawAppActionMetadata?: Uint8Array
 ): string {
   const rawCommitment = [
     nonce,
     creatorId,
+    actionType,
+    creatorType,
     u8aToHex(assets),
-    ...(rawAction ? [u8aToHex(rawAction)] : []),
-    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
+    u8aToHex(rawAction),
+    u8aToHex(rawAppActionMetadata),
   ]
   return stringToHex(JSON.stringify(rawCommitment))
+}
+
+export function u8aToBytes(array?: Uint8Array | null): Bytes {
+  return createType('Bytes', array ? u8aToHex(array) : '')
 }

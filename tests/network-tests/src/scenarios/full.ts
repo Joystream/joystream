@@ -40,7 +40,6 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
-import { deleteApp } from '../flows/content/deleteApp'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -120,7 +119,6 @@ scenario('Full', async ({ job, env }) => {
   job('create app', createApp).after(hireLeads)
   job('update app', updateApp).after(hireLeads)
   job('create app actions', createAppActions).after(hireLeads)
-  job('delete app', deleteApp).after(hireLeads)
 
   const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
 

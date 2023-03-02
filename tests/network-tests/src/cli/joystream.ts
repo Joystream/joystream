@@ -6,6 +6,7 @@ import {
   VideoInputParameters,
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
+  AppInputDetails,
 } from '@joystream/cli/src/Types'
 import { Assets } from '@joystream/cli/src/schemas/typings/Assets.schema'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
@@ -187,5 +188,23 @@ export class JoystreamCLI extends CLI {
     const jsonFile = this.tmpFileManager.jsonFile(assetsInput)
 
     await this.run('content:reuploadAssets', ['-i', jsonFile])
+  }
+
+  /**
+   Creates an app.
+   */
+  async createApp(memberId: string, app: AppInputDetails): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(app)
+
+    await this.run('apps:createApp', ['-i', jsonFile, '-s', '--useMemberId', memberId])
+  }
+
+  /**
+   Updates an app.
+   */
+  async updateApp(memberId: string, appId: string, app: Partial<AppInputDetails>): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(app)
+
+    await this.run('apps:updateApp', ['--appId', appId, '-i', jsonFile, '-s', '--useMemberId', memberId])
   }
 }

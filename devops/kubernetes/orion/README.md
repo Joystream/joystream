@@ -41,6 +41,7 @@ After cloning this repo, from this working directory, run these commands:
     --plaintext isMinikube=true --plaintext orionImage='joystream/orion:latest' \
     --plaintext contentSecret='password123' \
     --plaintext adminSecret='password123' \
+    --plaintext appPrivateKey='secret123' \
     --plaintext aws:region=us-east-1 --plaintext aws:profile=joystream-user
    ```
 

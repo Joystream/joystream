@@ -12,18 +12,20 @@ import {
 import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
 import {
   Channel,
+  ChannelAssetsDeletedByModeratorEvent,
+  ChannelDeletedByModeratorEvent,
+  ChannelNftCollectors,
+  ChannelVisibilitySetByModeratorEvent,
   Collaborator,
   ContentActor,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
+  MemberBannedFromChannelEvent,
   Membership,
   MetaprotocolTransactionSuccessful,
   StorageBag,
   StorageDataObject,
-  ChannelAssetsDeletedByModeratorEvent,
-  ChannelDeletedByModeratorEvent,
-  ChannelVisibilitySetByModeratorEvent,
   ChannelPayoutsUpdatedEvent,
   ChannelRewardClaimedAndWithdrawnEvent,
   ChannelRewardClaimedEvent,
@@ -33,20 +35,18 @@ import {
   PaymentContextChannel,
   ChannelPaymentMadeEvent,
   Video,
-  ChannelNftCollectors,
-  MemberBannedFromChannelEvent,
 } from 'query-node/dist/model'
-import { In, FindOptionsWhere } from 'typeorm'
+import { FindOptionsWhere, In } from 'typeorm'
 import { Content } from '../../generated/types'
 import {
-  deserializeMetadata,
-  inconsistentState,
-  genericEventFields,
-  logger,
-  saveMetaprotocolTransactionSuccessful,
-  saveMetaprotocolTransactionErrored,
-  unwrap,
   bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  inconsistentState,
+  logger,
+  saveMetaprotocolTransactionErrored,
+  saveMetaprotocolTransactionSuccessful,
+  unwrap,
   getMemberById,
   invalidMetadata,
   unexpectedData,
@@ -60,12 +60,12 @@ import {
 import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
-  processChannelMetadata,
-  unsetAssetRelations,
+  generateAppActionCommitment,
   mapAgentPermission,
   processAppActionMetadata,
-  generateAppActionCommitment,
+  processChannelMetadata,
   u8aToBytes,
+  unsetAssetRelations,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -95,6 +95,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     ...channelOwner,
     rewardAccount: rewardAccount.toString(),
     channelStateBloatBond: channelStateBloatBond.amount,
+    totalVideosCreated: 0,
   })
 
   // deserialize & process metadata
@@ -110,19 +111,20 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     if (appAction) {
       const channelMetadataBytes = u8aToBytes(appAction.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
-      const appCommitment = generateAppActionCommitment(
+      const creatorType = channel.ownerMember ? AppAction.CreatorType.MEMBER : AppAction.CreatorType.CURATOR_GROUP
+      const creatorId = (channel.ownerMember ? channel.ownerMember.id : channel.ownerCuratorGroup?.id) ?? ''
+      const expectedCommitment = generateAppActionCommitment(
+        // Note: Curator channels not supported yet
         channelOwner.ownerMember?.totalChannelsCreated ?? -1,
-        channelOwner.ownerMember?.id ? `m:${channelOwner.ownerMember.id}` : `c:${channelOwner.ownerCuratorGroup?.id}`,
+        creatorId,
+        AppAction.ActionType.CREATE_CHANNEL,
+        creatorType,
         channelCreationParameters.assets.toU8a(),
-        appAction.rawAction ? channelMetadataBytes : undefined,
-        appAction.metadata ? u8aToBytes(appAction.metadata) : undefined
+        channelMetadataBytes.toU8a(true),
+        appAction.metadata || new Uint8Array()
       )
-      await processAppActionMetadata(
-        ctx,
-        channel,
-        appAction,
-        { ownerNonce: channelOwner.ownerMember?.totalChannelsCreated, appCommitment },
-        (entity: Channel) => processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
+      await processAppActionMetadata(ctx, channel, appAction, expectedCommitment, (entity: Channel) =>
+        processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
       )
     } else {
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) ?? {}
@@ -389,8 +391,6 @@ async function updateChannelAgentsPermissions(
 
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
-    const permissionsArray = Array.from(permissions)
-
     const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),

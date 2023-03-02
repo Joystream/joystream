@@ -1,3 +1,7 @@
+### 1.0.0
+
+- No changes, version bumped for consistency with mainnet release versioning.
+
 ### 0.20.0
 
 - `@polkadot/api` upgraded from `5.9.1` to `8.9.1` (along with related dependencies)
