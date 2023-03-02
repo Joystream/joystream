@@ -33,7 +33,6 @@ sp-api = { package = 'sp-api', git = 'https://github.com/joystream/substrate.git
 sp-core = { package = 'sp-core', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sp-runtime = { package = 'sp-runtime', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sp-timestamp = { package = 'sp-timestamp', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-sp-authorship = { package = 'sp-authorship', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sp-inherents = { package = 'sp-inherents', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sp-keyring = { package = 'sp-keyring', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sp-keystore = { package = 'sp-keystore', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
@@ -54,7 +53,6 @@ sc-consensus-slots = { package = 'sc-consensus-slots', git = 'https://github.com
 sc-consensus-babe = { package = 'sc-consensus-babe', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sc-consensus-babe-rpc = { package = 'sc-consensus-babe-rpc', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sc-consensus-epochs = { package = 'sc-consensus-epochs', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-sc-consensus-uncles = { package = 'sc-consensus-uncles', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sc-finality-grandpa = { package = "sc-finality-grandpa", git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sc-finality-grandpa-rpc = { package = 'sc-finality-grandpa-rpc', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sc-rpc = { package = 'sc-rpc', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
