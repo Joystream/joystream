@@ -183,9 +183,6 @@ type Membership @entity {
   "Number of channels ever created by this member"
   totalChannelsCreated: Int!
 
-  "Number of videos ever created by this member"
-  totalVideosCreated: Int!
-
   # Required for EnglishAuctionSettledEvent->members Many-to-Many relationship
   "Member as bidder in EnglishAuctionSettledEvent/s."
   memberEnglishAuctionSettledEvents: [EnglishAuctionSettledEvent!] @derivedFrom(field: "bidders")

@@ -22,7 +22,6 @@ import {
   CommentReaction,
   CommentReactionsCountByReactionId,
   CommentTextUpdatedEvent,
-  Membership,
   NftIssuedEvent,
   StorageDataObject,
   Video,
@@ -136,38 +135,31 @@ export async function processCreateVideoMessage(
     const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata ?? {}
     const appActionMetadataBytes = metadata.metadata ? u8aToBytes(metadata.metadata) : undefined
 
-    const appCommitment = generateAppActionCommitment(
-      channel.ownerMember?.totalVideosCreated ?? -1,
-      channel.id ?? '',
+    const expectedCommitment = generateAppActionCommitment(
+      channel.totalVideosCreated,
+      channel.id,
       AppAction.ActionType.CREATE_VIDEO,
+      AppAction.CreatorType.CHANNEL,
       contentCreationParameters.assets.toU8a(),
       metadata.rawAction ? contentMetadataBytes : undefined,
       appActionMetadataBytes
     )
-    await processAppActionMetadata(
-      ctx,
-      video,
-      metadata,
-      { ownerNonce: channel.ownerMember?.totalVideosCreated, appCommitment },
-      (entity) => {
-        if ('entryApp' in entity && appActionMetadataBytes) {
-          const appActionMetadata = deserializeMetadata(AppActionMetadata, appActionMetadataBytes)
+    await processAppActionMetadata(ctx, video, metadata, expectedCommitment, (entity) => {
+      if ('entryApp' in entity && appActionMetadataBytes) {
+        const appActionMetadata = deserializeMetadata(AppActionMetadata, appActionMetadataBytes)
 
-          appActionMetadata?.videoId && integrateMeta(entity, { ytVideoId: appActionMetadata.videoId }, ['ytVideoId'])
-        }
-        return processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
+        appActionMetadata?.videoId && integrateMeta(entity, { ytVideoId: appActionMetadata.videoId }, ['ytVideoId'])
       }
-    )
+      return processVideoMetadata(ctx, entity, videoMetadata, newDataObjectIds)
+    })
   } else if (metadata) {
     await processVideoMetadata(ctx, video, metadata as DecodedMetadataObject<IVideoMetadata>, newDataObjectIds)
   }
 
   // save video
   await store.save<Video>(video)
-  if (channel.ownerMember) {
-    channel.ownerMember.totalVideosCreated += 1
-    await store.save<Membership>(channel.ownerMember)
-  }
+  channel.totalVideosCreated += 1
+  await store.save<Channel>(channel)
 
   if (contentCreationParameters.autoIssueNft.isSome) {
     const issuanceParameters = contentCreationParameters.autoIssueNft.unwrap()

@@ -70,6 +70,9 @@ type Channel @entity {
 
   "Channel's privilege level"
   privilegeLevel: Int
+
+  "Number of videos ever created in this channel"
+  totalVideosCreated: Int!
 }
 
 type VideoCategory @entity {
