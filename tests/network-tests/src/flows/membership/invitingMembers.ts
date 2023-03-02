@@ -6,6 +6,7 @@ import { assert } from 'chai'
 import { PassProposalsFixture } from '../../fixtures/proposals'
 import { Utils } from '../../utils'
 import { Resource } from '../../Resources'
+import { u64 } from '@polkadot/types'
 
 export default async function invitingMembers({ api, query, env, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:inviting-members')
@@ -22,14 +23,20 @@ export default async function invitingMembers({ api, query, env, lock }: FlowPro
   const inviterMemberIds = buyMembershipHappyCaseFixture.getCreatedMembers()
 
   // Membership WG balance required
-  const groupBudget = (await api.query.members.initialInvitationBalance()).muln(3 * N)
+  const fundBudget = async (memberIdFunder: u64, noOfInvitees: number) => {
+    const initialInvitationBalance = (await api.query.members.initialInvitationBalance()).toBn()
+    await api.fundWorkingGroupBudget(
+      'membershipWorkingGroup',
+      memberIdFunder,
+      initialInvitationBalance.muln(noOfInvitees)
+    )
+    const currentBudget = (await api.query.membershipWorkingGroup.budget()).toBn()
+  }
 
-  // Top up working group budget to allow funding invited members
-  const unlock = await lock(Resource.WorkingGroupBudget)
-  await api.fundWorkingGroupBudget('membershipWorkingGroup', inviterMemberIds[0], groupBudget)
-
+  assert.isAtLeast(inviterMemberIds.length, 3)
   for (let i = 0; i < 3; ++i) {
     const inviteesAccs = (await api.createKeyPairs(N)).map(({ key }) => key.address)
+    await fundBudget(inviterMemberIds[i], N)
     const inviteMembersHappyCaseFixture = new InviteMembersHappyCaseFixture(
       api,
       query,
@@ -48,7 +55,6 @@ export default async function invitingMembers({ api, query, env, lock }: FlowPro
       await new FixtureRunner(passProposalsFixture).run()
     }
   }
-  unlock()
 
   debug('Done')
 }
