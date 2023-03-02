@@ -5,8 +5,9 @@ import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
 import { SpendBudgetFixture, FundWorkingGroupBudgetFixture } from '../../fixtures/workingGroups'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
+import { Resource } from '../../Resources'
 
-export default async function groupBudget({ api, query }: FlowProps): Promise<void> {
+export default async function groupBudget({ api, query, lock }: FlowProps): Promise<void> {
   await Promise.all(
     workingGroups.map(async (group) => {
       const debug = extendDebug(`flow:group-budget:${group}`)
