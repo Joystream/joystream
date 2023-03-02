@@ -3,12 +3,13 @@
     - proposal creator pays for upload of payload not arbitrary specified account
   - Enabled `UpdateChannelPayouts` proposal creation
   - Exposed content pallet `MinimumCashoutAllowedLimit` and `MaximumCashoutAllowedLimit` constants
-  - `membership:MemberInvited` event payload contains initial balance
+  - `membership:MemberInvited` event payload contains initial balance - [#4643](https://github.com/Joystream/joystream/issues/4643)
   - Add support for payments with membership:member_remark()
   - Referendum: Add "Opt Out of Voting" feature [#2927](https://github.com/Joystream/joystream/issues/2927)
   - Removed `sudo` pallet - aka "Liberated" [#4478](https://github.com/Joystream/joystream/pull/4478)
   - Adjust constitutionality to max 2 for all proposals [#4655](https://github.com/Joystream/joystream/issues/4655#issuecomment-1443238442)
-  - Tweak worker remarks - https://github.com/Joystream/joystream/pull/4644
+  - Tweak worker remarks - [#4644](https://github.com/Joystream/joystream/pull/4644)
+  - [Full list](https://github.com/Joystream/joystream/issues/4563)
 
 ### Version 12.1001.0 - Mainnet Supervised
   - Unlocked all pallets transactions
