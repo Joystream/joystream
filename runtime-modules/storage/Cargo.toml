@@ -29,7 +29,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
-randomness-collective-flip = { package = 'pallet-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+randomness-collective-flip = { package = 'pallet-insecure-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 derive-fixture = { package = 'derive-fixture', default-features = false, path = '../support/derive-fixture'}
 derive-new = "0.5"
 

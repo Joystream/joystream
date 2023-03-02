@@ -2864,7 +2864,7 @@ dependencies = [
  "pallet-proposals-codex",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
- "pallet-randomness-collective-flip",
+ "pallet-insecure-randomness-collective-flip",
  "pallet-referendum",
  "pallet-session",
  "pallet-session-benchmarking",
@@ -4597,7 +4597,7 @@ dependencies = [
  "pallet-common",
  "pallet-membership",
  "pallet-project-token",
- "pallet-randomness-collective-flip",
+ "pallet-insecure-randomness-collective-flip",
  "pallet-staking-handler",
  "pallet-storage",
  "pallet-timestamp",
@@ -4827,7 +4827,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-randomness-collective-flip",
+ "pallet-insecure-randomness-collective-flip",
  "pallet-staking-handler",
  "pallet-storage",
  "pallet-timestamp",
@@ -4925,7 +4925,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-randomness-collective-flip"
+name = "pallet-insecure-randomness-collective-flip"
 version = "4.0.0-dev"
 source = "git+https://github.com/joystream/substrate.git?rev=d29a53b11c3e530d1656eef502cb0f1f8fff3522#d29a53b11c3e530d1656eef502cb0f1f8fff3522"
 dependencies = [
@@ -5063,7 +5063,7 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-randomness-collective-flip",
+ "pallet-insecure-randomness-collective-flip",
  "pallet-staking-handler",
  "pallet-timestamp",
  "pallet-working-group",

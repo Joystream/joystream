@@ -292,7 +292,7 @@ impl frame_system::Config for Runtime {
     type MaxConsumers = ConstU32<16>;
 }
 
-impl pallet_randomness_collective_flip::Config for Runtime {}
+impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 impl substrate_utility::Config for Runtime {
     type Event = Event;
@@ -1835,7 +1835,7 @@ construct_runtime!(
         AuthorityDiscovery: pallet_authority_discovery,
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
-        RandomnessCollectiveFlip: pallet_randomness_collective_flip,
+        RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
         BagsList: pallet_bags_list,
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
