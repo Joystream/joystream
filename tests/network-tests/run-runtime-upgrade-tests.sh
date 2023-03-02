@@ -182,7 +182,7 @@ function main {
     echo >&2 "mainnet node starting"
 
     # wait 1 minute
-    sleep 60
+    sleep 90
 
     trap cleanup EXIT
 
