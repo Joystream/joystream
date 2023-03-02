@@ -26,6 +26,6 @@ message AppAction {
   enum CreatorType {
     CHANNEL = 0;
     MEMBER = 1;
-    CURAOTR_GROUP = 2;
+    CURATOR_GROUP = 2;
   }
 }
