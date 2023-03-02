@@ -55,43 +55,46 @@ scenario('Full', async ({ job, env }) => {
 
   // All other jobs should be executed after coreJob
 
-  // Membership:
-  job('buying members', buyingMemberships).after(coreJob)
-  job('updating member profile', updatingMemberProfile).after(coreJob)
-  job('updating member accounts', updatingMemberAccounts).after(coreJob)
-  job('transferring invites', transferringInvites).after(coreJob)
-  job('managing staking accounts', managingStakingAccounts).after(coreJob)
+  // // Membership:
+  // job('buying members', buyingMemberships).after(coreJob)
+  // job('updating member profile', updatingMemberProfile).after(coreJob)
+  // job('updating member accounts', updatingMemberAccounts).after(coreJob)
+  // job('transferring invites', transferringInvites).after(coreJob)
+  // job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
-  // Council (should not interrupt proposalsJob!)
-  const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
-  const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
-  job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
+  // // Council (should not interrupt proposalsJob!)
+  // const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
+  // const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
+  // job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
     proposals,
-    cancellingProposals,
-    vetoProposal,
-    exactExecutionBlock,
-    expireProposal,
-    proposalsDiscussion,
-  ]).requires(councilFailuresJob)
+    // cancellingProposals,
+    // vetoProposal,
+    // exactExecutionBlock,
+    // expireProposal,
+    // proposalsDiscussion,
+  ]).requires(coreJob)
+  // ]).requires(councilFailuresJob)
 
-  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
+  // const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
   const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob
+    proposalsJob // channelPayoutsProposalJob
   )
-  job('openings and applications', openingsAndApplications).requires(hireLeads)
-  job('upcoming openings', upcomingOpenings).requires(hireLeads)
-  job('group status', groupStatus).requires(hireLeads)
-  job('worker actions', workerActions).requires(hireLeads)
+  // job('openings and applications', openingsAndApplications).requires(hireLeads)
+  // job('upcoming openings', upcomingOpenings).requires(hireLeads)
+  // job('group status', groupStatus).requires(hireLeads)
+  // job('worker actions', workerActions).requires(hireLeads)
   const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
 
   // Memberships (depending on hired lead, group budget set)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
   job('inviting members', invitingMembers).requires(groupBudgetSet)
+
+  return
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)

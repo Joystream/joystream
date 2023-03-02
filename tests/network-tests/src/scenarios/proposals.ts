@@ -8,6 +8,7 @@ import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
 import channelPayouts from '../flows/proposals/channelPayouts'
+import invitingMembers from '../flows/membership/invitingMembers'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Proposals', async ({ job, env }) => {
@@ -26,6 +27,8 @@ scenario('Proposals', async ({ job, env }) => {
     expireProposal,
     proposalsDiscussion,
   ]).requires(runtimeUpgradeProposalJob || councilJob)
+
+  job('inviting members', invitingMembers).requires(coreJob)
 
   coreJob.requires(channelPayoutsProposalJob)
 })

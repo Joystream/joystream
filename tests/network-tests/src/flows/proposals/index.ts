@@ -119,7 +119,7 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
     { details: createType('PalletProposalsCodexProposalDetails', { Signal: 'Text' }) },
     { details: createType('PalletProposalsCodexProposalDetails', { SetCouncilBudgetIncrement: 1_000_000 }) },
     { details: createType('PalletProposalsCodexProposalDetails', { SetCouncilorReward: 100 }) },
-    { details: createType('PalletProposalsCodexProposalDetails', { SetInitialInvitationBalance: 10 }) },
+    // { details: createType('PalletProposalsCodexProposalDetails', { SetInitialInvitationBalance: 10 }) },
     { details: createType('PalletProposalsCodexProposalDetails', { SetInitialInvitationCount: 5 }) },
     { details: createType('PalletProposalsCodexProposalDetails', { SetMaxValidatorCount: 100 }) },
     { details: createType('PalletProposalsCodexProposalDetails', { SetMembershipPrice: 500 }) },

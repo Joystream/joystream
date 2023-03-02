@@ -5,8 +5,9 @@ import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 import { PassProposalsFixture } from '../../fixtures/proposals'
 import { Utils } from '../../utils'
+import { Resource } from '../../Resources'
 
-export default async function invitingMembers({ api, query, env }: FlowProps): Promise<void> {
+export default async function invitingMembers({ api, query, env, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:inviting-members')
   debug('Started')
   api.enableDebugTxLogs()
@@ -24,6 +25,7 @@ export default async function invitingMembers({ api, query, env }: FlowProps): P
   const groupBudget = (await api.query.members.initialInvitationBalance()).muln(3 * N)
 
   // Top up working group budget to allow funding invited members
+  const unlock = await lock(Resource.WorkingGroupBudget)
   await api.fundWorkingGroupBudget('membershipWorkingGroup', inviterMemberIds[0], groupBudget)
 
   for (let i = 0; i < 3; ++i) {
@@ -46,6 +48,7 @@ export default async function invitingMembers({ api, query, env }: FlowProps): P
       await new FixtureRunner(passProposalsFixture).run()
     }
   }
+  unlock()
 
   debug('Done')
 }
