@@ -60,7 +60,6 @@ import {
 import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
-  generateAppActionCommitment,
   mapAgentPermission,
   processAppActionMetadata,
   processChannelMetadata,
@@ -74,6 +73,7 @@ import BN from 'bn.js'
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
 import { BaseModel } from '@joystream/warthog'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx

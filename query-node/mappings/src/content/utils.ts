@@ -7,7 +7,6 @@ import {
   IChannelMetadata,
   ISubtitleMetadata,
   IAppAction,
-  AppAction,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { ed25519Verify } from '@polkadot/util-crypto'
@@ -52,7 +51,7 @@ import { getSortedDataObjectsByIds } from '../storage/utils'
 import { BTreeSet } from '@polkadot/types'
 import { DataObjectId } from '@joystream/types/primitives'
 import { Bytes } from '@polkadot/types/primitive'
-import { u8aToHex, stringToHex } from '@polkadot/util'
+import { u8aToHex } from '@polkadot/util'
 import { createType } from '@joystream/types'
 import { getAppById } from './app'
 
@@ -749,27 +748,6 @@ export async function unsetAssetRelations(store: DatabaseManager, dataObject: St
 
 export function mapAgentPermission(permission: PalletContentIterableEnumsChannelActionPermission): string {
   return permission.toString()
-}
-
-export function generateAppActionCommitment(
-  nonce: number,
-  creatorId: string,
-  actionType: AppAction.ActionType,
-  creatorType: AppAction.CreatorType,
-  assets: Uint8Array,
-  rawAction?: Uint8Array,
-  rawAppActionMetadata?: Uint8Array
-): string {
-  const rawCommitment = [
-    nonce,
-    creatorId,
-    actionType,
-    creatorType,
-    u8aToHex(assets),
-    u8aToHex(rawAction),
-    u8aToHex(rawAppActionMetadata),
-  ]
-  return stringToHex(JSON.stringify(rawCommitment))
 }
 
 export function u8aToBytes(array?: Uint8Array | null): Bytes {
