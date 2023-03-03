@@ -28,7 +28,5 @@ scenario('Proposals', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(runtimeUpgradeProposalJob || councilJob)
 
-  job('inviting members', invitingMembers).requires(coreJob)
-
   coreJob.requires(channelPayoutsProposalJob)
 })
