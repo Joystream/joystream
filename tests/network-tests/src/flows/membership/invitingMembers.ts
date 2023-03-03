@@ -29,7 +29,6 @@ export default async function invitingMembers({ api, query, env }: FlowProps): P
       memberIdFunder,
       initialInvitationBalance.muln(noOfInvitees)
     )
-    const currentBudget = (await api.query.membershipWorkingGroup.budget()).toBn()
   }
 
   assert.isAtLeast(inviterMemberIds.length, 3)
