@@ -43,7 +43,7 @@ use sp_std::vec::Vec;
 type WeightInfoConstitution<T> = <T as Config>::WeightInfo;
 
 pub trait Config: frame_system::Config {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;

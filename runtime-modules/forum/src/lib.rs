@@ -107,7 +107,7 @@ pub trait Config:
     + common::membership::MembershipTypes
     + balances::Config
 {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     type CategoryId: Parameter
         + Member

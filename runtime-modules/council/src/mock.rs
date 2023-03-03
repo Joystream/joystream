@@ -71,7 +71,7 @@ impl common::membership::MembershipTypes for Runtime {
 }
 
 impl Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
@@ -166,7 +166,7 @@ impl frame_system::Config for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -209,7 +209,7 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -282,7 +282,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
 impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -292,7 +292,7 @@ impl balances::Config for Runtime {
 }
 
 impl membership::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();

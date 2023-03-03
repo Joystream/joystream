@@ -4,7 +4,7 @@ use derive_new::new;
 
 use super::curators;
 // Importing mock event as MetaEvent to avoid name clash with Event from crate::* glob import
-pub use super::mock::Event as MetaEvent;
+pub use super::mock::RuntimeEvent as MetaEvent;
 use super::mock::*;
 use crate::*;
 use common::{

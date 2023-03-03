@@ -3,7 +3,7 @@ use super::*;
 use balances::Pallet as Balances;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
-use frame_system::EventRecord;
+use frame_system::RuntimeEventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::Module as Membership;
@@ -40,9 +40,9 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
     }
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -51,9 +51,9 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 

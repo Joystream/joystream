@@ -125,7 +125,7 @@ frame_support::construct_runtime!(
 );
 
 impl storage::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -160,7 +160,7 @@ impl common::MembershipTypes for Test {
 }
 
 impl Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
@@ -338,7 +338,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -361,7 +361,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u128;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -372,7 +372,7 @@ impl balances::Config for Test {
 
 /// Implement membership trait for Test
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;

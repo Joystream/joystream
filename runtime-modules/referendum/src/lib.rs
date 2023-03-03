@@ -233,7 +233,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     frame_system::Config + common::membership::MembershipTypes + balances::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self, I>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing
     /// e.g. std::u64::MAX.

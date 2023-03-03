@@ -129,7 +129,7 @@ pub trait Config:
     frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// The bounty's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<PalletId>;

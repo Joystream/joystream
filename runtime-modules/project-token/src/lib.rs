@@ -75,7 +75,7 @@ pub trait Config:
     frame_system::Config + balances::Config + storage::Config + membership::Config
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned

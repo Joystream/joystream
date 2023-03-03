@@ -174,9 +174,9 @@ fn setup_lead(working_group: WorkingGroup) -> WorkerId<Test> {
     }
 }
 
-fn assert_last_event(generic_event: <Test as Config>::Event) {
+fn assert_last_event(generic_event: <Test as Config>::RuntimeEvent) {
     let events = System::events();
-    let system_event: <Test as frame_system::Config>::Event = generic_event;
+    let system_event: <Test as frame_system::Config>::RuntimeEvent = generic_event;
     assert!(
         !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"

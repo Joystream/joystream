@@ -328,7 +328,7 @@ pub trait DataObjectStorage<T: Config> {
 /// Storage trait.
 pub trait Config: frame_system::Config + balances::Config + common::MembershipTypes {
     /// Storage event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Content id representation.
     type ContentId: Parameter + Member + Codec + Default + Copy + MaybeSerialize + Ord + PartialEq;

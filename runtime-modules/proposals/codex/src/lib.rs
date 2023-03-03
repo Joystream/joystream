@@ -139,7 +139,7 @@ pub trait Config:
     + working_group::Config<DistributionWorkingGroupInstance>
 {
     /// Proposal Codex module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<

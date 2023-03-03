@@ -179,7 +179,7 @@ impl frame_system::Config for Test {
     type AccountId = U256;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -202,7 +202,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -316,7 +316,7 @@ pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
 
 impl storage::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -380,7 +380,7 @@ impl Config for Test {
     type WeightInfo = ();
 
     /// The overarching event type.
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     /// Type of identifier for Videos
     type VideoId = u64;
@@ -485,7 +485,7 @@ impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
@@ -500,7 +500,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
@@ -516,7 +516,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
 pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
@@ -758,7 +758,7 @@ parameter_types! {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;
@@ -1067,7 +1067,7 @@ parameter_types! {
 }
 
 impl project_token::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = u64;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;

@@ -92,7 +92,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// _Administration_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self, I>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Defines max workers number in the group.
     type MaxWorkerNumberLimit: Get<u32>;

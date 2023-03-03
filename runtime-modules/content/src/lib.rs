@@ -104,7 +104,7 @@ pub trait Config:
     type WeightInfo: WeightInfo;
 
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;

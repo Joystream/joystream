@@ -138,7 +138,7 @@ pub trait Config:
     frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// Discussion event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates post author id and origin combination
     type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;

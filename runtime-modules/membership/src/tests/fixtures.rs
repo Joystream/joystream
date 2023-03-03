@@ -1,5 +1,5 @@
 use super::mock::*;
-use crate::Event as MembershipEvent;
+use crate::RuntimeEvent as MembershipEvent;
 use crate::{
     BalanceOf, BuyMembershipParameters, CreateMemberParameters, GiftMembershipParameters,
     InviteMembershipParameters, MembershipObject,
@@ -36,7 +36,7 @@ pub fn set_invitation_lock(
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
+    pub fn assert_last_crate_event(expected_raw_event: crate::RuntimeEvent<Test>) {
         let converted_event = Event::Membership(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)

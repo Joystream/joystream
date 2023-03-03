@@ -6,7 +6,7 @@ use crate::Module as Token;
 use balances::Pallet as Balances;
 use common::membership::MembershipTypes;
 use frame_benchmarking::{account, benchmarks, Zero};
-use frame_system::EventRecord;
+use frame_system::RuntimeEventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::{BuyMembershipParameters, Module as Members};
@@ -213,9 +213,9 @@ fn setup_account_with_max_number_of_locks<T: Config>(
     });
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = frame_system::Pallet::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     assert!(
         !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"

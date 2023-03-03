@@ -64,7 +64,7 @@ impl frame_system::Config for Runtime {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -87,7 +87,7 @@ impl pallet_timestamp::Config for Runtime {
 impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -112,7 +112,7 @@ parameter_types! {
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Runtime>;
     type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
@@ -157,7 +157,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
 }
 
 impl membership::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = Wg;
@@ -192,7 +192,7 @@ impl StorageLimits for MapLimits {
 }
 
 impl Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type CategoryId = u64;
     type ThreadId = u64;
     type PostId = u64;

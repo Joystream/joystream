@@ -62,7 +62,7 @@ type BalanceOf<T> = <T as balances::Config>::Balance;
 type Balances<T> = balances::Pallet<T>;
 
 pub trait Config: frame_system::Config + balances::Config + council::Config {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Gets the budget of the given WorkingGroup
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Self>;

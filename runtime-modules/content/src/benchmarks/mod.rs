@@ -206,12 +206,12 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::RuntimeEvent) {
     assert_past_event::<T>(expected_event, 0);
 }
 
 fn assert_past_event<T: Config>(
-    expected_event: <T as frame_system::Config>::Event,
+    expected_event: <T as frame_system::Config>::RuntimeEvent,
     index_from_last: u32,
 ) {
     let events = System::<T>::events();

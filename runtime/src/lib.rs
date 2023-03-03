@@ -279,7 +279,7 @@ impl frame_system::Config for Runtime {
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = Version;
     type PalletInfo = PalletInfo;
@@ -295,7 +295,7 @@ impl frame_system::Config for Runtime {
 impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 impl substrate_utility::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Call = Call;
     type PalletsOrigin = OriginCaller;
     type WeightInfo = weights::substrate_utility::SubstrateWeight<Runtime>;
@@ -336,7 +336,7 @@ impl pallet_babe::Config for Runtime {
 }
 
 impl pallet_grandpa::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Call = Call;
 
     type KeyOwnerProofSystem = Historical;
@@ -424,7 +424,7 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type Balance = Balance;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
@@ -496,7 +496,7 @@ impl_opaque_keys! {
 }
 
 impl pallet_session::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = pallet_staking::StashOf<Self>;
     type ShouldEndSession = Babe;
@@ -569,7 +569,7 @@ impl pallet_staking::Config for Runtime {
     type UnixTime = Timestamp;
     type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote; // U128CurrencyToVote;
     type RewardRemainder = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Slash = ();
     type Reward = (); // rewards are minted from the void
     type SessionsPerEra = SessionsPerEra;
@@ -711,7 +711,7 @@ impl pallet_election_provider_multi_phase::MinerConfig for Runtime {
 }
 
 impl pallet_election_provider_multi_phase::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type EstimateCallFee = TransactionPayment;
     type SignedPhase = SignedPhase;
@@ -750,7 +750,7 @@ parameter_types! {
 }
 
 impl pallet_bags_list::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ScoreProvider = Staking;
     type WeightInfo = weights::pallet_bags_list::SubstrateWeight<Runtime>;
     type BagThresholds = BagThresholds;
@@ -769,7 +769,7 @@ parameter_types! {
 
 impl pallet_im_online::Config for Runtime {
     type AuthorityId = ImOnlineId;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type NextSessionRotation = Babe;
     type ValidatorSet = Historical;
     type ReportUnresponsiveness = Offences;
@@ -781,7 +781,7 @@ impl pallet_im_online::Config for Runtime {
 }
 
 impl pallet_offences::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
     type OnOffenceHandler = Staking;
 }
@@ -856,7 +856,7 @@ parameter_types! {
 }
 
 impl content::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type VideoId = VideoId;
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
@@ -903,7 +903,7 @@ parameter_types! {
 }
 
 impl project_token::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type TokenId = TokenId;
     type BlockNumberToBalance = BlockNumberToBalance;
@@ -1020,7 +1020,7 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = VotingStakingManager;
     type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
@@ -1069,7 +1069,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
 }
 
 impl council::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Referendum = ReferendumModule;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -1160,7 +1160,7 @@ const_assert!(MinDistributionBucketsPerBag::get() > 0);
 const_assert!(MaxDistributionBucketsPerBag::get() >= MinDistributionBucketsPerBag::get());
 
 impl storage::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type DistributionBucketIndex = DistributionBucketIndex;
@@ -1210,7 +1210,7 @@ parameter_types! {
 }
 
 impl membership::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
@@ -1274,7 +1274,7 @@ impl forum::StorageLimits for MapLimits {
 }
 
 impl forum::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type CategoryId = u64;
@@ -1399,7 +1399,7 @@ pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1412,7 +1412,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1425,7 +1425,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ContentWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1438,7 +1438,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1451,7 +1451,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupAlphaStakingManager;
     type StakingAccountValidator = Members;
@@ -1464,7 +1464,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = AppWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1477,7 +1477,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupBetaStakingManager;
     type StakingAccountValidator = Members;
@@ -1490,7 +1490,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupGammaStakingManager;
     type StakingAccountValidator = Members;
@@ -1503,7 +1503,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = DistributionWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1536,7 +1536,7 @@ parameter_types! {
 }
 
 impl proposals_engine::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ProposerOriginValidator = Members;
     type CouncilOriginValidator = Council;
     type TotalVotersCounter = CouncilManager<Self>;
@@ -1601,7 +1601,7 @@ macro_rules! call_wg {
 }
 
 impl proposals_discussion::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type AuthorOriginValidator = Members;
     type MembershipInfoProvider = Members;
     type CouncilOriginValidator = Council;
@@ -1615,7 +1615,7 @@ impl proposals_discussion::Config for Runtime {
 }
 
 impl joystream_utility::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type WeightInfo = joystream_utility::weights::SubstrateWeight<Runtime>;
 
@@ -1643,7 +1643,7 @@ const_assert!(
 );
 
 impl proposals_codex::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetMaxValidatorCountProposalParameters = SetMaxValidatorCountProposalParameters;
@@ -1682,7 +1682,7 @@ impl proposals_codex::Config for Runtime {
 }
 
 impl pallet_constitution::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_constitution::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1735,7 +1735,7 @@ parameter_types! {
 }
 
 impl bounty::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
     type Membership = Members;
@@ -1755,7 +1755,7 @@ parameter_types! {
 }
 
 impl pallet_vesting::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
@@ -1785,7 +1785,7 @@ parameter_types! {
 }
 
 impl pallet_multisig::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Call = Call;
     type Currency = Balances;
     type DepositBase = DepositBase;

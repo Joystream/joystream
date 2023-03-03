@@ -3,7 +3,7 @@ use super::*;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
-use frame_system::EventRecord;
+use frame_system::RuntimeEventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use sp_runtime::traits::Bounded;
@@ -18,9 +18,9 @@ use membership::Module as Membership;
 const SEED: u32 = 0;
 const MAX_KILOBYTES_METADATA: u32 = 100;
 
-fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);

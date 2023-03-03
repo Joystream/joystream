@@ -189,7 +189,7 @@ pub trait Config:
     + balances::Config
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: MemberOriginValidator<

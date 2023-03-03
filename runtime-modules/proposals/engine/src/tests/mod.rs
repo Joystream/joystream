@@ -1447,7 +1447,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 
         EventFixture::assert_global_events(vec![
             RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Expired).into(),
-            TestEvent::Balances(balances::Event::Slashed {
+            TestEvent::Balances(balances::RuntimeEvent::Slashed {
                 who: account_id,
                 amount: rejection_fee,
             }),
@@ -1580,7 +1580,7 @@ fn proposal_slashing_succeeds() {
 
         EventFixture::assert_global_events(vec![
             RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Slashed).into(),
-            TestEvent::Balances(balances::Event::Slashed {
+            TestEvent::Balances(balances::RuntimeEvent::Slashed {
                 who: account_id,
                 amount: stake_amount,
             }),
@@ -2018,12 +2018,12 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         // first chain of event from the creation to the approval
         EventFixture::assert_global_events(vec![
-            TestEvent::Balances(balances::Event::Deposit {
+            TestEvent::Balances(balances::RuntimeEvent::Deposit {
                 who: 1,
                 amount: total_balance,
             }),
-            TestEvent::System(frame_system::Event::NewAccount { account: 1 }), // because of token transfer
-            TestEvent::Balances(balances::Event::Endowed {
+            TestEvent::System(frame_system::RuntimeEvent::NewAccount { account: 1 }), // because of token transfer
+            TestEvent::Balances(balances::RuntimeEvent::Endowed {
                 account: 1,
                 free_balance: total_balance,
             }), // because of token transfer
