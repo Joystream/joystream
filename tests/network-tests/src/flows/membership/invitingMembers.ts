@@ -5,10 +5,9 @@ import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
 import { PassProposalsFixture } from '../../fixtures/proposals'
 import { Utils } from '../../utils'
-import { Resource } from '../../Resources'
 import { u64 } from '@polkadot/types'
 
-export default async function invitingMembers({ api, query, env, lock }: FlowProps): Promise<void> {
+export default async function invitingMembers({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:inviting-members')
   debug('Started')
   api.enableDebugTxLogs()
