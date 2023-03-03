@@ -30,14 +30,15 @@ You can then decompress with following command:
 ## Getting the current runtime from the chain
 From a fully synced node we can download the runtime blob and get information about it.
 
-### Using utils/api-scripts/[get-runtime-code.ts](./utils/api-scripts/get-runtime-code.ts)
+### Using utils/api-scripts
 
 ```sh
-cd utils/api-scripts/
+cd utils/api-scripts
+yarn
 # Get runtime version information
 WS_URI=wss://rpc.joystream.org yarn ts-node src/status.ts
 # Fetch the runtime and save it as runtime.wasm
-WS_URI=wss://rpc.joystream.org yarn ts-node src/get-runtime-code.ts ./runtime.wasm
+WS_URI=wss://rpc.joystream.org yarn ts-node src/get-wasm-from-chain.ts ./runtime.wasm
 # compute the blake2-256 hash of the runtime
 b2sum -l 256 ./runtime.wasm
 # Inspect the runtime version
@@ -123,13 +124,14 @@ another way to check the runtime proposed is with utility scripts provided.
 For a hypothetical proposal with id `123`
 
 ```sh
-cd utils/api-scripts/
+cd utils/api-scripts
+yarn
 # Fetch the runtime and save it as runtime.wasm
 WS_URI=wss://rpc.joystream.org yarn ts-node src/get-wasm-from-proposal.ts 123 ./proposed.wasm
 # compute the blake2-256 hash of the runtime
 b2sum -l 256 ./proposed.wasm
 # Inspect the runtime version information
-node --experimental-wasm-bigint src/inspect-wasm-runtime-version.ts ./runtime.wasm
+node --experimental-wasm-bigint src/inspect-wasm-runtime-version.js ./runtime.wasm
 ```
 
 Checkout the proposed runtime from the proposer's fork of joystream repository, and build it.
