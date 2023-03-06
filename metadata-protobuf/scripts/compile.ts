@@ -24,15 +24,12 @@ pbjs(
   }
 )
 
-pbjs(
-  ['--target', 'json', '-o', `${JSON_OUT_DIR}/messages.json`, '--force-long', 'proto/*.proto'],
-  function (err) {
-    if (err) {
-      throw err
-    }
-    console.log(`${JSON_OUT_DIR}/messages.json updated`)
+pbjs(['--target', 'json', '-o', `${JSON_OUT_DIR}/messages.json`, '--force-long', 'proto/*.proto'], function (err) {
+  if (err) {
+    throw err
   }
-)
+  console.log(`${JSON_OUT_DIR}/messages.json updated`)
+})
 
 pbts([`${MODULE_OUT_DIR}/*.js`], function (err, output) {
   if (err) {
