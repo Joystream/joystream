@@ -5,6 +5,7 @@ use crate::tests::mock::*;
 use crate::types::{AmmCurve, AmmOperation, VestingScheduleParamsOf};
 use crate::{joy, last_event_eq, member, token, Error, RawEvent, RepayableBloatBondOf};
 use frame_support::{assert_err, assert_ok};
+use sp_runtime::traits::One;
 use sp_runtime::{traits::Zero, DispatchError, Permill};
 
 // --------------------- amm_buy -------------------------------
@@ -280,6 +281,18 @@ fn amm_buy_ok_with_event_deposit() {
 // --------------- ACTIVATION ----------------------------------
 
 #[test]
+fn amm_activation_fails_with_slope_parameter_too_low() {
+    build_default_test_externalities_with_balances(vec![]).execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        let result = ActivateAmmFixture::default()
+            .with_linear_function_params(Zero::zero(), AMM_CURVE_INTERCEPT)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::CurveSlopeParametersTooLow);
+    })
+}
+
+#[test]
 fn amm_activation_fails_with_invalid_token_id() {
     let token_id = token!(2);
     let config = GenesisConfigBuilder::new_empty().build();
@@ -325,8 +338,8 @@ fn activation_fails_when_amm_status_already_active() {
 
 #[test]
 fn amm_activation_successful() {
-    let slope = Permill::from_perthousand(1);
-    let intercept = Permill::from_perthousand(1);
+    let slope = One::one();
+    let intercept = One::one();
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {
         IssueTokenFixture::default().execute_call().unwrap();

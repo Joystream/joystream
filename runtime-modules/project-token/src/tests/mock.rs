@@ -54,6 +54,7 @@ pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Config>::Hashing;
 pub type HashOut = <Test as frame_system::Config>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
+pub type AmmParams = AmmParamsOf<Test>;
 pub type MemberId = u64;
 
 #[macro_export]
@@ -511,6 +512,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) bond_tx_fees: Permill,
     pub(crate) unbond_tx_fees: Permill,
     pub(crate) max_yearly_patronage_rate: YearlyRate,
+    pub(crate) min_amm_slope_parameter: Balance,
 }
 
 /// test externalities + initial balances allocation
@@ -655,8 +657,8 @@ pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) *
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
 pub const DEFAULT_AMM_SELL_AMOUNT: u128 = 100;
-pub const AMM_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
-pub const AMM_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
+pub const AMM_CURVE_SLOPE: u128 = 10;
+pub const AMM_CURVE_INTERCEPT: u128 = 1000;
 pub const DEFAULT_AMM_BUY_FEES: Permill = Permill::from_percent(1);
 pub const DEFAULT_AMM_SELL_FEES: Permill = Permill::from_percent(10);
 

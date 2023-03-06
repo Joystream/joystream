@@ -37,7 +37,9 @@ use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, CheckedAdd, Convert, UniqueSaturatedInto},
+    traits::{
+        AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub, Convert, UniqueSaturatedInto,
+    },
     PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
@@ -45,6 +47,7 @@ use sp_std::convert::TryInto;
 use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
+use std::ops::Div;
 use storage::UploadParameters;
 
 // crate modules
@@ -184,6 +187,8 @@ decl_storage! { generate_storage_info
         /// Max patronage rate allowed
         pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate = YearlyRate(Permill::from_percent(15));
 
+        /// Minimum slope parameters allowed for AMM curve
+        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T>;
     }
 
     add_extra_genesis {
@@ -859,7 +864,7 @@ decl_module! {
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
             let amm_treasury_account = Self::amm_treasury_account(token_id);
-            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Buy)?;
+            let price = Self::eval(&curve, amount, curve.provided_supply, AmmOperation::Buy)?;
             let bloat_bond = Self::bloat_bond();
             let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
@@ -945,9 +950,9 @@ decl_module! {
 
             let amm_treasury_account = Self::amm_treasury_account(token_id);
 
-            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Sell)?;
+            let price = Self::eval(&curve, amount, curve.provided_supply, AmmOperation::Sell)?;
 
-            // slippage tolerance check
+            // slippage tolerance ccurve.eval::<T>heck
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
@@ -1002,7 +1007,7 @@ impl<T: Config>
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
         TransferWithVestingOutputsOf<T>,
-        AmmParams,
+        AmmParamsOf<T>,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -1558,7 +1563,7 @@ impl<T: Config>
     fn activate_amm(
         token_id: T::TokenId,
         member_id: T::MemberId,
-        params: AmmParams,
+        params: AmmParamsOf<T>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
 
@@ -1567,9 +1572,10 @@ impl<T: Config>
             Error::<T>::TokenIssuanceNotInIdleState
         );
 
+        let curve = AmmCurveOf::<T>::try_from_params::<T>(params)?;
+
         // == MUTATION SAFE ==
 
-        let curve = AmmCurveOf::<T>::from_params(params);
         TokenInfoById::<T>::mutate(token_id, |token_data| {
             token_data.amm_curve = Some(curve.clone())
         });
@@ -2143,6 +2149,36 @@ impl<T: Config> Module<T> {
             )
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
+    }
+
+    pub(crate) fn eval(
+        curve: &AmmCurveOf<T>,
+        amount: TokenBalanceOf<T>,
+        supply_pre: TokenBalanceOf<T>,
+        bond_operation: AmmOperation,
+    ) -> Result<JoyBalanceOf<T>, DispatchError> {
+        let amount_sq = amount
+            .checked_mul(&amount)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let first_term = curve.slope.saturating_mul(amount_sq).div(2u32.into());
+        let second_term = curve.intercept.saturating_mul(amount);
+        let mixed = amount
+            .checked_mul(&supply_pre)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let third_term = curve.slope.saturating_mul(mixed);
+        let res = match bond_operation {
+            AmmOperation::Buy => first_term
+                .checked_add(&second_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+            AmmOperation::Sell => second_term
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_sub(&first_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+        };
+        Ok(res.into())
     }
 
     pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {

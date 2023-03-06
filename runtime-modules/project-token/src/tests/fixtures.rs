@@ -2,7 +2,7 @@
 
 use crate::tests::mock::*;
 use crate::tests::test_utils::new_transfers;
-use crate::types::{AmmParams, Joy, TransferOutputsOf};
+use crate::types::{Joy, TransferOutputsOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -1075,7 +1075,7 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_linear_function_params(self, a: Permill, b: Permill) -> Self {
+    pub fn with_linear_function_params(self, a: Balance, b: Balance) -> Self {
         let params = AmmParams {
             slope: a,
             intercept: b,
