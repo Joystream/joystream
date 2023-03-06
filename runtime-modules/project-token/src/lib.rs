@@ -1572,7 +1572,11 @@ impl<T: Config>
             Error::<T>::TokenIssuanceNotInIdleState
         );
 
-        let curve = AmmCurveOf::<T>::try_from_params::<T>(params)?;
+        ensure!(
+            params.slope >= Self::min_amm_slope_parameter(),
+            Error::<T>::CurveSlopeParametersTooLow
+        );
+        let curve = AmmCurveOf::<T>::from_params::<T>(params);
 
         // == MUTATION SAFE ==
 

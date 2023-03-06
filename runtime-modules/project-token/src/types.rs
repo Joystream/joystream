@@ -26,7 +26,7 @@ use sp_std::{
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
-use crate::{errors::Error, Config, RepayableBloatBondOf};
+use crate::{errors::Error, Config, MinAmmSlopeParameter, RepayableBloatBondOf};
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
@@ -620,14 +620,12 @@ pub(crate) enum AmmOperation {
     Buy,
 }
 impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
-    pub(crate) fn try_from_params<T: Config>(
-        params: AmmParams<Balance>,
-    ) -> Result<Self, DispatchError> {
-        Ok(Self {
+    pub(crate) fn from_params<T: Config>(params: AmmParams<Balance>) -> Self {
+        Self {
             slope: params.slope,
             intercept: params.intercept,
             provided_supply: Balance::zero(),
-        })
+        }
     }
 
     pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
