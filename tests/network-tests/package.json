@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "yarn generate:all && tsc --noEmit",
     "test": "./run-tests.sh",
     "run-test-scenario": "./run-test-scenario.sh",
     "node-ts-strict": "node -r ts-node/register --unhandled-rejections=strict",
@@ -16,7 +16,7 @@
   "dependencies": {
     "@apollo/client": "^3.2.5",
     "@joystream/distributor-node-client": "^1.0.0",
-    "@joystream/types": "^0.20.5",
+    "@joystream/types": "^1.0.0",
     "@polkadot/api": "8.9.1",
     "@polkadot/keyring": "9.5.1",
     "@types/async-lock": "^1.1.3",

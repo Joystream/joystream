@@ -7,6 +7,7 @@ import {
   IChannelMetadata,
   ISubtitleMetadata,
   IAppAction,
+  AppAction,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { ed25519Verify } from '@polkadot/util-crypto'
@@ -175,42 +176,29 @@ async function processVideoSubtitleAssets(
 
 async function validateAndGetApp(
   ctx: EventContext & StoreContext,
-  validationContext: {
-    ownerNonce: number | undefined
-    appCommitment: string | undefined
-  },
+  expectedSignedCommitment: string,
   appAction: DecodedMetadataObject<IAppAction>
 ): Promise<App | undefined> {
   // If one is missing we cannot verify the signature
-  if (
-    !appAction.appId ||
-    !appAction.signature ||
-    typeof appAction.nonce !== 'number' ||
-    !validationContext.appCommitment
-  ) {
+  if (!appAction.appId || !appAction.signature) {
     invalidMetadata('Missing action fields to verify app')
     return undefined
   }
 
   const app = await getAppById(ctx.store, appAction.appId)
 
-  if (!app || !app.authKey) {
+  if (!app) {
     invalidMetadata('No app of given id found')
     return undefined
   }
 
-  if (typeof validationContext.ownerNonce === 'undefined' || validationContext.ownerNonce !== appAction.nonce) {
-    invalidMetadata('Invalid app action nonce')
-
+  if (!app.authKey) {
+    invalidMetadata('The provided app has no auth key assigned')
     return undefined
   }
 
   try {
-    const isSignatureValid = ed25519Verify(
-      validationContext.appCommitment,
-      appAction.signature as Uint8Array,
-      app.authKey
-    )
+    const isSignatureValid = ed25519Verify(expectedSignedCommitment, appAction.signature, app.authKey)
 
     if (!isSignatureValid) {
       invalidMetadata('Invalid app action signature')
@@ -227,13 +215,10 @@ export async function processAppActionMetadata<T extends { entryApp?: App }>(
   ctx: EventContext & StoreContext,
   entity: T,
   meta: DecodedMetadataObject<IAppAction>,
-  validationContext: {
-    ownerNonce: number | undefined
-    appCommitment: string | undefined
-  },
+  expectedSignedCommitment: string,
   entityMetadataProcessor: (entity: T) => Promise<T>
 ): Promise<T> {
-  const app = await validateAndGetApp(ctx, validationContext, meta)
+  const app = await validateAndGetApp(ctx, expectedSignedCommitment, meta)
   if (!app) {
     return entityMetadataProcessor(entity)
   }
@@ -769,20 +754,24 @@ export function mapAgentPermission(permission: PalletContentIterableEnumsChannel
 export function generateAppActionCommitment(
   nonce: number,
   creatorId: string,
+  actionType: AppAction.ActionType,
+  creatorType: AppAction.CreatorType,
   assets: Uint8Array,
-  rawAction?: Bytes,
-  rawAppActionMetadata?: Bytes
+  rawAction?: Uint8Array,
+  rawAppActionMetadata?: Uint8Array
 ): string {
   const rawCommitment = [
     nonce,
     creatorId,
+    actionType,
+    creatorType,
     u8aToHex(assets),
-    ...(rawAction ? [u8aToHex(rawAction)] : []),
-    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
+    u8aToHex(rawAction),
+    u8aToHex(rawAppActionMetadata),
   ]
   return stringToHex(JSON.stringify(rawCommitment))
 }
 
-export function u8aToBytes(array?: DecodedMetadataObject<Uint8Array> | null): Bytes {
-  return createType('Bytes', array ? u8aToHex(array as Uint8Array) : '')
+export function u8aToBytes(array?: Uint8Array | null): Bytes {
+  return createType('Bytes', array ? u8aToHex(array) : '')
 }

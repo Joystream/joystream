@@ -5,6 +5,10 @@ COPY ./.git .git
 COPY ./chain-metadata.json chain-metadata.json
 COPY ./types types
 COPY ./metadata-protobuf metadata-protobuf
+COPY ./query-node/generated/graphql-server/generated/schema.graphql ./query-node/generated/graphql-server/generated/schema.graphql
+COPY ./storage-node/client ./storage-node/client
+COPY ./devops/eslint-config ./devops/eslint-config
+COPY ./devops/prettier-config ./devops/prettier-config
 COPY ./distributor-node distributor-node
 COPY ./yarn.lock yarn.lock
 COPY ./package.json package.json

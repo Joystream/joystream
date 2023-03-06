@@ -6,6 +6,7 @@ import {
   VideoInputParameters,
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
+  AppInputDetails,
 } from '@joystream/cli/src/Types'
 import ExitCodes from '@joystream/cli/src/ExitCodes'
 
@@ -192,5 +193,23 @@ export class JoystreamCLI extends CLI {
       // ignore warnings
       throw new Error(`Unexpected CLI failure on creating video category: "${stderr}"`)
     }
+  }
+
+  /**
+   Creates an app.
+   */
+  async createApp(memberId: string, app: AppInputDetails): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(app)
+
+    await this.run('apps:createApp', ['-i', jsonFile, '-s', '--useMemberId', memberId])
+  }
+
+  /**
+   Updates an app.
+   */
+  async updateApp(memberId: string, appId: string, app: Partial<AppInputDetails>): Promise<void> {
+    const jsonFile = this.tmpFileManager.jsonFile(app)
+
+    await this.run('apps:updateApp', ['--appId', appId, '-i', jsonFile, '-s', '--useMemberId', memberId])
   }
 }
