@@ -186,6 +186,9 @@ decl_error! {
         /// Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
         OutstandingAmmProvidedSupplyTooLarge,
 
+        /// Curve slope parameters below minimum allowed
+        CurveSlopeParametersTooLow,
+
         /// -------- Patronage --------------------------------------------------
 
         /// Target Rate is higher than current patronage rate

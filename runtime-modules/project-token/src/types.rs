@@ -592,12 +592,12 @@ where
 /// Represents token's amm with linear pricing function y = ax + b
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
-pub struct AmmParams {
+pub struct AmmParams<Balance> {
     /// Slope parameter : a
-    pub slope: Permill,
+    pub slope: Balance,
 
     /// Intercept : b
-    pub intercept: Permill,
+    pub intercept: Balance,
 }
 
 /// Represents token's amm curve with linear pricing function y = ax + b
@@ -605,10 +605,10 @@ pub struct AmmParams {
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
 pub struct AmmCurve<Balance> {
     /// Slope parameter : a
-    pub slope: Permill,
+    pub slope: Balance,
 
     /// Intercept : b
-    pub intercept: Permill,
+    pub intercept: Balance,
 
     // amount of token added to circulation by the AMM so far
     pub provided_supply: Balance,
@@ -620,41 +620,14 @@ pub(crate) enum AmmOperation {
     Buy,
 }
 impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
-    pub(crate) fn from_params(params: AmmParams) -> Self {
-        Self {
+    pub(crate) fn try_from_params<T: Config>(
+        params: AmmParams<Balance>,
+    ) -> Result<Self, DispatchError> {
+        Ok(Self {
             slope: params.slope,
             intercept: params.intercept,
             provided_supply: Balance::zero(),
-        }
-    }
-    pub(crate) fn eval<T: Config>(
-        &self,
-        amount: <T as Config>::Balance,
-        supply_pre: <T as Config>::Balance,
-        bond_operation: AmmOperation,
-    ) -> Result<JoyBalanceOf<T>, DispatchError> {
-        let amount_sq = amount
-            .checked_mul(&amount)
-            .ok_or(Error::<T>::ArithmeticError)?;
-        let first_term = Permill::from_percent(50).mul_floor(self.slope.mul_floor(amount_sq));
-        let second_term = self.intercept.mul_floor(amount);
-        let mixed = amount
-            .checked_mul(&supply_pre)
-            .ok_or(Error::<T>::ArithmeticError)?;
-        let third_term = self.slope.mul_floor(mixed);
-        let res = match bond_operation {
-            AmmOperation::Buy => first_term
-                .checked_add(&second_term)
-                .ok_or(Error::<T>::ArithmeticError)?
-                .checked_add(&third_term)
-                .ok_or(Error::<T>::ArithmeticError)?,
-            AmmOperation::Sell => second_term
-                .checked_add(&third_term)
-                .ok_or(Error::<T>::ArithmeticError)?
-                .checked_sub(&first_term)
-                .ok_or(Error::<T>::ArithmeticError)?,
-        };
-        Ok(res.into())
+        })
     }
 
     pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
@@ -1725,4 +1698,7 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
 >;
 
 /// Alias for the amm curve
-pub type AmmCurveOf<T> = AmmCurve<<T as Config>::Balance>;
+pub type AmmCurveOf<T> = AmmCurve<TokenBalanceOf<T>>;
+
+/// Alias for the amm params
+pub type AmmParamsOf<T> = AmmParams<TokenBalanceOf<T>>;
