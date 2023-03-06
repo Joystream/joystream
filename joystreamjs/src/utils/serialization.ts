@@ -3,6 +3,7 @@ import { Bytes } from '@polkadot/types/primitive'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
 import { createType } from '@joystream/types'
 import { u8aToHex, stringToHex } from '@polkadot/util'
+import { AppAction } from '@joystream/metadata-protobuf'
 
 export function metadataToBytes<T>(metaClass: AnyMetadataClass<T>, obj: T): Bytes {
   return createType('Bytes', '0x' + Buffer.from(metaClass.encode(obj).finish()).toString('hex'))
@@ -24,16 +25,20 @@ export function asValidatedMetadata<T>(metaClass: AnyMetadataClass<T>, anyObject
 export function generateAppActionCommitment(
   nonce: number,
   creatorId: string,
+  actionType: AppAction.ActionType,
+  creatorType: AppAction.CreatorType,
   assets: Uint8Array,
-  rawAction?: Bytes,
-  rawAppActionMetadata?: Bytes
+  rawAction?: Uint8Array,
+  rawAppActionMetadata?: Uint8Array
 ): string {
   const rawCommitment = [
     nonce,
     creatorId,
+    actionType,
+    creatorType,
     u8aToHex(assets),
-    ...(rawAction ? [u8aToHex(rawAction)] : []),
-    ...(rawAppActionMetadata ? [u8aToHex(rawAppActionMetadata)] : []),
+    u8aToHex(rawAction),
+    u8aToHex(rawAppActionMetadata),
   ]
   return stringToHex(JSON.stringify(rawCommitment))
 }
