@@ -40,7 +40,7 @@ use sp_runtime::{
     traits::{
         AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub, Convert, UniqueSaturatedInto,
     },
-    PerThing, Permill,
+    FixedPointOperand, PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
@@ -93,6 +93,7 @@ pub trait Config:
         + UniqueSaturatedInto<u64>
         + Into<JoyBalanceOf<Self>>
         + TypeInfo
+        + FixedPointOperand
         + MaxEncodedLen;
 
     /// The token identifier used

@@ -1,5 +1,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
-use common::{bloat_bond::RepayableBloatBond, MembershipTypes};
+use common::{
+    bloat_bond::RepayableBloatBond, numerical::one_plus_interest_pow_fixed, MembershipTypes,
+};
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
@@ -12,7 +14,8 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
     traits::{CheckedAdd, Convert, Hash, UniqueSaturatedInto},
-    FixedPointNumber, FixedU128, PerThing, Permill, Perquintill, SaturatedConversion,
+    FixedPointNumber, FixedPointOperand, FixedU128, PerThing, Permill, Perquintill,
+    SaturatedConversion,
 };
 use sp_std::{
     borrow::ToOwned,
@@ -791,7 +794,7 @@ impl From<Permill> for YearlyRate {
 
 impl YearlyRate {
     // floating point arithmetic cannot be used in
-    pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u32, Perquintill)
+    pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> FixedU128
     where
         BlockNumber: AtLeast32BitUnsigned + Copy,
         BlocksPerYear: Get<u32>,
@@ -800,16 +803,10 @@ impl YearlyRate {
             self.0.deconstruct() as u128,
             Permill::ACCURACY as u128,
         );
-        let exp = FixedU128::saturating_from_rational(blocks as u128, BlocksPerYear::get() as u128);
 
-        let time = f64::from(blocks.saturated_into::<u32>()).div(f64::from(BlocksPerYear::get()));
-        let result_float = (1f64 + rate).powf(time) - 1f64;
-
-        let integer_part = result_float.trunc() as u32;
-        // f64 allows up for 15/16 decimal precision, so converting into Perquintill (18 decimals
-        // representation) shouldn't yield any loss in precision
-        let fract_part = Perquintill::from_float(result_float.fract());
-        (integer_part, fract_part)
+        // TODO fix the unwrap
+        let result = one_plus_interest_pow_fixed(self.0, rate).unwrap();
+        result.saturating_sub(FixedU128::one())
     }
 }
 
@@ -1328,7 +1325,7 @@ where
         + From<u64>
         + UniqueSaturatedInto<u64>
         + Unsigned
-        + AddAssign,
+        + FixedPointOperand,
     BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
     JoyBalance: Copy + Saturating + Zero,
 {
@@ -1373,21 +1370,11 @@ where
         block: BlockNumber,
     ) -> Balance {
         let blocks = block.saturating_sub(self.patronage_info.last_unclaimed_patronage_tally_block);
-        let (integer_part, percent_part) = self
+        let net_rate = self
             .patronage_info
             .rate
             .for_period::<_, BlocksPerYear>(blocks);
-        let common_term = percent_part
-            .mul_floor(self.total_supply)
-            .saturating_add(self.patronage_info.unclaimed_patronage_tally_amount);
-        if !integer_part.is_zero() {
-            let integer_part_term = self
-                .total_supply
-                .saturating_mul(integer_part.saturated_into::<u64>().into());
-            integer_part_term.saturating_add(common_term)
-        } else {
-            common_term
-        }
+        net_rate.saturating_mul_int(self.total_supply)
     }
 
     pub fn set_new_patronage_rate_at_block<BlocksPerYear: Get<u32>>(
@@ -1452,7 +1439,6 @@ where
             accounts_number: 0,
             revenue_split: RevenueSplitState::Inactive,
             next_revenue_split_id: 0,
-            // TODO: revenue split rate might be subjected to constraints: https://github.com/Joystream/atlas/issues/2728
             revenue_split_rate: params.revenue_split_rate,
             amm_curve: None,
         })
