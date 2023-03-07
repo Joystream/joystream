@@ -11,7 +11,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
-    traits::{CheckedAdd, CheckedMul, CheckedSub, Convert, Hash, UniqueSaturatedInto},
+    traits::{CheckedAdd, Convert, Hash, UniqueSaturatedInto},
     Permill, Perquintill, SaturatedConversion,
 };
 use sp_std::{
@@ -26,7 +26,7 @@ use sp_std::{
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
-use crate::{errors::Error, Config, MinAmmSlopeParameter, RepayableBloatBondOf};
+use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
