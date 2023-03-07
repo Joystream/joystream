@@ -45,9 +45,9 @@ use sp_runtime::{
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
 use sp_std::iter::Sum;
+use sp_std::ops::Div;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use std::ops::Div;
 use storage::UploadParameters;
 
 // crate modules
