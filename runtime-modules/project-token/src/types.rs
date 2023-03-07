@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
     traits::{CheckedAdd, Convert, Hash, UniqueSaturatedInto},
-    Permill, Perquintill, SaturatedConversion,
+    FixedPointNumber, FixedU128, PerThing, Permill, Perquintill, SaturatedConversion,
 };
 use sp_std::{
     borrow::ToOwned,
@@ -790,15 +790,18 @@ impl From<Permill> for YearlyRate {
 }
 
 impl YearlyRate {
-    // the maximum decimal precision allowed is 15,16 decimal places
-    // see (https://stackoverflow.com/questions/65719216/why-does-rust-only-use-16-significant-digits-for-f64-equality-checks)
-    // practically speaking issuer will get 1 HAPI fluctuation in a 100k JOY claim
+    // floating point arithmetic cannot be used in
     pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> (u32, Perquintill)
     where
         BlockNumber: AtLeast32BitUnsigned + Copy,
         BlocksPerYear: Get<u32>,
     {
-        let rate = f64::from(self.0.deconstruct()).div(f64::from(1_000_000u32));
+        let rate = FixedU128::saturating_from_rational(
+            self.0.deconstruct() as u128,
+            Permill::ACCURACY as u128,
+        );
+        let exp = FixedU128::saturating_from_rational(blocks as u128, BlocksPerYear::get() as u128);
+
         let time = f64::from(blocks.saturated_into::<u32>()).div(f64::from(BlocksPerYear::get()));
         let result_float = (1f64 + rate).powf(time) - 1f64;
 

@@ -20,6 +20,7 @@ pub mod locks;
 pub mod membership;
 pub mod merkle_tree;
 pub mod no_panic;
+pub mod numerical;
 pub mod storage;
 pub mod working_group;
 
