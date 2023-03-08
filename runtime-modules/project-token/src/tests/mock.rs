@@ -171,7 +171,6 @@ impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Balance = u128;
     type TokenId = u64;
-    type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
