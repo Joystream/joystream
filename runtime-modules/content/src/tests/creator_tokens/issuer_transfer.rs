@@ -4,7 +4,6 @@ use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
 use project_token::types::PaymentWithVesting;
-use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
 
 #[test]
@@ -137,10 +136,7 @@ fn unsuccessful_curator_channel_creator_token_issuer_transfer_during_transfer() 
                 vesting_schedule: None,
             },
         )]
-        .into_iter()
-        .collect::<BTreeMap<_, _>>()
         .try_into()
-        .ok()
         .unwrap();
 
         assert_noop!(

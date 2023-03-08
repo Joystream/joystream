@@ -270,11 +270,11 @@ decl_module! {
             metadata: Vec<u8>
         ) -> DispatchResult {
 
-            // security check
-            ensure!(
-                outputs.len() <= T::MaxOutputs::get() as usize,
-                Error::<T>::TooManyTransferOutputs,
-            );
+            // // security check
+            // ensure!(
+            //     outputs.len() <= T::MaxOutputs::get() as usize,
+            //     Error::<T>::TooManyTransferOutputs,
+            // );
 
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -282,6 +282,7 @@ decl_module! {
             )?;
 
             // Currency transfer preconditions
+            // let btree_outputs = Transfers(outputs.into_iter().map(|(member_id, amount)| (member_id, PaymentWithVesting::from(amount))).collect::<BTreeMap<_,_>>());
             let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, outputs.into(), false)?;
 
             // == MUTATION SAFE ==

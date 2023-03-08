@@ -1,4 +1,4 @@
-use frame_support::BoundedBTreeMap;
+use frame_support::BoundedVec;
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, Saturating};
 use sp_runtime::Permill;
@@ -289,20 +289,13 @@ impl From<Vec<(MemberId, Balance)>> for Transfers<MemberId, Balance> {
     }
 }
 
-pub fn new_transfers(
-    v: Vec<(MemberId, Balance)>,
-) -> BoundedBTreeMap<MemberId, Balance, MaxOutputs> {
-    let tmp = v
-        .into_iter()
-        .map(|(member_id, amount)| (member_id, amount))
-        .collect::<BTreeMap<_, _>>();
-
-    BoundedBTreeMap::<_, _, _>::try_from(tmp).ok().unwrap()
+pub fn new_transfers(v: Vec<(MemberId, Balance)>) -> BoundedVec<(MemberId, Balance), MaxOutputs> {
+    BoundedVec::<_, _>::try_from(v).ok().unwrap()
 }
 
 pub fn new_issuer_transfers(
     v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>,
-) -> BoundedBTreeMap<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>, MaxOutputs> {
+) -> BoundedVec<(MemberId, PaymentWithVesting<Balance, VestingScheduleParams>), MaxOutputs> {
     let tmp = v
         .into_iter()
         .map(|(member_id, amount, vesting_schedule)| {
@@ -314,8 +307,8 @@ pub fn new_issuer_transfers(
                 },
             )
         })
-        .collect::<BTreeMap<_, _>>();
-    BoundedBTreeMap::<_, _, _>::try_from(tmp).ok().unwrap()
+        .collect::<Vec<_>>();
+    BoundedVec::<_, _>::try_from(tmp).ok().unwrap()
 }
 
 impl<Balance, VestingScheduleParams, MemberId>
