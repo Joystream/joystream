@@ -65,11 +65,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:1 w:1)
 	// Storage: ProposalEngine VoteExistsByProposalByVoter (r:1 w:1)
 	fn vote(i: u32, ) -> Weight {
-		(47_888_000 as Weight)
+		Weight::from_ref_time(47_888_000)
 			// Standard Error: 1_000
-			.saturating_add((675_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(675_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine Proposals (r:1 w:1)
@@ -80,9 +80,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalDiscussion ThreadById (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn cancel_proposal() -> Weight {
-		(98_790_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+		Weight::from_ref_time(98_790_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 	// Storage: ProposalEngine Proposals (r:1 w:1)
 	// Storage: Balances Locks (r:1 w:1)
@@ -92,15 +92,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalDiscussion ThreadById (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn veto_proposal() -> Weight {
-		(53_520_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+		Weight::from_ref_time(53_520_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine Proposals (r:1 w:0)
 	fn proposer_remark() -> Weight {
-		(24_591_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+		Weight::from_ref_time(24_591_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: ProposalEngine Proposals (r:2 w:1)
 	// Storage: Council CouncilMembers (r:1 w:0)
@@ -112,13 +112,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalDiscussion ThreadById (r:0 w:1)
 	// Storage: ProposalEngine VoteExistsByProposalByVoter (r:0 w:1)
 	fn on_initialize_immediate_execution_decode_fails(i: u32, ) -> Weight {
-		(26_040_000 as Weight)
+		Weight::from_ref_time(26_040_000)
 			// Standard Error: 64_000
-			.saturating_add((61_934_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((4 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((6 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(61_934_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((6_u64).saturating_mul(i.into())))
 	}
 	// Storage: ProposalEngine Proposals (r:2 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:1 w:1)
@@ -127,23 +127,23 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalDiscussion ThreadById (r:0 w:1)
 	// Storage: ProposalEngine VoteExistsByProposalByVoter (r:0 w:1)
 	fn on_initialize_pending_execution_decode_fails(i: u32, ) -> Weight {
-		(21_694_000 as Weight)
+		Weight::from_ref_time(21_694_000)
 			// Standard Error: 56_000
-			.saturating_add((32_464_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((4 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(32_464_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((4_u64).saturating_mul(i.into())))
 	}
 	// Storage: ProposalEngine Proposals (r:2 w:1)
 	// Storage: Council CouncilMembers (r:1 w:0)
 	fn on_initialize_approved_pending_constitutionality(i: u32, ) -> Weight {
-		(28_472_000 as Weight)
+		Weight::from_ref_time(28_472_000_u64)
 			// Standard Error: 31_000
-			.saturating_add((21_495_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(21_495_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: ProposalEngine Proposals (r:2 w:1)
 	// Storage: Council CouncilMembers (r:1 w:0)
@@ -155,13 +155,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine VoteExistsByProposalByVoter (r:0 w:3)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn on_initialize_rejected(i: u32, ) -> Weight {
-		(26_645_000 as Weight)
+		Weight::from_ref_time(26_645_000)
 			// Standard Error: 81_000
-			.saturating_add((84_339_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((8 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(84_339_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((8_u64).saturating_mul(i.into())))
 	}
 	// Storage: ProposalEngine Proposals (r:2 w:1)
 	// Storage: Council CouncilMembers (r:1 w:0)
@@ -173,13 +173,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine VoteExistsByProposalByVoter (r:0 w:3)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn on_initialize_slashed(i: u32, ) -> Weight {
-		(30_142_000 as Weight)
+		Weight::from_ref_time(30_142_000)
 			// Standard Error: 66_000
-			.saturating_add((74_001_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((8 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(74_001_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((8_u64).saturating_mul(i.into())))
 	}
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
 	// Storage: ProposalEngine Proposals (r:2 w:1)
@@ -190,46 +190,46 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine VoteExistsByProposalByVoter (r:0 w:3)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn cancel_active_and_pending_proposals(i: u32, ) -> Weight {
-		(20_266_000 as Weight)
+		Weight::from_ref_time(20_266_000)
 			// Standard Error: 83_000
-			.saturating_add((49_225_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((8 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(49_225_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((8_u64).saturating_mul(i.into())))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn vote(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_proposal() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn veto_proposal() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn proposer_remark() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_immediate_execution_decode_fails(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_pending_execution_decode_fails(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_approved_pending_constitutionality(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_rejected(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_slashed(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_active_and_pending_proposals(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

@@ -79,13 +79,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership NextMemberId (r:1 w:1)
 	// Storage: Membership MembershipById (r:0 w:1)
 	fn buy_membership_without_referrer(i: u32, j: u32, ) -> Weight {
-		(142_226_000 as Weight)
+		Weight::from_ref_time(142_226_000)
 			// Standard Error: 9_000
-			.saturating_add((1_724_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_724_000).saturating_mul(i.into()))
 			// Standard Error: 9_000
-			.saturating_add((397_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(397_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipPrice (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
@@ -95,56 +95,56 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership NextMemberId (r:1 w:1)
 	// Storage: Membership ReferralCut (r:1 w:0)
 	fn buy_membership_with_referrer(i: u32, j: u32, ) -> Weight {
-		(160_318_000 as Weight)
+		Weight::from_ref_time(160_318_000)
 			// Standard Error: 10_000
-			.saturating_add((1_563_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_563_000).saturating_mul(i.into()))
 			// Standard Error: 10_000
-			.saturating_add((784_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(784_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:1)
 	// Storage: Membership MemberIdByHandleHash (r:1 w:2)
 	fn update_profile(i: u32, j: u32, ) -> Weight {
-		(71_164_000 as Weight)
+		Weight::from_ref_time(71_164_000)
 			// Standard Error: 9_000
-			.saturating_add((1_690_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_690_000).saturating_mul(i.into()))
 			// Standard Error: 9_000
-			.saturating_add((683_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(683_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	fn update_accounts_none() -> Weight {
-		(1_640_000 as Weight)
+		Weight::from_ref_time(1_640_000)
 	}
 	// Storage: Membership MembershipById (r:1 w:1)
 	fn update_accounts_root() -> Weight {
-		(42_330_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(42_330_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:1)
 	fn update_accounts_controller() -> Weight {
-		(42_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(42_100_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:1)
 	fn update_accounts_both() -> Weight {
-		(41_829_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(41_829_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership ReferralCut (r:0 w:1)
 	fn set_referral_cut() -> Weight {
-		(28_990_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(28_990_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:2 w:2)
 	fn transfer_invites() -> Weight {
-		(59_190_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(59_190_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:2)
 	// Storage: Membership MemberIdByHandleHash (r:1 w:1)
@@ -154,13 +154,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership NextMemberId (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn invite_member(i: u32, j: u32, ) -> Weight {
-		(151_032_000 as Weight)
+		Weight::from_ref_time(151_032_000)
 			// Standard Error: 7_000
-			.saturating_add((1_599_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_599_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((743_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+			.saturating_add(Weight::from_ref_time(743_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 	// Storage: Membership MemberIdByHandleHash (r:1 w:1)
 	// Storage: Membership MembershipPrice (r:1 w:0)
@@ -169,162 +169,162 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership NextMemberId (r:1 w:1)
 	// Storage: Membership MembershipById (r:0 w:1)
 	fn gift_membership(i: u32, j: u32, ) -> Weight {
-		(310_496_000 as Weight)
+		Weight::from_ref_time(310_496_000)
 			// Standard Error: 7_000
-			.saturating_add((1_590_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_590_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((743_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(8 as Weight))
+			.saturating_add(Weight::from_ref_time(743_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
 	}
 	// Storage: Membership MembershipPrice (r:0 w:1)
 	fn set_membership_price() -> Weight {
-		(29_270_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_270_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance6WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:1)
 	fn update_profile_verification() -> Weight {
-		(56_340_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(56_340_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance6WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance6WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:1)
 	fn set_leader_invitation_quota() -> Weight {
-		(60_390_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(60_390_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership InitialInvitationBalance (r:0 w:1)
 	fn set_initial_invitation_balance() -> Weight {
-		(29_310_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_310_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership InitialInvitationCount (r:0 w:1)
 	fn set_initial_invitation_count() -> Weight {
-		(28_950_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(28_950_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership StakingAccountIdMemberStatus (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn add_staking_account_candidate() -> Weight {
-		(95_410_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(95_410_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Membership StakingAccountIdMemberStatus (r:1 w:1)
 	fn confirm_staking_account() -> Weight {
-		(63_590_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(63_590_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Membership StakingAccountIdMemberStatus (r:1 w:1)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn remove_staking_account() -> Weight {
-		(93_130_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(93_130_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn member_remark_without_payment() -> Weight {
-		(22_917_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+		Weight::from_ref_time(22_917_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn member_remark_with_payment() -> Weight {
-		(69_370_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(69_370_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Membership MemberIdByHandleHash (r:1 w:1)
 	// Storage: Membership InitialInvitationCount (r:1 w:0)
 	// Storage: Membership NextMemberId (r:1 w:1)
 	// Storage: Membership MembershipById (r:0 w:1)
 	fn create_member(i: u32, j: u32, ) -> Weight {
-		(57_677_000 as Weight)
+		Weight::from_ref_time(57_677_000)
 			// Standard Error: 7_000
-			.saturating_add((1_831_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_831_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((813_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(813_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn buy_membership_without_referrer(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn buy_membership_with_referrer(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_profile(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_accounts_none() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_accounts_root() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_accounts_controller() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_accounts_both() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_referral_cut() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn transfer_invites() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn invite_member(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn gift_membership(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_membership_price() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_profile_verification() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_leader_invitation_quota() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_initial_invitation_balance() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_initial_invitation_count() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn add_staking_account_candidate() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn confirm_staking_account() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn remove_staking_account() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn member_remark_with_payment() -> Weight {
-		0	
+		Weight::from_ref_time(0)	
 	}
 	fn member_remark_without_payment() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_member(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

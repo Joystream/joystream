@@ -145,25 +145,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DataObjectsById (r:0 w:10)
 	// Storage: Content ChannelById (r:0 w:1)
 	fn create_channel(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		(463_947_000 as Weight)
+		Weight::from_ref_time(463_947_000)
 			// Standard Error: 262_000
-			.saturating_add((18_010_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(18_010_000).saturating_mul(a.into()))
 			// Standard Error: 227_000
-			.saturating_add((31_794_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(31_794_000).saturating_mul(b.into()))
 			// Standard Error: 26_000
-			.saturating_add((30_073_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(Weight::from_ref_time(30_073_000).saturating_mul(c.into()))
 			// Standard Error: 262_000
-			.saturating_add((15_433_000 as Weight).saturating_mul(d as Weight))
+			.saturating_add(Weight::from_ref_time(15_433_000).saturating_mul(d.into()))
 			// Standard Error: 11_000
-			.saturating_add((634_000 as Weight).saturating_mul(e as Weight))
-			.saturating_add(T::DbWeight::get().reads(15 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(d as Weight)))
+			.saturating_add(Weight::from_ref_time(634_000).saturating_mul(e.into()))
+			.saturating_add(T::DbWeight::get().reads(15_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(d.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -179,39 +179,39 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:12 w:12)
 	// Storage: Storage NextDataObjectId (r:1 w:1)
 	fn channel_update_with_assets(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		(604_768_000 as Weight)
+		Weight::from_ref_time(604_768_000)
 			// Standard Error: 191_000
-			.saturating_add((18_531_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(18_531_000).saturating_mul(a.into()))
 			// Standard Error: 191_000
-			.saturating_add((18_335_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(18_335_000).saturating_mul(b.into()))
 			// Standard Error: 191_000
-			.saturating_add((70_468_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(Weight::from_ref_time(70_468_000).saturating_mul(c.into()))
 			// Standard Error: 8_000
-			.saturating_add((786_000 as Weight).saturating_mul(d as Weight))
+			.saturating_add(Weight::from_ref_time(786_000).saturating_mul(d.into()))
 			// Standard Error: 166_000
-			.saturating_add((28_887_000 as Weight).saturating_mul(e as Weight))
-			.saturating_add(T::DbWeight::get().reads(11 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(e as Weight)))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(e as Weight)))
+			.saturating_add(Weight::from_ref_time(28_887_000).saturating_mul(e.into()))
+			.saturating_add(T::DbWeight::get().reads(11_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(e.into())))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(e.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn channel_update_without_assets(a: u32, b: u32, ) -> Weight {
-		(370_489_000 as Weight)
+		Weight::from_ref_time(370_489_000)
 			// Standard Error: 85_000
-			.saturating_add((18_862_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(18_862_000).saturating_mul(a.into()))
 			// Standard Error: 4_000
-			.saturating_add((706_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(706_000).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Storage Bags (r:1 w:1)
@@ -222,39 +222,39 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DistributionBucketByFamilyIdById (r:51 w:51)
 	// Storage: System Account (r:4 w:4)
 	fn delete_channel(a: u32, b: u32, c: u32, ) -> Weight {
-		(504_219_000 as Weight)
+		Weight::from_ref_time(504_219_000)
 			// Standard Error: 377_000
-			.saturating_add((70_080_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add((70_080_000).saturating_mul(a.into()))
 			// Standard Error: 329_000
-			.saturating_add((26_378_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add((26_378_000).saturating_mul(b.into()))
 			// Standard Error: 45_000
-			.saturating_add((21_866_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add((21_866_000).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c.into())))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content ChannelById (r:1 w:1)
 	fn update_channel_privilege_level() -> Weight {
-		(226_269_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(226_269_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn set_channel_paused_features_as_moderator(a: u32, ) -> Weight {
-		(417_835_000 as Weight)
+		Weight::from_ref_time(417_835_000)
 			// Standard Error: 6_000
-			.saturating_add((690_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(690_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -266,19 +266,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage StorageBucketById (r:13 w:13)
 	// Storage: System Account (r:2 w:2)
 	fn delete_channel_assets_as_moderator(a: u32, b: u32, c: u32, ) -> Weight {
-		(510_662_000 as Weight)
+		Weight::from_ref_time(510_662_000)
 			// Standard Error: 157_000
-			.saturating_add((68_791_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(68_791_000).saturating_mul(a.into()))
 			// Standard Error: 137_000
-			.saturating_add((27_409_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(27_409_000).saturating_mul(b.into()))
 			// Standard Error: 7_000
-			.saturating_add((698_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(Weight::from_ref_time(698_000).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Storage Bags (r:1 w:1)
@@ -289,32 +289,32 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DistributionBucketByFamilyIdById (r:51 w:51)
 	// Storage: System Account (r:3 w:3)
 	fn delete_channel_as_moderator(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		(430_842_000 as Weight)
+		Weight::from_ref_time(430_842_000)
 			// Standard Error: 337_000
-			.saturating_add((73_406_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(73_406_000).saturating_mul(a.into()))
 			// Standard Error: 292_000
-			.saturating_add((29_563_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(29_563_000).saturating_mul(b.into()))
 			// Standard Error: 34_000
-			.saturating_add((22_069_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(Weight::from_ref_time(22_069_000).saturating_mul(c.into()))
 			// Standard Error: 15_000
-			.saturating_add((474_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(Weight::from_ref_time(474_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn set_channel_visibility_as_moderator(a: u32, ) -> Weight {
-		(342_786_000 as Weight)
+		Weight::from_ref_time(342_786_000)
 			// Standard Error: 6_000
-			.saturating_add((771_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(Weight::from_ref_time(771_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -327,19 +327,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage StorageBucketById (r:13 w:13)
 	// Storage: System Account (r:2 w:2)
 	fn delete_video_assets_as_moderator(a: u32, b: u32, c: u32, ) -> Weight {
-		(413_599_000 as Weight)
+		Weight::from_ref_time(413_599_000_u64)
 			// Standard Error: 79_000
-			.saturating_add((69_041_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(69_041_000).saturating_mul(a.into()))
 			// Standard Error: 187_000
-			.saturating_add((29_597_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(29_597_000).saturating_mul(b.into()))
 			// Standard Error: 10_000
-			.saturating_add((738_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(Weight::from_ref_time(738_000).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -352,19 +352,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage StorageBucketById (r:13 w:13)
 	// Storage: System Account (r:3 w:3)
 	fn delete_video_as_moderator_with_assets(a: u32, b: u32, c: u32, ) -> Weight {
-		(505_700_000 as Weight)
+		Weight::from_ref_time(505_700_000)
 			// Standard Error: 77_000
-			.saturating_add((67_678_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(67_678_000).saturating_mul(a.into()))
 			// Standard Error: 182_000
-			.saturating_add((27_205_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(27_205_000).saturating_mul(b.into()))
 			// Standard Error: 10_000
-			.saturating_add((703_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(Weight::from_ref_time(703_000).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -372,66 +372,66 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn delete_video_as_moderator_without_assets(a: u32, ) -> Weight {
-		(407_427_000 as Weight)
+		Weight::from_ref_time(407_427_000)
 			// Standard Error: 4_000
-			.saturating_add((658_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(658_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content VideoById (r:1 w:0)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn set_video_visibility_as_moderator(a: u32, ) -> Weight {
-		(319_990_000 as Weight)
+		Weight::from_ref_time(319_990_000)
 			// Standard Error: 4_000
-			.saturating_add((743_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(Weight::from_ref_time(743_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content NextCuratorGroupId (r:1 w:1)
 	// Storage: Content CuratorGroupById (r:0 w:1)
 	fn create_curator_group(a: u32, ) -> Weight {
-		(63_682_000 as Weight)
+		Weight::from_ref_time(63_682_000)
 			// Standard Error: 12_000
-			.saturating_add((4_949_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(4_949_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:1)
 	fn update_curator_group_permissions(a: u32, ) -> Weight {
-		(167_913_000 as Weight)
+		Weight::from_ref_time(167_913_000)
 			// Standard Error: 19_000
-			.saturating_add((5_370_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(5_370_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:1)
 	fn set_curator_group_status() -> Weight {
-		(172_570_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(172_570_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:2 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:1)
 	fn add_curator_to_group() -> Weight {
-		(278_010_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(278_010_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:1)
 	fn remove_curator_from_group() -> Weight {
-		(268_000_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(268_000_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -449,18 +449,18 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DataObjectsById (r:0 w:1)
 	// Storage: Content VideoById (r:0 w:1)
 	fn create_video_without_nft(a: u32, b: u32, c: u32, ) -> Weight {
-		(689_869_000 as Weight)
+		Weight::from_ref_time(689_869_000)
 			// Standard Error: 49_000
-			.saturating_add((17_798_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(17_798_000).saturating_mul(a.into()))
 			// Standard Error: 115_000
-			.saturating_add((27_864_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(27_864_000).saturating_mul(b.into()))
 			// Standard Error: 6_000
-			.saturating_add((732_000 as Weight).saturating_mul(c as Weight))
-			.saturating_add(T::DbWeight::get().reads(14 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(Weight::from_ref_time(732_000).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(14_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -495,31 +495,31 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DataObjectsById (r:0 w:1)
 	// Storage: Content VideoById (r:0 w:1)
 	fn create_video_with_nft(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		(872_659_000 as Weight)
+		Weight::from_ref_time(872_659_000)
 			// Standard Error: 94_000
-			.saturating_add((17_826_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(17_826_000).saturating_mul(a.into()))
 			// Standard Error: 222_000
-			.saturating_add((27_054_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(27_054_000).saturating_mul(b.into()))
 			// Standard Error: 101_000
-			.saturating_add((11_019_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(Weight::from_ref_time(11_019_000).saturating_mul(c.into()))
 			// Standard Error: 11_000
-			.saturating_add((725_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(31 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes(10 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(Weight::from_ref_time(725_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(31_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(10_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 	}
 	// Storage: Content VideoById (r:1 w:0)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn update_video_without_assets_without_nft(a: u32, ) -> Weight {
-		(326_441_000 as Weight)
+		Weight::from_ref_time(326_441_000)
 			// Standard Error: 5_000
-			.saturating_add((724_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(Weight::from_ref_time(724_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -535,22 +535,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:22 w:22)
 	// Storage: Storage NextDataObjectId (r:1 w:1)
 	fn update_video_with_assets_without_nft(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		(578_286_000 as Weight)
+		Weight::from_ref_time(578_286_000)
 			// Standard Error: 90_000
-			.saturating_add((17_922_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(17_922_000).saturating_mul(a.into()))
 			// Standard Error: 90_000
-			.saturating_add((68_366_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(68_366_000).saturating_mul(b.into()))
 			// Standard Error: 214_000
-			.saturating_add((26_273_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(Weight::from_ref_time(26_273_000).saturating_mul(c.into()))
 			// Standard Error: 11_000
-			.saturating_add((801_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(12 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(Weight::from_ref_time(801_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(12_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c.into())))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -574,14 +574,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content GlobalWeeklyNftLimit (r:1 w:0)
 	// Storage: Content GlobalWeeklyNftCounter (r:1 w:1)
 	fn update_video_without_assets_with_nft(a: u32, b: u32, ) -> Weight {
-		(554_456_000 as Weight)
+		Weight::from_ref_time(554_456_000)
 			// Standard Error: 59_000
-			.saturating_add((10_494_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(10_494_000).saturating_mul(a.into()))
 			// Standard Error: 7_000
-			.saturating_add((697_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(21 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(697_000).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(21_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -614,25 +614,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:22 w:22)
 	// Storage: Storage NextDataObjectId (r:1 w:1)
 	fn update_video_with_assets_with_nft(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		(811_555_000 as Weight)
+		Weight::from_ref_time(811_555_000)
 			// Standard Error: 93_000
-			.saturating_add((18_513_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(18_513_000).saturating_mul(a.into()))
 			// Standard Error: 93_000
-			.saturating_add((68_356_000 as Weight).saturating_mul(b as Weight))
+			.saturating_add(Weight::from_ref_time(68_356_000).saturating_mul(b.into()))
 			// Standard Error: 223_000
-			.saturating_add((24_790_000 as Weight).saturating_mul(c as Weight))
+			.saturating_add(Weight::from_ref_time(24_790_000).saturating_mul(c.into()))
 			// Standard Error: 100_000
-			.saturating_add((10_167_000 as Weight).saturating_mul(d as Weight))
+			.saturating_add(Weight::from_ref_time(10_167_000).saturating_mul(d.into()))
 			// Standard Error: 11_000
-			.saturating_add((870_000 as Weight).saturating_mul(e as Weight))
-			.saturating_add(T::DbWeight::get().reads(29 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(c as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(d as Weight)))
-			.saturating_add(T::DbWeight::get().writes(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(c as Weight)))
+			.saturating_add(Weight::from_ref_time(870_000).saturating_mul(e.into()))
+			.saturating_add(T::DbWeight::get().reads(29_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(d.into())))
+			.saturating_add(T::DbWeight::get().writes(8_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c.into())))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -640,9 +640,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn delete_video_without_assets() -> Weight {
-		(429_170_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(429_170_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -655,17 +655,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage StorageBucketById (r:13 w:13)
 	// Storage: System Account (r:4 w:4)
 	fn delete_video_with_assets(a: u32, b: u32, ) -> Weight {
-		(519_265_000 as Weight)
+		Weight::from_ref_time(519_265_000)
 			// Standard Error: 78_000
-			.saturating_add((68_055_000 as Weight).saturating_mul(a as Weight))
+			.saturating_add(Weight::from_ref_time(68_055_000).saturating_mul(a.into()))
 			// Standard Error: 166_000
-			.saturating_add((27_069_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(10 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(b as Weight)))
-			.saturating_add(T::DbWeight::get().writes(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(b as Weight)))
+			.saturating_add(Weight::from_ref_time(27_069_000).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(10_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -673,31 +673,31 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Content NextTransferId (r:1 w:1)
 	fn initialize_channel_transfer(a: u32, ) -> Weight {
-		(380_990_000 as Weight)
+		Weight::from_ref_time(380_990_000)
 			// Standard Error: 163_000
-			.saturating_add((19_090_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(19_090_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn cancel_channel_transfer() -> Weight {
-		(407_910_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(407_910_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Instance3WorkingGroup Budget (r:1 w:0)
 	fn accept_channel_transfer_curator_to_curator(a: u32, ) -> Weight {
-		(166_319_000 as Weight)
+		Weight::from_ref_time(166_319_000)
 			// Standard Error: 122_000
-			.saturating_add((12_662_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(12_662_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
@@ -706,21 +706,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn accept_channel_transfer_member_to_curator(a: u32, ) -> Weight {
-		(219_045_000 as Weight)
+		Weight::from_ref_time(219_045_000)
 			// Standard Error: 83_000
-			.saturating_add((13_216_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(13_216_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn accept_channel_transfer_member_to_member(a: u32, ) -> Weight {
-		(229_376_000 as Weight)
+		Weight::from_ref_time(229_376_000)
 			// Standard Error: 135_000
-			.saturating_add((14_048_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(14_048_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -733,13 +733,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token AccountInfoByTokenAndMember (r:0 w:1)
 	// Storage: Token TokenInfoById (r:0 w:1)
 	fn issue_creator_token(a: u32, ) -> Weight {
-		(181_375_000 as Weight)
+		Weight::from_ref_time(181_375_000)
 			// Standard Error: 27_000
-			.saturating_add((27_453_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
+			.saturating_add(Weight::from_ref_time(27_453_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -750,22 +750,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token BloatBond (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn creator_token_issuer_transfer(a: u32, _b: u32, ) -> Weight {
-		(104_522_000 as Weight)
+		Weight::from_ref_time(104_522_000)
 			// Standard Error: 25_000
-			.saturating_add((38_487_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(a as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(a as Weight)))
+			.saturating_add(Weight::from_ref_time(38_487_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(a.into())))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	fn make_creator_token_permissionless() -> Weight {
-		(335_571_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(335_571_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -773,9 +773,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: Token SymbolsUsed (r:0 w:1)
 	fn deissue_creator_token() -> Weight {
-		(390_060_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(390_060_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -784,11 +784,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token MinSaleDuration (r:1 w:0)
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	fn init_creator_token_sale(a: u32, ) -> Weight {
-		(387_903_000 as Weight)
+		Weight::from_ref_time(387_903_000)
 			// Standard Error: 3_000
-			.saturating_add((807_000 as Weight).saturating_mul(a as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(807_000).saturating_mul(a.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -796,9 +796,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: Token MinSaleDuration (r:1 w:0)
 	fn update_upcoming_creator_token_sale() -> Weight {
-		(362_009_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(362_009_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -807,9 +807,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn finalize_creator_token_sale() -> Weight {
-		(382_379_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(382_379_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -820,9 +820,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token MinRevenueSplitTimeToStart (r:1 w:0)
 	// Storage: Council Budget (r:1 w:1)
 	fn issue_revenue_split() -> Weight {
-		(471_740_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(471_740_000)
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Membership MembershipById (r:2 w:0)
@@ -831,9 +831,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token MinRevenueSplitDuration (r:1 w:0)
 	// Storage: Token MinRevenueSplitTimeToStart (r:1 w:0)
 	fn issue_revenue_split_as_collaborator() -> Weight {
-		(286_690_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(286_690_000)
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -841,27 +841,27 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn finalize_revenue_split() -> Weight {
-		(401_180_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(401_180_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	fn reduce_creator_token_patronage_rate_to() -> Weight {
-		(370_090_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(370_090_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	fn claim_creator_token_patronage_credit() -> Weight {
-		(190_920_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(190_920_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Storage NextDataObjectId (r:1 w:1)
 	// Storage: Storage DataObjectPerMegabyteFee (r:1 w:0)
@@ -876,9 +876,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content MinCashoutAllowed (r:0 w:1)
 	// Storage: Content Commitment (r:0 w:1)
 	fn update_channel_payouts() -> Weight {
-		(138_756_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+		Weight::from_ref_time(138_756_000)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
@@ -886,17 +886,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn withdraw_from_curator_channel_balance() -> Weight {
-		(188_400_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(188_400_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn withdraw_from_member_channel_balance() -> Weight {
-		(178_320_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(178_320_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
@@ -908,11 +908,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content Commitment (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim_channel_reward(h: u32, ) -> Weight {
-		(156_101_000 as Weight)
+		Weight::from_ref_time(156_101_000)
 			// Standard Error: 56_000
-			.saturating_add((951_000 as Weight).saturating_mul(h as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(951_000).saturating_mul(h.into()))
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -923,11 +923,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content Commitment (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn claim_and_withdraw_member_channel_reward(h: u32, ) -> Weight {
-		(300_227_000 as Weight)
+		Weight::from_ref_time(300_227_000)
 			// Standard Error: 100_000
-			.saturating_add((1_850_000 as Weight).saturating_mul(h as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(1_850_000).saturating_mul(h.into()))
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
@@ -939,11 +939,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content Commitment (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim_and_withdraw_curator_channel_reward(h: u32, ) -> Weight {
-		(298_738_000 as Weight)
+		Weight::from_ref_time(298_738_000)
 			// Standard Error: 75_000
-			.saturating_add((1_759_000 as Weight).saturating_mul(h as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(1_759_000).saturating_mul(h.into()))
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:1)
@@ -967,31 +967,31 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content GlobalWeeklyNftLimit (r:1 w:0)
 	// Storage: Content GlobalWeeklyNftCounter (r:1 w:1)
 	fn issue_nft(w: u32, b: u32, ) -> Weight {
-		(585_229_000 as Weight)
+		Weight::from_ref_time(585_229_000)
 			// Standard Error: 71_000
-			.saturating_add((9_833_000 as Weight).saturating_mul(w as Weight))
+			.saturating_add(Weight::from_ref_time(9_833_000).saturating_mul(w.into()))
 			// Standard Error: 8_000
-			.saturating_add((491_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(20 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(491_000).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(20_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn destroy_nft() -> Weight {
-		(469_109_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(469_109_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn sling_nft_back() -> Weight {
-		(126_850_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(126_850_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -999,18 +999,18 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn offer_nft() -> Weight {
-		(481_389_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(481_389_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn cancel_offer() -> Weight {
-		(470_080_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(470_080_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -1018,36 +1018,36 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:3 w:3)
 	// Storage: Content PlatfromFeePercentage (r:1 w:0)
 	fn accept_incoming_offer() -> Weight {
-		(268_660_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(268_660_000)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn sell_nft() -> Weight {
-		(468_940_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(468_940_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn cancel_buy_now() -> Weight {
-		(477_060_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(477_060_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn update_buy_now_price() -> Weight {
-		(469_370_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(469_370_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: Content VideoById (r:1 w:1)
@@ -1055,29 +1055,29 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:3 w:3)
 	// Storage: Content PlatfromFeePercentage (r:1 w:0)
 	fn buy_nft() -> Weight {
-		(269_391_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(269_391_000)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content NftLimitsEnabled (r:1 w:1)
 	fn toggle_nft_limits() -> Weight {
-		(37_130_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(37_130_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content GlobalDailyNftLimit (r:1 w:1)
 	fn update_global_nft_limit() -> Weight {
-		(38_129_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(38_129_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn update_channel_nft_limit() -> Weight {
-		(342_840_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(342_840_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -1094,21 +1094,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content MaxStartingPrice (r:1 w:0)
 	// Storage: Membership MembershipById (r:2 w:0)
 	fn start_english_auction(w: u32, ) -> Weight {
-		(548_144_000 as Weight)
+		Weight::from_ref_time(548_144_000)
 			// Standard Error: 55_000
-			.saturating_add((11_411_000 as Weight).saturating_mul(w as Weight))
-			.saturating_add(T::DbWeight::get().reads(13 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(11_411_000).saturating_mul(w.into()))
+			.saturating_add(T::DbWeight::get().reads(13_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn cancel_english_auction() -> Weight {
-		(483_320_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(483_320_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:3 w:0)
 	// Storage: Content VideoById (r:1 w:1)
@@ -1116,9 +1116,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:5 w:5)
 	// Storage: Content PlatfromFeePercentage (r:1 w:0)
 	fn make_english_auction_bid() -> Weight {
-		(392_440_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(11 as Weight))
-			.saturating_add(T::DbWeight::get().writes(6 as Weight))
+		Weight::from_ref_time(392_440_000)
+			.saturating_add(T::DbWeight::get().reads(11_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -1126,9 +1126,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:3 w:3)
 	// Storage: Content PlatfromFeePercentage (r:1 w:0)
 	fn settle_english_auction() -> Weight {
-		(265_260_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(265_260_000)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
@@ -1141,21 +1141,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: Content AuctionStartsAtMaxDelta (r:1 w:0)
 	fn start_open_auction(w: u32, ) -> Weight {
-		(519_399_000 as Weight)
+		Weight::from_ref_time(519_399_000)
 			// Standard Error: 53_000
-			.saturating_add((11_276_000 as Weight).saturating_mul(w as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(11_276_000).saturating_mul(w.into()))
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content VideoById (r:1 w:1)
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn cancel_open_auction() -> Weight {
-		(479_989_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(479_989_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Content VideoById (r:1 w:0)
@@ -1163,9 +1163,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content OpenAuctionBidByVideoAndMember (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn cancel_open_auction_bid() -> Weight {
-		(215_480_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(215_480_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: Content VideoById (r:1 w:1)
@@ -1174,9 +1174,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:3 w:3)
 	// Storage: Content PlatfromFeePercentage (r:1 w:0)
 	fn pick_open_auction_winner() -> Weight {
-		(294_170_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+		Weight::from_ref_time(294_170_000)
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: Content OpenAuctionBidByVideoAndMember (r:1 w:0)
@@ -1185,284 +1185,284 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Content PlatfromFeePercentage (r:1 w:0)
 	fn make_open_auction_bid() -> Weight {
-		(353_009_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(10 as Weight))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+		Weight::from_ref_time(353_009_000)
+			.saturating_add(T::DbWeight::get().reads(10_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	fn channel_owner_remark(b: u32, ) -> Weight {
-		(113_465_000 as Weight)
+		Weight::from_ref_time(113_465_000)
 			// Standard Error: 4_000
-			.saturating_add((726_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(Weight::from_ref_time(726_000_u64).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	fn channel_agent_remark(b: u32, ) -> Weight {
-		(309_636_000 as Weight)
+		Weight::from_ref_time(309_636_000)
 			// Standard Error: 5_000
-			.saturating_add((690_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(Weight::from_ref_time(690_000).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 	}
 	// Storage: Content VideoById (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content CuratorGroupById (r:1 w:0)
 	// Storage: Content ChannelById (r:1 w:0)
 	fn nft_owner_remark(b: u32, ) -> Weight {
-		(433_008_000 as Weight)
+		Weight::from_ref_time(433_008_000)
 			// Standard Error: 5_000
-			.saturating_add((712_000 as Weight).saturating_mul(b as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+			.saturating_add(Weight::from_ref_time(712_000).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content ChannelStateBloatBondValue (r:0 w:1)
 	fn update_channel_state_bloat_bond() -> Weight {
-		(48_800_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(48_800_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Content VideoStateBloatBondValue (r:0 w:1)
 	fn update_video_state_bloat_bond() -> Weight {
-		(47_290_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(47_290_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn create_channel(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn channel_update_with_assets(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn channel_update_without_assets(a: u32, b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_channel(a: u32, b: u32, c: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_channel_privilege_level() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_channel_paused_features_as_moderator(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_channel_assets_as_moderator(a: u32, b: u32, c: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_channel_as_moderator(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_channel_visibility_as_moderator(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_video_assets_as_moderator(a: u32, b: u32, c: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_video_as_moderator_with_assets(a: u32, b: u32, c: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_video_as_moderator_without_assets(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_video_visibility_as_moderator(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_curator_group(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_curator_group_permissions(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_curator_group_status() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn add_curator_to_group() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn remove_curator_from_group() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_video_without_nft(a: u32, b: u32, c: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_video_with_nft(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_video_without_assets_without_nft(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_video_with_assets_without_nft(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_video_without_assets_with_nft(a: u32, b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_video_with_assets_with_nft(a: u32, b: u32, c: u32, d: u32, e: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_video_without_assets() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_video_with_assets(a: u32, b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn initialize_channel_transfer(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_channel_transfer() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_channel_transfer_curator_to_curator(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_channel_transfer_member_to_curator(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_channel_transfer_member_to_member(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn issue_creator_token(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn creator_token_issuer_transfer(a: u32, _b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn make_creator_token_permissionless() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn deissue_creator_token() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn init_creator_token_sale(a: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_upcoming_creator_token_sale() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn finalize_creator_token_sale() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn issue_revenue_split() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn issue_revenue_split_as_collaborator() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn finalize_revenue_split() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn reduce_creator_token_patronage_rate_to() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn claim_creator_token_patronage_credit() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_channel_payouts() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_from_curator_channel_balance() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_from_member_channel_balance() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn claim_channel_reward(h: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn claim_and_withdraw_member_channel_reward(h: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn claim_and_withdraw_curator_channel_reward(h: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn issue_nft(w: u32, b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn destroy_nft() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn sling_nft_back() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn offer_nft() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_offer() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_incoming_offer() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn sell_nft() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_buy_now() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_buy_now_price() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn buy_nft() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn toggle_nft_limits() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_global_nft_limit() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_channel_nft_limit() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn start_english_auction(w: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_english_auction() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn make_english_auction_bid() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn settle_english_auction() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn start_open_auction(w: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_open_auction() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_open_auction_bid() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn pick_open_auction_winner() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn make_open_auction_bid() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn channel_owner_remark(b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn channel_agent_remark(b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn nft_owner_remark(b: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_channel_state_bloat_bond() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_video_state_bloat_bond() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

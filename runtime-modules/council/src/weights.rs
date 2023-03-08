@@ -69,32 +69,32 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Council BudgetIncrement (r:0 w:1)
 	fn set_budget_increment() -> Weight {
-		(29_210_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_210_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Council CouncilorReward (r:0 w:1)
 	fn set_councilor_reward() -> Weight {
-		(29_330_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_330_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Council Budget (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn funding_request(i: u32, ) -> Weight {
-		(18_104_000 as Weight)
+		Weight::from_ref_time(18_104_000)
 			// Standard Error: 13_000
-			.saturating_add((69_917_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(69_917_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: Council BudgetIncrement (r:1 w:0)
 	// Storage: Council Budget (r:1 w:1)
 	// Storage: Council NextBudgetRefill (r:0 w:1)
 	fn try_process_budget_refill_budget_only() -> Weight {
-		(52_040_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(52_040_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Council CouncilorReward (r:1 w:0)
 	// Storage: Council Budget (r:1 w:1)
@@ -102,33 +102,33 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:3 w:3)
 	// Storage: Council NextRewardPayments (r:0 w:1)
 	fn try_process_budget_payout_council_members_only() -> Weight {
-		(169_890_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(6 as Weight))
+		Weight::from_ref_time(169_890_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
 	// Storage: Council Stage (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:1)
 	fn try_progress_stage_idle() -> Weight {
-		(47_270_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(47_270_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Council Stage (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	// Storage: Instance1Referendum Stage (r:1 w:1)
 	fn try_progress_stage_announcing_start_election(i: u32, ) -> Weight {
-		(75_045_000 as Weight)
+		Weight::from_ref_time(75_045_000)
 			// Standard Error: 9_000
-			.saturating_add((195_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(195_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Council Stage (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:1)
 	fn try_progress_stage_announcing_restart() -> Weight {
-		(53_390_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(53_390_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Membership StakingAccountIdMemberStatus (r:1 w:0)
@@ -138,9 +138,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	fn announce_candidacy() -> Weight {
-		(128_770_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(128_770_000)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Council Candidates (r:1 w:1)
@@ -148,20 +148,20 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn release_candidacy_stake() -> Weight {
-		(91_360_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(91_360_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Council Candidates (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	// Storage: Council Stage (r:1 w:0)
 	fn set_candidacy_note(i: u32, ) -> Weight {
-		(68_023_000 as Weight)
+		Weight::from_ref_time(68_023_000)
 			// Standard Error: 2_000
-			.saturating_add((1_744_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_744_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Council Candidates (r:1 w:1)
@@ -170,94 +170,94 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn withdraw_candidacy() -> Weight {
-		(99_240_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(99_240_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Council Budget (r:0 w:1)
 	fn set_budget() -> Weight {
-		(29_330_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_330_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Council NextBudgetRefill (r:0 w:1)
 	fn plan_budget_refill() -> Weight {
-		(28_589_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(28_589_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn fund_council_budget() -> Weight {
-		(89_760_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(89_760_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Council Candidates (r:1 w:0)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	fn candidate_remark() -> Weight {
-		(51_040_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+		Weight::from_ref_time(51_040_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Council CouncilMembers (r:1 w:0)
 	fn councilor_remark() -> Weight {
-		(49_349_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+		Weight::from_ref_time(49_349_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn set_budget_increment() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_councilor_reward() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn funding_request(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn try_process_budget_refill_budget_only() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn try_process_budget_payout_council_members_only() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn try_progress_stage_idle() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn try_progress_stage_announcing_start_election(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn try_progress_stage_announcing_restart() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn announce_candidacy() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn release_candidacy_stake() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_candidacy_note(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_candidacy() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_budget() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn plan_budget_refill() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn fund_council_budget() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn candidate_remark() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn councilor_remark() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

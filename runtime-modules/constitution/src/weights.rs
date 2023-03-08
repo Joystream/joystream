@@ -53,16 +53,16 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Constitution Constitution (r:0 w:1)
 	fn amend_constitution(i: u32, ) -> Weight {
-		(31_909_000 as Weight)
+		Weight::from_ref_time(31_909_000)
 			// Standard Error: 0
-			.saturating_add((2_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(2_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn amend_constitution(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

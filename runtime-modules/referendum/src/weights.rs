@@ -63,17 +63,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Council AnnouncementPeriodNr (r:1 w:1)
 	// Storage: Council Stage (r:0 w:1)
 	fn on_initialize_revealing(i: u32, ) -> Weight {
-		(32_918_000 as Weight)
+		Weight::from_ref_time(32_918_000)
 			// Standard Error: 86_000
-			.saturating_add((1_424_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(1_424_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
 	fn on_initialize_voting() -> Weight {
-		(18_880_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(18_880_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1Referendum AccountsOptedOut (r:1 w:0)
 	// Storage: Instance1Referendum Stage (r:1 w:0)
@@ -81,98 +81,98 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn vote() -> Weight {
-		(57_013_000 as Weight)
-            .saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(57_013_000)
+            .saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
 	// Storage: Instance1Referendum Votes (r:1 w:1)
 	// Storage: Council Candidates (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	fn reveal_vote_space_for_new_winner(i: u32, ) -> Weight {
-		(45_258_000 as Weight)
+		Weight::from_ref_time(45_258_000)
 			// Standard Error: 144_000
-			.saturating_add((2_127_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(2_127_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
 	// Storage: Instance1Referendum Votes (r:1 w:1)
 	// Storage: Council Candidates (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	fn reveal_vote_space_not_in_winners(i: u32, ) -> Weight {
-		(47_590_000 as Weight)
+		Weight::from_ref_time(47_590_000)
 			// Standard Error: 58_000
-			.saturating_add((1_263_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(1_263_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
 	// Storage: Instance1Referendum Votes (r:1 w:1)
 	// Storage: Council Candidates (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	fn reveal_vote_space_replace_last_winner(i: u32, ) -> Weight {
-		(47_356_000 as Weight)
+		Weight::from_ref_time(47_356_000)
 			// Standard Error: 72_000
-			.saturating_add((1_157_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(1_157_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
 	// Storage: Instance1Referendum Votes (r:1 w:1)
 	// Storage: Council Candidates (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	fn reveal_vote_already_existing(i: u32, ) -> Weight {
-		(46_890_000 as Weight)
+		Weight::from_ref_time(46_890_000)
 			// Standard Error: 74_000
-			.saturating_add((1_400_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(1_400_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum Votes (r:1 w:1)
 	// Storage: Council AnnouncementPeriodNr (r:1 w:0)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn release_vote_stake() -> Weight {
-		(46_810_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(46_810_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1Referendum AccountsOptedOut (r:0 w:1)
 	fn opt_out_of_voting() -> Weight {
-		(22_013_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(22_013_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn on_initialize_revealing(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_voting() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn vote() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn reveal_vote_space_for_new_winner(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn reveal_vote_space_not_in_winners(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn reveal_vote_space_replace_last_winner(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn reveal_vote_already_existing(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn release_vote_stake() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn opt_out_of_voting() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

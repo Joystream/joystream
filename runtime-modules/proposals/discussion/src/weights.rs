@@ -61,56 +61,56 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:2 w:2)
 	// Storage: ProposalDiscussion PostThreadIdByPostId (r:0 w:1)
 	fn add_post(j: u32, ) -> Weight {
-		(197_279_000 as Weight)
+		Weight::from_ref_time(197_279_000)
 			// Standard Error: 3_000
-			.saturating_add((765_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(765_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: ProposalDiscussion ThreadById (r:1 w:0)
 	// Storage: ProposalDiscussion PostThreadIdByPostId (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn update_post(j: u32, ) -> Weight {
-		(68_938_000 as Weight)
+		Weight::from_ref_time(68_938_000)
 			// Standard Error: 2_000
-			.saturating_add((735_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(735_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalDiscussion PostThreadIdByPostId (r:1 w:1)
 	// Storage: ProposalDiscussion ThreadById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn delete_post() -> Weight {
-		(122_960_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(122_960_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalDiscussion ThreadById (r:1 w:1)
 	// Storage: Council CouncilMembers (r:1 w:0)
 	fn change_thread_mode(i: u32, ) -> Weight {
-		(72_501_000 as Weight)
+		Weight::from_ref_time(72_501_000)
 			// Standard Error: 34_000
-			.saturating_add((10_896_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(10_896_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn add_post(j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_post(j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_post() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn change_thread_mode(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

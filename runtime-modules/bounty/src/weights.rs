@@ -88,121 +88,121 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Bounty Bounties (r:0 w:1)
 	fn create_bounty_by_council(i: u32, j: u32, ) -> Weight {
-		(66_826_000 as Weight)
+		Weight::from_ref_time(66_826_000)
 			// Standard Error: 3_000
-			.saturating_add((594_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(594_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((5_110_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(5_110_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:51 w:0)
 	// Storage: System Account (r:2 w:2)
 	// Storage: Bounty BountyCount (r:1 w:1)
 	// Storage: Bounty Bounties (r:0 w:1)
 	fn create_bounty_by_member(i: u32, j: u32, ) -> Weight {
-		(67_970_000 as Weight)
+		Weight::from_ref_time(67_970_000)
 			// Standard Error: 4_000
-			.saturating_add((671_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(671_000).saturating_mul(i.into()))
 			// Standard Error: 10_000
-			.saturating_add((5_173_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(5_173_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn terminate_bounty_w_oracle_reward_funding_expired() -> Weight {
-		(56_590_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(56_590_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn terminate_bounty_wo_oracle_reward_funding_expired() -> Weight {
-		(83_450_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(83_450_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn terminate_bounty_w_oracle_reward_wo_funds_funding() -> Weight {
-		(56_290_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(56_290_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn terminate_bounty_wo_oracle_reward_wo_funds_funding() -> Weight {
-		(83_020_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(83_020_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:2 w:0)
 	fn terminate_bounty_w_oracle_reward_w_funds_funding() -> Weight {
-		(31_990_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(31_990_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:2 w:0)
 	fn terminate_bounty_wo_oracle_reward_w_funds_funding() -> Weight {
-		(38_500_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(38_500_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:2 w:0)
 	fn terminate_bounty_work_or_judging_period() -> Weight {
-		(31_911_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(31_911_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn fund_bounty_by_member() -> Weight {
-		(69_380_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(69_380_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn fund_bounty_by_council() -> Weight {
-		(58_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(58_100_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Bounties (r:1 w:0)
 	// Storage: Bounty BountyContributions (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn withdraw_funding_by_member() -> Weight {
-		(65_930_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(65_930_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:0)
 	// Storage: Bounty BountyContributions (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn withdraw_funding_by_council() -> Weight {
-		(57_700_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(57_700_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Bounties (r:1 w:1)
@@ -212,23 +212,23 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Bounty EntryCount (r:1 w:1)
 	// Storage: Bounty Entries (r:0 w:1)
 	fn announce_work_entry(i: u32, j: u32, ) -> Weight {
-		(64_714_000 as Weight)
+		Weight::from_ref_time(64_714_000)
 			// Standard Error: 4_000
-			.saturating_add((791_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(791_000).saturating_mul(i.into()))
 			// Standard Error: 10_000
-			.saturating_add((350_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+			.saturating_add(Weight::from_ref_time(350_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Bounties (r:1 w:0)
 	// Storage: Bounty Entries (r:1 w:1)
 	fn submit_work(i: u32, ) -> Weight {
-		(35_985_000 as Weight)
+		Weight::from_ref_time(35_985_000)
 			// Standard Error: 1_000
-			.saturating_add((722_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(722_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Bounty Entries (r:40 w:40)
@@ -237,21 +237,21 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Council Budget (r:1 w:1)
 	// Storage: Balances Locks (r:40 w:40)
 	fn submit_oracle_judgment_by_council(j: u32, k: u32, w: u32, r: u32, ) -> Weight {
-		(0 as Weight)
+		Weight::from_ref_time(0)
 			// Standard Error: 13_000
-			.saturating_add((886_000 as Weight).saturating_mul(j as Weight))
+			.saturating_add(Weight::from_ref_time(886_000).saturating_mul(j.into()))
 			// Standard Error: 13_000
-			.saturating_add((824_000 as Weight).saturating_mul(k as Weight))
+			.saturating_add(Weight::from_ref_time(824_000).saturating_mul(k.into()))
 			// Standard Error: 95_000
-			.saturating_add((60_240_000 as Weight).saturating_mul(w as Weight))
+			.saturating_add(Weight::from_ref_time(60_240_000).saturating_mul(w.into()))
 			// Standard Error: 95_000
-			.saturating_add((76_631_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((4 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().reads((4 as Weight).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from_ref_time(76_631_000).saturating_mul(r.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(r.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(r.into())))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:40 w:0)
@@ -260,62 +260,62 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Council Budget (r:1 w:1)
 	// Storage: Balances Locks (r:39 w:39)
 	fn submit_oracle_judgment_by_member(j: u32, k: u32, w: u32, r: u32, ) -> Weight {
-		(0 as Weight)
+		Weight::from_ref_time(0)
 			// Standard Error: 25_000
-			.saturating_add((970_000 as Weight).saturating_mul(j as Weight))
+			.saturating_add(Weight::from_ref_time(970_000).saturating_mul(j.into()))
 			// Standard Error: 25_000
-			.saturating_add((1_037_000 as Weight).saturating_mul(k as Weight))
+			.saturating_add(Weight::from_ref_time(1_037_000).saturating_mul(k.into()))
 			// Standard Error: 176_000
-			.saturating_add((60_734_000 as Weight).saturating_mul(w as Weight))
+			.saturating_add(Weight::from_ref_time(60_734_000).saturating_mul(w.into()))
 			// Standard Error: 189_000
-			.saturating_add((75_651_000 as Weight).saturating_mul(r as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((4 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().reads((4 as Weight).saturating_mul(r as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(w as Weight)))
-			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(r as Weight)))
+			.saturating_add(Weight::from_ref_time(75_651_000).saturating_mul(r.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(r.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(w.into())))
+			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(r.into())))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	fn switch_oracle_to_council_by_council_successful() -> Weight {
-		(25_029_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(25_029_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn switch_oracle_to_member_by_oracle_council() -> Weight {
-		(29_030_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_030_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn switch_oracle_to_member_by_council() -> Weight {
-		(30_520_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(30_520_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:2 w:0)
 	fn switch_oracle_to_member_by_oracle_member() -> Weight {
-		(34_780_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(34_780_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn switch_oracle_to_council_by_oracle_member() -> Weight {
-		(29_320_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(29_320_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn end_working_period() -> Weight {
-		(30_200_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(30_200_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Bounties (r:1 w:1)
@@ -323,36 +323,36 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn withdraw_entrant_stake() -> Weight {
-		(52_629_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(52_629_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:0)
 	// Storage: Bounty BountyContributions (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn withdraw_funding_state_bloat_bond_by_council() -> Weight {
-		(56_640_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(56_640_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Bounties (r:1 w:0)
 	// Storage: Bounty BountyContributions (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn withdraw_funding_state_bloat_bond_by_member() -> Weight {
-		(65_190_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(65_190_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	fn withdraw_oracle_reward_by_oracle_council() -> Weight {
-		(85_380_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(85_380_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -360,138 +360,138 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	// Storage: Council Budget (r:1 w:1)
 	fn withdraw_oracle_reward_by_oracle_member() -> Weight {
-		(99_320_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(99_320_000)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty Entries (r:1 w:0)
 	fn entrant_remark(i: u32, ) -> Weight {
-		(24_192_000 as Weight)
+		Weight::from_ref_time(24_192_000)
 			// Standard Error: 1_000
-			.saturating_add((735_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(735_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Bounty BountyContributions (r:1 w:0)
 	fn contributor_remark(i: u32, ) -> Weight {
-		(23_858_000 as Weight)
+		Weight::from_ref_time(23_858_000)
 			// Standard Error: 0
-			.saturating_add((664_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(664_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:0)
 	fn oracle_remark(i: u32, ) -> Weight {
-		(19_514_000 as Weight)
+		Weight::from_ref_time(19_514_000)
 			// Standard Error: 5_000
-			.saturating_add((672_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(Weight::from_ref_time(672_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 	// Storage: Bounty Bounties (r:1 w:0)
 	fn creator_remark(i: u32, ) -> Weight {
-		(19_577_000 as Weight)
+		Weight::from_ref_time(19_577_000)
 			// Standard Error: 5_000
-			.saturating_add((671_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(Weight::from_ref_time(671_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn create_bounty_by_council(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_bounty_by_member(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_w_oracle_reward_funding_expired() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_wo_oracle_reward_funding_expired() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_w_oracle_reward_wo_funds_funding() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_wo_oracle_reward_wo_funds_funding() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_w_oracle_reward_w_funds_funding() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_wo_oracle_reward_w_funds_funding() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_bounty_work_or_judging_period() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn fund_bounty_by_member() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn fund_bounty_by_council() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_funding_by_member() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_funding_by_council() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn announce_work_entry(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn submit_work(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn submit_oracle_judgment_by_council(j: u32, k: u32, w: u32, r: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn submit_oracle_judgment_by_member(j: u32, k: u32, w: u32, r: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn switch_oracle_to_council_by_council_successful() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn switch_oracle_to_member_by_oracle_council() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn switch_oracle_to_member_by_council() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn switch_oracle_to_member_by_oracle_member() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn switch_oracle_to_council_by_oracle_member() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn end_working_period() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_entrant_stake() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_funding_state_bloat_bond_by_council() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_funding_state_bloat_bond_by_member() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_oracle_reward_by_oracle_council() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_oracle_reward_by_oracle_member() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn entrant_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn contributor_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn oracle_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn creator_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

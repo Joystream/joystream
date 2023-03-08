@@ -84,15 +84,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_signal(i: u32, t: u32, d: u32, ) -> Weight {
-		(119_338_000 as Weight)
+		Weight::from_ref_time(119_338_000)
 			// Standard Error: 8_000
-			.saturating_add((1_874_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_874_000).saturating_mul(i.into()))
 			// Standard Error: 66_000
-			.saturating_add((832_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(832_000).saturating_mul(t_u64))
 			// Standard Error: 66_000
-			.saturating_add((1_020_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_020_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -106,15 +106,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32, ) -> Weight {
-		(114_863_000 as Weight)
+		Weight::from_ref_time(114_863_000)
 			// Standard Error: 5_000
-			.saturating_add((1_891_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_891_000).saturating_mul(i.into()))
 			// Standard Error: 46_000
-			.saturating_add((855_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(855_000).saturating_mul(t_u64))
 			// Standard Error: 46_000
-			.saturating_add((1_089_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_089_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -128,13 +128,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_funding_request(_i: u32, t: u32, d: u32, ) -> Weight {
-		(106_889_000 as Weight)
+		Weight::from_ref_time(106_889_000)
 			// Standard Error: 25_000
-			.saturating_add((1_318_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_318_000).saturating_mul(t_u64))
 			// Standard Error: 25_000
-			.saturating_add((1_443_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_443_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Staking MinimumValidatorCount (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -149,13 +149,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_max_validator_count(t: u32, d: u32, ) -> Weight {
-		(100_376_000 as Weight)
+		Weight::from_ref_time(100_376_000)
 			// Standard Error: 21_000
-			.saturating_add((1_312_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_312_000).saturating_mul(t_u64))
 			// Standard Error: 21_000
-			.saturating_add((1_472_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_472_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: ProposalEngine Proposals (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -169,13 +169,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalDiscussion ThreadById (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_veto_proposal(t: u32, d: u32, ) -> Weight {
-		(115_318_000 as Weight)
+		Weight::from_ref_time(115_318_000)
 			// Standard Error: 47_000
-			.saturating_add((1_112_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_112_000).saturating_mul(t_u64))
 			// Standard Error: 47_000
-			.saturating_add((1_334_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_334_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -189,15 +189,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32, ) -> Weight {
-		(117_180_000 as Weight)
+		Weight::from_ref_time(117_180_000)
 			// Standard Error: 5_000
-			.saturating_add((2_020_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(2_020_000).saturating_mul(i.into()))
 			// Standard Error: 42_000
-			.saturating_add((810_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(810_000).saturating_mul(t_u64))
 			// Standard Error: 42_000
-			.saturating_add((1_044_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_044_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Instance1WorkingGroup OpeningById (r:1 w:0)
 	// Storage: Instance1WorkingGroup ApplicationById (r:1 w:0)
@@ -213,13 +213,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32, ) -> Weight {
-		(118_975_000 as Weight)
+		Weight::from_ref_time(118_975_000)
 			// Standard Error: 38_000
-			.saturating_add((1_264_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_264_000).saturating_mul(t_u64))
 			// Standard Error: 38_000
-			.saturating_add((1_302_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(9 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_302_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -233,13 +233,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_update_working_group_budget(t: u32, d: u32, ) -> Weight {
-		(99_672_000 as Weight)
+		Weight::from_ref_time(99_672_000)
 			// Standard Error: 26_000
-			.saturating_add((1_222_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_222_000).saturating_mul(t_u64))
 			// Standard Error: 26_000
-			.saturating_add((1_351_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_351_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -254,13 +254,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32, ) -> Weight {
-		(103_629_000 as Weight)
+		Weight::from_ref_time(103_629_000)
 			// Standard Error: 19_000
-			.saturating_add((1_255_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_255_000).saturating_mul(t_u64))
 			// Standard Error: 19_000
-			.saturating_add((1_435_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_435_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -275,13 +275,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_slash_working_group_lead(t: u32, d: u32, ) -> Weight {
-		(103_453_000 as Weight)
+		Weight::from_ref_time(103_453_000)
 			// Standard Error: 26_000
-			.saturating_add((1_326_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_326_000).saturating_mul(t_u64))
 			// Standard Error: 26_000
-			.saturating_add((1_418_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_418_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -296,13 +296,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_working_group_lead_reward(t: u32, d: u32, ) -> Weight {
-		(99_679_000 as Weight)
+		Weight::from_ref_time(99_679_000)
 			// Standard Error: 37_000
-			.saturating_add((1_417_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_417_000).saturating_mul(t_u64))
 			// Standard Error: 37_000
-			.saturating_add((1_621_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_621_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -317,13 +317,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_terminate_working_group_lead(t: u32, d: u32, ) -> Weight {
-		(102_435_000 as Weight)
+		Weight::from_ref_time(102_435_000)
 			// Standard Error: 23_000
-			.saturating_add((1_320_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_320_000).saturating_mul(t_u64))
 			// Standard Error: 23_000
-			.saturating_add((1_501_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_501_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -337,15 +337,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_amend_constitution(i: u32, t: u32, d: u32, ) -> Weight {
-		(118_339_000 as Weight)
+		Weight::from_ref_time(118_339_000)
 			// Standard Error: 5_000
-			.saturating_add((1_853_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(1_853_000).saturating_mul(i.into()))
 			// Standard Error: 45_000
-			.saturating_add((837_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(837_000).saturating_mul(t_u64))
 			// Standard Error: 45_000
-			.saturating_add((974_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(974_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Instance1WorkingGroup OpeningById (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
@@ -360,13 +360,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_cancel_working_group_lead_opening(t: u32, d: u32, ) -> Weight {
-		(109_349_000 as Weight)
+		Weight::from_ref_time(109_349_000)
 			// Standard Error: 38_000
-			.saturating_add((1_247_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_247_000).saturating_mul(t_u64))
 			// Standard Error: 38_000
-			.saturating_add((1_240_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_240_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -380,13 +380,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_membership_price(t: u32, d: u32, ) -> Weight {
-		(95_468_000 as Weight)
+		Weight::from_ref_time(95_468_000)
 			// Standard Error: 34_000
-			.saturating_add((1_383_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_383_000).saturating_mul(t_u64))
 			// Standard Error: 34_000
-			.saturating_add((1_501_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_501_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -400,13 +400,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_council_budget_increment(t: u32, d: u32, ) -> Weight {
-		(97_264_000 as Weight)
+		Weight::from_ref_time(97_264_000)
 			// Standard Error: 19_000
-			.saturating_add((1_261_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_261_000).saturating_mul(t_u64))
 			// Standard Error: 19_000
-			.saturating_add((1_439_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_439_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -420,13 +420,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_councilor_reward(t: u32, d: u32, ) -> Weight {
-		(97_564_000 as Weight)
+		Weight::from_ref_time(97_564_000)
 			// Standard Error: 18_000
-			.saturating_add((1_259_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_259_000).saturating_mul(t_u64))
 			// Standard Error: 18_000
-			.saturating_add((1_422_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_422_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -440,13 +440,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_initial_invitation_balance(t: u32, d: u32, ) -> Weight {
-		(98_633_000 as Weight)
+		Weight::from_ref_time(98_633_000)
 			// Standard Error: 25_000
-			.saturating_add((1_198_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_198_000).saturating_mul(t_u64))
 			// Standard Error: 25_000
-			.saturating_add((1_442_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_442_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -460,13 +460,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_initial_invitation_count(t: u32, d: u32, ) -> Weight {
-		(96_739_000 as Weight)
+		Weight::from_ref_time(96_739_000)
 			// Standard Error: 30_000
-			.saturating_add((1_310_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_310_000).saturating_mul(t_u64))
 			// Standard Error: 30_000
-			.saturating_add((1_446_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_446_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -480,13 +480,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_membership_lead_invitation_quota(t: u32, d: u32, ) -> Weight {
-		(100_502_000 as Weight)
+		Weight::from_ref_time(100_502_000)
 			// Standard Error: 24_000
-			.saturating_add((1_194_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_194_000).saturating_mul(t_u64))
 			// Standard Error: 24_000
-			.saturating_add((1_306_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_306_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -500,13 +500,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_set_referral_cut(t: u32, d: u32, ) -> Weight {
-		(97_395_000 as Weight)
+		Weight::from_ref_time(97_395_000)
 			// Standard Error: 22_000
-			.saturating_add((1_255_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_255_000).saturating_mul(t_u64))
 			// Standard Error: 22_000
-			.saturating_add((1_448_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_448_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -520,13 +520,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_update_global_nft_limit(t: u32, d: u32, ) -> Weight {
-		(95_855_000 as Weight)
+		Weight::from_ref_time(95_855_000)
 			// Standard Error: 23_000
-			.saturating_add((1_340_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(1_340_000).saturating_mul(t_u64))
 			// Standard Error: 23_000
-			.saturating_add((1_517_000 as Weight).saturating_mul(d as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_517_000).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -540,87 +540,87 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: ProposalEngine Proposals (r:0 w:1)
 	// Storage: ProposalEngine DispatchableCallCode (r:0 w:1)
 	fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32, ) -> Weight {
-		(121_494_000 as Weight)
+		Weight::from_ref_time(121_494_000)
 			// Standard Error: 43_000
-			.saturating_add((801_000 as Weight).saturating_mul(t as Weight))
+			.saturating_add(Weight::from_ref_time(801_000).saturating_mul(t_u64))
 			// Standard Error: 43_000
-			.saturating_add((1_010_000 as Weight).saturating_mul(d as Weight))
+			.saturating_add(Weight::from_ref_time(1_010_000).saturating_mul(d.into()))
 			// Standard Error: 6_000
-			.saturating_add((1_809_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(9 as Weight))
+			.saturating_add(Weight::from_ref_time(1_809_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn create_proposal_signal(i: u32, t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_runtime_upgrade(i: u32, t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_funding_request(_i: u32, t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_max_validator_count(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_veto_proposal(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_create_working_group_lead_opening(i: u32, t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_fill_working_group_lead_opening(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_update_working_group_budget(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_decrease_working_group_lead_stake(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_slash_working_group_lead(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_working_group_lead_reward(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_terminate_working_group_lead(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_amend_constitution(i: u32, t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_cancel_working_group_lead_opening(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_membership_price(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_council_budget_increment(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_councilor_reward(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_initial_invitation_balance(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_initial_invitation_count(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_membership_lead_invitation_quota(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_set_referral_cut(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_update_global_nft_limit(t: u32, d: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_proposal_update_channel_payouts(t: u32, d: u32, i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

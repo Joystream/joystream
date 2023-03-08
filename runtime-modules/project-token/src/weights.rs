@@ -63,24 +63,24 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token BloatBond (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn transfer(o: u32, m: u32, ) -> Weight {
-		(0 as Weight)
+		Weight::from_ref_time(0)
 			// Standard Error: 7_000
-			.saturating_add((16_066_000 as Weight).saturating_mul(o as Weight))
+			.saturating_add(Weight::from_ref_time(16_066_000).saturating_mul(o.into()))
 			// Standard Error: 68_000
-			.saturating_add((449_000 as Weight).saturating_mul(m as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(o as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(o as Weight)))
+			.saturating_add(Weight::from_ref_time(449_000).saturating_mul(m.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(o.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(o.into())))
 	}
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn dust_account() -> Weight {
-		(63_410_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(63_410_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
@@ -88,11 +88,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token BloatBond (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn join_whitelist(h: u32, ) -> Weight {
-		(81_601_000 as Weight)
+		Weight::from_ref_time(81_601_000)
 			// Standard Error: 23_000
-			.saturating_add((1_010_000 as Weight).saturating_mul(h as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(1_010_000).saturating_mul(h.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
@@ -101,58 +101,58 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Token BloatBond (r:1 w:0)
 	// Storage: System Account (r:3 w:3)
 	fn purchase_tokens_on_sale() -> Weight {
-		(112_750_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(8 as Weight))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+		Weight::from_ref_time(112_750_000)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn participate_in_split() -> Weight {
-		(76_310_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+		Weight::from_ref_time(76_310_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:0)
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	fn exit_revenue_split() -> Weight {
-		(42_400_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(42_400_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
 	fn burn() -> Weight {
-		(43_910_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(43_910_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn transfer(o: u32, m: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn dust_account() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn join_whitelist(h: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn purchase_tokens_on_sale() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn participate_in_split() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn exit_revenue_split() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn burn() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

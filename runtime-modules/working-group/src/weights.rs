@@ -82,47 +82,47 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance3WorkingGroup ActiveWorkerCount (r:1 w:1)
 	// Storage: Balances Locks (r:2 w:2)
 	fn on_initialize_leaving(i: u32, ) -> Weight {
-		(26_873_000 as Weight)
+		Weight::from_ref_time(26_873_000)
 			// Standard Error: 35_000
-			.saturating_add((55_730_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((3 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((3 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(55_730_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((3_u64).saturating_mul(i.into())))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:3 w:2)
 	// Storage: Instance3WorkingGroup Budget (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn on_initialize_rewarding_with_missing_reward(i: u32, ) -> Weight {
-		(17_787_000 as Weight)
+		Weight::from_ref_time(17_787_000)
 			// Standard Error: 55_000
-			.saturating_add((52_759_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(52_759_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(i.into())))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:3 w:2)
 	// Storage: Instance3WorkingGroup Budget (r:1 w:0)
 	fn on_initialize_rewarding_with_missing_reward_cant_pay(i: u32, ) -> Weight {
-		(16_415_000 as Weight)
+		Weight::from_ref_time(16_415_000)
 			// Standard Error: 33_000
-			.saturating_add((23_020_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(23_020_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:3 w:1)
 	// Storage: Instance3WorkingGroup Budget (r:1 w:1)
 	// Storage: System Account (r:2 w:2)
 	fn on_initialize_rewarding_without_missing_reward(i: u32, ) -> Weight {
-		(38_161_000 as Weight)
+		Weight::from_ref_time(38_161_000)
 			// Standard Error: 33_000
-			.saturating_add((33_132_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(33_132_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Instance3WorkingGroup OpeningById (r:1 w:0)
@@ -132,11 +132,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance3WorkingGroup NextApplicationId (r:1 w:1)
 	// Storage: Instance3WorkingGroup ApplicationById (r:0 w:1)
 	fn apply_on_opening(i: u32, ) -> Weight {
-		(60_759_000 as Weight)
+		Weight::from_ref_time(60_759_000)
 			// Standard Error: 3_000
-			.saturating_add((1_699_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(1_699_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Instance3WorkingGroup OpeningById (r:1 w:1)
 	// Storage: Instance3WorkingGroup ActiveWorkerCount (r:1 w:1)
@@ -145,9 +145,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance3WorkingGroup NextWorkerId (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:0 w:1)
 	fn fill_opening_lead() -> Weight {
-		(49_500_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(6 as Weight))
+		Weight::from_ref_time(49_500_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
 	// Storage: Instance3WorkingGroup OpeningById (r:1 w:1)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
@@ -158,20 +158,20 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: System Account (r:1 w:1)
 	// Storage: Instance3WorkingGroup NextWorkerId (r:1 w:1)
 	fn fill_opening_worker(i: u32, ) -> Weight {
-		(51_093_000 as Weight)
+		Weight::from_ref_time(51_093_000)
 			// Standard Error: 19_000
-			.saturating_add((15_263_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((2 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(15_263_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(i.into())))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	fn update_role_account() -> Weight {
-		(28_550_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(28_550_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup OpeningById (r:1 w:1)
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
@@ -179,28 +179,28 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn cancel_opening() -> Weight {
-		(57_880_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(57_880_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance3WorkingGroup ApplicationById (r:1 w:1)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn withdraw_application() -> Weight {
-		(37_370_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(37_370_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:2 w:0)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn slash_stake(i: u32, ) -> Weight {
-		(77_648_000 as Weight)
+		Weight::from_ref_time(77_648_000)
 			// Standard Error: 1_000
-			.saturating_add((660_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(660_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:2 w:1)
@@ -209,11 +209,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance3WorkingGroup Budget (r:1 w:1)
 	// Storage: Instance3WorkingGroup ActiveWorkerCount (r:1 w:1)
 	fn terminate_role_worker(i: u32, ) -> Weight {
-		(122_568_000 as Weight)
+		Weight::from_ref_time(122_568_000)
 			// Standard Error: 5_000
-			.saturating_add((1_271_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+			.saturating_add(Weight::from_ref_time(1_271_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:1)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:1)
@@ -222,73 +222,73 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance3WorkingGroup Budget (r:1 w:1)
 	// Storage: Instance3WorkingGroup ActiveWorkerCount (r:1 w:1)
 	fn terminate_role_lead(i: u32, ) -> Weight {
-		(121_275_000 as Weight)
+		Weight::from_ref_time(121_275_000)
 			// Standard Error: 3_000
-			.saturating_add((1_264_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().writes(6 as Weight))
+			.saturating_add(Weight::from_ref_time(1_264_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Balances Locks (r:1 w:1)
 	fn increase_stake() -> Weight {
-		(48_210_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(48_210_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:2 w:0)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn decrease_stake() -> Weight {
-		(57_370_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(57_370_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Instance3WorkingGroup Budget (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn spend_from_budget() -> Weight {
-		(42_270_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(42_270_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	// Storage: Instance3WorkingGroup Budget (r:1 w:1)
 	fn fund_working_group_budget() -> Weight {
-		(42_300_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(42_300_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:2 w:1)
 	fn update_reward_amount() -> Weight {
-		(33_980_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(33_980_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Instance3WorkingGroup StatusTextHash (r:0 w:1)
 	fn set_status_text(i: u32, ) -> Weight {
-		(27_279_000 as Weight)
+		Weight::from_ref_time(27_279_000)
 			// Standard Error: 6_000
-			.saturating_add((1_644_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_644_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:1)
 	fn update_reward_account() -> Weight {
-		(24_380_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(24_380_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup Budget (r:0 w:1)
 	fn set_budget() -> Weight {
-		(13_550_000 as Weight)
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(13_550_000)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -297,112 +297,112 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance3WorkingGroup NextOpeningId (r:1 w:1)
 	// Storage: Instance3WorkingGroup OpeningById (r:0 w:1)
 	fn add_opening(i: u32, ) -> Weight {
-		(69_789_000 as Weight)
+		Weight::from_ref_time(69_789_000)
 			// Standard Error: 6_000
-			.saturating_add((1_729_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(1_729_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:1)
 	fn leave_role(i: u32, ) -> Weight {
-		(25_746_000 as Weight)
+		Weight::from_ref_time(25_746_000)
 			// Standard Error: 1_000
-			.saturating_add((668_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(668_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance3WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	fn lead_remark(i: u32, ) -> Weight {
-		(24_744_000 as Weight)
+		Weight::from_ref_time(24_744_000)
 			// Standard Error: 0
-			.saturating_add((735_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(735_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
 	fn worker_remark(i: u32, ) -> Weight {
-		(23_822_000 as Weight)
+		Weight::from_ref_time(23_822_000)
 			// Standard Error: 0
-			.saturating_add((735_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(Weight::from_ref_time(735_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn on_initialize_leaving(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_rewarding_with_missing_reward(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_rewarding_with_missing_reward_cant_pay(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn on_initialize_rewarding_without_missing_reward(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn apply_on_opening(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn fill_opening_lead() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn fill_opening_worker(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_role_account() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_opening() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn withdraw_application() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn slash_stake(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_role_worker(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn terminate_role_lead(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn increase_stake() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn decrease_stake() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn spend_from_budget() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn fund_working_group_budget() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_reward_amount() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_status_text(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_reward_account() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_budget() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn add_opening(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn leave_role(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn lead_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn worker_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

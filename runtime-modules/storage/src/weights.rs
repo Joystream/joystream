@@ -89,74 +89,74 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:1)
 	fn delete_storage_bucket() -> Weight {
-		(59_190_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(59_190_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage UploadingBlocked (r:0 w:1)
 	fn update_uploading_blocked_status() -> Weight {
-		(47_190_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(47_190_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DataObjectPerMegabyteFee (r:0 w:1)
 	fn update_data_size_fee() -> Weight {
-		(47_700_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(47_700_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketsPerBagLimit (r:0 w:1)
 	fn update_storage_buckets_per_bag_limit() -> Weight {
-		(46_990_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(46_990_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage VoucherMaxObjectsSizeLimit (r:0 w:1)
 	// Storage: Storage VoucherMaxObjectsNumberLimit (r:0 w:1)
 	fn update_storage_buckets_voucher_max_limits() -> Weight {
-		(49_580_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(49_580_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DataObjectStateBloatBondValue (r:0 w:1)
 	fn update_data_object_state_bloat_bond() -> Weight {
-		(48_090_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(48_090_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DynamicBagCreationPolicies (r:1 w:1)
 	fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight {
-		(56_830_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(56_830_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage Blacklist (r:1000 w:0)
 	// Storage: Storage CurrentBlacklistSize (r:1 w:1)
 	fn update_blacklist(i: u32, j: u32, ) -> Weight {
-		(0 as Weight)
+		Weight::from_ref_time(0)
 			// Standard Error: 16_000
-			.saturating_add((12_736_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(12_736_000).saturating_mul(i.into()))
 			// Standard Error: 16_000
-			.saturating_add((7_903_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(7_903_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
@@ -165,9 +165,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage NextStorageBucketId (r:1 w:1)
 	// Storage: Storage StorageBucketById (r:0 w:1)
 	fn create_storage_bucket() -> Weight {
-		(68_680_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(68_680_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
@@ -175,49 +175,49 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage StorageBucketsPerBagLimit (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:14 w:14)
 	fn update_storage_buckets_for_bag(i: u32, j: u32, ) -> Weight {
-		(51_139_000 as Weight)
+		Weight::from_ref_time(51_139_000)
 			// Standard Error: 147_000
-			.saturating_add((42_184_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(42_184_000).saturating_mul(i.into()))
 			// Standard Error: 147_000
-			.saturating_add((38_449_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(j as Weight)))
+			.saturating_add(Weight::from_ref_time(38_449_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(j.into())))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:1)
 	fn cancel_storage_bucket_operator_invite() -> Weight {
-		(60_720_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(60_720_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:2 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:1)
 	fn invite_storage_bucket_operator() -> Weight {
-		(72_611_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(72_611_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:1)
 	fn remove_storage_bucket_operator() -> Weight {
-		(60_850_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(60_850_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:1)
 	fn update_storage_bucket_status() -> Weight {
-		(61_129_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(61_129_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
@@ -225,35 +225,35 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage VoucherMaxObjectsSizeLimit (r:1 w:0)
 	// Storage: Storage VoucherMaxObjectsNumberLimit (r:1 w:0)
 	fn set_storage_bucket_voucher_limits() -> Weight {
-		(72_710_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(72_710_000)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:1)
 	fn accept_storage_bucket_invitation() -> Weight {
-		(56_020_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(56_020_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:0)
 	fn set_storage_operator_metadata(i: u32, ) -> Weight {
-		(10_257_000 as Weight)
+		Weight::from_ref_time(10_257_000)
 			// Standard Error: 15_000
-			.saturating_add((936_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(936_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: Storage StorageBucketById (r:1 w:0)
 	// Storage: Storage Bags (r:1 w:0)
 	// Storage: Storage DataObjectsById (r:1 w:1)
 	fn accept_pending_data_objects(i: u32, ) -> Weight {
-		(0 as Weight)
+		Weight::from_ref_time(0)
 			// Standard Error: 19_000
-			.saturating_add((25_470_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(25_470_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
@@ -261,9 +261,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage NextDistributionBucketFamilyId (r:1 w:1)
 	// Storage: Storage DistributionBucketFamilyById (r:0 w:1)
 	fn create_distribution_bucket_family() -> Weight {
-		(65_340_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+		Weight::from_ref_time(65_340_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
@@ -272,34 +272,34 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DynamicBagCreationPolicies (r:2 w:0)
 	// Storage: Storage DistributionBucketFamilyNumber (r:1 w:1)
 	fn delete_distribution_bucket_family() -> Weight {
-		(93_540_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(7 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(93_540_000)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketFamilyById (r:1 w:1)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:0 w:1)
 	fn create_distribution_bucket() -> Weight {
-		(66_100_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(66_100_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn update_distribution_bucket_status() -> Weight {
-		(65_691_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(65_691_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn delete_distribution_bucket() -> Weight {
-		(63_160_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(63_160_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
@@ -308,217 +308,217 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Storage DistributionBucketsPerBagLimit (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:52 w:52)
 	fn update_distribution_buckets_for_bag(i: u32, j: u32, ) -> Weight {
-		(53_507_000 as Weight)
+		Weight::from_ref_time(53_507_000)
 			// Standard Error: 33_000
-			.saturating_add((26_207_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(26_207_000).saturating_mul(i.into()))
 			// Standard Error: 33_000
-			.saturating_add((26_515_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(j as Weight)))
+			.saturating_add(Weight::from_ref_time(26_515_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(j.into())))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketsPerBagLimit (r:0 w:1)
 	fn update_distribution_buckets_per_bag_limit() -> Weight {
-		(47_520_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(47_520_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn update_distribution_bucket_mode() -> Weight {
-		(65_010_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(65_010_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketFamilyById (r:2 w:0)
 	// Storage: Storage DynamicBagCreationPolicies (r:1 w:1)
 	fn update_families_in_dynamic_bag_creation_policy(i: u32, ) -> Weight {
-		(58_048_000 as Weight)
+		Weight::from_ref_time(58_048_000)
 			// Standard Error: 72_000
-			.saturating_add((12_456_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(12_456_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:2 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn invite_distribution_bucket_operator() -> Weight {
-		(77_600_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(77_600_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn cancel_distribution_bucket_operator_invite() -> Weight {
-		(69_700_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(69_700_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn remove_distribution_bucket_operator() -> Weight {
-		(68_470_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(68_470_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketFamilyById (r:1 w:0)
 	fn set_distribution_bucket_family_metadata(i: u32, ) -> Weight {
-		(21_512_000 as Weight)
+		Weight::from_ref_time(21_512_000)
 			// Standard Error: 16_000
-			.saturating_add((923_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(Weight::from_ref_time(923_000_u64).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 	}
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:1)
 	fn accept_distribution_bucket_invitation() -> Weight {
-		(64_490_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(64_490_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:0)
 	fn set_distribution_operator_metadata(i: u32, ) -> Weight {
-		(13_871_000 as Weight)
+		Weight::from_ref_time(13_871_000)
 			// Standard Error: 17_000
-			.saturating_add((951_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(951_000_u64).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: Instance2WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage StorageBucketById (r:1 w:0)
 	fn storage_operator_remark(i: u32, ) -> Weight {
-		(6_936_000 as Weight)
+		Weight::from_ref_time(6_936_000)
 			// Standard Error: 18_000
-			.saturating_add((960_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(960_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: Instance9WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Storage DistributionBucketByFamilyIdById (r:1 w:0)
 	fn distribution_operator_remark(i: u32, ) -> Weight {
-		(20_111_000 as Weight)
+		Weight::from_ref_time(20_111_000)
 			// Standard Error: 17_000
-			.saturating_add((931_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
+			.saturating_add(Weight::from_ref_time(931_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn delete_storage_bucket() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_uploading_blocked_status() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_data_size_fee() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_storage_buckets_per_bag_limit() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_storage_buckets_voucher_max_limits() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_data_object_state_bloat_bond() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_number_of_storage_buckets_in_dynamic_bag_creation_policy() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_blacklist(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_storage_bucket() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_storage_buckets_for_bag(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_storage_bucket_operator_invite() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn invite_storage_bucket_operator() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn remove_storage_bucket_operator() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_storage_bucket_status() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_storage_bucket_voucher_limits() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_storage_bucket_invitation() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_storage_operator_metadata(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_pending_data_objects(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_distribution_bucket_family() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_distribution_bucket_family() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_distribution_bucket() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_distribution_bucket_status() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_distribution_bucket() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_distribution_buckets_for_bag(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_distribution_buckets_per_bag_limit() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_distribution_bucket_mode() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_families_in_dynamic_bag_creation_policy(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn invite_distribution_bucket_operator() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn cancel_distribution_bucket_operator_invite() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn remove_distribution_bucket_operator() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_distribution_bucket_family_metadata(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn accept_distribution_bucket_invitation() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_distribution_operator_metadata(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn storage_operator_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn distribution_operator_remark(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

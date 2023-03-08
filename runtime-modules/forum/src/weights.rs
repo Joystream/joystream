@@ -81,132 +81,132 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 NextCategoryId (r:1 w:1)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	fn create_category(i: u32, j: u32, k: u32, ) -> Weight {
-		(22_133_000 as Weight)
+		Weight::from_ref_time(22_133_000)
 			// Standard Error: 344_000
-			.saturating_add((8_641_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(8_641_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((1_503_000 as Weight).saturating_mul(j as Weight))
+			.saturating_add(Weight::from_ref_time(1_503_000).saturating_mul(j.into()))
 			// Standard Error: 8_000
-			.saturating_add((1_636_000 as Weight).saturating_mul(k as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(1_636_000).saturating_mul(k.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryByModerator (r:0 w:1)
 	fn update_category_membership_of_moderator_new() -> Weight {
-		(39_850_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(39_850_000)
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryByModerator (r:1 w:1)
 	fn update_category_membership_of_moderator_old() -> Weight {
-		(41_130_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(41_130_000)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	fn update_category_archival_status_lead(i: u32, ) -> Weight {
-		(29_526_000 as Weight)
+		Weight::from_ref_time(29_526_000)
 			// Standard Error: 31_000
-			.saturating_add((4_275_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(4_275_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryByModerator (r:1 w:0)
 	fn update_category_archival_status_moderator(i: u32, ) -> Weight {
-		(27_321_000 as Weight)
+		Weight::from_ref_time(27_321_000)
 			// Standard Error: 42_000
-			.saturating_add((7_882_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(7_882_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	fn update_category_title_lead(i: u32, j: u32, ) -> Weight {
-		(28_858_000 as Weight)
+		Weight::from_ref_time(28_858_000)
 			// Standard Error: 110_000
-			.saturating_add((4_526_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(4_526_000).saturating_mul(i.into()))
 			// Standard Error: 2_000
-			.saturating_add((1_260_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_260_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryByModerator (r:1 w:0)
 	fn update_category_title_moderator(i: u32, j: u32, ) -> Weight {
-		(28_478_000 as Weight)
+		Weight::from_ref_time(28_478_000)
 			// Standard Error: 85_000
-			.saturating_add((7_917_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(7_917_000).saturating_mul(i.into()))
 			// Standard Error: 1_000
-			.saturating_add((1_247_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_247_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	fn update_category_description_lead(i: u32, j: u32, ) -> Weight {
-		(29_028_000 as Weight)
+		Weight::from_ref_time(29_028_000)
 			// Standard Error: 77_000
-			.saturating_add((4_510_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(4_510_000).saturating_mul(i.into()))
 			// Standard Error: 1_000
-			.saturating_add((1_259_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_259_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryByModerator (r:1 w:0)
 	fn update_category_description_moderator(i: u32, j: u32, ) -> Weight {
-		(28_376_000 as Weight)
+		Weight::from_ref_time(28_376_000)
 			// Standard Error: 63_000
-			.saturating_add((7_871_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(7_871_000).saturating_mul(i.into()))
 			// Standard Error: 1_000
-			.saturating_add((1_251_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_251_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryCounter (r:1 w:1)
 	fn delete_category_lead(i: u32, ) -> Weight {
-		(31_586_000 as Weight)
+		Weight::from_ref_time(31_586_000)
 			// Standard Error: 160_000
-			.saturating_add((5_142_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+			.saturating_add(Weight::from_ref_time(5_142_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:3 w:2)
 	// Storage: Forum_1_1 CategoryByModerator (r:2 w:0)
 	// Storage: Forum_1_1 CategoryCounter (r:1 w:1)
 	fn delete_category_moderator(i: u32, ) -> Weight {
-		(29_291_000 as Weight)
+		Weight::from_ref_time(29_291_000)
 			// Standard Error: 42_000
-			.saturating_add((8_080_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(8_080_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
@@ -216,64 +216,64 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 NextPostId (r:1 w:1)
 	// Storage: Forum_1_1 PostById (r:0 w:1)
 	fn create_thread(i: u32, j: u32, k: u32, ) -> Weight {
-		(96_321_000 as Weight)
+		Weight::from_ref_time(96_321_000)
 			// Standard Error: 345_000
-			.saturating_add((7_680_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(7_680_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((610_000 as Weight).saturating_mul(j as Weight))
+			.saturating_add(Weight::from_ref_time(610_000).saturating_mul(j.into()))
 			// Standard Error: 8_000
-			.saturating_add((1_693_000 as Weight).saturating_mul(k as Weight))
-			.saturating_add(T::DbWeight::get().reads(6 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(7 as Weight))
+			.saturating_add(Weight::from_ref_time(1_693_000).saturating_mul(k.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Forum_1_1 ThreadById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:0)
 	fn edit_thread_metadata(i: u32, j: u32, ) -> Weight {
-		(29_622_000 as Weight)
+		Weight::from_ref_time(29_622_000)
 			// Standard Error: 55_000
-			.saturating_add((4_635_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(4_635_000).saturating_mul(i.into()))
 			// Standard Error: 1_000
-			.saturating_add((733_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
+			.saturating_add(Weight::from_ref_time(733_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
 	}
 	// Storage: Forum_1_1 ThreadById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn delete_thread(i: u32, ) -> Weight {
-		(66_086_000 as Weight)
+		Weight::from_ref_time(66_086_000)
 			// Standard Error: 57_000
-			.saturating_add((4_377_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(4_377_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:2 w:2)
 	// Storage: Forum_1_1 ThreadById (r:1 w:2)
 	fn move_thread_to_category_lead(i: u32, ) -> Weight {
-		(48_374_000 as Weight)
+		Weight::from_ref_time(48_374_000)
 			// Standard Error: 138_000
-			.saturating_add((5_455_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(5_455_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:2 w:2)
 	// Storage: Forum_1_1 CategoryByModerator (r:2 w:0)
 	// Storage: Forum_1_1 ThreadById (r:1 w:2)
 	fn move_thread_to_category_moderator(i: u32, ) -> Weight {
-		(50_636_000 as Weight)
+		Weight::from_ref_time(50_636_000)
 			// Standard Error: 74_000
-			.saturating_add((12_010_000 as Weight).saturating_mul(i as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(4 as Weight))
+			.saturating_add(Weight::from_ref_time(12_010_000).saturating_mul(i.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
@@ -281,14 +281,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 ThreadById (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn moderate_thread_lead(i: u32, k: u32, ) -> Weight {
-		(60_089_000 as Weight)
+		Weight::from_ref_time(60_089_000)
 			// Standard Error: 184_000
-			.saturating_add((5_115_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(5_115_000).saturating_mul(i.into()))
 			// Standard Error: 5_000
-			.saturating_add((743_000 as Weight).saturating_mul(k as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(743_000).saturating_mul(k.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
@@ -296,14 +296,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 ThreadById (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn moderate_thread_moderator(i: u32, k: u32, ) -> Weight {
-		(59_169_000 as Weight)
+		Weight::from_ref_time(59_169_000)
 			// Standard Error: 181_000
-			.saturating_add((8_646_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(8_646_000).saturating_mul(i.into()))
 			// Standard Error: 5_000
-			.saturating_add((740_000 as Weight).saturating_mul(k as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(740_000).saturating_mul(k.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Forum_1_1 ThreadById (r:1 w:1)
@@ -312,28 +312,28 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 NextPostId (r:1 w:1)
 	// Storage: Forum_1_1 PostById (r:0 w:1)
 	fn add_post(i: u32, j: u32, ) -> Weight {
-		(85_914_000 as Weight)
+		Weight::from_ref_time(85_914_000)
 			// Standard Error: 109_000
-			.saturating_add((4_693_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(4_693_000).saturating_mul(i.into()))
 			// Standard Error: 3_000
-			.saturating_add((1_679_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(5 as Weight))
+			.saturating_add(Weight::from_ref_time(1_679_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: Forum_1_1 ThreadById (r:1 w:0)
 	// Storage: Forum_1_1 PostById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryById (r:1 w:0)
 	fn edit_post_text(i: u32, j: u32, ) -> Weight {
-		(42_885_000 as Weight)
+		Weight::from_ref_time(42_885_000)
 			// Standard Error: 150_000
-			.saturating_add((4_682_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(4_682_000).saturating_mul(i.into()))
 			// Standard Error: 4_000
-			.saturating_add((1_674_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(3 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(1_674_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
@@ -342,14 +342,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 PostById (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn moderate_post_lead(i: u32, j: u32, ) -> Weight {
-		(72_664_000 as Weight)
+		Weight::from_ref_time(72_664_000)
 			// Standard Error: 63_000
-			.saturating_add((6_328_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(6_328_000).saturating_mul(i.into()))
 			// Standard Error: 1_000
-			.saturating_add((727_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(5 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(727_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:0)
@@ -358,14 +358,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Forum_1_1 PostById (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn moderate_post_moderator(i: u32, j: u32, ) -> Weight {
-		(76_596_000 as Weight)
+		Weight::from_ref_time(76_596_000)
 			// Standard Error: 122_000
-			.saturating_add((9_194_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(9_194_000).saturating_mul(i.into()))
 			// Standard Error: 3_000
-			.saturating_add((726_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
+			.saturating_add(Weight::from_ref_time(726_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Forum_1_1 ThreadById (r:1 w:1)
 	// Storage: Forum_1_1 PostById (r:20 w:20)
@@ -373,126 +373,126 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Storage: System Account (r:2 w:2)
 	fn delete_posts(i: u32, j: u32, k: u32, ) -> Weight {
-		(0 as Weight)
+		Weight::from_ref_time(0)
 			// Standard Error: 316_000
-			.saturating_add((36_264_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(36_264_000).saturating_mul(i.into()))
 			// Standard Error: 8_000
-			.saturating_add((739_000 as Weight).saturating_mul(j as Weight))
+			.saturating_add(Weight::from_ref_time(739_000).saturating_mul(j.into()))
 			// Standard Error: 56_000
-			.saturating_add((49_827_000 as Weight).saturating_mul(k as Weight))
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(k as Weight)))
-			.saturating_add(T::DbWeight::get().writes(3 as Weight))
-			.saturating_add(T::DbWeight::get().writes((1 as Weight).saturating_mul(k as Weight)))
+			.saturating_add(Weight::from_ref_time(49_827_000).saturating_mul(k.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(k.into())))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(k.into())))
 	}
 	// Storage: Instance1WorkingGroup CurrentLead (r:1 w:0)
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 ThreadById (r:20 w:0)
 	fn set_stickied_threads_lead(i: u32, j: u32, ) -> Weight {
-		(28_495_000 as Weight)
+		Weight::from_ref_time(28_495_000)
 			// Standard Error: 66_000
-			.saturating_add((4_694_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(4_694_000).saturating_mul(i.into()))
 			// Standard Error: 12_000
-			.saturating_add((6_976_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(6_976_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Instance1WorkingGroup WorkerById (r:1 w:0)
 	// Storage: Forum_1_1 CategoryById (r:1 w:1)
 	// Storage: Forum_1_1 CategoryByModerator (r:1 w:0)
 	// Storage: Forum_1_1 ThreadById (r:20 w:0)
 	fn set_stickied_threads_moderator(i: u32, j: u32, ) -> Weight {
-		(26_618_000 as Weight)
+		Weight::from_ref_time(26_618_000)
 			// Standard Error: 74_000
-			.saturating_add((8_377_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(8_377_000).saturating_mul(i.into()))
 			// Standard Error: 14_000
-			.saturating_add((7_274_000 as Weight).saturating_mul(j as Weight))
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().reads((2 as Weight).saturating_mul(i as Weight)))
-			.saturating_add(T::DbWeight::get().reads((1 as Weight).saturating_mul(j as Weight)))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+			.saturating_add(Weight::from_ref_time(7_274_000).saturating_mul(j.into()))
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(i.into())))
+			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(j.into())))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn create_category(i: u32, j: u32, k: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_membership_of_moderator_new() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_membership_of_moderator_old() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_archival_status_lead(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_archival_status_moderator(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_title_lead(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_title_moderator(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_description_lead(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_category_description_moderator(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_category_lead(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_category_moderator(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn create_thread(i: u32, j: u32, k: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn edit_thread_metadata(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_thread(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn move_thread_to_category_lead(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn move_thread_to_category_moderator(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn moderate_thread_lead(i: u32, k: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn moderate_thread_moderator(i: u32, k: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn add_post(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn edit_post_text(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn moderate_post_lead(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn moderate_post_moderator(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn delete_posts(i: u32, j: u32, k: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_stickied_threads_lead(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn set_stickied_threads_moderator(i: u32, j: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }

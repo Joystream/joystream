@@ -55,44 +55,44 @@ pub trait WeightInfo {
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn execute_signal_proposal(i: u32, ) -> Weight {
-		(13_391_000 as Weight)
+		Weight::from_ref_time(13_391_000)
 			// Standard Error: 2_000
-			.saturating_add((740_000 as Weight).saturating_mul(i as Weight))
+			.saturating_add(Weight::from_ref_time(740_000_u64).saturating_mul(i.into()))
 	}
 	// Storage: Instance1WorkingGroup Budget (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn update_working_group_budget_positive() -> Weight {
-		(25_120_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(25_120_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Instance1WorkingGroup Budget (r:1 w:1)
 	// Storage: Council Budget (r:1 w:1)
 	fn update_working_group_budget_negative() -> Weight {
-		(24_960_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(2 as Weight))
-			.saturating_add(T::DbWeight::get().writes(2 as Weight))
+		Weight::from_ref_time(24_960_000)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: System Account (r:1 w:1)
 	fn burn_account_tokens() -> Weight {
-		(37_611_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(1 as Weight))
-			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+		Weight::from_ref_time(37_611_000)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }
 
 // Default implementation for tests
 impl WeightInfo for () {
 	fn execute_signal_proposal(i: u32, ) -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_working_group_budget_positive() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn update_working_group_budget_negative() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 	fn burn_account_tokens() -> Weight {
-		0
+		Weight::from_ref_time(0)
 	}
 }
