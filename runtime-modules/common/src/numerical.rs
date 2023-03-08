@@ -2,7 +2,7 @@ use std::ops::{Div, Mul};
 
 use frame_support::dispatch::fmt::Debug;
 use sp_runtime::{
-    traits::{CheckedAdd, CheckedMul, CheckedSub, One, Saturating, Zero},
+    traits::{CheckedAdd, CheckedMul, CheckedSub, One, Saturating},
     FixedPointNumber, FixedU128, PerThing, Permill, Perquintill,
 };
 
@@ -14,7 +14,6 @@ pub enum ArithmeticError {
 
 pub const ORDER: usize = 20;
 
-// u128 does not implement the Copy trait
 pub fn natural_log_1_plus_x(interest: Permill) -> Result<Perquintill, ArithmeticError> {
     // ref: https://www.wolframalpha.com/input?i=taylor+series+for+ln%281%2Bx%29
     // ln(1 + x) is approx x - x^2/2 + x^3/3 - x^4/4 + x^5/5

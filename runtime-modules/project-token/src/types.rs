@@ -14,8 +14,7 @@ use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
     traits::{CheckedAdd, Convert, Hash, UniqueSaturatedInto},
-    FixedPointNumber, FixedPointOperand, FixedU128, PerThing, Permill, Perquintill,
-    SaturatedConversion,
+    FixedPointNumber, FixedPointOperand, FixedU128, Permill, Perquintill,
 };
 use sp_std::{
     borrow::ToOwned,
@@ -23,7 +22,7 @@ use sp_std::{
     collections::btree_map::BTreeMap,
     convert::{TryFrom, TryInto},
     iter::Sum,
-    ops::{Add, Div},
+    ops::Add,
     vec::Vec,
 };
 use storage::{BagId, DataObjectCreationParameters};
@@ -796,12 +795,12 @@ impl YearlyRate {
     // floating point arithmetic cannot be used in
     pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> FixedU128
     where
-        BlockNumber: AtLeast32BitUnsigned + Copy,
+        BlockNumber: AtLeast32BitUnsigned + Copy + UniqueSaturatedInto<u128>,
         BlocksPerYear: Get<u32>,
     {
-        let rate = FixedU128::saturating_from_rational(
-            self.0.deconstruct() as u128,
-            Permill::ACCURACY as u128,
+        let rate = FixedU128::saturating_from_rational::<u128, u128>(
+            blocks.unique_saturated_into(),
+            BlocksPerYear::get() as u128,
         );
 
         // TODO fix the unwrap
