@@ -2695,7 +2695,7 @@ impl CreatorTokenIssuerTransferFixture {
             vec![(SECOND_MEMBER_ID, DEFAULT_ISSUER_TRANSFER_AMOUNT)]
                 .into_iter()
                 .map(|(member, amount)| (member, amount.into()))
-                .collect::<BTreeMap<_, _>>(),
+                .collect::<Vec<_>>(),
         )
         .ok()
         .unwrap();

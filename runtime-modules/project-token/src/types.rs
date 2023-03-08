@@ -6,7 +6,7 @@ use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
     traits::Get,
-    BoundedBTreeMap,
+    BoundedBTreeMap, BoundedVec,
 };
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
@@ -803,8 +803,7 @@ impl YearlyRate {
             BlocksPerYear::get() as u128,
         );
 
-        // TODO fix the unwrap
-        let result = one_plus_interest_pow_fixed(self.0, rate).unwrap();
+        let result = one_plus_interest_pow_fixed(self.0, rate);
         result.saturating_sub(FixedU128::one())
     }
 }
@@ -898,10 +897,10 @@ impl<Balance, VestingScheduleParams>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Transfers<MemberId, Payment>(pub BTreeMap<MemberId, Payment>);
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-pub struct TestTransfers<MemberId, Payment, MaxOutputs: Get<u32>>(
-    pub BoundedBTreeMap<MemberId, Payment, MaxOutputs>,
-);
+// #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
+// pub struct TestTransfers<MemberId, Payment, MaxOutputs: Get<u32>>(
+//     pub BoundedBTreeMap<MemberId, Payment, MaxOutputs>,
+// );
 
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
@@ -1503,29 +1502,29 @@ where
     }
 }
 
-// BoundedBTreeMap<K, Balance, S> -> Transfers<K, Vesting>
+// BoundedVec<(K, Balance), S> -> Transfers<K, Vesting>
 impl<MemberId, Balance, VestingScheduleParams, MaxOutputs: Get<u32>>
-    From<BoundedBTreeMap<MemberId, Balance, MaxOutputs>>
+    From<BoundedVec<(MemberId, Balance), MaxOutputs>>
     for Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
 where
     MemberId: Ord + Clone,
     Balance: Clone,
 {
-    fn from(v: BoundedBTreeMap<MemberId, Balance, MaxOutputs>) -> Self {
+    fn from(v: BoundedVec<(MemberId, Balance), MaxOutputs>) -> Self {
         Self(
-            v.iter()
-                .map(|(a, p)| (a.clone(), p.clone().into()))
+            v.into_iter()
+                .map(|(member_id, amount)| (member_id, PaymentWithVesting::from(amount)))
                 .collect::<BTreeMap<_, _>>(),
         )
     }
 }
 
-// BoundedBTreeMap<K,V,S> -> Transfers<K,V>
-impl<MemberId: Ord, Payment, MaxOutputs: Get<u32>>
-    From<BoundedBTreeMap<MemberId, Payment, MaxOutputs>> for Transfers<MemberId, Payment>
+// BoundedVec<(K,V),S> -> Transfers<K,V>
+impl<MemberId: Ord, Payment, MaxOutputs: Get<u32>> From<BoundedVec<(MemberId, Payment), MaxOutputs>>
+    for Transfers<MemberId, Payment>
 {
-    fn from(v: BoundedBTreeMap<MemberId, Payment, MaxOutputs>) -> Self {
-        Self(v.into_inner())
+    fn from(v: BoundedVec<(MemberId, Payment), MaxOutputs>) -> Self {
+        Self(v.into_iter().collect::<BTreeMap<_, _>>())
     }
 }
 
@@ -1641,9 +1640,8 @@ pub type PaymentWithVestingOf<T> =
 pub(crate) type ValidatedPaymentOf<T> = ValidatedPayment<PaymentWithVestingOf<T>>;
 
 /// Alias used for issuer_transfer
-pub(crate) type TransferOutputsOf<T> = BoundedBTreeMap<
-    <T as MembershipTypes>::MemberId,
-    TokenBalanceOf<T>,
+pub(crate) type TransferOutputsOf<T> = BoundedVec<
+    (<T as MembershipTypes>::MemberId, TokenBalanceOf<T>),
     <T as crate::Config>::MaxOutputs,
 >;
 
@@ -1651,9 +1649,8 @@ pub(crate) type TransferOutputsOf<T> = BoundedBTreeMap<
 pub type TransfersOf<T> = Transfers<<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>>;
 
 /// Alias used for transfers
-pub type TransferWithVestingOutputsOf<T> = BoundedBTreeMap<
-    <T as MembershipTypes>::MemberId,
-    PaymentWithVestingOf<T>,
+pub type TransferWithVestingOutputsOf<T> = BoundedVec<
+    (<T as MembershipTypes>::MemberId, PaymentWithVestingOf<T>),
     <T as crate::Config>::MaxOutputs,
 >;
 
