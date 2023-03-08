@@ -37,9 +37,7 @@ use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{
-        AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub, Convert, UniqueSaturatedInto,
-    },
+    traits::{AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub, UniqueSaturatedInto},
     FixedPointOperand, PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
@@ -104,9 +102,6 @@ pub trait Config:
         + Debug
         + TypeInfo
         + MaxEncodedLen;
-
-    /// Block number to balance converter used for interest calculation
-    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;

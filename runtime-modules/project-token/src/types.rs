@@ -13,7 +13,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
-    traits::{CheckedAdd, Convert, Hash, UniqueSaturatedInto},
+    traits::{CheckedAdd, Hash, UniqueSaturatedInto},
     FixedPointNumber, FixedPointOperand, FixedU128, Permill, Perquintill,
 };
 use sp_std::{
@@ -29,6 +29,11 @@ use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
 use crate::{errors::Error, Config, RepayableBloatBondOf};
+
+// trait "aliases"
+// `BlockNumber` will be implemented as `u64` in the runtime configuration
+pub trait BlockNumberTraits: Copy + AtLeast32BitUnsigned + Saturating {}
+impl<T: Copy + AtLeast32BitUnsigned + Saturating> BlockNumberTraits for T {}
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
@@ -212,7 +217,7 @@ pub struct Timeline<BlockNumber> {
     pub duration: BlockNumber,
 }
 
-impl<BlockNumber: Copy + Saturating + PartialOrd> Timeline<BlockNumber> {
+impl<BlockNumber: BlockNumberTraits> Timeline<BlockNumber> {
     pub fn from_params(start: BlockNumber, duration: BlockNumber) -> Self {
         Timeline::<_> { start, duration }
     }
@@ -329,7 +334,7 @@ pub struct VestingSchedule<BlockNumber, Balance> {
 
 impl<BlockNumber, Balance> VestingSchedule<BlockNumber, Balance>
 where
-    BlockNumber: Saturating + PartialOrd + Copy,
+    BlockNumber: BlockNumberTraits,
     Balance:
         Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord + Zero,
 {
@@ -365,11 +370,9 @@ where
         }
         // Vesting period is ongoing
         if end_block > b {
-            let remaining_vesting_blocks = end_block.saturating_sub(b);
-            let remaining_vesting_percentage = Permill::from_rational(
-                T::BlockNumberToBalance::convert(remaining_vesting_blocks),
-                T::BlockNumberToBalance::convert(self.linear_vesting_duration),
-            );
+            let remaining_vesting_blocks = end_block.saturating_sub(b).unique_saturated_into();
+            let remaining_vesting_percentage =
+                Permill::from_rational(remaining_vesting_blocks, self.linear_vesting_duration);
             return (remaining_vesting_percentage * self.post_cliff_total_amount)
                 .saturating_sub(self.burned_amount);
         }
@@ -494,7 +497,7 @@ impl<JoyBalance, Balance, BlockNumber, MemberId, AccountId>
         AccountId,
     >
 where
-    BlockNumber: Saturating + Zero + Copy + Clone + PartialOrd,
+    BlockNumber: BlockNumberTraits,
     Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
 {
     pub(crate) fn try_from_params<T: Config>(
@@ -779,7 +782,7 @@ impl YearlyRate {
     // floating point arithmetic cannot be used in
     pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> FixedU128
     where
-        BlockNumber: AtLeast32BitUnsigned + Copy + UniqueSaturatedInto<u128>,
+        BlockNumber: BlockNumberTraits,
         BlocksPerYear: Get<u32>,
     {
         let rate = FixedU128::saturating_from_rational::<u128, u128>(
@@ -1023,7 +1026,7 @@ where
         + Ord
         + TryInto<u64>
         + Copy,
-    BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
+    BlockNumber: BlockNumberTraits,
     RepayableBloatBond: Default,
     MaxVestingSchedules: Get<u32>,
 {
@@ -1307,7 +1310,7 @@ where
         + UniqueSaturatedInto<u64>
         + Unsigned
         + FixedPointOperand,
-    BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
+    BlockNumber: BlockNumberTraits,
     JoyBalance: Copy + Saturating + Zero,
 {
     // increase total supply
