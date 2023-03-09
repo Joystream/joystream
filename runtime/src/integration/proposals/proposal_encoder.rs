@@ -166,6 +166,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     uploader_account: member_controller_account,
                 })
             }
+            ProposalDetails::UpdateTokenPalletGovernanceParameters(parameters) => {
+                Call::ProjectToken(project_token::Call::update_governance_parameters { parameters })
+            }
             ProposalDetails::SetPalletFozenStatus(freeze, pallet) => match pallet {
                 FreezablePallet::ProjectToken => {
                     RuntimeCall::ProjectToken(project_token::Call::set_frozen_status { freeze })

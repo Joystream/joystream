@@ -33,6 +33,7 @@ use storage::{BagId, DataObjectCreationParameters};
 use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 // trait "aliases"
+// `BlockNumber` will be implemented as `u64` in the runtime configuration
 pub trait BlockNumberTrait: Copy + AtLeast32BitUnsigned + Saturating + Default {}
 impl<T: Copy + AtLeast32BitUnsigned + Saturating + Default> BlockNumberTrait for T {}
 
@@ -43,6 +44,21 @@ impl<T: BalanceTrait + FixedPointOperand + Sum> TokenBalanceTrait for T {}
 // `Balance` will be implemented as `u128` in the runtime configuration
 pub trait JoyTokenBalanceTrait: BalanceTrait {}
 impl<T: BalanceTrait> JoyTokenBalanceTrait for T {}
+
+/// Parameer pack for governance constraints
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct GovernanceParameters<Balance, BlockNumber, JoyBalance> {
+    pub max_yearly_rate: Option<YearlyRate>,
+    pub min_amm_slope: Option<Balance>,
+    pub min_sale_duration: Option<BlockNumber>,
+    pub min_revenue_split_duration: Option<BlockNumber>,
+    pub min_revenue_split_time_to_start: Option<BlockNumber>,
+    pub sale_platform_fee: Option<Permill>,
+    pub amm_buy_tx_fees: Option<Permill>,
+    pub amm_sell_tx_fees: Option<Permill>,
+    pub bloat_bond: Option<JoyBalance>,
+}
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance

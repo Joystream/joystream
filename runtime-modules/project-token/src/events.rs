@@ -1,8 +1,8 @@
 #![allow(clippy::unused_unit)]
 
 use crate::types::{
-    AmmCurveOf, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf, ValidatedTransfersOf, YearlyRate,
+    AmmCurveOf, GovernanceParametersOf, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf,
+    TokenSaleId, TokenSaleOf, TransferPolicyOf, ValidatedTransfersOf, YearlyRate,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
@@ -22,6 +22,7 @@ decl_event! {
         ValidatedTransfers = ValidatedTransfersOf<T>,
         TokenSale = TokenSaleOf<T>,
         AmmCurve = AmmCurveOf<T>,
+        GovernanceParameters = GovernanceParametersOf<T>
 
     {
         /// Token amount is transferred from src to dst
@@ -190,5 +191,10 @@ decl_event! {
         /// Params:
         /// - new frozen status (true | false)
         FrozenStatusUpdated(bool)
+
+        /// Governance parameters updated
+        /// Params:
+        /// - governance parameters
+        GovernanceParametersUpdated(GovernanceParameters),
     }
 }
