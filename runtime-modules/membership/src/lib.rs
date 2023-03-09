@@ -83,7 +83,7 @@ use sp_runtime::{
     SaturatedConversion,
 };
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};

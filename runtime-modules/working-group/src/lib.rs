@@ -71,7 +71,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 pub use errors::Error;
 pub use types::*;
@@ -109,7 +109,11 @@ pub trait Config<I: Instance = DefaultInstance>:
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination.
-    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::RuntimeOrigin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;

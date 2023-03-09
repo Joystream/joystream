@@ -121,7 +121,7 @@ use sp_runtime::{Perbill, SaturatedConversion};
 use sp_std::clone::Clone;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::convert::{TryFrom, TryInto};
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
@@ -141,7 +141,7 @@ pub trait Config:
     /// providers controller id for a member.
     type Membership: StakingAccountValidator<Self>
         + MembershipInfoProvider<Self>
-        + MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+        + MemberOriginValidator<Self::RuntimeOrigin, MemberId<Self>, Self::AccountId>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;

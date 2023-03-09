@@ -123,7 +123,7 @@ pub trait Config:
 
     /// Member origin validator
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberIdOf<Self>,
         Self::AccountId,
     >;

@@ -161,17 +161,19 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 use codec::{Decode, MaxEncodedLen};
-use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
+use frame_support::dispatch::{
+    DispatchError, DispatchResult, GetDispatchInfo, UnfilteredDispatchable,
+};
 use frame_support::storage::{bounded_vec::BoundedVec, IterableStorageMap};
 use frame_support::traits::{Get, LockIdentifier};
-use frame_support::weights::{GetDispatchInfo, Weight};
+use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
 use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
@@ -193,14 +195,14 @@ pub trait Config:
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
 
     /// Validates voter id and origin combination
     type CouncilOriginValidator: CouncilOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
@@ -239,7 +241,7 @@ pub trait Config:
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
     type DispatchableCallCode: Parameter
-        + UnfilteredDispatchable<Origin = Self::Origin>
+        + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
         + GetDispatchInfo
         + Default;
 
@@ -880,7 +882,7 @@ impl<T: Config> Module<T> {
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
-        let mut execution_code_weight = 0;
+        let mut execution_code_weight = Weight::from_all(0);
 
         let execution_status = match proposal_code_result {
             Ok(proposal_code) => {
@@ -926,7 +928,7 @@ impl<T: Config> Module<T> {
             proposal_decision.clone(),
         ));
 
-        let mut executed_weight = 0;
+        let mut executed_weight = Weight::from_all(0);
 
         // deal with stakes if necessary
         if proposal_decision
@@ -1042,7 +1044,7 @@ impl<T: Config> Module<T> {
         let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
         let now = Self::current_block();
 
-        let mut executed_weight = 0;
+        let mut executed_weight = Weight::from_all(0);
 
         for (proposal_id, proposal) in proposals {
             match proposal.status {

@@ -75,6 +75,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
+use sp_std::vec;
 
 use common::membership::MemberOriginValidator;
 use common::to_kb;
@@ -143,7 +144,7 @@ pub trait Config:
 
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;

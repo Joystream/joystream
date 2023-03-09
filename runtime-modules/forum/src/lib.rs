@@ -175,7 +175,7 @@ pub trait Config:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         common::MemberId<Self>,
         Self::AccountId,
     >;

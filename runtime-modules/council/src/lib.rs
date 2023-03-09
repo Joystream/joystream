@@ -80,7 +80,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
 
 // declared modules
@@ -210,7 +210,7 @@ impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
 
 pub type Balance<T> = <T as balances::Config>::Balance;
 pub type VotePowerOf<T> = <<T as Config>::Referendum as ReferendumManager<
-    <T as frame_system::Config>::Origin,
+    <T as frame_system::Config>::RuntimeOrigin,
     <T as frame_system::Config>::AccountId,
     <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Config>::Hash,
@@ -248,7 +248,12 @@ pub trait Config:
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Referendum used for council elections.
-    type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::MemberId, Self::Hash>;
+    type Referendum: ReferendumManager<
+        Self::RuntimeOrigin,
+        Self::AccountId,
+        Self::MemberId,
+        Self::Hash,
+    >;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -299,7 +304,7 @@ pub trait Config:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         common::MemberId<Self>,
         Self::AccountId,
     >;
@@ -519,6 +524,12 @@ decl_error! {
 impl<T: Config> From<BadOrigin> for Error<T> {
     fn from(_error: BadOrigin) -> Self {
         Error::<T>::BadOrigin
+    }
+}
+
+impl<T: Config> From<sp_runtime::DispatchError> for Error<T> {
+    fn from(err: sp_runtime::DispatchError) -> Self {
+        err.into()
     }
 }
 

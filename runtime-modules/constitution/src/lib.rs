@@ -38,7 +38,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 type WeightInfoConstitution<T> = <T as Config>::WeightInfo;
 

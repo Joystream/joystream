@@ -85,7 +85,7 @@ use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
@@ -141,14 +141,18 @@ pub trait Config:
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates post author id and origin combination
-    type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type AuthorOriginValidator: MemberOriginValidator<
+        Self::RuntimeOrigin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// For checking member existance
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
 
     /// Defines whether the member is an active councilor.
     type CouncilOriginValidator: CouncilOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;

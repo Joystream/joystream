@@ -248,7 +248,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     >;
 
     /// Origin from which the referendum can be started.
-    type ManagerOrigin: EnsureOrigin<Self::Origin>;
+    type ManagerOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
     /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
@@ -407,6 +407,12 @@ decl_error! {
 impl<T: Config<I>, I: Instance> From<BadOrigin> for Error<T, I> {
     fn from(_error: BadOrigin) -> Self {
         Error::<T, I>::BadOrigin
+    }
+}
+
+impl<T: Config<I>, I: Instance> From<sp_runtime::DispatchError> for Error<T, I> {
+    fn from(err: sp_runtime::DispatchError) -> Self {
+        err.into()
     }
 }
 

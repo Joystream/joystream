@@ -165,7 +165,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
