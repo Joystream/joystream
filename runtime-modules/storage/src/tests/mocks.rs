@@ -65,8 +65,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -224,9 +224,9 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = ensure_signed(origin).unwrap();
@@ -267,13 +267,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for MembershipWG
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for MembershipWG {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -359,7 +361,7 @@ pub struct DistributionWG;
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -376,7 +378,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         }
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -430,7 +434,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -448,7 +452,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         }
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
         ensure!(

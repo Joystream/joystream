@@ -132,8 +132,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -227,13 +227,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -568,9 +570,9 @@ impl common::StakingAccountValidator<Test> for () {
     }
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         _: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -583,8 +585,8 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+impl common::council::CouncilOriginValidator<RuntimeOrigin, u64, u64> for () {
+    fn ensure_member_consulate(origin: RuntimeOrigin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 
         Ok(())

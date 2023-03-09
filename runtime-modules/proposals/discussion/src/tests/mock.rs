@@ -77,8 +77,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -167,13 +167,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -223,9 +225,9 @@ impl crate::Config for Test {
     type ModuleId = ProposalsDiscussionModuleId;
 }
 
-impl MemberOriginValidator<Origin, u64, u128> for () {
+impl MemberOriginValidator<RuntimeOrigin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         actor_id: u64,
     ) -> Result<u128, DispatchError> {
         if frame_system::ensure_none(origin.clone()).is_ok() {
@@ -303,8 +305,8 @@ impl council::Config for Test {
 }
 
 pub struct CouncilMock;
-impl CouncilOriginValidator<Origin, u64, u128> for CouncilMock {
-    fn ensure_member_consulate(origin: Origin, actor_id: u64) -> DispatchResult {
+impl CouncilOriginValidator<RuntimeOrigin, u64, u128> for CouncilMock {
+    fn ensure_member_consulate(origin: RuntimeOrigin, actor_id: u64) -> DispatchResult {
         if actor_id == 2 && frame_system::ensure_signed(origin).unwrap_or_default() == 2 {
             return Ok(());
         }

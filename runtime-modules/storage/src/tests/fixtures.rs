@@ -15,7 +15,7 @@ use crate::sp_api_hidden_includes_decl_storage::hidden_include::{
 };
 
 use super::mocks::{
-    create_cid, Balances, CollectiveFlip, Event as TestEvent, Storage, System, Test,
+    create_cid, Balances, CollectiveFlip, RuntimeEvent as TestEvent, Storage, System, Test,
     DEFAULT_DISTRIBUTION_PROVIDER_ACCOUNT_ID, DEFAULT_MEMBER_ACCOUNT_ID, DEFAULT_MEMBER_ID,
     DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT, DEFAULT_STORAGE_BUCKET_SIZE_LIMIT,
     DEFAULT_STORAGE_PROVIDER_ACCOUNT_ID, DISTRIBUTION_WG_LEADER_ACCOUNT_ID,

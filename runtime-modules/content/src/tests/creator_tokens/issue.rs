@@ -113,7 +113,7 @@ fn issue_token_fails_during_transfer() {
 
         assert_noop!(
             Content::issue_creator_token(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 TokenIssuanceParametersOf::<Test>::default(),

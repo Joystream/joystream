@@ -103,9 +103,9 @@ impl Config for Runtime {
     type MemberOriginValidator = ();
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = ensure_signed(origin)?;
@@ -157,8 +157,8 @@ impl frame_system::Config for Runtime {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -322,7 +322,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Config>::Origin,
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
@@ -339,7 +339,9 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -682,8 +684,8 @@ where
 
     T::Hash: From<<Runtime as frame_system::Config>::Hash>
         + Into<<Runtime as frame_system::Config>::Hash>,
-    T::RuntimeOrigin: From<<Runtime as frame_system::Config>::Origin>
-        + Into<<Runtime as frame_system::Config>::Origin>,
+    T::RuntimeOrigin: From<<Runtime as frame_system::Config>::RuntimeOrigin>
+        + Into<<Runtime as frame_system::Config>::RuntimeOrigin>,
     <T::Referendum as ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MemberId: Into<T::AccountId>,
@@ -850,7 +852,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CandidacyNoteSet(
+            RuntimeEvent::Council(RawEvent::CandidacyNoteSet(
                 membership_id.into(),
                 note.into()
             )),
@@ -905,7 +907,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::NewCandidate(
+            RuntimeEvent::Council(RawEvent::NewCandidate(
                 member_id.into(),
                 staking_account_id.into(),
                 reward_account_id.into(),
@@ -934,7 +936,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CandidacyWithdraw(member_id.into(),)),
+            RuntimeEvent::Council(RawEvent::CandidacyWithdraw(member_id.into(),)),
         );
     }
 
@@ -961,7 +963,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
+            RuntimeEvent::Council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
         );
     }
 
@@ -1038,7 +1040,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::BudgetBalanceSet(amount.into())),
+            RuntimeEvent::Council(RawEvent::BudgetBalanceSet(amount.into())),
         );
     }
 
@@ -1066,7 +1068,7 @@ where
             assert!(frame_system::Pallet::<Runtime>::events()
                 .iter()
                 .any(|ev| ev.event
-                    == Event::Council(RawEvent::RequestFunded(
+                    == RuntimeEvent::Council(RawEvent::RequestFunded(
                         funding_request.account.clone().into(),
                         funding_request.amount.into(),
                     ))));
@@ -1112,7 +1114,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::BudgetRefillPlanned(next_refill.into())),
+            RuntimeEvent::Council(RawEvent::BudgetRefillPlanned(next_refill.into())),
         );
     }
 
@@ -1142,7 +1144,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+            RuntimeEvent::Council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
         );
     }
 
@@ -1172,7 +1174,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
+            RuntimeEvent::Council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 
@@ -1472,12 +1474,12 @@ pub fn run_to_block(n: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
-        let converted_event = Event::Council(expected_raw_event);
+        let converted_event = RuntimeEvent::Council(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

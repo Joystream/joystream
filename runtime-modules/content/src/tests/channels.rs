@@ -2035,7 +2035,7 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
         // Try to issue nft for existing video as owner
         assert_eq!(
             Content::issue_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 VideoId::one(),
                 nft_params.clone()
@@ -2045,7 +2045,7 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
         // Try to issue nft for existing video as collaborator
         assert_eq!(
             Content::issue_nft(
-                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 VideoId::one(),
                 nft_params.clone()

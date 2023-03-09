@@ -1,5 +1,5 @@
 use super::mock::*;
-use crate::RuntimeEvent as MembershipEvent;
+use crate::Event as MembershipEvent;
 use crate::{
     BalanceOf, BuyMembershipParameters, CreateMemberParameters, GiftMembershipParameters,
     InviteMembershipParameters, MembershipObject,
@@ -36,13 +36,13 @@ pub fn set_invitation_lock(
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: crate::RuntimeEvent<Test>) {
-        let converted_event = Event::Membership(expected_raw_event);
+    pub fn assert_last_crate_event(expected_raw_event: crate::Event<Test>) {
+        let converted_event = RuntimeEvent::Membership(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -142,7 +142,7 @@ pub fn get_alice_membership_parameters() -> BuyMembershipParameters<u64, u64> {
 
 pub fn buy_default_membership_as_alice() -> DispatchResult {
     let params = get_alice_membership_parameters();
-    Membership::buy_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
+    Membership::buy_membership(RuntimeOrigin::signed(ALICE_ACCOUNT_ID), params)
 }
 
 pub fn set_alice_free_balance(balance: u64) {
@@ -213,7 +213,7 @@ pub fn get_bob_gift_membership_parameters_single_account() -> GiftMembershipPara
 }
 
 pub fn gift_bob_membership_as_alice(params: GiftMembershipParameters<u64, u64>) -> DispatchResult {
-    Membership::gift_membership(Origin::signed(ALICE_ACCOUNT_ID), params)
+    Membership::gift_membership(RuntimeOrigin::signed(ALICE_ACCOUNT_ID), params)
 }
 
 pub struct UpdateMembershipVerificationFixture {

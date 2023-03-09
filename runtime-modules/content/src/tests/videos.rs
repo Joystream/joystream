@@ -429,7 +429,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
         // Set storage bucket number in the dynamic bag creation policy.
         assert_eq!(
             Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
-                Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+                RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
                 DynamicBagType::Channel,
                 1,
             ),

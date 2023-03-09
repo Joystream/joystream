@@ -49,8 +49,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -145,9 +145,9 @@ impl common::StakingAccountValidator<Test> for () {
 
 pub const ACTOR_ORIGIN_ERROR: &str = "Invalid membership";
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;

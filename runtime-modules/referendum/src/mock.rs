@@ -188,13 +188,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Config>::Origin,
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -298,8 +300,8 @@ impl frame_system::Config for Runtime {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -454,7 +456,7 @@ where
 
         (
             <Module<T, I> as ReferendumManager<
-                <T as frame_system::Config>::Origin,
+                <T as frame_system::Config>::RuntimeOrigin,
                 <T as frame_system::Config>::AccountId,
                 <T as common::membership::MembershipTypes>::MemberId,
                 <T as frame_system::Config>::Hash,
@@ -523,7 +525,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime> as ReferendumManager<
-                <Runtime as frame_system::Config>::Origin,
+                <Runtime as frame_system::Config>::RuntimeOrigin,
                 <Runtime as frame_system::Config>::AccountId,
                 <Runtime as common::membership::MembershipTypes>::MemberId,
                 <Runtime as frame_system::Config>::Hash,
@@ -543,7 +545,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         let extra_winning_target_count = winning_target_count - 1;
 
         <Module<Runtime> as ReferendumManager<
-            <Runtime as frame_system::Config>::Origin,
+            <Runtime as frame_system::Config>::RuntimeOrigin,
             <Runtime as frame_system::Config>::AccountId,
             <Runtime as common::membership::MembershipTypes>::MemberId,
             <Runtime as frame_system::Config>::Hash,
@@ -580,7 +582,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::from(RawEvent::ReferendumStarted(
+            RuntimeEvent::from(RawEvent::ReferendumStarted(
                 winning_target_count,
                 voting_ends_at
             ))
@@ -608,7 +610,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::RevealingStageStarted(revealing_ends_at))
+            RuntimeEvent::Referendum(RawEvent::RevealingStageStarted(revealing_ends_at))
         );
     }
 
@@ -644,7 +646,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::ReferendumFinished(expected_winners,))
+            RuntimeEvent::Referendum(RawEvent::ReferendumFinished(expected_winners,))
         );
     }
 
@@ -697,7 +699,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::VoteCast(account_id, commitment, stake))
+            RuntimeEvent::Referendum(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
@@ -728,7 +730,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
+            RuntimeEvent::Referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
         );
     }
 
@@ -755,7 +757,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::StakeReleased(account_id))
+            RuntimeEvent::Referendum(RawEvent::StakeReleased(account_id))
         );
     }
 
@@ -785,7 +787,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::AccountOptedOutOfVoting(account_id))
+            RuntimeEvent::Referendum(RawEvent::AccountOptedOutOfVoting(account_id))
         );
     }
 }

@@ -51,8 +51,8 @@ impl frame_system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -145,9 +145,9 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u128, DispatchError> {
         let sender = ensure_signed(origin)?;
@@ -224,13 +224,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 

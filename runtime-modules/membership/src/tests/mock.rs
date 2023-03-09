@@ -48,8 +48,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -123,9 +123,9 @@ impl LockComparator<u64> for Test {
     }
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         _: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -187,10 +187,10 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
-        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Config>::Origin> =
+        let raw_origin: Result<RawOrigin<u64>, <Test as frame_system::Config>::RuntimeOrigin> =
             origin.into();
 
         if let RawOrigin::Signed(_) = raw_origin.unwrap() {
@@ -204,7 +204,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
         }
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 

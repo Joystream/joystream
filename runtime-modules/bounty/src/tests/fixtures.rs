@@ -1,4 +1,4 @@
-use super::mocks::{Balances, Bounty, Event, System, Test};
+use super::mocks::{Balances, Bounty, RuntimeEvent, System, Test};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
     ClosedContractWhitelist, Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
@@ -65,7 +65,7 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = Event::Bounty(expected_raw_event);
+        let converted_event = RuntimeEvent::Bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -81,12 +81,12 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = Event::Bounty(expected_raw_event);
+        let converted_event = RuntimeEvent::Bounty(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -96,7 +96,7 @@ impl EventFixture {
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
 
-    fn contains_global_event(expected_event: Event) {
+    fn contains_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

@@ -7,7 +7,7 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Balances, Event, LockId, System, Test, TestWorkingGroup};
+use super::mock::{Balances, LockId, RuntimeEvent, System, Test, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
@@ -44,12 +44,12 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = Event::TestWorkingGroup(expected_raw_event);
+        let converted_event = RuntimeEvent::TestWorkingGroup(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -75,12 +75,12 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = Event::TestWorkingGroup(expected_raw_event);
+        let converted_event = RuntimeEvent::TestWorkingGroup(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    fn contains_global_event(expected_event: Event) {
+    fn contains_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,

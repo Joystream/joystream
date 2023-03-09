@@ -157,7 +157,7 @@ fn make_creator_token_permissionless_fails_during_transfer() {
 
         assert_noop!(
             Content::make_creator_token_permissionless(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
             ),
