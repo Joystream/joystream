@@ -29,10 +29,15 @@ export default async function groupBudget({ api, query, lock }: FlowProps): Prom
       const recievers = (await api.createKeyPairs(5)).map(({ key }) => key.address)
       const amounts = recievers.map((reciever, i) => new BN(10000 * (i + 1)))
 
-      const unlockWgSpending = await lock(Resource.MembershipWgBudget)
+      let unlockMembershipBudget = undefined
+      if (group === 'membershipWorkingGroup') {
+        unlockMembershipBudget = await lock(Resource.MembershipWgBudget)
+      }
       const spendGroupBudgetFixture = new SpendBudgetFixture(api, query, group, recievers, amounts)
       await new FixtureRunner(spendGroupBudgetFixture).runWithQueryNodeChecks()
-      unlockWgSpending()
+      if (unlockMembershipBudget !== undefined) {
+        unlockMembershipBudget()
+      }
 
       debug('Done')
     })
