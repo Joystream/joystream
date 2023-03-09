@@ -224,11 +224,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn delete_channel(a: u32, b: u32, c: u32, ) -> Weight {
 		Weight::from_ref_time(504_219_000)
 			// Standard Error: 377_000
-			.saturating_add((70_080_000).saturating_mul(a.into()))
+			.saturating_add(Weight::from_ref_time(70_080_000).saturating_mul(a.into()))
 			// Standard Error: 329_000
-			.saturating_add((26_378_000).saturating_mul(b.into()))
+			.saturating_add(Weight::from_ref_time(26_378_000).saturating_mul(b.into()))
 			// Standard Error: 45_000
-			.saturating_add((21_866_000).saturating_mul(c.into()))
+			.saturating_add(Weight::from_ref_time(21_866_000).saturating_mul(c.into()))
 			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
