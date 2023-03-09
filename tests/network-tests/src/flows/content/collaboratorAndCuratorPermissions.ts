@@ -13,8 +13,9 @@ import {
   DeleteChannelWithVideosFixture,
 } from '../../fixtures/content'
 import { createJoystreamCli } from '../utils'
+import { DeleteChannelAsModeratorFixture } from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
 
-export default async function collaboratorCuratorPermissions({ api, query, env }: FlowProps): Promise<void> {
+export default async function collaboratorCuratorPermissions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:collaborator-and-curator-permissions')
   debug('Started')
   api.enableDebugTxLogs()
@@ -70,7 +71,7 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
   // create channel
   const notUsed = 0
   const notUsedString = ''
-  const oneChannel = 1
+  const channelsCount = 2
   const collaborators = [{ memberId: curatorId.toNumber(), permissions: testingPermissions }]
   const nextCollaborators = [
     { memberId: curatorId.toNumber(), permissions: testingPermissions.concat(extraTestingPermissions) },
@@ -80,32 +81,40 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
     api,
     query,
     joystreamCli,
-    oneChannel,
+    channelsCount,
     notUsed,
     notUsedString,
     author,
     collaborators
   )
   await new FixtureRunner(createChannelsAndVideosFixture).run()
-  const {
-    channelIds: [channelId],
-  } = createChannelsAndVideosFixture.getCreatedItems()
+  const { channelIds } = createChannelsAndVideosFixture.getCreatedItems()
 
   // update channel collaborators
 
-  const updateChannelCollaboratorsFixture = new UpdateChannelCollaboratorsFixture(
-    api,
-    query,
-    joystreamCli,
-    channelId,
-    collaborators,
-    nextCollaborators
+  await Promise.all(
+    channelIds.map(async (channelId) => {
+      const updateChannelCollaboratorsFixture = new UpdateChannelCollaboratorsFixture(
+        api,
+        query,
+        joystreamCli,
+        channelId,
+        collaborators,
+        nextCollaborators
+      )
+      await new FixtureRunner(updateChannelCollaboratorsFixture).run()
+    })
   )
-  await new FixtureRunner(updateChannelCollaboratorsFixture).run()
 
   // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
-  const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, [channelId])
+  const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, [channelIds[0]])
   await new FixtureRunner(deleteChannelWithVideosFixture).run()
+
+  // Delete channel as moderator (to ensure all referencing relations are properly removed without causing QN processor crash)
+  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(api, query, [
+    { channelId: channelIds[1], rationale: 'Test', numOfObjectsToDelete: 2 },
+  ])
+  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

@@ -221,18 +221,12 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, channelId] = new Content.ChannelDeletedEvent(event).params
-
-  // TODO: remove manual deletion of referencing records after
-  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
-
-  await removeChannelReferencingRelations(store, channelId.toString())
-
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  await removeChannel(store, channelId)
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
   const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  await removeChannel(store, channelId)
 
   // common event processing - second
 
@@ -394,7 +388,7 @@ async function processOwnerRemark(
   const messageType = decodedMessage.channelOwnerRemarked
 
   if (messageType === 'pinOrUnpinComment') {
-    await processPinOrUnpinCommentMessage(store, event, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
+    await processPinOrUnpinCommentMessage(store, event, channelId, decodedMessage.pinOrUnpinComment!)
 
     return {}
   }
@@ -403,7 +397,6 @@ async function processOwnerRemark(
     await processBanOrUnbanMemberFromChannelMessage(
       store,
       event,
-      contentActor,
       channelId,
       decodedMessage.banOrUnbanMemberFromChannel!
     )
@@ -412,13 +405,7 @@ async function processOwnerRemark(
   }
 
   if (messageType === 'videoReactionsPreference') {
-    await processVideoReactionsPreferenceMessage(
-      store,
-      event,
-      contentActor,
-      channelId,
-      decodedMessage.videoReactionsPreference!
-    )
+    await processVideoReactionsPreferenceMessage(store, event, channelId, decodedMessage.videoReactionsPreference!)
 
     return {}
   }
@@ -459,6 +446,13 @@ async function processModeratorRemark(
   }
 
   return inconsistentState('Unsupported message type in moderator remark action', messageType)
+}
+
+async function removeChannel(store: DatabaseManager, channelId: u64): Promise<void> {
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+  await removeChannelReferencingRelations(store, channelId.toString())
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }
 
 async function removeChannelReferencingRelations(store: DatabaseManager, channelId: string): Promise<void> {
