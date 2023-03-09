@@ -11,6 +11,7 @@ use frame_support::{
     BoundedBTreeMap, BoundedVec,
 };
 use scale_info::TypeInfo;
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
@@ -28,7 +29,22 @@ use sp_std::{
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
-use crate::{errors::Error, Config, RepayableBloatBondOf};
+use crate::{errors::Error, Config, RepayableBloatBondOf, TokenInfoById};
+
+/// Parameer pack for governance constraints
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
+pub struct GovernanceParameters<Balance, BlockNumber, JoyBalance> {
+    pub max_yearly_rate: Option<YearlyRate>,
+    pub min_amm_slope: Option<Balance>,
+    pub min_sale_duration: Option<BlockNumber>,
+    pub min_revenue_split_duration: Option<BlockNumber>,
+    pub min_revenue_split_time_to_start: Option<BlockNumber>,
+    pub sale_platform_fee: Option<Permill>,
+    pub amm_buy_tx_fees: Option<Permill>,
+    pub amm_sell_tx_fees: Option<Permill>,
+    pub bloat_bond: Option<JoyBalance>,
+}
 
 // trait "aliases"
 pub trait BlockNumberTrait: Copy + AtLeast32BitUnsigned + Saturating + Default {}
@@ -1685,3 +1701,10 @@ pub type AmmCurveOf<T> = AmmCurve<TokenBalanceOf<T>>;
 
 /// Alias for the amm params
 pub type AmmParamsOf<T> = AmmParams<TokenBalanceOf<T>>;
+
+/// Alias for governance parameters pack
+pub type GovernanceParametersOf<T> = GovernanceParameters<
+    TokenBalanceOf<T>,
+    <T as frame_system::Config>::BlockNumber,
+    JoyBalanceOf<T>,
+>;

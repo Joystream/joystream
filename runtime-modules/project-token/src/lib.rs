@@ -216,6 +216,60 @@ decl_module! {
         /// Predefined errors.
         type Error = Error<T>;
 
+        /// Allow Governance to Set constraints
+        /// Preconditions:
+        /// - origin is signed by `root`
+        /// PostConditions:
+        /// - governance parameters storage value set to the provided values
+        #[weight = 10_000_000]
+        pub fn set_constraints(
+            origin,
+            token_id: T::TokenId,
+            parameters: GovernanceParametersOf<T>
+        ) {
+            // update parameters via proposal
+            ensure_root(origin)?;
+
+            // == MUTATION SAFE ==
+
+            if let Some(new_max_yearly_rate) = parameters.max_yearly_rate {
+                MaxYearlyPatronageRate::put(new_max_yearly_rate);
+            }
+
+            if let Some(new_min_amm_slope) = parameters.min_amm_slope {
+                MinAmmSlopeParameter::<T>::put(new_min_amm_slope);
+            }
+
+            if let Some(new_min_sale_duration) = parameters.min_sale_duration {
+                MinSaleDuration::<T>::put(new_min_sale_duration);
+            }
+
+            if let Some(new_min_revenue_split_duration) = parameters.min_revenue_split_duration {
+                MinRevenueSplitDuration::<T>::put(new_min_revenue_split_duration);
+            }
+
+            if let Some(new_min_revenue_split_time_to_start) = parameters.min_revenue_split_time_to_start {
+                MinRevenueSplitDuration::<T>::put(new_min_revenue_split_time_to_start);
+            }
+
+            if let Some(new_sale_platform_fee) = parameters.sale_platform_fee {
+                SalePlatformFee::put(new_sale_platform_fee);
+            }
+
+            if let Some(new_amm_buy_tx_fee) = parameters.amm_buy_tx_fees {
+                AmmBuyTxFees::put(new_amm_buy_tx_fee);
+            }
+
+            if let Some(new_amm_sell_tx_fee) = parameters.amm_sell_tx_fees {
+                AmmSellTxFees::put(new_amm_sell_tx_fee);
+            }
+
+            if let Some(new_bloat_bond) = parameters.bloat_bond {
+                BloatBond::<T>::put(new_bloat_bond);
+            }
+
+        }
+
         /// Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
         /// in the specified amounts.
         ///
