@@ -65,6 +65,7 @@ use traits::PalletToken;
 use types::*;
 
 pub mod weights;
+pub use types::GovernanceParametersOf;
 pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
@@ -222,9 +223,8 @@ decl_module! {
         /// PostConditions:
         /// - governance parameters storage value set to the provided values
         #[weight = 10_000_000]
-        pub fn set_constraints(
+        pub fn update_governance_parameters(
             origin,
-            token_id: T::TokenId,
             parameters: GovernanceParametersOf<T>
         ) {
             // update parameters via proposal

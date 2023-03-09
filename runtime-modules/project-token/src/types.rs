@@ -29,7 +29,7 @@ use sp_std::{
 use storage::{BagId, DataObjectCreationParameters};
 
 // crate imports
-use crate::{errors::Error, Config, RepayableBloatBondOf, TokenInfoById};
+use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 /// Parameer pack for governance constraints
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

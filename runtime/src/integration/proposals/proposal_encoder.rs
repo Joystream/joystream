@@ -165,8 +165,8 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     uploader_account: member_controller_account,
                 })
             }
-            ProposalDetails::UpdateMaxYearlyPatronageRate(rate) => {
-                Call::ProjectToken(project_token::Call::update_max_yearly_patronage_rate { rate })
+            ProposalDetails::UpdateTokenPalletGovernanceParameters(parameters) => {
+                Call::ProjectToken(project_token::Call::update_governance_parameters { parameters })
             }
         };
 

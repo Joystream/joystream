@@ -5558,6 +5558,7 @@ dependencies = [
  "pallet-staking",
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
+ "pallet-storage",
  "pallet-timestamp",
  "pallet-working-group",
  "parity-scale-codec",

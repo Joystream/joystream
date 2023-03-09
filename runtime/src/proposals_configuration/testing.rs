@@ -332,9 +332,9 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
     }
 }
 
-// Proposal parameters for the 'Update Max Yearly Patronage Rate' proposal
-pub(crate) fn update_max_yearly_patronage_rate_proposal() -> ProposalParameters<BlockNumber, Balance>
-{
+// Proposal parameters for the 'Update Pallet Token Governance Parameters' proposal
+pub(crate) fn update_token_pallet_token_governance_parameters(
+) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 30,
         grace_period: 20,
