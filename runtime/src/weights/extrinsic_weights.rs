@@ -36,7 +36,7 @@
 
 use frame_support::{
     parameter_types,
-    weights::{constants::WEIGHT_PER_NANOS, Weight},
+    weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight},
 };
 
 parameter_types! {
@@ -53,7 +53,7 @@ parameter_types! {
     ///   99th: 107_217
     ///   95th: 107_081
     ///   75th: 106_821
-    pub const ExtrinsicBaseWeight: Weight = 106_628 * WEIGHT_PER_NANOS;
+    pub const ExtrinsicBaseWeight: Weight = Weight::from_ref_time(106_628 * WEIGHT_REF_TIME_PER_NANOS);
 }
 
 #[cfg(test)]
@@ -69,12 +69,12 @@ mod test_weights {
 
         // At least 10 µs.
         assert!(
-            w >= 10 * constants::WEIGHT_PER_MICROS,
+            w.ref_time() >= 10 * constants::WEIGHT_REF_TIME_PER_MICROS,
             "Weight should be at least 10 µs."
         );
         // At most 1 ms.
         assert!(
-            w <= constants::WEIGHT_PER_MILLIS,
+            w.ref_time() <= constants::WEIGHT_REF_TIME_PER_MILLIS,
             "Weight should be at most 1 ms."
         );
     }

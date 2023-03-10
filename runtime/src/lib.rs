@@ -54,7 +54,7 @@ extern crate lazy_static; // for proposals_configuration module
 
 use codec::Decode;
 use frame_election_provider_support::{
-    onchain, ElectionDataProvider, ExtendedBalance, SequentialPhragmen, VoteWeight,
+    onchain, BalancingConfig, ElectionDataProvider, ExtendedBalance, SequentialPhragmen, VoteWeight,
 };
 use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
@@ -62,7 +62,7 @@ use frame_support::traits::{
     LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{
-    constants::WEIGHT_PER_SECOND, ConstantMultiplier, DispatchClass, Weight,
+    constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, DispatchClass, Weight,
 };
 pub use weights::{
     block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
@@ -175,7 +175,7 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 /// We allow for 2 seconds of compute with a 6 second average block time.
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+pub const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_ref_time(2 * WEIGHT_REF_TIME_PER_SECOND);
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
@@ -229,23 +229,29 @@ pub enum CallFilter {}
 // Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
 #[cfg(not(feature = "runtime-benchmarks"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::RuntimeCall) -> bool {
         match call {
-            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+            RuntimeCall::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::update_curator_group_permissions {
                 ..
             }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+            RuntimeCall::Content(content::Call::<Runtime>::update_channel_privilege_level {
                 ..
             }) => false,
-            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-            Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
-            Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
-            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+            RuntimeCall::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => {
+                false
+            }
+            RuntimeCall::Content(
+                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. },
+            ) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::initialize_channel_transfer {
+                ..
+            }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
+            RuntimeCall::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
+            RuntimeCall::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
                 general_proposal_parameters: _,
                 proposal_details,
             }) => !matches!(
@@ -259,8 +265,8 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 
 // Do not filter any calls when building benchmarks so we can benchmark everything
 #[cfg(feature = "runtime-benchmarks")]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
+impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
+    fn contains(_call: &<Runtime as frame_system::Config>::RuntimeCall) -> bool {
         true
     }
 }
@@ -270,8 +276,8 @@ impl frame_system::Config for Runtime {
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = Index;
     type BlockNumber = BlockNumber;
     type Hash = Hash;
@@ -286,7 +292,7 @@ impl frame_system::Config for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
+    type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
     type SS58Prefix = ConstU16<JOY_ADDRESS_PREFIX>;
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
@@ -296,9 +302,9 @@ impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 impl substrate_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type Call = Call;
+    type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = weights::substrate_utility::SubstrateWeight<Runtime>;
+    type WeightInfo = substrate_utility::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -331,13 +337,16 @@ impl pallet_babe::Config for Runtime {
     type HandleEquivocation =
         pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
-    type WeightInfo = weights::pallet_babe::SubstrateWeight<Runtime>;
+    type WeightInfo = ();
     type MaxAuthorities = MaxAuthorities;
+}
+
+parameter_types! {
+    pub const MaxSetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
 
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type Call = Call;
 
     type KeyOwnerProofSystem = Historical;
 
@@ -355,21 +364,22 @@ impl pallet_grandpa::Config for Runtime {
         ReportLongevity,
     >;
 
-    type WeightInfo = weights::pallet_grandpa::SubstrateWeight<Runtime>;
+    type WeightInfo = ();
     type MaxAuthorities = MaxAuthorities;
+    type MaxSetIdSessionEntries = MaxSetIdSessionEntries;
 }
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
-    Call: From<LocalCall>,
+    RuntimeCall: From<LocalCall>,
 {
     fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
-        call: Call,
+        call: RuntimeCall,
         public: <Signature as sp_runtime::traits::Verify>::Signer,
         account: AccountId,
         nonce: Index,
     ) -> Option<(
-        Call,
+        RuntimeCall,
         <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
     )> {
         integration::transactions::create_transaction::<C>(call, public, account, nonce)
@@ -383,10 +393,10 @@ impl frame_system::offchain::SigningTypes for Runtime {
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
-    Call: From<C>,
+    RuntimeCall: From<C>,
 {
     type Extrinsic = UncheckedExtrinsic;
-    type OverarchingCall = Call;
+    type OverarchingCall = RuntimeCall;
 }
 
 parameter_types! {
@@ -397,7 +407,7 @@ impl pallet_timestamp::Config for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -468,6 +478,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
@@ -475,14 +486,8 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
-parameter_types! {
-    pub const UncleGenerations: BlockNumber = 0;
-}
-
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type UncleGenerations = UncleGenerations;
-    type FilterUncle = ();
     type EventHandler = (Staking, ImOnline);
 }
 
@@ -504,7 +509,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -554,6 +559,7 @@ parameter_types! {
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
     pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 8;
+    pub HistoryDepth: u32 = 84;
 }
 
 pub struct StakingBenchmarkingConfig;
@@ -575,7 +581,7 @@ impl pallet_staking::Config for Runtime {
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
     type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = EnsureRoot<AccountId>;
+    type AdminOrigin = EnsureRoot<AccountId>;
     type SessionInterface = Self;
     // TODO (Mainnet): enable normal curve
     // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
@@ -584,11 +590,13 @@ impl pallet_staking::Config for Runtime {
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = ElectionProviderMultiPhase;
-    type GenesisElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
+    type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type VoterList = BagsList;
+    type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
+    type HistoryDepth = HistoryDepth;
     type OnStakerSlash = (); // NominationPools;
-    type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
     type BondingRestriction = RestrictStakingAccountsFromBonding;
 }
@@ -634,6 +642,9 @@ frame_election_provider_support::generate_solution_type!(
 parameter_types! {
     pub MaxNominations: u32 = <NposSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
     pub MaxElectingVoters: u32 = 12_500;
+    // The maximum winners that can be elected by the Election pallet which is equivalent to the
+    // maximum active validators the staking pallet can have.
+    pub MaxActiveValidators: u32 = SetMaxValidatorCountProposalMaxValidators::get();
 }
 
 /// The numbers configured here could always be more than the the maximum limits of staking pallet
@@ -656,10 +667,10 @@ pub const MINER_MAX_ITERATIONS: u32 = 10;
 
 /// A source of random balance for NposSolver, which is meant to be run by the OCW election miner.
 pub struct OffchainRandomBalancing;
-impl Get<Option<(usize, ExtendedBalance)>> for OffchainRandomBalancing {
-    fn get() -> Option<(usize, ExtendedBalance)> {
+impl Get<Option<BalancingConfig>> for OffchainRandomBalancing {
+    fn get() -> Option<BalancingConfig> {
         use sp_runtime::traits::TrailingZeroInput;
-        let iters = match MINER_MAX_ITERATIONS {
+        let iterations = match MINER_MAX_ITERATIONS {
             0 => 0,
             max => {
                 let seed = sp_io::offchain::random_seed();
@@ -670,7 +681,11 @@ impl Get<Option<(usize, ExtendedBalance)>> for OffchainRandomBalancing {
             }
         };
 
-        Some((iters, 0))
+        let config = BalancingConfig {
+            iterations,
+            tolerance: 0,
+        };
+        Some(config)
     }
 }
 
@@ -682,11 +697,8 @@ impl onchain::Config for OnChainSeqPhragmen {
         pallet_election_provider_multi_phase::SolutionAccuracyOf<Runtime>,
     >;
     type DataProvider = <Runtime as pallet_election_provider_multi_phase::Config>::DataProvider;
-    type WeightInfo =
-        weights::pallet_election_provider_support_benchmarking::SubstrateWeight<Runtime>;
-}
-
-impl onchain::BoundedConfig for OnChainSeqPhragmen {
+    type WeightInfo = frame_election_provider_support::weights::SubstrateWeight<Runtime>;
+    type MaxWinners = <Runtime as pallet_election_provider_multi_phase::Config>::MaxWinners;
     type VotersBound = MaxElectingVoters;
     type TargetsBound = ConstU32<2_000>;
 }
@@ -731,8 +743,8 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type SlashHandler = (); // burn slashes
     type RewardHandler = (); // nothing to do upon rewards
     type DataProvider = Staking;
-    type Fallback = onchain::BoundedExecution<OnChainSeqPhragmen>;
-    type GovernanceFallback = onchain::BoundedExecution<OnChainSeqPhragmen>;
+    type Fallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
+    type GovernanceFallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type Solver = SequentialPhragmen<
         AccountId,
         pallet_election_provider_multi_phase::SolutionAccuracyOf<Self>,
@@ -741,8 +753,9 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type ForceOrigin = EnsureRoot<AccountId>; // EnsureRootOrHalfCouncil;
     type MaxElectableTargets = ConstU16<{ u16::MAX }>;
     type MaxElectingVoters = MaxElectingVoters;
+    type MaxWinners = MaxActiveValidators; // How does this relate with staking pallet
     type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
-    type WeightInfo = weights::pallet_election_provider_multi_phase::SubstrateWeight<Self>;
+    type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Self>;
 }
 
 parameter_types! {
@@ -752,7 +765,7 @@ parameter_types! {
 impl pallet_bags_list::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ScoreProvider = Staking;
-    type WeightInfo = weights::pallet_bags_list::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_bags_list::weights::SubstrateWeight<Runtime>;
     type BagThresholds = BagThresholds;
     type Score = VoteWeight;
 }
@@ -774,7 +787,7 @@ impl pallet_im_online::Config for Runtime {
     type ValidatorSet = Historical;
     type ReportUnresponsiveness = Offences;
     type UnsignedPriority = ImOnlineUnsignedPriority;
-    type WeightInfo = weights::pallet_im_online::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;
     type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
     type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
@@ -816,7 +829,7 @@ parameter_types! {
 
     // Channel bloat bond related:
     pub ChannelCleanupTxFee: Balance = compute_fee(
-        Call::Content(content::Call::<Runtime>::delete_channel {
+        RuntimeCall::Content(content::Call::<Runtime>::delete_channel {
             actor: Default::default(),
             channel_id: 0,
             channel_bag_witness: content::ChannelBagWitness {
@@ -835,7 +848,7 @@ parameter_types! {
 
     // Video bloat bond related:
     pub VideoCleanupTxFee: Balance = compute_fee(
-        Call::Content(content::Call::<Runtime>::delete_video {
+        RuntimeCall::Content(content::Call::<Runtime>::delete_video {
             actor: Default::default(),
             video_id: 0,
             num_objects_to_delete: 1,
@@ -888,7 +901,7 @@ parameter_types! {
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
     // Account bloat bond related:
     pub ProjectTokenAccountCleanupTxFee: Balance = compute_fee(
-        Call::ProjectToken(project_token::Call::<Runtime>::dust_account {
+        RuntimeCall::ProjectToken(project_token::Call::<Runtime>::dust_account {
             token_id: 0,
             member_id: 0,
         })
@@ -1111,7 +1124,7 @@ parameter_types! {
     // To calculate the cost of removing a data object we substract the cost of removing a video
     // w/ 1 asset from a cost of removing a video w/ 2 assets
     pub DataObjectCleanupTxFee: Balance = compute_fee(
-        Call::Content(content::Call::<Runtime>::delete_video {
+        RuntimeCall::Content(content::Call::<Runtime>::delete_video {
             actor: Default::default(),
             video_id: 0,
             num_objects_to_delete: 2,
@@ -1119,7 +1132,7 @@ parameter_types! {
         })
     ).saturating_sub(
         compute_fee(
-            Call::Content(content::Call::<Runtime>::delete_video {
+            RuntimeCall::Content(content::Call::<Runtime>::delete_video {
                 actor: Default::default(),
                 video_id: 0,
                 num_objects_to_delete: 1,
@@ -1201,7 +1214,7 @@ parameter_types! {
     pub const DefaultMemberInvitesCount: u32 = 2;
     // Candidate stake related:
     pub StakingAccountCleanupTxFee: Balance = compute_fee(
-        Call::Members(membership::Call::<Runtime>::remove_staking_account { member_id: 0 })
+        RuntimeCall::Members(membership::Call::<Runtime>::remove_staking_account { member_id: 0 })
     );
     pub CandidateStake: Balance = stake_with_cleanup(
         MinimumVotingStake::get(),
@@ -1230,7 +1243,7 @@ parameter_types! {
 
     // Thread bloat bond related:
     pub FroumThreadCleanupTxFee: Balance = compute_fee(
-        Call::Forum(forum::Call::<Runtime>::delete_thread {
+        RuntimeCall::Forum(forum::Call::<Runtime>::delete_thread {
             forum_user_id: 0,
             category_id: 0,
             thread_id: 0,
@@ -1246,7 +1259,7 @@ parameter_types! {
 
     // Post bloat bond related:
     pub FroumPostCleanupTxFee: Balance = compute_fee(
-        Call::Forum(forum::Call::<Runtime>::delete_posts {
+        RuntimeCall::Forum(forum::Call::<Runtime>::delete_posts {
             forum_user_id: 0,
             posts: BTreeMap::from_iter(vec![(
                 forum::ExtendedPostId::<Runtime> { category_id: 0, thread_id: 0, post_id: 0 },
@@ -1547,16 +1560,16 @@ impl proposals_engine::Config for Runtime {
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
-    type DispatchableCallCode = Call;
+    type DispatchableCallCode = RuntimeCall;
     type ProposalObserver = ProposalsCodex;
     type WeightInfo = proposals_engine::weights::SubstrateWeight<Runtime>;
     type StakingAccountValidator = Members;
     type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
-impl Default for Call {
+impl Default for RuntimeCall {
     fn default() -> Self {
-        panic!("shouldn't call default for Call");
+        panic!("shouldn't call default for RuntimeCall");
     }
 }
 
@@ -1568,7 +1581,7 @@ parameter_types! {
 
     // Proposal discussion post deposit related:
     pub ProposalDiscussionPostCleanupTxFee: Balance = compute_fee(
-        Call::ProposalsDiscussion(proposals_discussion::Call::<Runtime>::delete_post {
+        RuntimeCall::ProposalsDiscussion(proposals_discussion::Call::<Runtime>::delete_post {
             deleter_id: 0,
             post_id: 0,
             thread_id: 0,
@@ -1692,7 +1705,7 @@ parameter_types! {
 
     // Bounty work entry stake related:
     pub BountyWorkEntryCleanupTxFee: Balance = compute_fee(
-        Call::Bounty(bounty::Call::<Runtime>::withdraw_entrant_stake {
+        RuntimeCall::Bounty(bounty::Call::<Runtime>::withdraw_entrant_stake {
             member_id: 0,
             bounty_id: 0,
             entry_id: 0,
@@ -1707,7 +1720,7 @@ parameter_types! {
 
     // Funder bloat bond related:
     pub BountyContributionCleanupTxFee: Balance = compute_fee(
-        Call::Bounty(bounty::Call::<Runtime>::withdraw_funding {
+        RuntimeCall::Bounty(bounty::Call::<Runtime>::withdraw_funding {
             funder: Default::default(),
             bounty_id: 0,
         })
@@ -1722,7 +1735,7 @@ parameter_types! {
 
     // Creator bloat bond related:
     pub BountyCleanupTxFee: Balance = compute_fee(
-        Call::Bounty(bounty::Call::<Runtime>::terminate_bounty {
+        RuntimeCall::Bounty(bounty::Call::<Runtime>::terminate_bounty {
             bounty_id: 0,
         })
     );
@@ -1759,7 +1772,7 @@ impl pallet_vesting::Config for Runtime {
     type Currency = Balances;
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
-    type WeightInfo = weights::pallet_vesting::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
     type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
     // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
     // highest number of schedules that encodes less than 2^10.
@@ -1770,12 +1783,9 @@ parameter_types! {
     pub MultisigMapEntryFixedPortionByteSize: u32 = double_map_entry_fixed_byte_size::<
         pallet_multisig::Multisigs::<Runtime>, _, _, _, _, _
     >();
-    pub CallMapEntryFixedPortionByteSize: u32 = map_entry_fixed_byte_size::<
-        pallet_multisig::Calls::<Runtime>, _, _, _
-    >();
     // Deposit for storing one new item in Multisigs/Calls map
     pub DepositBase: Balance = compute_single_bloat_bond(
-        MultisigMapEntryFixedPortionByteSize::get().max(CallMapEntryFixedPortionByteSize::get()),
+        MultisigMapEntryFixedPortionByteSize::get(),
         None
     );
     // Deposit for adding 32 bytes to an already stored item
@@ -1786,12 +1796,12 @@ parameter_types! {
 
 impl pallet_multisig::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type Call = Call;
+    type RuntimeCall = RuntimeCall;
     type Currency = Balances;
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

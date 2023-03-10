@@ -13,9 +13,9 @@ use sp_std::vec::Vec;
 
 use crate::{
     AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
-    BlockNumber, Call, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
-    InherentDataExt, ProposalsEngine, Runtime, RuntimeVersion, SessionKeys, Signature, System,
-    TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
+    InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys, Signature,
+    System, TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
 
 use frame_support::weights::Weight;
@@ -51,21 +51,24 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 
 /// The payload being signed in transactions.
-pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic =
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
+// Does this executive with customonruntimeupgrade prevent individual pallets' on runtime
+// upgrade migrations from running??
 /// Custom runtime upgrade handler.
 pub struct CustomOnRuntimeUpgrade;
 impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
-        10_000_000 // TODO: adjust weight
+        Weight::from_ref_time(10_000_000) // TODO: adjust weight
     }
 }
 
@@ -210,19 +213,20 @@ impl_runtime_apis! {
     }
 
     impl sp_consensus_babe::BabeApi<Block> for Runtime {
-        fn configuration() -> sp_consensus_babe::BabeGenesisConfiguration {
+        fn configuration() -> sp_consensus_babe::BabeConfiguration {
             // The choice of `c` parameter (where `1 - c` represents the
             // probability of a slot being empty), is done in accordance to the
             // slot duration and expected target block time, for safely
             // resisting network delays of maximum two seconds.
             // <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
-            sp_consensus_babe::BabeGenesisConfiguration {
+            let epoch_config = Babe::epoch_config().unwrap_or(BABE_GENESIS_EPOCH_CONFIG);
+            sp_consensus_babe::BabeConfiguration {
                 slot_duration: Babe::slot_duration(),
                 epoch_length: EpochDuration::get(),
-                c: BABE_GENESIS_EPOCH_CONFIG.c,
-                genesis_authorities: Babe::authorities().to_vec(),
+                c: epoch_config.c,
+                authorities: Babe::authorities().to_vec(),
                 randomness: Babe::randomness(),
-                allowed_slots: BABE_GENESIS_EPOCH_CONFIG.allowed_slots,
+                allowed_slots: epoch_config.allowed_slots,
             }
         }
 
@@ -283,6 +287,12 @@ impl_runtime_apis! {
         }
         fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
             TransactionPayment::query_fee_details(uxt, len)
+        }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
         }
     }
 
@@ -440,7 +450,7 @@ mod tests {
     fn validate_transaction_submitter_bounds() {
         fn is_submit_signed_transaction<T>()
         where
-            T: CreateSignedTransaction<Call>,
+            T: CreateSignedTransaction<RuntimeCall>,
         {
         }
 
@@ -463,11 +473,11 @@ mod tests {
     fn call_size() {
         // https://github.com/Joystream/joystream/pull/4336#discussion_r992359003
         const SAFE_SIZE: usize = 400;
-        let current_size = core::mem::size_of::<Call>();
+        let current_size = core::mem::size_of::<RuntimeCall>();
         assert!(
             current_size <= SAFE_SIZE,
-            "size of Call {} is more than {} bytes: some calls have too big arguments, use Box to reduce the
-            size of Call. If the limit is too strong, maybe consider increase the limit.",
+            "size of RuntimeCall {} is more than {} bytes: some calls have too big arguments, use Box to reduce the
+            size of RuntimeCall. If the limit is too strong, maybe consider increase the limit.",
             current_size, SAFE_SIZE
         );
     }

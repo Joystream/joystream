@@ -86,7 +86,7 @@ impl WeightInfo for () {
 		{{~#each benchmark.components as |c| ~}}
 		{{~#if (not c.is_used)}}_{{/if}}{{c.name}}: u32, {{/each~}}
 	) -> Weight {
-		Weight::from_ref_time(0).into()
+		Weight::from_ref_time(0)
 	}
 	{{/each}}
 }
