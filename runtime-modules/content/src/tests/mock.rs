@@ -11,7 +11,7 @@ pub use membership::WeightInfo;
 use sp_core::{H256, U256};
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, Convert, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup},
     Perbill, Permill,
 };
 use sp_std::cell::RefCell;
@@ -1071,7 +1071,6 @@ impl project_token::Config for Test {
     type Event = Event;
     type Balance = u64;
     type TokenId = u64;
-    type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
@@ -1081,14 +1080,6 @@ impl project_token::Config for Test {
     type MembershipInfoProvider = TestMemberships;
     type MaxOutputs = MaxOutputs;
     type WeightInfo = ();
-}
-
-pub struct Block2Balance {}
-
-impl Convert<u64, u64> for Block2Balance {
-    fn convert(block: u64) -> u64 {
-        block
-    }
 }
 
 pub(crate) fn set_default_nft_limits() {

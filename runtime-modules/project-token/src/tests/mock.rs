@@ -15,7 +15,7 @@ use frame_support::{
 use frame_system::ensure_signed;
 use sp_arithmetic::Perbill;
 use sp_io::TestExternalities;
-use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_runtime::{
     testing::{Header, H256},
     Perquintill,
@@ -700,15 +700,6 @@ macro_rules! assert_approx_eq {
         let abs_diff = $x.max($y).saturating_sub($x.min($y));
         assert!(abs_diff < $eps)
     };
-}
-
-// utility types
-pub struct Block2Balance {}
-
-impl Convert<BlockNumber, Balance> for Block2Balance {
-    fn convert(block: BlockNumber) -> Balance {
-        block as u128
-    }
 }
 
 pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
