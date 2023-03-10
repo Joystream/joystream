@@ -922,7 +922,6 @@ impl project_token::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type TokenId = TokenId;
-    type BlockNumberToBalance = BlockNumberToBalance;
     type DataObjectStorage = Storage;
     type ModuleId = ProjectTokenModuleId;
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;

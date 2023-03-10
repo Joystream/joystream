@@ -1,4 +1,4 @@
-use std::iter::Sum;
+use sp_std::iter::Sum;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use common::{
