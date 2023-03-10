@@ -37,12 +37,11 @@ use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub, UniqueSaturatedInto},
-    FixedPointOperand, PerThing, Permill,
+    traits::{AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub},
+    PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
-use sp_std::iter::Sum;
 use sp_std::ops::Div;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -80,18 +79,8 @@ pub trait Config:
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned
-        + FullCodec
-        + Copy
-        + Default
-        + Debug
-        + Saturating
-        + Sum
-        + From<u64>
-        + UniqueSaturatedInto<u64>
-        + Into<JoyBalanceOf<Self>>
-        + TypeInfo
-        + FixedPointOperand
+    type Balance: types::TokenBalanceTrait
+        + Into<<Self as balances::Config>::Balance>
         + MaxEncodedLen;
 
     /// The token identifier used

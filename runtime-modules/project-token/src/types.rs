@@ -1,3 +1,5 @@
+use std::iter::Sum;
+
 use codec::{Decode, Encode, MaxEncodedLen};
 use common::{
     bloat_bond::RepayableBloatBond, numerical::one_plus_interest_pow_fixed, MembershipTypes,
@@ -5,23 +7,21 @@ use common::{
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
     ensure,
-    traits::Get,
+    traits::{tokens::Balance as BalanceTrait, Get},
     BoundedBTreeMap, BoundedVec,
 };
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{CheckedAdd, Hash, UniqueSaturatedInto},
-    FixedPointNumber, FixedPointOperand, FixedU128, Permill, Perquintill,
+    traits::Hash, FixedPointNumber, FixedPointOperand, FixedU128, Permill, Perquintill,
 };
 use sp_std::{
     borrow::ToOwned,
     cmp::{max, min},
     collections::btree_map::BTreeMap,
     convert::{TryFrom, TryInto},
-    iter::Sum,
     ops::Add,
     vec::Vec,
 };
@@ -32,8 +32,16 @@ use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 // trait "aliases"
 // `BlockNumber` will be implemented as `u64` in the runtime configuration
-pub trait BlockNumberTraits: Copy + AtLeast32BitUnsigned + Saturating {}
-impl<T: Copy + AtLeast32BitUnsigned + Saturating> BlockNumberTraits for T {}
+pub trait BlockNumberTrait: Copy + AtLeast32BitUnsigned + Saturating + Default {}
+impl<T: Copy + AtLeast32BitUnsigned + Saturating + Default> BlockNumberTrait for T {}
+
+// `TokenBalance` will be implemented as `u128` in the runtime configuration
+pub trait TokenBalanceTrait: BalanceTrait + FixedPointOperand + Sum {}
+impl<T: BalanceTrait + FixedPointOperand + Sum> TokenBalanceTrait for T {}
+
+// `Balance` will be implemented as `u128` in the runtime configuration
+pub trait JoyTokenBalanceTrait: BalanceTrait {}
+impl<T: BalanceTrait> JoyTokenBalanceTrait for T {}
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
@@ -139,7 +147,7 @@ pub enum RevenueSplitState<JoyBalance, BlockNumber> {
     Active(RevenueSplitInfo<JoyBalance, BlockNumber>),
 }
 
-impl<JoyBalance: Saturating + Copy + Zero, BlockNumber: Copy>
+impl<JoyBalance: JoyTokenBalanceTrait, BlockNumber: Copy>
     RevenueSplitState<JoyBalance, BlockNumber>
 {
     pub fn ensure_inactive<T: Config>(&self) -> DispatchResult {
@@ -200,7 +208,7 @@ pub struct RevenueSplitInfo<JoyBalance, BlockNumber> {
     pub dividends_claimed: JoyBalance,
 }
 
-impl<JoyBalance: Saturating + Zero + Copy, BlockNumber: Copy>
+impl<JoyBalance: JoyTokenBalanceTrait, BlockNumber: BlockNumberTrait>
     RevenueSplitInfo<JoyBalance, BlockNumber>
 {
     /// Leftovers allocation not claimed so far
@@ -217,7 +225,7 @@ pub struct Timeline<BlockNumber> {
     pub duration: BlockNumber,
 }
 
-impl<BlockNumber: BlockNumberTraits> Timeline<BlockNumber> {
+impl<BlockNumber: BlockNumberTrait> Timeline<BlockNumber> {
     pub fn from_params(start: BlockNumber, duration: BlockNumber) -> Self {
         Timeline::<_> { start, duration }
     }
@@ -332,11 +340,8 @@ pub struct VestingSchedule<BlockNumber, Balance> {
     pub(crate) burned_amount: Balance,
 }
 
-impl<BlockNumber, Balance> VestingSchedule<BlockNumber, Balance>
-where
-    BlockNumber: BlockNumberTraits,
-    Balance:
-        Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord + Zero,
+impl<BlockNumber: BlockNumberTrait, Balance: TokenBalanceTrait>
+    VestingSchedule<BlockNumber, Balance>
 {
     /// Construct a vesting schedule from `VestingScheduleParams` and `init_block`
     ///
@@ -462,9 +467,9 @@ pub struct TokenSale<JoyBalance, Balance, BlockNumber, VestingScheduleParams, Me
 }
 
 impl<
-        JoyBalance: Default,
-        Balance: Default,
-        BlockNumber: Default,
+        JoyBalance: JoyTokenBalanceTrait,
+        Balance: TokenBalanceTrait,
+        BlockNumber: BlockNumberTrait,
         VestingScheduleParams: Default,
         MemberId: Default,
         AccountId,
@@ -487,7 +492,13 @@ impl<
     }
 }
 
-impl<JoyBalance, Balance, BlockNumber, MemberId, AccountId>
+impl<
+        JoyBalance,
+        Balance: TokenBalanceTrait,
+        BlockNumber: BlockNumberTrait,
+        MemberId,
+        AccountId,
+    >
     TokenSale<
         JoyBalance,
         Balance,
@@ -496,9 +507,6 @@ impl<JoyBalance, Balance, BlockNumber, MemberId, AccountId>
         MemberId,
         AccountId,
     >
-where
-    BlockNumber: BlockNumberTraits,
-    Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
 {
     pub(crate) fn try_from_params<T: Config>(
         params: TokenSaleParamsOf<T>,
@@ -608,7 +616,7 @@ pub(crate) enum AmmOperation {
     Sell,
     Buy,
 }
-impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
+impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
     pub(crate) fn from_params<T: Config>(params: AmmParams<Balance>) -> Self {
         Self {
             slope: params.slope,
@@ -734,10 +742,10 @@ impl<Hash, MemberId, Balance, VestingScheduleParams, SingleDataObjectUploadParam
     >
 where
     MemberId: Ord,
-    Balance: Sum + Copy,
+    Balance: TokenBalanceTrait,
     SingleDataObjectUploadParams: Clone,
 {
-    pub(crate) fn get_initial_allocation_bloat_bond<JoyBalance: From<u32> + Saturating>(
+    pub(crate) fn get_initial_allocation_bloat_bond<JoyBalance: JoyTokenBalanceTrait>(
         &self,
         bloat_bond: JoyBalance,
     ) -> JoyBalance {
@@ -782,7 +790,7 @@ impl YearlyRate {
     // floating point arithmetic cannot be used in
     pub fn for_period<BlockNumber, BlocksPerYear>(self, blocks: BlockNumber) -> FixedU128
     where
-        BlockNumber: BlockNumberTraits,
+        BlockNumber: BlockNumberTrait,
         BlocksPerYear: Get<u32>,
     {
         let rate = FixedU128::saturating_from_rational::<u128, u128>(
@@ -995,7 +1003,7 @@ where
     }
 }
 
-impl<Balance: Default + Zero, RepayableBloatBond: Default, VestingSchedulesMap: Default>
+impl<Balance: TokenBalanceTrait, RepayableBloatBond: Default, VestingSchedulesMap: Default>
     AccountData<Balance, StakingStatus<Balance>, RepayableBloatBond, VestingSchedulesMap>
 {
     pub fn new_with_amount_and_bond(amount: Balance, bloat_bond: RepayableBloatBond) -> Self {
@@ -1015,18 +1023,8 @@ impl<Balance, BlockNumber, RepayableBloatBond, MaxVestingSchedules>
         BoundedBTreeMap<VestingSource, VestingSchedule<BlockNumber, Balance>, MaxVestingSchedules>,
     >
 where
-    Balance: Clone
-        + Zero
-        + From<u32>
-        + TryInto<u32>
-        + Unsigned
-        + Saturating
-        + Sum
-        + PartialOrd
-        + Ord
-        + TryInto<u64>
-        + Copy,
-    BlockNumber: BlockNumberTraits,
+    Balance: TokenBalanceTrait,
+    BlockNumber: BlockNumberTrait,
     RepayableBloatBond: Default,
     MaxVestingSchedules: Get<u32>,
 {
@@ -1287,7 +1285,7 @@ where
 /// Token Data implementation
 impl<
         JoyBalance,
-        Balance: CheckedAdd,
+        Balance: TokenBalanceTrait,
         Hash,
         BlockNumber,
         VestingScheduleParams,
@@ -1302,16 +1300,9 @@ impl<
         RevenueSplitState<JoyBalance, BlockNumber>,
     >
 where
-    Balance: Zero
-        + Copy
-        + Saturating
-        + Debug
-        + From<u64>
-        + UniqueSaturatedInto<u64>
-        + Unsigned
-        + FixedPointOperand,
-    BlockNumber: BlockNumberTraits,
-    JoyBalance: Copy + Saturating + Zero,
+    Balance: TokenBalanceTrait,
+    BlockNumber: BlockNumberTrait,
+    JoyBalance: JoyTokenBalanceTrait,
 {
     // increase total supply
     pub(crate) fn increase_supply_by(&mut self, amount: Balance) {
@@ -1465,7 +1456,7 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
 impl<MemberId, Balance, VestingScheduleParams>
     Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
 where
-    Balance: Sum + Copy,
+    Balance: TokenBalanceTrait,
 {
     pub fn total_amount(&self) -> Balance {
         self.0.values().map(|payment| payment.amount).sum()
@@ -1478,7 +1469,7 @@ impl<ValidatedAccount, Balance, VestingScheduleParams>
         ValidatedPayment<PaymentWithVesting<Balance, VestingScheduleParams>>,
     >
 where
-    Balance: Sum + Copy,
+    Balance: TokenBalanceTrait,
 {
     pub fn total_amount(&self) -> Balance {
         self.0
