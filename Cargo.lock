@@ -1078,11 +1078,11 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "3.2.5"
+version = "4.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f7a2e0a962c45ce25afce14220bc24f9dade0a1787f185cecf96bfba7847cd8"
+checksum = "501ff0a401473ea1d4c3b125ff95506b62c5bc5768d818634195fbb7c4ad5ff4"
 dependencies = [
- "clap 3.2.23",
+ "clap 4.1.8",
 ]
 
 [[package]]
@@ -3288,11 +3288,11 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "8.3.0"
+version = "8.4.0"
 dependencies = [
  "assert_cmd",
  "async-std",
- "clap 3.2.23",
+ "clap 4.1.8",
  "clap_complete",
  "criterion",
  "frame-benchmarking",
@@ -3307,7 +3307,6 @@ dependencies = [
  "jsonrpsee 0.13.1",
  "log",
  "nix 0.23.2",
- "node-inspect",
  "overrides",
  "pallet-balances",
  "pallet-im-online",
@@ -3377,7 +3376,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "12.2001.0"
+version = "12.3000.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4863,23 +4862,6 @@ dependencies = [
  "memoffset 0.7.1",
  "pin-utils",
  "static_assertions",
-]
-
-[[package]]
-name = "node-inspect"
-version = "0.9.0-dev"
-dependencies = [
- "clap 3.2.23",
- "overrides",
- "parity-scale-codec",
- "sc-cli",
- "sc-client-api",
- "sc-executor",
- "sc-service",
- "sp-blockchain",
- "sp-core",
- "sp-runtime",
- "thiserror",
 ]
 
 [[package]]
