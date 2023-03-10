@@ -36,7 +36,6 @@ use crate::{
 use proposals_engine::VotersParameters;
 
 use super::run_to_block;
-use sp_runtime::traits::Convert;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::{TryFrom, TryInto};
 use std::cell::RefCell;
@@ -378,9 +377,8 @@ impl storage::Config for Test {
 
 impl token::Config for Test {
     type Event = Event;
-    type Balance = u128;
+    type Balance = u64;
     type TokenId = u64;
-    type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
@@ -390,14 +388,6 @@ impl token::Config for Test {
     type MemberOriginValidator = membership::Module<Self>;
     type MembershipInfoProvider = membership::Module<Self>;
     type MaxOutputs = MaxOutputs;
-}
-
-pub struct Block2Balance {}
-
-impl Convert<BlockNumber, Balance> for Block2Balance {
-    fn convert(block: BlockNumber) -> Balance {
-        block as u128
-    }
 }
 
 pub struct Wg;

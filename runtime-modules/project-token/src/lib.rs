@@ -222,7 +222,12 @@ decl_module! {
         /// - origin is signed by `root`
         /// PostConditions:
         /// - governance parameters storage value set to the provided values
-        #[weight = 10_000_000]
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::update_governance_parameters()]
         pub fn update_governance_parameters(
             origin,
             parameters: GovernanceParametersOf<T>
@@ -267,6 +272,8 @@ decl_module! {
             if let Some(new_bloat_bond) = parameters.bloat_bond {
                 BloatBond::<T>::put(new_bloat_bond);
             }
+
+            Self::deposit_event(RawEvent::GovernanceParametersUpdated(parameters));
 
         }
 
@@ -1007,19 +1014,6 @@ decl_module! {
             Self::transfer_joy(&amm_treasury_account, &sender, sell_price)?;
 
             Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
-
-            Ok(())
-        }
-
-        #[weight = WeightInfoToken::<T>::update_max_yearly_patronage_rate()]
-        fn update_max_yearly_patronage_rate(origin, rate: YearlyRate) -> DispatchResult {
-            ensure_root(origin)?;
-
-            // == MUTATION SAFE ==
-
-            MaxYearlyPatronageRate::mutate(|v| *v = rate);
-
-            Self::deposit_event(RawEvent::MaxYearlyPatronageRateUpdated(rate));
 
             Ok(())
         }

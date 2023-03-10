@@ -19,7 +19,7 @@ use working_group::StakePolicy;
 use crate::*;
 use crate::{Error, ProposalDetails};
 pub use mock::*;
-use sp_runtime::traits::{One, Zero};
+use sp_runtime::traits::One;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, WorkerId,

@@ -54,14 +54,16 @@ pub trait WeightInfo {
 	fn buy_on_amm_with_account_creation() -> Weight;
 	fn buy_on_amm_with_existing_account() -> Weight;
 	fn sell_on_amm() -> Weight;
-	fn update_max_yearly_patronage_rate() -> Weight;
+    fn update_governance_parameters() -> Weight;
 }
 
 /// Weights for project_token using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
-	// Storage: Membership MembershipById (r:1025 w:0)
-	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
+    fn update_governance_parameters() -> Weight {
+        0
+    }
+	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Proof: Token TokenInfoById (max_values: None, max_size: Some(339), added: 2814, mode: MaxEncodedLen)
 	// Storage: Token AccountInfoByTokenAndMember (r:1025 w:1025)
@@ -236,7 +238,8 @@ impl WeightInfo for () {
 	fn sell_on_amm() -> Weight {
 		0
 	}
-	fn update_max_yearly_patronage_rate() -> Weight {
-	    0
-	}
+
+    fn update_governance_parameters() -> Weight {
+        0
+    }
 }

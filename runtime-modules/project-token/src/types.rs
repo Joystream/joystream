@@ -31,6 +31,19 @@ use storage::{BagId, DataObjectCreationParameters};
 // crate imports
 use crate::{errors::Error, Config, RepayableBloatBondOf};
 
+// trait "aliases"
+// `BlockNumber` will be implemented as `u64` in the runtime configuration
+pub trait BlockNumberTrait: Copy + AtLeast32BitUnsigned + Saturating + Default {}
+impl<T: Copy + AtLeast32BitUnsigned + Saturating + Default> BlockNumberTrait for T {}
+
+// `TokenBalance` will be implemented as `u128` in the runtime configuration
+pub trait TokenBalanceTrait: BalanceTrait + FixedPointOperand + Sum {}
+impl<T: BalanceTrait + FixedPointOperand + Sum> TokenBalanceTrait for T {}
+
+// `Balance` will be implemented as `u128` in the runtime configuration
+pub trait JoyTokenBalanceTrait: BalanceTrait {}
+impl<T: BalanceTrait> JoyTokenBalanceTrait for T {}
+
 /// Parameer pack for governance constraints
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
@@ -45,18 +58,6 @@ pub struct GovernanceParameters<Balance, BlockNumber, JoyBalance> {
     pub amm_sell_tx_fees: Option<Permill>,
     pub bloat_bond: Option<JoyBalance>,
 }
-
-// trait "aliases"
-pub trait BlockNumberTrait: Copy + AtLeast32BitUnsigned + Saturating + Default {}
-impl<T: Copy + AtLeast32BitUnsigned + Saturating + Default> BlockNumberTrait for T {}
-
-// `TokenBalance` will be implemented as `u128` in the runtime configuration
-pub trait TokenBalanceTrait: BalanceTrait + FixedPointOperand + Sum {}
-impl<T: BalanceTrait + FixedPointOperand + Sum> TokenBalanceTrait for T {}
-
-// `Balance` will be implemented as `u128` in the runtime configuration
-pub trait JoyTokenBalanceTrait: BalanceTrait {}
-impl<T: BalanceTrait> JoyTokenBalanceTrait for T {}
 
 /// Source of tokens subject to vesting that were acquired by an account
 /// either through purchase or during initial issuance
