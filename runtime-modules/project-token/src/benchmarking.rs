@@ -18,9 +18,9 @@ use storage::BagId;
 // ----- DEFAULTS
 
 const SEED: u32 = 0;
-const DEFAULT_TOKEN_ISSUANCE: u64 = 1_000_000;
+const DEFAULT_TOKEN_ISSUANCE: u32 = 1_000_000;
 // Transfers
-const MAX_TX_OUTPUTS: u32 = 1024;
+const MAX_TX_OUTPUTS: u16 = 1024;
 const DEFAULT_TX_AMOUNT: u32 = 100;
 // Whitelist
 const MAX_MERKLE_PROOF_HASHES: u32 = 10;
@@ -29,10 +29,10 @@ const DEFAULT_TOKENS_ON_SALE: u32 = 100_000;
 const DEFAULT_SALE_UNIT_PRICE: u32 = 2_000_000;
 const DEFAULT_SALE_PURCHASE: u32 = 100;
 // Revenue splits
-const DEFAULT_SPLIT_REVENUE: u64 = 8_000_000;
+const DEFAULT_SPLIT_REVENUE: u32 = 8_000_000;
 const DEFAULT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
-const DEFAULT_SPLIT_ALLOCATION: u64 = 4_000_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
-const DEFAULT_SPLIT_PAYOUT: u64 = 2_000_000;
+const DEFAULT_SPLIT_ALLOCATION: u32 = 4_000_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
+const DEFAULT_SPLIT_PAYOUT: u32 = 2_000_000;
 const DEFAULT_SPLIT_PARTICIPATION: u64 =
     DEFAULT_SPLIT_PAYOUT * DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION;
 
@@ -269,7 +269,7 @@ benchmarks! {
         let m in 1 .. MAX_KILOBYTES_METADATA;
 
         let (owner_member_id, owner_account) = create_owner::<T>();
-        let outputs = Transfers::<_, _>(
+        let outputs =
             (0..o)
             .map(|i| {
                 let member_id = create_member::<T>(
@@ -283,8 +283,7 @@ benchmarks! {
                     }
                 )
             })
-            .collect()
-        );
+            .collect::<BoundedVec<_,u16>>();
         let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
@@ -633,7 +632,6 @@ benchmarks! {
         token_id,
         participant_id,
         amount_to_buy,
-        Some(deadline),
         Some(slippage_tolerance)
     )
     verify {
@@ -668,7 +666,6 @@ benchmarks! {
         token_id,
         participant_id,
         amount_to_buy,
-        Some(deadline),
         Some(slippage_tolerance)
     )
     verify {
