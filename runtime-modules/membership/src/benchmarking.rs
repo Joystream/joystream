@@ -505,7 +505,13 @@ benchmarks! {
 
         assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
 
-        assert_last_event::<T>(RawEvent::MemberInvited(invited_member_id, invite_params).into());
+        assert_last_event::<T>(
+            RawEvent::MemberInvited(
+                invited_member_id,
+                invite_params,
+                default_invitation_balance,
+            ).into()
+        );
 
     }
 
@@ -755,14 +761,33 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::StakingAccountRemoved(account_id, member_id).into());
     }
 
-    member_remark{
+    member_remark_without_payment{
         let msg = b"test".to_vec();
         let member_id = 0;
         let (account_id, member_id) = member_funded_account::<T>("member", member_id);
-    }: _ (RawOrigin::Signed(account_id.clone()), member_id, msg.clone())
+    }: member_remark(RawOrigin::Signed(account_id.clone()), member_id, msg.clone(), None)
 
     verify {
-        assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg).into());
+        assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg, None).into());
+    }
+
+    member_remark_with_payment{
+        let msg = b"test".to_vec();
+        let member_id = 0;
+        let (account_id, member_id) = member_funded_account::<T>("member", member_id);
+
+        let payee_member_id = 1;
+        let payee_account_id = account::<T::AccountId>("payee", payee_member_id, SEED);
+        let payment_amount: BalanceOf<T> = BalanceOf::<T>::from(5u32) * <T as balances::Config>::ExistentialDeposit::get();
+
+        let free_balance = Balances::<T>::free_balance(&account_id);
+
+    }: member_remark(RawOrigin::Signed(account_id.clone()), member_id, msg.clone(), Some((payee_account_id.clone(), payment_amount)))
+
+    verify {
+        assert_eq!(Balances::<T>::free_balance(&account_id), free_balance - payment_amount);
+
+        assert_last_event::<T>(RawEvent::MemberRemarked(member_id, msg, Some((payee_account_id, payment_amount))).into());
     }
 
     create_member{

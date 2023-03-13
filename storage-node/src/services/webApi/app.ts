@@ -204,7 +204,7 @@ function verifyUploadTokenData(accountAddress: string, token: UploadToken, reque
 }
 
 async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
-  const { api, queryNodeEndpoint, workerId } = res.locals
+  const { api, qnApi, workerId } = res.locals
 
   const storageBucketId = new BN(req.query.storageBucketId?.toString() || '')
   const dataObjectId = new BN(req.query.dataObjectId?.toString() || '')
@@ -215,7 +215,7 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
   const [dataObject] = await Promise.all([
     api.query.storage.dataObjectsById(parsedBagId, dataObjectId),
     verifyBagAssignment(api, parsedBagId, storageBucketId),
-    verifyBucketId(queryNodeEndpoint, workerId, storageBucketId),
+    verifyBucketId(qnApi, workerId, storageBucketId),
   ])
 
   if (dataObject.isEmpty) {

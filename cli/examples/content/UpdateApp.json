@@ -1,0 +1,9 @@
+{
+  "name": "Updated example app",
+  "description": "Updated example app description",
+  "category": "trading",
+  "oneLiner": "best trading video platform",
+  "platforms": [
+    "web"
+  ]
+}

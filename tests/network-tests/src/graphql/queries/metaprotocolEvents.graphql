@@ -1,0 +1,32 @@
+fragment MetaprotocolTransactionStatusFields on MetaprotocolTransactionStatus {
+  __typename
+  ... on MetaprotocolTransactionSuccessful {
+    commentCreated {
+      ...CommentFields
+    }
+    commentDeleted {
+      ...CommentFields
+    }
+  }
+  ... on MetaprotocolTransactionErrored {
+    message
+  }
+}
+
+fragment MetaprotocolTransactionStatusEventFields on MetaprotocolTransactionStatusEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  status {
+    ...MetaprotocolTransactionStatusFields
+  }
+}
+
+query getMetaprotocolTransactionalStatusEventsByEventIds($eventIds: [ID!]) {
+  metaprotocolTransactionStatusEvents(where: { id_in: $eventIds }) {
+    ...MetaprotocolTransactionStatusEventFields
+  }
+}

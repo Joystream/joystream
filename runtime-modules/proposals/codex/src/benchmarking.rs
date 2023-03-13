@@ -139,7 +139,7 @@ fn create_proposal_verify<T: Config>(
             voting_results: proposals_engine::VotingResults::default(),
             exact_execution_block: None,
             nr_of_council_confirmations: 0,
-            staking_account_id: Some(account_id)
+            staking_account_id: Some(account_id.clone())
         },
         "Proposal not correctly created"
     );
@@ -151,7 +151,7 @@ fn create_proposal_verify<T: Config>(
 
     assert_eq!(
         Engine::<T>::proposal_codes(proposal_id),
-        T::ProposalEncoder::encode_proposal(proposal_details.clone()),
+        T::ProposalEncoder::encode_proposal(proposal_details.clone(), account_id),
         "Stored proposal code doesn't match"
     );
 
@@ -865,10 +865,8 @@ benchmarks! {
         let (account_id, member_id, general_proposal_parameters) =
             create_proposal_parameters::<T>(t, d);
 
-        let uploader_account = account::<T::AccountId>("uploader_account", 1, SEED);
         let commitment = T::Hashing::hash(b"commitment".as_ref());
         let payload = content::ChannelPayoutsPayloadParametersRecord {
-            uploader_account,
             object_creation_params: content::DataObjectCreationParameters {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..(i * 1000)).map(|v| u8::MAX))

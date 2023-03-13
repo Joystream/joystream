@@ -50,6 +50,7 @@ export class Sender {
     const addr = this.keyring.encodeAddress(account)
     const senderKeyPair: KeyringPair = this.keyring.getPair(addr)
 
+    let unsubscribe: () => void
     let finalized: { (result: ISubmittableResult): void }
     const whenFinalized: Promise<ISubmittableResult> = new Promise((resolve, reject) => {
       finalized = resolve
@@ -99,31 +100,17 @@ export class Sender {
           }
         } else {
           assert(success)
-          const sudid = result.findRecord('sudo', 'Sudid')
-          if (sudid) {
-            const dispatchResult = sudid.event.data[0] as DispatchResult
-            assert(dispatchResult)
-            if (dispatchResult.isError) {
-              const err = dispatchResult.asError
-              if (err.isModule) {
-                try {
-                  const { name } = this.api.registry.findMetaError(err.asModule)
-                  this.debug('Sudo Dispatch Failed', name, sentTx)
-                } catch (findmetaerror) {
-                  // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
-                  this.debug('Sudo Dispatch Failed (error details not found)', err.asModule.toHuman(), sentTx)
-                }
-              } else {
-                this.debug('Sudo Dispatch Failed', err.toHuman(), sentTx)
-              }
-            }
-          }
         }
       }
 
       // Always resolve irrespective of success or failure. Error handling should
       // be dealt with by caller.
-      if (success || failed) finalized(result)
+      if (success || failed) {
+        if (unsubscribe) {
+          unsubscribe()
+        }
+        finalized(result)
+      }
     }
 
     // We used to do this: Sender.asyncLock.acquire(`${senderKeyPair.address}` ...
@@ -141,7 +128,7 @@ export class Sender {
       sentTx = signedTx.toHuman()
       const { method, section } = signedTx.method
       try {
-        await signedTx.send(handleEvents)
+        unsubscribe = await signedTx.send(handleEvents)
         if (this.logs === LogLevel.Verbose) {
           this.debug('Submitted tx:', `${section}.${method} (nonce: ${nonce}, tip: ${formatBalance(tip)})`)
         }

@@ -64,7 +64,8 @@ pub trait WeightInfo {
 	fn add_staking_account_candidate() -> Weight;
 	fn confirm_staking_account() -> Weight;
 	fn remove_staking_account() -> Weight;
-	fn member_remark() -> Weight;
+	fn member_remark_without_payment() -> Weight;
+	fn member_remark_with_payment() -> Weight;
 	fn create_member(_i: u32, _j: u32, ) -> Weight;
 }
 
@@ -232,9 +233,16 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Membership MembershipById (r:1 w:0)
-	fn member_remark() -> Weight {
-		(36_831_000 as Weight)
+	fn member_remark_without_payment() -> Weight {
+		(22_917_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+	}
+	// Storage: Membership MembershipById (r:1 w:0)
+	// Storage: System Account (r:2 w:2)
+	fn member_remark_with_payment() -> Weight {
+		(69_370_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(3 as Weight))
+			.saturating_add(T::DbWeight::get().writes(2 as Weight))
 	}
 	// Storage: Membership MemberIdByHandleHash (r:1 w:1)
 	// Storage: Membership InitialInvitationCount (r:1 w:0)
@@ -310,7 +318,10 @@ impl WeightInfo for () {
 	fn remove_staking_account() -> Weight {
 		0
 	}
-	fn member_remark() -> Weight {
+	fn member_remark_with_payment() -> Weight {
+		0	
+	}
+	fn member_remark_without_payment() -> Weight {
 		0
 	}
 	fn create_member(i: u32, j: u32, ) -> Weight {

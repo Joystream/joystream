@@ -26,7 +26,6 @@ type OpeningFilledEventDetails = EventDetails<EventType<'contentWorkingGroup', '
 
 export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   protected events: OpeningFilledEventDetails[] = []
-  protected asSudo: boolean
 
   protected openings: Opening[] = []
   protected openingIds: OpeningId[]
@@ -40,13 +39,11 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
     query: QueryNodeApi,
     group: WorkingGroupModuleName,
     openingIds: OpeningId[],
-    acceptedApplicationsIdsArrays: ApplicationId[][],
-    asSudo = false
+    acceptedApplicationsIdsArrays: ApplicationId[][]
   ) {
     super(api, query, group)
     this.openingIds = openingIds
     this.acceptedApplicationsIdsArrays = acceptedApplicationsIdsArrays
-    this.asSudo = asSudo
   }
 
   public getCreatedWorkerIdsByOpeningId(openingId: OpeningId): WorkerId[] {
@@ -56,7 +53,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
-    return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
+    return await this.api.getLeadRoleKey(this.group)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
@@ -64,7 +61,7 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
       const applicationsSet = createType('BTreeSet<u64>', this.acceptedApplicationsIdsArrays[i])
       return this.api.tx[this.group].fillOpening(openingId, applicationsSet)
     })
-    return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
+    return extrinsics
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<OpeningFilledEventDetails> {
@@ -220,19 +217,5 @@ export class FillOpeningsFixture extends BaseWorkingGroupFixture {
 
     // Check application statuses
     this.assertApplicationStatusesAreValid(qEvents, qOpenings)
-
-    if (this.asSudo) {
-      const leaderId = qEvents[0].workersHired[0].runtimeId
-      assert.isNumber(leaderId)
-
-      const qGroup = await this.query.getWorkingGroup(this.group)
-      Utils.assert(qGroup, 'Query node: Working group not found!')
-      Utils.assert(qGroup.leader, 'Query node: Working group leader not set!')
-      assert.equal(qGroup.leader.runtimeId, leaderId)
-
-      const leaderSetEvent = await this.api.getEventDetails(this.results[0], this.group, 'LeaderSet')
-      const qEvent = await this.query.getLeaderSetEvent(leaderSetEvent)
-      this.assertQueryNodeLeaderSetEventIsValid(leaderSetEvent, qEvent, leaderId)
-    }
   }
 }

@@ -15,6 +15,7 @@ import fs from 'fs'
 import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import { Option } from '@polkadot/types-codec'
+import { QueryNodeApi } from '../services/queryNode/api'
 const fsPromises = fs.promises
 
 /**
@@ -134,6 +135,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     const api = await this.getApi()
+    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
 
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
@@ -156,7 +158,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     const storageProviderAccount = this.getAccount(flags)
     const workerId = flags.worker
-    if (!(await verifyWorkerId(api, flags.queryNodeEndpoint, workerId, storageProviderAccount.address))) {
+    if (!(await verifyWorkerId(api, qnApi, workerId, storageProviderAccount.address))) {
       this.exit(ExitCodes.InvalidWorkerId)
     }
 
@@ -168,13 +170,13 @@ Supported values: warn, error, debug, info. Default:debug`,
 
       const app = await createApp({
         api,
+        qnApi,
         storageProviderAccount,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir,
         process: this.config,
-        queryNodeEndpoint: flags.queryNodeEndpoint,
         enableUploadingAuth: false,
       })
       logger.info(`Listening on http://localhost:${port}`)
@@ -259,7 +261,7 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
 
 async function verifyWorkerId(
   api: ApiPromise,
-  queryNodeUri: string,
+  qnApi: QueryNodeApi,
   workerId: number,
   transactorAccount: string
 ): Promise<boolean> {
@@ -269,7 +271,7 @@ async function verifyWorkerId(
     return false
   }
 
-  const bucketIds = await getStorageBucketIdsByWorkerId(queryNodeUri, workerId)
+  const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
     await Promise.all(
       bucketIds.map(

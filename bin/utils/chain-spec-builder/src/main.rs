@@ -66,8 +66,7 @@ impl Into<ChainType> for ChainDeployment {
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]
 enum ChainSpecBuilder {
-    /// Create a new chain spec with the given authority seeds, endowed and sudo
-    /// accounts.
+    /// Create a new chain spec with the given authority seeds, and endowed accounts.
     New {
         /// Authorities. Comma separated list. If list has single item it is
         /// considered a seed. The stash,controller and session keys will be derived from this seed.
@@ -80,9 +79,6 @@ enum ChainSpecBuilder {
         /// authorities. Same account used as stash and controller.
         #[clap(long, short)]
         nominator_accounts: Vec<String>,
-        /// Sudo account address (SS58 format).
-        #[clap(long, short)]
-        sudo_account: String,
         /// The path where the chain spec should be saved.
         #[clap(long, short, default_value = "./chain_spec.json")]
         chain_spec_path: PathBuf,
@@ -100,7 +96,7 @@ enum ChainSpecBuilder {
         /// Deployment type: dev, local, staging, live
         #[structopt(long, short, default_value = "live")]
         deployment: String,
-        /// Endow authorities, nominators, and sudo account. Initial balances
+        /// Endow authorities, and nominators. Initial balances
         /// overrides endowed amount.
         #[structopt(long, short)]
         fund_accounts: bool,
@@ -180,11 +176,11 @@ impl ChainSpecBuilder {
     /// Returns wether to fund accounts or not
     fn fund_accounts(&self) -> bool {
         match self {
-            // Authorities, Nominators, Sudo Key and endowed accounts by default
+            // Authorities, Nominators, and endowed accounts by default
             // will not be endowed, unless explicitly selected.
             ChainSpecBuilder::New { fund_accounts, .. } => *fund_accounts,
             // When generating new authorities, nominators, endowed account,
-            // and sudo_key we will always try to endow them.
+            // we will always try to endow them.
             ChainSpecBuilder::Generate { .. } => true,
         }
     }
@@ -220,7 +216,6 @@ fn genesis_constructor(
     )>,
     nominator_accounts: &[AccountId],
     endowed_accounts: &[AccountId],
-    sudo_account: &AccountId,
     initial_balances_path: &Option<PathBuf>,
     fund_accounts: bool,
 ) -> chain_spec::GenesisConfig {
@@ -253,7 +248,6 @@ fn genesis_constructor(
         fund_accounts,
         authorities,
         nominator_accounts.to_vec(),
-        sudo_account.clone(),
         endowed_accounts.to_vec(),
         genesis_balances,
         vesting_accounts,
@@ -269,7 +263,6 @@ fn generate_chain_spec(
     authorities: Vec<String>,
     nominator_accounts: Vec<String>,
     endowed_accounts: Vec<String>,
-    sudo_account: String,
     initial_balances_path: Option<PathBuf>,
     fund_accounts: bool,
 ) -> Result<String, String> {
@@ -316,8 +309,6 @@ fn generate_chain_spec(
         .map(parse_account)
         .collect::<Result<Vec<_>, String>>()?;
 
-    let sudo_account = parse_account(sudo_account)?;
-
     let telemetry_endpoints = Some(
         TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
             .expect("Staging telemetry url is valid; qed"),
@@ -333,7 +324,6 @@ fn generate_chain_spec(
                 authorities.clone(),
                 &nominator_accounts,
                 &endowed_accounts,
-                &sudo_account,
                 &initial_balances_path,
                 fund_accounts,
             )
@@ -379,12 +369,7 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
     Ok(())
 }
 
-fn print_seeds(
-    authority_seeds: &[String],
-    nominator_seeds: &[String],
-    endowed_seeds: &[String],
-    sudo_seed: &str,
-) {
+fn print_seeds(authority_seeds: &[String], nominator_seeds: &[String], endowed_seeds: &[String]) {
     println!("# Authority seeds");
 
     for (n, seed) in authority_seeds.iter().enumerate() {
@@ -410,10 +395,6 @@ fn print_seeds(
 
         println!();
     }
-
-    println!("# Sudo seed");
-    println!("sudo={}", sudo_seed);
-    println!();
 }
 
 #[async_std::main]
@@ -433,7 +414,7 @@ async fn main() -> Result<(), String> {
     let deployment = builder.chain_deployment();
     let fund_accounts = builder.fund_accounts();
 
-    let (authorities, nominator_accounts, endowed_accounts, sudo_account) = match builder {
+    let (authorities, nominator_accounts, endowed_accounts) = match builder {
         ChainSpecBuilder::Generate {
             authorities,
             nominators,
@@ -454,17 +435,8 @@ async fn main() -> Result<(), String> {
             let authority_seeds = (0..authorities).map(|_| rand_seed()).collect::<Vec<_>>();
             let nominator_seeds = (0..nominators).map(|_| rand_seed()).collect::<Vec<_>>();
             let endowed_seeds = (0..endowed).map(|_| rand_seed()).collect::<Vec<_>>();
-            let sudo_seed = rand_seed();
 
-            print_seeds(
-                &authority_seeds,
-                &nominator_seeds,
-                &endowed_seeds,
-                &sudo_seed,
-            );
-
-            let sudo_account =
-                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed).to_ss58check();
+            print_seeds(&authority_seeds, &nominator_seeds, &endowed_seeds);
 
             if let Some(keystore_path) = keystore_path {
                 generate_authority_keys_and_store(&authority_seeds, &keystore_path)?;
@@ -484,17 +456,11 @@ async fn main() -> Result<(), String> {
                 })
                 .collect();
 
-            (
-                authority_seeds,
-                nominator_accounts,
-                endowed_accounts,
-                sudo_account,
-            )
+            (authority_seeds, nominator_accounts, endowed_accounts)
         }
         ChainSpecBuilder::New {
             authorities,
             nominator_accounts,
-            sudo_account,
             keystore_path,
             ..
         } => {
@@ -509,7 +475,7 @@ async fn main() -> Result<(), String> {
                 }
             }
 
-            (authorities, nominator_accounts, vec![], sudo_account)
+            (authorities, nominator_accounts, vec![])
         }
     };
 
@@ -518,7 +484,6 @@ async fn main() -> Result<(), String> {
         authorities,
         nominator_accounts,
         endowed_accounts,
-        sudo_account,
         initial_balances_path,
         fund_accounts,
     )?;

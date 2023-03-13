@@ -162,6 +162,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       defaultGlobalWeeklyNftLimit: PalletContentLimitPerPeriod & AugmentedConst<ApiType>;
       /**
+       * Export const - max cashout allowed limits
+       **/
+      maximumCashoutAllowedLimit: u128 & AugmentedConst<ApiType>;
+      /**
        * Exports const - max number of keys per curator_group.permissions_by_level map instance
        **/
       maxKeysPerCuratorGroupPermissionsByLevelMap: u32 & AugmentedConst<ApiType>;
@@ -173,6 +177,10 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports const - max number of curators per group
        **/
       maxNumberOfCuratorsPerGroup: u32 & AugmentedConst<ApiType>;
+      /**
+       * Export const - min cashout allowed limits
+       **/
+      minimumCashoutAllowedLimit: u128 & AugmentedConst<ApiType>;
     };
     contentWorkingGroup: {
       /**

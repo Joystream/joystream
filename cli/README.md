@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.10.0 darwin-x64 node-v14.16.1
+@joystream/cli/1.2.0 darwin-x64 node-v14.16.1
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -101,10 +101,16 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
 - [`joystream-cli api:setQueryNodeEndpoint [ENDPOINT]`](#joystream-cli-apisetquerynodeendpoint-endpoint)
 - [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
+- [`joystream-cli apps:createApp`](#joystream-cli-appscreateapp)
+- [`joystream-cli apps:updateApp`](#joystream-cli-appsupdateapp)
 - [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
 - [`joystream-cli content:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-contentaddcuratortogroup-groupid-curatorid)
 - [`joystream-cli content:channel CHANNELID`](#joystream-cli-contentchannel-channelid)
+- [`joystream-cli content:channelPayoutProof CHANNELID`](#joystream-cli-contentchannelpayoutproof-channelid)
+- [`joystream-cli content:channelPayoutProofAtByteOffset BYTEOFFSET`](#joystream-cli-contentchannelpayoutproofatbyteoffset-byteoffset)
+- [`joystream-cli content:channelPayoutsPayloadHeader`](#joystream-cli-contentchannelpayoutspayloadheader)
 - [`joystream-cli content:channels`](#joystream-cli-contentchannels)
+- [`joystream-cli content:claimChannelReward CHANNELID`](#joystream-cli-contentclaimchannelreward-channelid)
 - [`joystream-cli content:createChannel`](#joystream-cli-contentcreatechannel)
 - [`joystream-cli content:createCuratorGroup`](#joystream-cli-contentcreatecuratorgroup)
 - [`joystream-cli content:createVideo`](#joystream-cli-contentcreatevideo)
@@ -117,6 +123,10 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
 - [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
 - [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
+- [`joystream-cli content:directChannelPayment`](#joystream-cli-contentdirectchannelpayment)
+- [`joystream-cli content:generateChannelPayoutsCommitment`](#joystream-cli-contentgeneratechannelpayoutscommitment)
+- [`joystream-cli content:generateChannelPayoutsPayload`](#joystream-cli-contentgeneratechannelpayoutspayload)
+- [`joystream-cli content:getPayoutsOnchainCommitment`](#joystream-cli-contentgetpayoutsonchaincommitment)
 - [`joystream-cli content:removeChannelAssets`](#joystream-cli-contentremovechannelassets)
 - [`joystream-cli content:removeCuratorFromGroup [GROUPID] [CURATORID]`](#joystream-cli-contentremovecuratorfromgroup-groupid-curatorid)
 - [`joystream-cli content:reuploadAssets`](#joystream-cli-contentreuploadassets)
@@ -124,12 +134,14 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-contentsetcuratorgroupstatus-id-status)
 - [`joystream-cli content:setVideoVisibilityAsModerator`](#joystream-cli-contentsetvideovisibilityasmoderator)
 - [`joystream-cli content:updateChannel CHANNELID`](#joystream-cli-contentupdatechannel-channelid)
+- [`joystream-cli content:updateChannelPayoutsProposal`](#joystream-cli-contentupdatechannelpayoutsproposal)
 - [`joystream-cli content:updateChannelStateBloatBond VALUE`](#joystream-cli-contentupdatechannelstatebloatbond-value)
 - [`joystream-cli content:updateCuratorGroupPermissions [ID]`](#joystream-cli-contentupdatecuratorgrouppermissions-id)
 - [`joystream-cli content:updateVideo VIDEOID`](#joystream-cli-contentupdatevideo-videoid)
 - [`joystream-cli content:updateVideoStateBloatBond VALUE`](#joystream-cli-contentupdatevideostatebloatbond-value)
 - [`joystream-cli content:video VIDEOID`](#joystream-cli-contentvideo-videoid)
 - [`joystream-cli content:videos [CHANNELID]`](#joystream-cli-contentvideos-channelid)
+- [`joystream-cli council:fundBudget`](#joystream-cli-councilfundbudget)
 - [`joystream-cli fee-profile:addForumPost`](#joystream-cli-fee-profileaddforumpost)
 - [`joystream-cli fee-profile:addVideoComment`](#joystream-cli-fee-profileaddvideocomment)
 - [`joystream-cli fee-profile:buyMembership`](#joystream-cli-fee-profilebuymembership)
@@ -640,6 +652,39 @@ ARGUMENTS
 
 _See code: [src/commands/api/setUri.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/setUri.ts)_
 
+## `joystream-cli apps:createApp`
+
+Creates app for current member
+
+```
+USAGE
+  $ joystream-cli apps:createApp
+
+OPTIONS
+  -i, --input=input          Path to JSON file containing app details
+  -s, --skip                 If true command won't prompt missing fields
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/apps/createApp.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/apps/createApp.ts)_
+
+## `joystream-cli apps:updateApp`
+
+Updates app of given ID
+
+```
+USAGE
+  $ joystream-cli apps:updateApp
+
+OPTIONS
+  -i, --input=input          Path to JSON file containing app details
+  -s, --skip                 If true command won't prompt missing fields
+  --appId=appId              (required) ID of the app to update
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/apps/updateApp.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/apps/updateApp.ts)_
+
 ## `joystream-cli autocomplete [SHELL]`
 
 display autocomplete installation instructions
@@ -709,6 +754,57 @@ OPTIONS
 
 _See code: [src/commands/content/channel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channel.ts)_
 
+## `joystream-cli content:channelPayoutProof CHANNELID`
+
+Show payout information for a channel.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutProof CHANNELID
+
+ARGUMENTS
+  CHANNELID  ID of the Channel
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/channelPayoutProof.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutProof.ts)_
+
+## `joystream-cli content:channelPayoutProofAtByteOffset BYTEOFFSET`
+
+Get channel payout record from serialized payload at given byte.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutProofAtByteOffset BYTEOFFSET
+
+ARGUMENTS
+  BYTEOFFSET  Byte offset of payout record from start of payload
+
+OPTIONS
+  --path=path  Path to the serialized payload file
+  --url=url    URL to the serialized payload file
+```
+
+_See code: [src/commands/content/channelPayoutProofAtByteOffset.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutProofAtByteOffset.ts)_
+
+## `joystream-cli content:channelPayoutsPayloadHeader`
+
+Get header from serialized payload file.
+
+```
+USAGE
+  $ joystream-cli content:channelPayoutsPayloadHeader
+
+OPTIONS
+  --path=path  Path to the protobuf serialized payload file
+  --url=url    URL to the protobuf serialized payload file
+```
+
+_See code: [src/commands/content/channelPayoutsPayloadHeader.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channelPayoutsPayloadHeader.ts)_
+
 ## `joystream-cli content:channels`
 
 List existing content directory channels.
@@ -723,6 +819,24 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/channels.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/channels.ts)_
+
+## `joystream-cli content:claimChannelReward CHANNELID`
+
+Claim channel payout reward for a given channel id.
+
+```
+USAGE
+  $ joystream-cli content:claimChannelReward CHANNELID
+
+ARGUMENTS
+  CHANNELID  ID of the Channel
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/claimChannelReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/claimChannelReward.ts)_
 
 ## `joystream-cli content:createChannel`
 
@@ -945,6 +1059,82 @@ OPTIONS
 
 _See code: [src/commands/content/deleteVideoAssetsAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAssetsAsModerator.ts)_
 
+## `joystream-cli content:directChannelPayment`
+
+Make direct payment to channel's reward account by any member .
+
+```
+USAGE
+  $ joystream-cli content:directChannelPayment
+
+OPTIONS
+  -r, --rationale=rationale      (required) Reason for the payment
+
+  -v, --videoId=videoId          video ID for which payment is being made. If not provided, payment is supposed to be a
+                                 channel wide tip
+
+  --amount=amount                (required) JOY amount to be paid
+
+  --channelId=channelId          ID of the channel to be paid
+
+  --rewardAccount=rewardAccount  Reward account of the channel to be paid
+
+  --useMemberId=useMemberId      Try using the specified member id as context whenever possible
+
+  --useWorkerId=useWorkerId      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/directChannelPayment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/directChannelPayment.ts)_
+
+## `joystream-cli content:generateChannelPayoutsCommitment`
+
+Generate merkle root (commitment) from channel payouts payload.
+
+```
+USAGE
+  $ joystream-cli content:generateChannelPayoutsCommitment
+
+OPTIONS
+  --path=path                Path to the serialized payload file
+  --url=url                  URL to the serialized payload file
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/generateChannelPayoutsCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsCommitment.ts)_
+
+## `joystream-cli content:generateChannelPayoutsPayload`
+
+Generate serialized channel payouts payload from JSON input.
+
+```
+USAGE
+  $ joystream-cli content:generateChannelPayoutsPayload
+
+OPTIONS
+  -i, --input=input          (required) Path to JSON file containing channel payouts vector
+  -o, --out=out              (required) Path to output file where serialized channel payouts payload will be saved
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/generateChannelPayoutsPayload.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/generateChannelPayoutsPayload.ts)_
+
+## `joystream-cli content:getPayoutsOnchainCommitment`
+
+Get on-chain commitment (merkle root) for channel payouts payload.
+
+```
+USAGE
+  $ joystream-cli content:getPayoutsOnchainCommitment
+
+OPTIONS
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/getPayoutsOnchainCommitment.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/getPayoutsOnchainCommitment.ts)_
+
 ## `joystream-cli content:removeChannelAssets`
 
 Remove data objects associated with the channel or any of its videos.
@@ -1075,6 +1265,29 @@ OPTIONS
 
 _See code: [src/commands/content/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannel.ts)_
 
+## `joystream-cli content:updateChannelPayoutsProposal`
+
+Create channel payouts proposal.
+
+```
+USAGE
+  $ joystream-cli content:updateChannelPayoutsProposal
+
+OPTIONS
+  -b, --exactExecutionBlock=exactExecutionBlock  The Block at which the proposal should be automatically executed
+  -d, --description=description                  (required) Description of the proposal
+  -e, --channelCashoutsEnabled                   Whether cashouts be enabled/disabled
+  -p, --payloadFilePath=payloadFilePath          Path to protobuf serialized file containing channel payouts payload
+  -s, --stakingAccountId=stakingAccountId        (required) Proposer staking account Id
+  -t, --title=title                              (required) Title of the proposal
+  --max=max                                      Maximum cashout amount allowed to a channel
+  --min=min                                      Minimum cashout amount allowed to a channel
+  --useMemberId=useMemberId                      Try using the specified member id as context whenever possible
+  --useWorkerId=useWorkerId                      Try using the specified worker id as context whenever possible
+```
+
+_See code: [src/commands/content/updateChannelPayoutsProposal.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/updateChannelPayoutsProposal.ts)_
+
 ## `joystream-cli content:updateChannelStateBloatBond VALUE`
 
 Update channel state bloat bond.
@@ -1188,6 +1401,22 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/videos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/videos.ts)_
+
+## `joystream-cli council:fundBudget`
+
+Fund council budget by some member.
+
+```
+USAGE
+  $ joystream-cli council:fundBudget
+
+OPTIONS
+  --amount=amount            (required) Funding amount
+  --rationale=rationale      (required) Reason of funding the budget
+  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
+```
+
+_See code: [src/commands/council/fundBudget.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/council/fundBudget.ts)_
 
 ## `joystream-cli fee-profile:addForumPost`
 
@@ -1788,6 +2017,8 @@ ARGUMENTS
   MESSAGE  Remark message
 
 OPTIONS
+  --account=account          Account where JOY needs to be transferred
+  --amount=amount            JOY amount to be transferred
   --useMemberId=useMemberId  Try using the specified member id as context whenever possible
 ```
 

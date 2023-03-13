@@ -3,6 +3,11 @@ import { Utils } from '../../utils'
 import { Bytes } from '@polkadot/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { MembershipExternalResource, MembershipExternalResourceType } from '../../graphql/generated/schema'
+import { Api } from '../../Api'
+import { QueryNodeApi } from '../../QueryNodeApi'
+import { BuyMembershipHappyCaseFixture } from './BuyMembershipHappyCaseFixture'
+import { FixtureRunner } from '../../Fixture'
+import { MemberContext } from '../../types'
 
 type MemberCreationParams = {
   root_account: string
@@ -59,4 +64,12 @@ export function asMembershipExternalResource({
       value,
     }
   }
+}
+
+export async function makeMembers(api: Api, query: QueryNodeApi, n: number): Promise<MemberContext[]> {
+  const accounts = (await api.createKeyPairs(n)).map((k) => k.key.address)
+  const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
+  await new FixtureRunner(buyMembershipFixture).run()
+  const memberIds = buyMembershipFixture.getCreatedMembers()
+  return memberIds.map((id, i) => ({ account: accounts[i], memberId: id }))
 }

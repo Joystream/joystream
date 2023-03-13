@@ -2068,7 +2068,6 @@ benchmarks! {
         let params = UpdateChannelPayoutsParameters::<T> {
             commitment: Some(hash),
             payload: Some(ChannelPayoutsPayloadParameters::<T>{
-                uploader_account: account_id,
                 object_creation_params: storage::DataObjectCreationParameters {
                     size: 1u64,
                     ipfs_content_id: vec![1u8; 46],
@@ -2080,7 +2079,7 @@ benchmarks! {
             max_cashout_allowed: Some(T::MaximumCashoutAllowedLimit::get()),
             channel_cashouts_enabled: Some(true),
         };
-    }: _ (origin, params)
+    }: _ (origin, params, account_id)
         verify {
             assert_eq!(
                 Pallet::<T>::commitment(),
@@ -2170,14 +2169,18 @@ benchmarks! {
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id);
+        let origin = RawOrigin::Signed(lead_account_id.clone());
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![PausableChannelFeature::CreatorCashout]);
 
-        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-            commitment: Some(commitment),
-            ..Default::default()
-        })?;
+        Pallet::<T>::update_channel_payouts(
+            RawOrigin::Root.into(),
+            UpdateChannelPayoutsParameters::<T> {
+                commitment: Some(commitment),
+                ..Default::default()
+            },
+            lead_account_id
+        )?;
 
         let actor = ContentActor::Lead;
         let item = payments[0];
@@ -2214,10 +2217,14 @@ benchmarks! {
             PausableChannelFeature::ChannelFundsTransfer,
         ]);
 
-        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-            commitment: Some(commitment),
-            ..Default::default()
-        })?;
+        Pallet::<T>::update_channel_payouts(
+            RawOrigin::Root.into(),
+            UpdateChannelPayoutsParameters::<T> {
+                commitment: Some(commitment),
+                ..Default::default()
+            },
+            member_account_id.clone()
+        )?;
 
         let actor = ContentActor::Member(member_id);
         let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
@@ -2247,17 +2254,21 @@ benchmarks! {
         let proof = build_merkle_path_helper::<T, _>(&payments, 0);
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id);
+        let origin = RawOrigin::Signed(lead_account_id.clone());
 
         set_all_channel_paused_features_except::<T>(channel_id, vec![
             PausableChannelFeature::CreatorCashout,
             PausableChannelFeature::ChannelFundsTransfer,
         ]);
 
-        Pallet::<T>::update_channel_payouts(RawOrigin::Root.into(), UpdateChannelPayoutsParameters::<T> {
-            commitment: Some(commitment),
-            ..Default::default()
-        })?;
+        Pallet::<T>::update_channel_payouts(
+            RawOrigin::Root.into(),
+            UpdateChannelPayoutsParameters::<T> {
+                commitment: Some(commitment),
+                ..Default::default()
+            },
+            lead_account_id
+        )?;
 
         let actor = ContentActor::Lead;
         let item = payments[0];

@@ -33,3 +33,21 @@ query getReferendumIntermediateWinners($electionRoundCycleId: Int!, $councilSize
     ...CandidateFields
   }
 }
+
+fragment CouncilBudgetFundedEventFields on CouncilBudgetFundedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  memberId
+  amount
+  rationale
+}
+
+query getCouncilBudgetFundedEventsByEventIds($eventIds: [ID!]) {
+  councilBudgetFundedEvents(where: { id_in: $eventIds }) {
+    ...CouncilBudgetFundedEventFields
+  }
+}

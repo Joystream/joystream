@@ -56,6 +56,7 @@ import {
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
+  UpdateChannelPayoutsProposalDetails,
 } from 'query-node/dist/model'
 import {
   bytesToString,
@@ -64,6 +65,7 @@ import {
   INT32MAX,
   perpareString,
   toNumber,
+  unwrap,
 } from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
@@ -103,7 +105,7 @@ async function parseProposalDetails(
   if (proposalDetails.isSignal) {
     const details = new SignalProposalDetails()
     const specificDetails = proposalDetails.asSignal
-    details.text = perpareString(specificDetails.toHuman() as string)
+    details.text = bytesToString(specificDetails)
     return details
   }
   // RuntimeUpgradeProposalDetails:
@@ -211,7 +213,7 @@ async function parseProposalDetails(
   else if (proposalDetails.isAmendConstitution) {
     const details = new AmendConstitutionProposalDetails()
     const specificDetails = proposalDetails.asAmendConstitution
-    details.text = perpareString(specificDetails.toHuman() as string)
+    details.text = bytesToString(specificDetails)
     return details
   }
   // CancelWorkingGroupLeadOpeningProposalDetails:
@@ -277,6 +279,21 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asVetoProposal
     details.proposalId = specificDetails.toString()
     return details
+  }
+  // UpdateChannelPayoutsProposalDetails
+  else if (proposalDetails.isUpdateChannelPayouts) {
+    const details = new UpdateChannelPayoutsProposalDetails()
+    const specificDetails = proposalDetails.asUpdateChannelPayouts
+
+    details.commitment = unwrap(specificDetails.commitment)?.toString()
+    details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
+    details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
+    details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
+
+    const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
+    details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
+
+    return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
   }
@@ -319,8 +336,8 @@ export async function proposalsCodex_ProposalCreated({ store, event }: EventCont
     details: proposalDetails,
     councilApprovals: 0,
     creator: new Membership({ id: generalProposalParameters.memberId.toString() }),
-    title: perpareString(generalProposalParameters.title.toHuman() as string),
-    description: perpareString(generalProposalParameters.description.toHuman() as string),
+    title: bytesToString(generalProposalParameters.title),
+    description: bytesToString(generalProposalParameters.description),
     exactExecutionBlock: generalProposalParameters.exactExecutionBlock.isSome
       ? toNumber(generalProposalParameters.exactExecutionBlock.unwrap(), INT32MAX)
       : undefined,
@@ -447,7 +464,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     newStatus = new ProposalStatusExecuted()
   } else if (executionStatus.isExecutionFailed) {
     const status = new ProposalStatusExecutionFailed()
-    status.errorMessage = executionStatus.asExecutionFailed.error.toString()
+    status.errorMessage = executionStatus.asExecutionFailed.error.toHuman() as string
     newStatus = status
   } else {
     throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)
