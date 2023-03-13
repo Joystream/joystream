@@ -948,7 +948,7 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       accountInfoByTokenAndMember: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletProjectTokenAccountData>, [u64, u64]>;
       /**
-       * Bond Transaction fee percentage
+       * AMM buy transaction fee percentage
        **/
       ammBuyTxFees: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
@@ -956,13 +956,21 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       ammDeactivationThreshold: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
-       * Bond Transaction fee percentage
+       * AMM sell transaction fee percentage
        **/
       ammSellTxFees: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
        * Bloat Bond value used during account creation
        **/
       bloatBond: AugmentedQuery<ApiType, () => Observable<u128>, []>;
+      /**
+       * Max patronage rate allowed
+       **/
+      maxYearlyPatronageRate: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      /**
+       * Minimum slope parameters allowed for AMM curve
+       **/
+      minAmmSlopeParameter: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
        * Minimum revenue split duration constraint
        **/

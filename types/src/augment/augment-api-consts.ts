@@ -653,6 +653,10 @@ declare module '@polkadot/api-base/types/consts' {
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Max yearly patronage rate update proposal
+       **/
+      updateMaxYearlyPatronageRate: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
        * Exports 'Update Working Group Budget' proposal parameters.
        **/
       updateWorkingGroupBudgetProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
