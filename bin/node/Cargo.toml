@@ -18,7 +18,7 @@ crate-type = ["cdylib", "rlib"]
 clap = { version = "4.0.9", features = ["derive"], optional = true }
 codec = { package = "parity-scale-codec", version = "3.1.5" }
 serde = { version = "1.0.136", features = ["derive"] }
-jsonrpsee = { version = "0.13.0", features = ["server"] }
+jsonrpsee = { version = "0.16.2", features = ["server"] }
 futures = "0.3.21"
 hex-literal = "0.3.4"
 log = "0.4.17"
@@ -131,6 +131,7 @@ substrate-frame-cli = { package = 'substrate-frame-cli', optional = true, git = 
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-balances = { package = 'pallet-balances', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 # node-inspect = { path = "../inspect", optional = true }
+sc-storage-monitor = { package = 'sc-storage-monitor', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 [features]
 default = ["cli"]
