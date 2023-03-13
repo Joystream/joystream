@@ -1,6 +1,6 @@
 // This file is part of Substrate.
 
-// Copyright (C) 2018-2022 Parity Technologies (UK) Ltd.
+// Copyright (C) Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 
 // This program is free software: you can redistribute it and/or modify
@@ -16,20 +16,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+#![warn(unused_extern_crates)]
+
 //! Service implementation. Specialized wrapper over substrate service.
 
+use crate::cli::Cli;
 use crate::node_executor::ExecutorDispatch;
 use codec::Encode;
+use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
 use node_runtime::opaque::Block;
 use node_runtime::RuntimeApi;
 use overrides::DEFAULT_HEAP_PAGES;
-use sc_client_api::{BlockBackend, ExecutorProvider};
+use sc_client_api::BlockBackend;
 use sc_consensus_babe::{self, SlotProportion};
 use sc_executor::NativeElseWasmExecutor;
 use sc_finality_grandpa as grandpa;
-use sc_network::{Event, NetworkService};
+use sc_network::NetworkService;
+use sc_network_common::{
+    protocol::event::Event, service::NetworkEventStream, sync::warp::WarpSyncParams,
+};
 use sc_service::{config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_api::ProvideRuntimeApi;
@@ -55,7 +62,7 @@ pub fn fetch_nonce(client: &FullClient, account: sp_core::sr25519::Pair) -> u32 
     let best_hash = client.chain_info().best_hash;
     client
         .runtime_api()
-        .account_nonce(&generic::BlockId::Hash(best_hash), account.public().into())
+        .account_nonce(best_hash, account.public().into())
         .expect("Fetching account nonce works; qed")
 }
 
@@ -68,7 +75,7 @@ pub fn fetch_nonce(client: &FullClient, account: sp_core::sr25519::Pair) -> u32 
 pub fn create_extrinsic(
     client: &FullClient,
     sender: sp_core::sr25519::Pair,
-    function: impl Into<node_runtime::Call>,
+    function: impl Into<node_runtime::RuntimeCall>,
     nonce: Option<u32>,
 ) -> node_runtime::UncheckedExtrinsic {
     let function = function.into();
@@ -118,13 +125,12 @@ pub fn create_extrinsic(
 
     node_runtime::UncheckedExtrinsic::new_signed(
         function,
-        sp_runtime::AccountId32::from(sender.public()),
+        sp_runtime::AccountId32::from(sender.public()).into(),
         node_runtime::Signature::Sr25519(signature),
         extra,
     )
 }
 
-#[allow(clippy::type_complexity)]
 /// Creates a new partial node.
 pub fn new_partial(
     config: &Configuration,
@@ -203,7 +209,7 @@ pub fn new_partial(
     let justification_import = grandpa_block_import.clone();
 
     let (block_import, babe_link) = sc_consensus_babe::block_import(
-        sc_consensus_babe::Config::get(&*client)?,
+        sc_consensus_babe::configuration(&*client)?,
         grandpa_block_import,
         client.clone(),
     )?;
@@ -224,14 +230,10 @@ pub fn new_partial(
 					slot_duration,
 				);
 
-            let uncles =
-                sp_authorship::InherentDataProvider::<<Block as BlockT>::Header>::check_inherents();
-
-            Ok((timestamp, slot, uncles))
+            Ok((slot, timestamp))
         },
         &task_manager.spawn_essential_handle(),
         config.prometheus_registry(),
-        sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone()),
         telemetry.as_ref().map(|x| x.handle()),
     )?;
 
@@ -322,14 +324,12 @@ pub fn new_full_base(
         &sc_consensus_babe::BabeLink<Block>,
     ),
 ) -> Result<NewFullBase, ServiceError> {
-    let hwbench = if !disable_hardware_benchmarks {
-        config.database.path().map(|database_path| {
+    let hwbench = (!disable_hardware_benchmarks)
+        .then_some(config.database.path().map(|database_path| {
             let _ = std::fs::create_dir_all(&database_path);
             sc_sysinfo::gather_hwbench(Some(database_path))
-        })
-    } else {
-        None
-    };
+        }))
+        .flatten();
 
     let sc_service::PartialComponents {
         client,
@@ -365,7 +365,7 @@ pub fn new_full_base(
         Vec::default(),
     ));
 
-    let (network, system_rpc_tx, network_starter) =
+    let (network, system_rpc_tx, tx_handler_controller, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             client: client.clone(),
@@ -373,7 +373,7 @@ pub fn new_full_base(
             spawn_handle: task_manager.spawn_handle(),
             import_queue,
             block_announce_validator_builder: None,
-            warp_sync: Some(warp_sync),
+            warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
         })?;
 
     if config.offchain_worker.enabled {
@@ -403,11 +403,17 @@ pub fn new_full_base(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         system_rpc_tx,
+        tx_handler_controller,
         telemetry: telemetry.as_mut(),
     })?;
 
     if let Some(hwbench) = hwbench {
         sc_sysinfo::print_hwbench(&hwbench);
+        if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && role.is_authority() {
+            log::warn!(
+                "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
+            );
+        }
 
         if let Some(ref mut telemetry) = telemetry {
             let telemetry_handle = telemetry.handle();
@@ -432,9 +438,6 @@ pub fn new_full_base(
             telemetry.as_ref().map(|x| x.handle()),
         );
 
-        let can_author_with =
-            sp_consensus::CanAuthorWithNativeVersion::new(client.executor().clone());
-
         let client_clone = client.clone();
         let slot_duration = babe_link.config().slot_duration();
         let babe_config = sc_consensus_babe::BabeParams {
@@ -448,11 +451,6 @@ pub fn new_full_base(
             create_inherent_data_providers: move |parent, ()| {
                 let client_clone = client_clone.clone();
                 async move {
-                    let uncles = sc_consensus_uncles::create_uncles_inherent_data_provider(
-                        &*client_clone,
-                        parent,
-                    )?;
-
                     let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                     let slot =
@@ -461,21 +459,18 @@ pub fn new_full_base(
 							slot_duration,
 						);
 
-                    // We Have not included transaction_storage pallet in runtime
-                    // are they related?
                     let storage_proof =
                         sp_transaction_storage_proof::registration::new_data_provider(
                             &*client_clone,
                             &parent,
                         )?;
 
-                    Ok((timestamp, slot, uncles, storage_proof))
+                    Ok((slot, timestamp, storage_proof))
                 }
             },
             force_authoring,
             backoff_authoring_blocks,
             babe_link,
-            can_author_with,
             block_proposal_slot_portion: SlotProportion::new(0.5),
             max_block_proposal_slot_portion: None,
             telemetry: telemetry.as_ref().map(|x| x.handle()),
@@ -579,12 +574,18 @@ pub fn new_full_base(
 }
 
 /// Builds a new service for a full client.
-pub fn new_full(
-    config: Configuration,
-    disable_hardware_benchmarks: bool,
-) -> Result<TaskManager, ServiceError> {
-    new_full_base(config, disable_hardware_benchmarks, |_, _| ())
-        .map(|NewFullBase { task_manager, .. }| task_manager)
+pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceError> {
+    let database_source = config.database.clone();
+    let task_manager = new_full_base(config, cli.no_hardware_benchmarks, |_, _| ())
+        .map(|NewFullBase { task_manager, .. }| task_manager)?;
+
+    sc_storage_monitor::StorageMonitorService::try_spawn(
+        cli.storage_monitor,
+        database_source,
+        &task_manager.spawn_essential_handle(),
+    )?;
+
+    Ok(task_manager)
 }
 
 #[cfg(test)]
@@ -593,7 +594,7 @@ mod tests {
     use codec::Encode;
     use node_runtime::{
         constants::{currency::CENTS, SLOT_DURATION},
-        Address, BalancesCall, Call, UncheckedExtrinsic,
+        Address, BalancesCall, RuntimeCall, UncheckedExtrinsic,
     };
     use node_runtime::{opaque::Block, DigestItem, Signature};
     use sc_client_api::BlockBackend;
@@ -609,14 +610,13 @@ mod tests {
     use sp_keyring::AccountKeyring;
     use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
     use sp_runtime::{
-        generic::{BlockId, Digest, Era, SignedPayload},
+        generic::{Digest, Era, SignedPayload},
         key_types::BABE,
         traits::{Block as BlockT, Header as HeaderT, IdentifyAccount, Verify},
         RuntimeAppPublic,
     };
-
-    use std::convert::TryInto;
-    use std::{borrow::Cow, sync::Arc};
+    use sp_timestamp;
+    use std::sync::Arc;
 
     type AccountPublic = <Signature as Verify>::Signer;
 
@@ -673,9 +673,8 @@ mod tests {
                 Ok((node, setup_handles.unwrap()))
             },
             |service, &mut (ref mut block_import, ref babe_link)| {
-                let parent_id = BlockId::number(service.client().chain_info().best_number);
-                let parent_header = service.client().header(&parent_id).unwrap().unwrap();
-                let parent_hash = parent_header.hash();
+                let parent_hash = service.client().chain_info().best_hash;
+                let parent_header = service.client().header(parent_hash).unwrap().unwrap();
                 let parent_number = *parent_header.number();
 
                 futures::executor::block_on(service.transaction_pool().maintain(
@@ -714,10 +713,7 @@ mod tests {
                         .epoch_changes()
                         .shared_data()
                         .epoch_data(&epoch_descriptor, |slot| {
-                            sc_consensus_babe::Epoch::genesis(
-                                babe_link.config().genesis_config(),
-                                slot,
-                            )
+                            sc_consensus_babe::Epoch::genesis(babe_link.config(), slot)
                         })
                         .unwrap();
 
@@ -731,14 +727,16 @@ mod tests {
                     slot += 1;
                 };
 
-                let inherent_data = (
-                    sp_timestamp::InherentDataProvider::new(
-                        std::time::Duration::from_millis(SLOT_DURATION * slot).into(),
-                    ),
-                    sp_consensus_babe::inherents::InherentDataProvider::new(slot.into()),
+                let inherent_data = futures::executor::block_on(
+                    (
+                        sp_timestamp::InherentDataProvider::new(
+                            std::time::Duration::from_millis(SLOT_DURATION * slot).into(),
+                        ),
+                        sp_consensus_babe::inherents::InherentDataProvider::new(slot.into()),
+                    )
+                        .create_inherent_data(),
                 )
-                    .create_inherent_data()
-                    .expect("Creates inherent data");
+                .expect("Creates inherent data");
 
                 digest.push(<DigestItem as CompatibleDigestItem>::babe_pre_digest(
                     babe_pre_digest,
@@ -780,9 +778,9 @@ mod tests {
                 let mut params = BlockImportParams::new(BlockOrigin::File, new_header);
                 params.post_digests.push(item);
                 params.body = Some(new_body);
-                params.intermediates.insert(
-                    Cow::from(INTERMEDIATE_KEY),
-                    Box::new(BabeIntermediate::<Block> { epoch_descriptor }) as Box<_>,
+                params.insert_intermediate(
+                    INTERMEDIATE_KEY,
+                    BabeIntermediate::<Block> { epoch_descriptor },
                 );
                 params.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
@@ -794,15 +792,15 @@ mod tests {
                 let to: Address = AccountPublic::from(bob.public()).into_account().into();
                 let from: Address = AccountPublic::from(charlie.public()).into_account().into();
                 let genesis_hash = service.client().block_hash(0).unwrap().unwrap();
-                let best_block_id = BlockId::number(service.client().chain_info().best_number);
+                let best_hash = service.client().chain_info().best_hash;
                 let (spec_version, transaction_version) = {
-                    let version = service.client().runtime_version_at(&best_block_id).unwrap();
+                    let version = service.client().runtime_version_at(best_hash).unwrap();
                     (version.spec_version, version.transaction_version)
                 };
                 let signer = charlie.clone();
 
-                let function = Call::Balances(BalancesCall::transfer {
-                    dest: to,
+                let function = RuntimeCall::Balances(BalancesCall::transfer {
+                    dest: to.into(),
                     value: amount,
                 });
 
@@ -813,7 +811,9 @@ mod tests {
                 let check_era = frame_system::CheckEra::from(Era::Immortal);
                 let check_nonce = frame_system::CheckNonce::from(index);
                 let check_weight = frame_system::CheckWeight::new();
-                let tx_payment = pallet_transaction_payment::ChargeTransactionPayment::from(0);
+                let tx_payment = pallet_transaction_payment::ChargeTransactionPayment::<
+                    node_runtime::Runtime,
+                >::from(tip);
                 let extra = (
                     check_non_zero_sender,
                     check_spec_version,
@@ -841,7 +841,8 @@ mod tests {
                 let signature = raw_payload.using_encoded(|payload| signer.sign(payload));
                 let (function, extra, _) = raw_payload.deconstruct();
                 index += 1;
-                UncheckedExtrinsic::new_signed(function, from, signature.into(), extra).into()
+                UncheckedExtrinsic::new_signed(function, from.into(), signature.into(), extra)
+                    .into()
             },
         );
     }

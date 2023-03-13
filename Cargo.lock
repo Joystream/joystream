@@ -3305,6 +3305,7 @@ dependencies = [
  "joystream-node-runtime",
  "jsonrpsee 0.13.1",
  "log",
+ "mmr-rpc",
  "nix 0.23.2",
  "overrides",
  "pallet-balances",
@@ -3335,10 +3336,13 @@ dependencies = [
  "sc-finality-grandpa-rpc",
  "sc-keystore",
  "sc-network",
+ "sc-network-common",
  "sc-rpc",
  "sc-rpc-api",
+ "sc-rpc-spec-v2",
  "sc-service",
  "sc-service-test",
+ "sc-storage-monitor",
  "sc-sync-state-rpc",
  "sc-sysinfo",
  "sc-telemetry",
@@ -4559,6 +4563,22 @@ dependencies = [
  "log",
  "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.45.0",
+]
+
+[[package]]
+name = "mmr-rpc"
+version = "4.0.0-dev"
+source = "git+https://github.com/joystream/substrate.git?rev=50cf239147a6f569e563bcadec6c7a1c5ad5c67e#50cf239147a6f569e563bcadec6c7a1c5ad5c67e"
+dependencies = [
+ "anyhow",
+ "jsonrpsee 0.16.2",
+ "parity-scale-codec",
+ "serde",
+ "sp-api",
+ "sp-blockchain",
+ "sp-core",
+ "sp-mmr-primitives",
+ "sp-runtime",
 ]
 
 [[package]]
