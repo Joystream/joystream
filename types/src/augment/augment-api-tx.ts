@@ -60,6 +60,7 @@ import type {
   PalletMembershipInviteMembershipParameters,
   PalletMultisigTimepoint,
   PalletProjectTokenAmmParams,
+  PalletProjectTokenGovernanceParameters,
   PalletProjectTokenMerkleProof,
   PalletProjectTokenPaymentWithVesting,
   PalletProjectTokenTokenIssuanceParameters,
@@ -6782,9 +6783,37 @@ declare module '@polkadot/api-base/types/submittable' {
         ) => SubmittableExtrinsic<ApiType>,
         [u64, u64, Vec<ITuple<[u64, u128]>>, Bytes]
       >
-      updateMaxYearlyPatronageRate: AugmentedSubmittable<
-        (rate: Permill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-        [Permill]
+      /**
+       * Allow Governance to Set constraints
+       * Preconditions:
+       * - origin is signed by `root`
+       * PostConditions:
+       * - governance parameters storage value set to the provided values
+       * <weight>
+       *
+       * ## Weight
+       * `O (1)`
+       * # </weight>
+       **/
+      updateGovernanceParameters: AugmentedSubmittable<
+        (
+          parameters:
+            | PalletProjectTokenGovernanceParameters
+            | {
+                maxYearlyRate?: any
+                minAmmSlope?: any
+                minSaleDuration?: any
+                minRevenueSplitDuration?: any
+                minRevenueSplitTimeToStart?: any
+                salePlatformFee?: any
+                ammBuyTxFees?: any
+                ammSellTxFees?: any
+                bloatBond?: any
+              }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [PalletProjectTokenGovernanceParameters]
       >
     }
     proposalsCodex: {
@@ -6835,7 +6864,7 @@ declare module '@polkadot/api-base/types/submittable' {
             | { VetoProposal: any }
             | { UpdateGlobalNftLimit: any }
             | { UpdateChannelPayouts: any }
-            | { UpdateMaxYearlyPatronageRate: any }
+            | { UpdateTokenPalletGovernanceParameters: any }
             | string
             | Uint8Array
         ) => SubmittableExtrinsic<ApiType>,

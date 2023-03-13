@@ -54,6 +54,7 @@ import type {
   PalletMembershipInviteMembershipParameters,
   PalletMultisigTimepoint,
   PalletProjectTokenAmmCurve,
+  PalletProjectTokenGovernanceParameters,
   PalletProjectTokenTokenIssuanceParameters,
   PalletProjectTokenTokenSale,
   PalletProjectTokenTransferPolicy,
@@ -1118,27 +1119,19 @@ declare module '@polkadot/api-base/types/events' {
        *
        * Not much can be said about which computes failed in the process.
        **/
-      ElectionFailed: AugmentedEvent<ApiType, []>
-      /**
-       * The election has been finalized, with the given computation and score.
-       **/
       ElectionFinalized: AugmentedEvent<
         ApiType,
-        [compute: PalletElectionProviderMultiPhaseElectionCompute, score: SpNposElectionsElectionScore],
-        { compute: PalletElectionProviderMultiPhaseElectionCompute; score: SpNposElectionsElectionScore }
-      >
-      /**
-       * There was a phase transition in a given round.
-       **/
-      PhaseTransitioned: AugmentedEvent<
-        ApiType,
-        [from: PalletElectionProviderMultiPhasePhase, to: PalletElectionProviderMultiPhasePhase, round: u32],
-        { from: PalletElectionProviderMultiPhasePhase; to: PalletElectionProviderMultiPhasePhase; round: u32 }
+        [electionCompute: Option<PalletElectionProviderMultiPhaseElectionCompute>],
+        { electionCompute: Option<PalletElectionProviderMultiPhaseElectionCompute> }
       >
       /**
        * An account has been rewarded for their signed submission being finalized.
        **/
       Rewarded: AugmentedEvent<ApiType, [account: AccountId32, value: u128], { account: AccountId32; value: u128 }>
+      /**
+       * The signed phase of the given round has started.
+       **/
+      SignedPhaseStarted: AugmentedEvent<ApiType, [round: u32], { round: u32 }>
       /**
        * An account has been slashed for submitting an invalid signed submission.
        **/
@@ -1146,17 +1139,20 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * A solution was stored with the given compute.
        *
-       * The `origin` indicates the origin of the solution. If `origin` is `Some(AccountId)`,
-       * the stored solution was submited in the signed phase by a miner with the `AccountId`.
-       * Otherwise, the solution was stored either during the unsigned phase or by
-       * `T::ForceOrigin`. The `bool` is `true` when a previous solution was ejected to make
-       * room for this one.
+       * If the solution is signed, this means that it hasn't yet been processed. If the
+       * solution is unsigned, this means that it has also been processed.
+       *
+       * The `bool` is `true` when a previous solution was ejected to make room for this one.
        **/
       SolutionStored: AugmentedEvent<
         ApiType,
-        [compute: PalletElectionProviderMultiPhaseElectionCompute, origin: Option<AccountId32>, prevEjected: bool],
-        { compute: PalletElectionProviderMultiPhaseElectionCompute; origin: Option<AccountId32>; prevEjected: bool }
+        [electionCompute: PalletElectionProviderMultiPhaseElectionCompute, prevEjected: bool],
+        { electionCompute: PalletElectionProviderMultiPhaseElectionCompute; prevEjected: bool }
       >
+      /**
+       * The unsigned phase of the given round has started.
+       **/
+      UnsignedPhaseStarted: AugmentedEvent<ApiType, [round: u32], { round: u32 }>
     }
     forum: {
       /**
@@ -2327,11 +2323,11 @@ declare module '@polkadot/api-base/types/events' {
        **/
       AmmDeactivated: AugmentedEvent<ApiType, [u64, u64, u128]>
       /**
-       * Max patronage yearly rate updated
+       * Governance parameters updated
        * Params:
-       * - new rate
+       * - governance parameters
        **/
-      MaxYearlyPatronageRateUpdated: AugmentedEvent<ApiType, [Permill]>
+      GovernanceParametersUpdated: AugmentedEvent<ApiType, [PalletProjectTokenGovernanceParameters]>
       /**
        * Member joined whitelist
        * Params:
@@ -2622,62 +2618,37 @@ declare module '@polkadot/api-base/types/events' {
        * NOTE: This event is only emitted when funds are bonded via a dispatchable. Notably,
        * it will not be emitted for staking rewards when they are added to stake.
        **/
-      Bonded: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>
+      Bonded: AugmentedEvent<ApiType, [AccountId32, u128]>
       /**
        * An account has stopped participating as either a validator or nominator.
        **/
-      Chilled: AugmentedEvent<ApiType, [stash: AccountId32], { stash: AccountId32 }>
+      Chilled: AugmentedEvent<ApiType, [AccountId32]>
       /**
        * The era payout has been set; the first balance is the validator-payout; the second is
        * the remainder from the maximum amount of reward.
        **/
-      EraPaid: AugmentedEvent<
-        ApiType,
-        [eraIndex: u32, validatorPayout: u128, remainder: u128],
-        { eraIndex: u32; validatorPayout: u128; remainder: u128 }
-      >
+      EraPaid: AugmentedEvent<ApiType, [u32, u128, u128]>
       /**
        * A new force era mode was set.
        **/
-      ForceEra: AugmentedEvent<ApiType, [mode: PalletStakingForcing], { mode: PalletStakingForcing }>
-      /**
-       * A nominator has been kicked from a validator.
-       **/
-      Kicked: AugmentedEvent<
-        ApiType,
-        [nominator: AccountId32, stash: AccountId32],
-        { nominator: AccountId32; stash: AccountId32 }
-      >
+      Kicked: AugmentedEvent<ApiType, [AccountId32, AccountId32]>
       /**
        * An old slashing report from a prior era was discarded because it could
        * not be processed.
        **/
-      OldSlashingReportDiscarded: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>
+      OldSlashingReportDiscarded: AugmentedEvent<ApiType, [u32]>
       /**
        * The stakers' rewards are getting paid.
        **/
-      PayoutStarted: AugmentedEvent<
-        ApiType,
-        [eraIndex: u32, validatorStash: AccountId32],
-        { eraIndex: u32; validatorStash: AccountId32 }
-      >
+      PayoutStarted: AugmentedEvent<ApiType, [u32, AccountId32]>
       /**
        * The nominator has been rewarded by this amount.
        **/
-      Rewarded: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>
+      Rewarded: AugmentedEvent<ApiType, [AccountId32, u128]>
       /**
        * A staker (validator or nominator) has been slashed by the given amount.
        **/
-      Slashed: AugmentedEvent<ApiType, [staker: AccountId32, amount: u128], { staker: AccountId32; amount: u128 }>
-      /**
-       * A slash for the given validator, for the given percentage of their stake, at the given
-       * era as been reported.
-       **/
-      SlashReported: AugmentedEvent<
-        ApiType,
-        [validator: AccountId32, fraction: Perbill, slashEra: u32],
-        { validator: AccountId32; fraction: Perbill; slashEra: u32 }
-      >
+      Slashed: AugmentedEvent<ApiType, [AccountId32, u128]>
       /**
        * A new set of stakers was elected.
        **/
@@ -2689,20 +2660,16 @@ declare module '@polkadot/api-base/types/events' {
       /**
        * An account has unbonded this amount.
        **/
-      Unbonded: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>
+      Unbonded: AugmentedEvent<ApiType, [AccountId32, u128]>
       /**
        * A validator has set their preferences.
        **/
-      ValidatorPrefsSet: AugmentedEvent<
-        ApiType,
-        [stash: AccountId32, prefs: PalletStakingValidatorPrefs],
-        { stash: AccountId32; prefs: PalletStakingValidatorPrefs }
-      >
+      ValidatorPrefsSet: AugmentedEvent<ApiType, [AccountId32, PalletStakingValidatorPrefs]>
       /**
        * An account has called `withdraw_unbonded` and removed unbonding chunks worth `Balance`
        * from the unlocking queue.
        **/
-      Withdrawn: AugmentedEvent<ApiType, [stash: AccountId32, amount: u128], { stash: AccountId32; amount: u128 }>
+      Withdrawn: AugmentedEvent<ApiType, [AccountId32, u128]>
     }
     storage: {
       /**
@@ -3209,16 +3176,16 @@ declare module '@polkadot/api-base/types/events' {
        **/
       ExtrinsicFailed: AugmentedEvent<
         ApiType,
-        [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportDispatchDispatchInfo],
-        { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportDispatchDispatchInfo }
+        [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportWeightsDispatchInfo],
+        { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportWeightsDispatchInfo }
       >
       /**
        * An extrinsic completed successfully.
        **/
       ExtrinsicSuccess: AugmentedEvent<
         ApiType,
-        [dispatchInfo: FrameSupportDispatchDispatchInfo],
-        { dispatchInfo: FrameSupportDispatchDispatchInfo }
+        [dispatchInfo: FrameSupportWeightsDispatchInfo],
+        { dispatchInfo: FrameSupportWeightsDispatchInfo }
       >
       /**
        * An account was reaped.
@@ -3232,17 +3199,6 @@ declare module '@polkadot/api-base/types/events' {
        * On on-chain remark happened.
        **/
       Remarked: AugmentedEvent<ApiType, [sender: AccountId32, hash_: H256], { sender: AccountId32; hash_: H256 }>
-    }
-    transactionPayment: {
-      /**
-       * A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee,
-       * has been paid by `who`.
-       **/
-      TransactionFeePaid: AugmentedEvent<
-        ApiType,
-        [who: AccountId32, actualFee: u128, tip: u128],
-        { who: AccountId32; actualFee: u128; tip: u128 }
-      >
     }
     utility: {
       /**

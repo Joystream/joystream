@@ -178,6 +178,7 @@ import type {
   PalletProjectTokenCall,
   PalletProjectTokenErrorsError,
   PalletProjectTokenEventsRawEvent,
+  PalletProjectTokenGovernanceParameters,
   PalletProjectTokenMerkleProof,
   PalletProjectTokenMerkleSide,
   PalletProjectTokenPatronageData,
@@ -536,6 +537,7 @@ declare module '@polkadot/types/types/registry' {
     PalletProjectTokenCall: PalletProjectTokenCall
     PalletProjectTokenErrorsError: PalletProjectTokenErrorsError
     PalletProjectTokenEventsRawEvent: PalletProjectTokenEventsRawEvent
+    PalletProjectTokenGovernanceParameters: PalletProjectTokenGovernanceParameters
     PalletProjectTokenMerkleProof: PalletProjectTokenMerkleProof
     PalletProjectTokenMerkleSide: PalletProjectTokenMerkleSide
     PalletProjectTokenPatronageData: PalletProjectTokenPatronageData
