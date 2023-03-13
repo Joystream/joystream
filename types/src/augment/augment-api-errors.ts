@@ -2337,10 +2337,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidCurveParameters: AugmentedError<ApiType>;
       /**
-       * Deadline timestamp lower than now
-       **/
-      InvalidTimestampSpecified: AugmentedError<ApiType>;
-      /**
        * The amount of JOY to be transferred is not enough to keep the destination account alive
        **/
       JoyTransferSubjectToDusting: AugmentedError<ApiType>;
@@ -2375,9 +2371,9 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
       /**
-       * Outstanding amount of CRT bought from AMM too large
+       * Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
        **/
-      OutstandingBondedAmountTooLarge: AugmentedError<ApiType>;
+      OutstandingAmmProvidedSupplyTooLarge: AugmentedError<ApiType>;
       /**
        * Previous sale was still not finalized, finalize it first.
        **/

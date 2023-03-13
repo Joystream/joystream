@@ -2184,7 +2184,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokenSaleInitialized: AugmentedEvent<ApiType, [u64, u32, PalletProjectTokenTokenSale, Option<Bytes>]>;
       /**
-       * Token Bonded
+       * Tokens Bought on AMM
        * Params:
        * - token id
        * - member id
@@ -2210,7 +2210,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokensPurchasedOnSale: AugmentedEvent<ApiType, [u64, u32, u128, u64]>;
       /**
-       * Token Unbonded
+       * Tokens Sold on AMM
        * Params:
        * - token id
        * - member id
