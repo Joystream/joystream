@@ -644,7 +644,7 @@ parameter_types! {
     pub MaxElectingVoters: u32 = 12_500;
     // The maximum winners that can be elected by the Election pallet which is equivalent to the
     // maximum active validators the staking pallet can have.
-    pub MaxActiveValidators: u32 = SetMaxValidatorCountProposalMaxValidators::get();
+    pub MaxActiveValidators: u32 = 400; // should not be more than max_validator_count genesis config in staking pallet?
 }
 
 /// The numbers configured here could always be more than the the maximum limits of staking pallet
