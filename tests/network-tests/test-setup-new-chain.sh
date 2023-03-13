@@ -6,8 +6,6 @@ cd $SCRIPT_PATH
 
 # Custom sudo and treasury accounts - export them before start new chain
 # will be used to configre chainspec and override test framework defaults.
-export SUDO_ACCOUNT_URI=//Alice
-export SUDO_INITIAL_BALANCE=1000000
 export TREASURY_ACCOUNT_URI=//Bob
 export TREASURY_INITIAL_BALANCE=1000000
 

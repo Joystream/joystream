@@ -21,7 +21,7 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
 
   const unlocks = await Promise.all(Array.from({ length: 2 }, () => lock(Resource.Proposals)))
 
-  const runtimeUpgradeWasmPath = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
+  const runtimeUpgradeWasmPath = env.RUNTIME_UPGRADE_TARGET_WASM_PATH || './data/new_runtime.wasm'
 
   Utils.assert(
     runtimeUpgradeWasmPath && fs.existsSync(runtimeUpgradeWasmPath),
@@ -37,7 +37,7 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
   const createProposalsFixture = new CreateProposalsFixture(api, query, [
     {
       type: 'RuntimeUpgrade',
-      details: createType('Bytes', Utils.readRuntimeFromFile(runtimeUpgradeWasmPath)),
+      details: createType('Bytes', Utils.readContentFromFile(runtimeUpgradeWasmPath)),
       asMember: memberId,
       title: 'To be cancelled by runtime',
       description: 'Proposal to be cancelled by runtime',
@@ -50,13 +50,14 @@ export default async function runtimeUpgradeProposal({ api, query, lock, env }: 
   const decideOnProposalStatusFixture = new DecideOnProposalStatusFixture(api, query, [
     { proposalId: toBeCanceledByRuntimeProposalId, status: 'Approved' },
   ])
+
   await new FixtureRunner(decideOnProposalStatusFixture).run()
 
   // Runtime upgrade proposal
   const testedProposals: TestedProposal[] = [
     {
       details: createType('PalletProposalsCodexProposalDetails', {
-        RuntimeUpgrade: Utils.readRuntimeFromFile(runtimeUpgradeWasmPath),
+        RuntimeUpgrade: Utils.readContentFromFile(runtimeUpgradeWasmPath),
       }),
     },
   ]

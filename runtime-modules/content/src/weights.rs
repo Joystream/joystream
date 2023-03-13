@@ -892,7 +892,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content MinCashoutAllowed (r:0 w:1)
 	// Storage: Content Commitment (r:0 w:1)
 	fn update_channel_payouts() -> Weight {
-		(88_737_000 as Weight)
+		(138_756_000 as Weight)
 			.saturating_add(T::DbWeight::get().reads(8 as Weight))
 			.saturating_add(T::DbWeight::get().writes(9 as Weight))
 	}
@@ -924,9 +924,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Storage: Content Commitment (r:1 w:0)
 	// Storage: System Account (r:1 w:1)
 	fn claim_channel_reward(h: u32, ) -> Weight {
-		(111_804_000 as Weight)
-			// Standard Error: 40_000
-			.saturating_add((498_000 as Weight).saturating_mul(h as Weight))
+		(156_101_000 as Weight)
+			// Standard Error: 56_000
+			.saturating_add((951_000 as Weight).saturating_mul(h as Weight))
 			.saturating_add(T::DbWeight::get().reads(9 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}

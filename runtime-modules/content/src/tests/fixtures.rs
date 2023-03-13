@@ -1976,6 +1976,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
 pub struct UpdateChannelPayoutsFixture {
     origin: Origin,
     params: UpdateChannelPayoutsParameters<Test>,
+    uploader_account: <Test as frame_system::Config>::AccountId,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1993,6 +1994,7 @@ impl UpdateChannelPayoutsFixture {
         Self {
             origin: Origin::root(),
             params: UpdateChannelPayoutsParameters::<Test>::default(),
+            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         }
     }
 
@@ -2046,11 +2048,7 @@ impl UpdateChannelPayoutsFixture {
             min_cashout_allowed: Content::min_cashout_allowed(),
             max_cashout_allowed: Content::max_cashout_allowed(),
             cashouts_enabled: Content::channel_cashouts_enabled(),
-            uploader_account_balance: self
-                .params
-                .payload
-                .as_ref()
-                .map_or(0, |p| Balances::<Test>::usable_balance(p.uploader_account)),
+            uploader_account_balance: Balances::<Test>::usable_balance(self.uploader_account),
             next_object_id: storage::NextDataObjectId::<Test>::get(),
         }
     }
@@ -2067,7 +2065,8 @@ impl UpdateChannelPayoutsFixture {
                 self.params
                     .payload
                     .as_ref()
-                    .map(|_| snapshot_pre.next_object_id)
+                    .map(|_| snapshot_pre.next_object_id),
+                self.uploader_account.clone()
             ))
         );
         if let Some(commitment) = self.params.commitment {
@@ -2134,8 +2133,11 @@ impl UpdateChannelPayoutsFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let snapshot_pre = self.get_state_snapshot();
 
-        let actual_result =
-            Content::update_channel_payouts(self.origin.clone(), self.params.clone());
+        let actual_result = Content::update_channel_payouts(
+            self.origin.clone(),
+            self.params.clone(),
+            self.uploader_account.clone(),
+        );
 
         let snapshot_post = self.get_state_snapshot();
 
@@ -2226,6 +2228,7 @@ impl ClaimChannelRewardFixture {
                 System::events().last().unwrap().event,
                 MetaEvent::Content(RawEvent::ChannelRewardUpdated(
                     self.item.cumulative_reward_earned,
+                    cashout,
                     self.item.channel_id
                 ))
             );

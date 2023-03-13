@@ -215,4 +215,48 @@ export class DecideOnProposalStatusFixture extends BaseQueryNodeFixture {
       })
     )
   }
+
+  public async getExecutionEvents(section: string, method: string) {
+    const qProposals = await this.query.tryQueryWithTimeout(
+      () => this.query.getProposalsByIds(this.params.map((p) => p.proposalId)),
+      (res) => this.assertProposalStatusesAreValid(res)
+    )
+    const executionBlocks = await Promise.all(
+      this.proposals.map(async (proposal, i) => {
+        const qProposal = qProposals[i]
+        if (this.getExpectedProposalStatus(i) === 'ProposalStatusExecuted') {
+          const proposalExecutionBlock = proposal.exactExecutionBlock.isSome
+            ? proposal.exactExecutionBlock.unwrap().toNumber()
+            : qProposal.statusSetAtBlock + proposal.parameters.gracePeriod.toNumber()
+          return proposalExecutionBlock
+        } else {
+          return undefined
+        }
+      })
+    )
+
+    const events = await Promise.all(
+      executionBlocks.map(async (proposalExecutionBlock) => {
+        if (proposalExecutionBlock) {
+          // search within the execution block for the appropriate event
+          const blockHash = await this.api.getBlockHash(proposalExecutionBlock)
+          const blockEvents = await this.api.query.system.events.at(blockHash)
+          const blockEvent = blockEvents.filter((blockEvent) => {
+            return blockEvent.event.section === section && blockEvent.event.method === method
+          })
+          return blockEvent!
+        } else {
+          return undefined
+        }
+      })
+    )
+
+    return events.map((dispatchEvent) => {
+      if (dispatchEvent) {
+        return dispatchEvent.map((e) => e.event)
+      } else {
+        return undefined
+      }
+    })
+  }
 }

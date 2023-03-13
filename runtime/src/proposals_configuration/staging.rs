@@ -24,7 +24,7 @@ pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumb
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(10_000)),
-        constitutionality: 3,
+        constitutionality: 2,
     }
 }
 
@@ -38,7 +38,7 @@ pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Bala
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(10_000)),
-        constitutionality: 4,
+        constitutionality: 2,
     }
 }
 
@@ -224,7 +224,7 @@ pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<Bloc
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(2_000)),
-        constitutionality: 3,
+        constitutionality: 2,
     }
 }
 

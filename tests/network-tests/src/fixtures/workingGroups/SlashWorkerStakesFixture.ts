@@ -13,8 +13,6 @@ import { Utils } from '../../utils'
 import { StakeSlashedEventFieldsFragment, WorkerFieldsFragment } from '../../graphql/generated/queries'
 
 export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
-  protected asSudo: boolean
-
   protected workerIds: WorkerId[]
   protected penalties: BN[]
   protected workers: Worker[] = []
@@ -25,13 +23,11 @@ export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
     query: QueryNodeApi,
     group: WorkingGroupModuleName,
     workerIds: WorkerId[],
-    penalties: BN[],
-    asSudo = false
+    penalties: BN[]
   ) {
     super(api, query, group)
     this.workerIds = workerIds
     this.penalties = penalties
-    this.asSudo = asSudo
   }
 
   protected async loadWorkersData(): Promise<void> {
@@ -44,14 +40,14 @@ export class SlashWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
-    return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
+    return await this.api.getLeadRoleKey(this.group)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.workerIds.map((workerId, i) =>
       this.api.tx[this.group].slashStake(workerId, this.penalties[i], this.getRationale(workerId))
     )
-    return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
+    return extrinsics
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {

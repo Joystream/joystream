@@ -7,6 +7,7 @@ import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
 import { scenario } from '../Scenario'
+import channelPayouts from '../flows/proposals/channelPayouts'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Proposals', async ({ job, env }) => {
@@ -14,7 +15,10 @@ scenario('Proposals', async ({ job, env }) => {
   const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
     ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
     : undefined
-  job('proposals & proposal discussion', [
+
+  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(councilJob)
+
+  const coreJob = job('proposals & proposal discussion', [
     proposals,
     cancellingProposals,
     vetoProposal,
@@ -22,4 +26,6 @@ scenario('Proposals', async ({ job, env }) => {
     expireProposal,
     proposalsDiscussion,
   ]).requires(runtimeUpgradeProposalJob || councilJob)
+
+  coreJob.requires(channelPayoutsProposalJob)
 })

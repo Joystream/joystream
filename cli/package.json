@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.10.0",
+  "version": "1.2.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -11,8 +11,6 @@
     "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@apollo/client": "^3.3.13",
     "@ffprobe-installer/ffprobe": "^1.4.1",
-    "@joystream/metadata-protobuf": "^2.5.0",
-    "@joystream/types": "^0.20.5",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
@@ -57,7 +55,8 @@
     "multihashes": "^4.0.3",
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
-    "tslib": "^1.11.1"
+    "tslib": "^1.11.1",
+    "@joystream/js": "^1.4.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
@@ -118,6 +117,9 @@
       "api": {
         "description": "Inspect the substrate node api, perform lower-level api calls or change the current api provider uri"
       },
+      "apps": {
+        "description": "Commands for creating and updating a metaprotocol App entity"
+      },
       "working-groups": {
         "description": "Working group lead and worker actions"
       },
@@ -152,9 +154,9 @@
   "scripts": {
     "postpack": "rm -f oclif.manifest.json",
     "posttest": "yarn lint",
-    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "prepack": "yarn build && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
-    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "build": "rm -rf lib && yarn generate:all && tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
     "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",

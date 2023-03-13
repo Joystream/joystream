@@ -2,6 +2,7 @@
 
 use super::{Config, Error, OptionResult};
 use crate::mock::*;
+use frame_support::error::BadOrigin;
 
 type Mocks = InstanceMocks<Runtime, DefaultInstance>;
 type MockUtils = InstanceMockUtils<Runtime, DefaultInstance>;
@@ -1175,5 +1176,51 @@ fn referendum_manager_force_start_error_with_more_than_allowed_target() {
 
         Mocks::force_start(winning_target_count, cycle_id);
         Mocks::check_winning_target_count(winning_target_count - 5);
+    });
+}
+
+/////////////////// Opt out of voting ///////////////////////////////////
+
+/// Test that an account can opt out of voting and can no longer vote after opting out
+#[test]
+fn opt_out_of_voting() {
+    build_test_externalities().execute_with(|| {
+        let account_id = USER_REGULAR;
+        let origin = OriginType::Signed(account_id);
+        Mocks::opt_out_of_voting(origin.clone(), Ok(()));
+
+        let cycle_id = 1;
+        let winning_target_count = 1;
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Config>::MinimumStake::get();
+        let (commitment, _) =
+            MockUtils::calculate_commitment(&account_id, &option_to_vote_for, &cycle_id);
+
+        Mocks::start_referendum_extrinsic(
+            OriginType::Signed(USER_ADMIN),
+            winning_target_count,
+            cycle_id,
+            Ok(()),
+        );
+
+        Mocks::vote(
+            origin,
+            account_id,
+            commitment,
+            stake,
+            cycle_id,
+            Err(Error::AccountAlreadyOptedOutOfVoting),
+        );
+    });
+}
+
+/// Test that Root/None origin cannot opt out of voting
+#[test]
+fn opt_out_of_voting_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let root_origin = OriginType::Root;
+        let none_origin = OriginType::None;
+        Mocks::opt_out_of_voting(root_origin.clone(), Err(BadOrigin.into()));
+        Mocks::opt_out_of_voting(none_origin.clone(), Err(BadOrigin.into()));
     });
 }

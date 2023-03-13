@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
-import { u32, u64, u128, BTreeSet, Option, Vec } from '@polkadot/types'
+import { u32, u64, u128, BTreeSet, Option, Bytes } from '@polkadot/types'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -57,11 +57,12 @@ import {
 import {
   BLOCKTIME,
   KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE,
+  KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE,
   proposalTypeToProposalParamsKey,
   workingGroupNameByModuleName,
 } from './consts'
 
-import { CreateVideoCategory, MemberRemarked } from '@joystream/metadata-protobuf'
+import { AppAction, CreateVideoCategory, IAppAction, MemberRemarked } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -90,7 +91,6 @@ export class ApiFactory {
   public static async create(
     provider: WsProvider,
     treasuryAccountUri: string,
-    sudoAccountUri: string,
     miniSecret: string
   ): Promise<ApiFactory> {
     const debug = extendDebug('api-factory')
@@ -112,7 +112,7 @@ export class ApiFactory {
         const version = await api.rpc.state.getRuntimeVersion()
         console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
 
-        return new ApiFactory(api, treasuryAccountUri, sudoAccountUri, miniSecret)
+        return new ApiFactory(api, treasuryAccountUri, miniSecret)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
@@ -122,11 +122,10 @@ export class ApiFactory {
     }
   }
 
-  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string, miniSecret: string) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, miniSecret: string) {
     this.api = api
     this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
-    this.keyring.addFromUri(sudoAccountUri)
     this.miniSecret = miniSecret
     this.addressesToKeyId = new Map()
     this.addressesToSuri = new Map()
@@ -258,7 +257,7 @@ export class Api {
     sender: AccountId | string | AccountId[] | string[],
     // Including decremental tip allows ensuring that the submitted transactions within a batch are processed in the expected order
     // even when we're using different accounts
-    decrementalTipAmount = 0
+    decrementalTipAmount = new BN(0)
   ): Promise<ISubmittableResult[]> {
     let results: ISubmittableResult[] = []
     const batches = (Array.isArray(txs[0]) ? txs : [txs]) as SubmittableExtrinsic<'promise'>[][]
@@ -267,7 +266,7 @@ export class Api {
       results = results.concat(
         await Promise.all(
           batch.map((tx, j) => {
-            const tip = Array.isArray(sender) ? decrementalTipAmount * (batch.length - 1 - j) : 0
+            const tip = Array.isArray(sender) ? decrementalTipAmount.muln(batch.length - 1 - j) : 0
             return this.sender.signAndSend(
               tx,
               Array.isArray(sender) ? sender[parseInt(i) * batch.length + j] : sender,
@@ -278,11 +277,6 @@ export class Api {
       )
     }
     return results
-  }
-
-  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>): Promise<ISubmittableResult> {
-    const sudo = await this.api.query.sudo.key()
-    return this.signAndSend(this.api.tx.sudo.sudo(tx), sudo.unwrap())
   }
 
   public enableDebugTxLogs(): void {
@@ -427,14 +421,6 @@ export class Api {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
   }
 
-  public async grantTreasuryWorkingBalance(): Promise<ISubmittableResult> {
-    return this.sudoSetBalance(this.treasuryAccount, new BN(100000000), new BN(0))
-  }
-
-  public async sudoSetBalance(who: string, free: BN, reserved: BN): Promise<ISubmittableResult> {
-    return this.makeSudoCall(this.api.tx.balances.setBalance(who, free, reserved))
-  }
-
   public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
     return this.transferBalance({ from: this.treasuryAccount, to, amount })
   }
@@ -450,7 +436,7 @@ export class Api {
     extrinsics: SubmittableExtrinsic<'promise'>[],
     // Including decremental tip allows ensuring that the submitted transactions are processed in the expected order
     // even when we're using different accounts
-    decrementalTipAmount = 0
+    decrementalTipAmount = new BN(0)
   ): Promise<void> {
     const fees = await Promise.all(
       extrinsics.map((tx, i) =>
@@ -463,7 +449,7 @@ export class Api {
         fees.map((fee, i) =>
           this.treasuryTransferBalance(
             accountOrAccounts[i],
-            fee.addn(decrementalTipAmount * (accountOrAccounts.length - 1 - i))
+            fee.add(decrementalTipAmount.muln(accountOrAccounts.length - 1 - i))
           )
         )
       )
@@ -581,6 +567,11 @@ export class Api {
     }
   }
 
+  public async getNextOpeningId(group: WorkingGroupModuleName): Promise<u64> {
+    const openingId = await this.api.query[group].nextOpeningId()
+    return openingId
+  }
+
   public async getOpening(group: WorkingGroupModuleName, id: OpeningId): Promise<Opening> {
     const opening = await this.api.query[group].openingById(id)
     if (opening.isEmpty) {
@@ -589,12 +580,25 @@ export class Api {
     return opening
   }
 
-  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+  public async getLeaderId(group: WorkingGroupModuleName): Promise<WorkerId> {
     const leadId = await this.api.query[group].currentLead()
     if (leadId.isNone) {
       throw new Error(`Cannot get ${group} lead: Lead not hired!`)
     }
-    return [leadId.unwrap(), (await this.api.query[group].workerById(leadId.unwrap())).unwrap()]
+    return leadId.unwrap()
+  }
+
+  public async getLeader(group: WorkingGroupModuleName): Promise<[WorkerId, Worker]> {
+    const leadId = await this.getLeaderId(group)
+    return [leadId, (await this.api.query[group].workerById(leadId)).unwrap()]
+  }
+
+  public async fundWorkingGroupBudget(group: WorkingGroupModuleName, memberId: u64, amount: BN): Promise<void> {
+    const controllerAccount = await this.getControllerAccountOfMember(memberId)
+    const fundTx = this.api.tx[group].fundWorkingGroupBudget(memberId, amount, 'Test')
+    await this.treasuryTransferBalance(controllerAccount, amount)
+    await this.prepareAccountsForFeeExpenses(controllerAccount, [fundTx])
+    await this.signAndSend(fundTx, controllerAccount)
   }
 
   public async getActiveWorkerIds(group: WorkingGroupModuleName): Promise<WorkerId[]> {
@@ -669,6 +673,7 @@ export class Api {
     blocksReserve = 4,
     intervalMs = BLOCKTIME
   ): Promise<void> {
+    const stageTimeoutMs = 100 * 6 * 1000
     await Utils.until(
       `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
       async ({ debug }) => {
@@ -704,7 +709,8 @@ export class Api {
           announcementPeriodNr === currentAnnouncementPeriodNr
         )
       },
-      intervalMs
+      intervalMs,
+      stageTimeoutMs
     )
   }
 
@@ -740,6 +746,10 @@ export class Api {
     return (await this.api.query.storage.dataObjectStateBloatBondValue()).toNumber()
   }
 
+  public async getDataObjectPerMegabyteFee(): Promise<number> {
+    return (await this.api.query.storage.dataObjectPerMegabyteFee()).toNumber()
+  }
+
   // Create a mock channel, throws on failure
   async createMockChannel(
     memberId: number,
@@ -748,22 +758,24 @@ export class Api {
       distributionBucketFamilyId: number
       distributionBucketIndex: number
     }[],
-    memberControllerAccount?: string
+    memberControllerAccount?: string,
+    channelMeta?: Bytes
   ): Promise<ChannelId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
     // Create a channel without any assets
     const tx = this.api.tx.content.createChannel(
       { Member: memberId },
       {
         assets: null,
-        meta: null,
+        meta: channelMeta ?? null,
         storageBuckets,
         distributionBuckets,
+        expectedDataObjectStateBloatBond: await this.api.query.storage.dataObjectPerMegabyteFee(),
+        expectedChannelStateBloatBond: await this.api.query.content.channelStateBloatBondValue(),
       }
     )
 
@@ -774,17 +786,24 @@ export class Api {
   }
 
   // Create a mock video, throws on failure
-  async createMockVideo(memberId: number, channelId: number, memberControllerAccount?: string): Promise<VideoId> {
+  async createMockVideo(
+    memberId: number,
+    channelId: number,
+    memberControllerAccount?: string,
+    videoMeta?: IAppAction
+  ): Promise<VideoId> {
     memberControllerAccount = memberControllerAccount || (await this.getMemberControllerAccount(memberId))
 
     if (!memberControllerAccount) {
       throw new Error('invalid member id')
     }
-
     // Create a video without any assets
     const tx = this.api.tx.content.createVideo({ Member: memberId }, channelId, {
       assets: null,
-      meta: null,
+      meta: videoMeta ? Utils.metadataToBytes(AppAction, videoMeta) : null,
+      storageBucketsNumWitness: await this.storageBucketsNumWitness(channelId),
+      expectedVideoStateBloatBond: await this.getVideoStateBloatBond(),
+      expectedDataObjectStateBloatBond: await this.getDataObjectStateBloatBond(),
     })
 
     const result = await this.sender.signAndSend(tx, memberControllerAccount)
@@ -807,7 +826,7 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta)),
+      this.api.tx.members.memberRemark(memberId, Utils.metadataToBytes(MemberRemarked, meta), null),
       memberAccount.toString()
     )
   }
@@ -842,12 +861,50 @@ export class Api {
     initialBalance = KNOWN_WORKER_ROLE_ACCOUNT_DEFAULT_BALANCE
   ): Promise<ISubmittableResult[]> {
     // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Worker WellKnown Account for ${group}`)
     const uri = `worker//${workingGroupNameByModuleName[group]}//${workerId.toNumber()}`
     const account = this.createCustomKeyPair(uri).address
     return Promise.all([
       this.assignWorkerRoleAccount(group, workerId, account),
       this.treasuryTransferBalance(account, initialBalance),
     ])
+  }
+
+  // Membership
+  async updateMemberControllerAccount(
+    oldAccount: string,
+    memberId: MemberId,
+    newAccount: string
+  ): Promise<ISubmittableResult> {
+    const updateControllerAccount = this.api.tx.members.updateAccounts(memberId, newAccount, newAccount)
+    await this.prepareAccountsForFeeExpenses(oldAccount, [updateControllerAccount])
+    return this.sender.signAndSend(updateControllerAccount, oldAccount)
+  }
+
+  async updateCouncillorsAccounts(initialBalance = KNOWN_COUNCILLOR_ACCOUNT_DEFAULT_BALANCE): Promise<string[]> {
+    const memberIds = (await this.query.council.councilMembers()).map((m) => m.membershipId)
+    const memberRootAccounts = await Promise.all(
+      memberIds.map(async (id) => {
+        const membership = await this.query.members.membershipById(id)
+        return membership.unwrap().rootAccount.toString()
+      })
+    )
+    // path to append to base SURI
+    const debug = extendDebug('api-factory')
+    debug(`assigning Well Known Councillors Account`)
+    const newAccounts = memberIds.map((id) => {
+      const uri = `Councillor//` + id.toString()
+      return this.createCustomKeyPair(uri, false).address
+    })
+    await Promise.all(
+      memberIds.map(async (id, i) => {
+        await this.updateMemberControllerAccount(memberRootAccounts[i], id, newAccounts[i])
+        await this.treasuryTransferBalance(newAccounts[i], initialBalance)
+      })
+    )
+
+    return newAccounts
   }
 
   // Storage
@@ -1012,7 +1069,10 @@ export class Api {
     }
   }
 
-  async createEnglishAuctionParameters(whitelist: number[] = []): Promise<{
+  async createEnglishAuctionParameters(
+    whitelist: number[] = [],
+    options: { extensionPeriod?: BN; duration?: BN } = {}
+  ): Promise<{
     auctionParams: EnglishAuctionParams
     startingPrice: BN
     minimalBidStep: BN
@@ -1022,11 +1082,11 @@ export class Api {
     const boundaries = await this.getAuctionParametersBoundaries()
 
     // auction duration must be larger than extension period (enforced in runtime)
-    const auctionDuration = BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
+    const auctionDuration = options.duration ?? BN.max(boundaries.auctionDuration.min, boundaries.extensionPeriod.min)
 
     const startingPrice = boundaries.startingPrice.min
     const minimalBidStep = boundaries.bidStep.min
-    const extensionPeriod = boundaries.extensionPeriod.min
+    const extensionPeriod = options.extensionPeriod ?? boundaries.extensionPeriod.min
 
     const auctionParams = createType('PalletContentNftTypesEnglishAuctionParamsRecord', {
       startingPrice,

@@ -17,7 +17,7 @@ export type AnyMetadataClass<T> = {
 export type DecodedMetadataObject<T> = {
   [K in keyof T]: T[K] extends Long | null | undefined
     ? Exclude<T[K], Long> | string
-    : T[K] extends string | number | boolean | null | undefined
+    : T[K] extends string | number | boolean | Uint8Array | null | undefined
     ? T[K]
     : T[K] extends Array<infer S>
     ? DecodedMetadataObject<S>[]

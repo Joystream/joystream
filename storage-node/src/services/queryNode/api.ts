@@ -1,4 +1,14 @@
-import { ApolloClient, NormalizedCacheObject, HttpLink, InMemoryCache, DocumentNode } from '@apollo/client'
+import {
+  ApolloClient,
+  NormalizedCacheObject,
+  HttpLink,
+  defaultDataIdFromObject,
+  InMemoryCache,
+  DocumentNode,
+  split,
+  from,
+} from '@apollo/client'
+import { onError } from '@apollo/client/link/error'
 import fetch from 'cross-fetch'
 import {
   GetBagConnection,
@@ -20,10 +30,18 @@ import {
   GetStorageBucketsConnectionQuery,
   GetStorageBucketsConnectionQueryVariables,
   GetStorageBucketDetailsByWorkerId,
+  QueryNodeStateFieldsFragment,
+  QueryNodeStateSubscription,
+  QueryNodeStateSubscriptionVariables,
+  QueryNodeState,
+  QueryNodeStateFields,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
-
+import { WebSocketLink } from '@apollo/client/link/ws'
+import { getMainDefinition } from '@apollo/client/utilities'
+import ws from 'ws'
 import logger from '../logger'
+import stringify from 'fast-safe-stringify'
 
 /**
  * Defines query paging limits.
@@ -50,13 +68,41 @@ type PaginationQueryResult<T = unknown> = {
 export class QueryNodeApi {
   private apolloClient: ApolloClient<NormalizedCacheObject>
 
-  public constructor(endpoint: string) {
-    this.apolloClient = new ApolloClient({
-      link: new HttpLink({ uri: endpoint, fetch }),
-      cache: new InMemoryCache(),
-      defaultOptions: {
-        query: { fetchPolicy: 'no-cache', errorPolicy: 'none' },
+  public constructor(readonly endpoint: string) {
+    const errorLink = onError((error) => {
+      const { networkError } = error
+      const message = networkError?.message || 'Graphql syntax errors found'
+      logger.error(`Error when trying to execute a query: ${message}. ${stringify(error)}`)
+    })
+    const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
+    const wsLink = new WebSocketLink({
+      uri: endpoint,
+      options: {
+        reconnect: true,
       },
+      webSocketImpl: ws,
+    })
+    const splitLink = split(
+      ({ query }) => {
+        const definition = getMainDefinition(query)
+        return definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
+      },
+      wsLink,
+      queryLink
+    )
+
+    this.apolloClient = new ApolloClient({
+      link: splitLink,
+      cache: new InMemoryCache({
+        dataIdFromObject: (object) => {
+          // setup cache object id for ProcessorState entity type
+          if (object.__typename === 'ProcessorState') {
+            return object.__typename
+          }
+          return defaultDataIdFromObject(object)
+        },
+      }),
+      defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
   }
 
@@ -161,6 +207,28 @@ export class QueryNodeApi {
   }
 
   /**
+   * Get entity from subscription
+   *
+   * @param query - actual query
+   * @param variables - query parameters
+   * @param resultKey - helps result parsing
+   */
+  protected async uniqueEntitySubscription<
+    SubscriptionT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
+    VariablesT extends Record<string, unknown>
+  >(
+    query: DocumentNode,
+    variables: VariablesT,
+    resultKey: keyof SubscriptionT
+  ): Promise<SubscriptionT[keyof SubscriptionT] | null> {
+    return new Promise((resolve) => {
+      this.apolloClient.subscribe<SubscriptionT, VariablesT>({ query, variables }).subscribe(({ data }) => {
+        resolve(data ? data[resultKey] : null)
+      })
+    })
+  }
+
+  /**
    * Returns storage bucket IDs filtered by worker ID.
    *
    * @param workerId - worker ID
@@ -229,18 +297,21 @@ export class QueryNodeApi {
    * @param offset - starting record of the page
    */
   public async getDataObjectDetails(bagIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
-    const input: StorageBagWhereInput = { id_in: bagIds }
-    const result = await this.multipleEntitiesWithPagination<
-      DataObjectDetailsFragment,
-      GetDataObjectConnectionQuery,
-      GetDataObjectConnectionQueryVariables
-    >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection')
-
-    if (!result) {
-      return []
+    const allBagIds = [...bagIds] // Copy to avoid modifying the original array
+    const fullResult: DataObjectDetailsFragment[] = []
+    while (allBagIds.length) {
+      const bagIdsBatch = allBagIds.splice(0, 1000)
+      const input: StorageBagWhereInput = { id_in: bagIdsBatch }
+      fullResult.push(
+        ...(await this.multipleEntitiesWithPagination<
+          DataObjectDetailsFragment,
+          GetDataObjectConnectionQuery,
+          GetDataObjectConnectionQueryVariables
+        >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection'))
+      )
     }
 
-    return result
+    return fullResult
   }
 
   /**
@@ -259,5 +330,28 @@ export class QueryNodeApi {
     }
 
     return result
+  }
+
+  public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
+    // fetch cached state
+    const cachedState = this.apolloClient.readFragment<
+      QueryNodeStateSubscription['stateSubscription'],
+      QueryNodeStateSubscriptionVariables
+    >({
+      id: 'ProcessorState',
+      fragment: QueryNodeStateFields,
+    })
+
+    // If we have the state in cache, return it
+    if (cachedState) {
+      return cachedState
+    }
+
+    // Otherwise setup the subscription (which will periodically update the cache) and return for the first result
+    return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
+      QueryNodeState,
+      {},
+      'stateSubscription'
+    )
   }
 }

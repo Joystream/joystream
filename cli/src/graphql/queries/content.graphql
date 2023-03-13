@@ -4,10 +4,41 @@ fragment ChannelFields on Channel {
     id
     videoStateBloatBond
   }
+  rewardAccount
 }
 
 query getChannelById($channelId: ID!) {
   channelByUniqueInput(where: { id: $channelId }) {
     ...ChannelFields
+  }
+}
+
+query getChannelByRewardAccount($rewardAccount: String!) {
+  channels(where: { rewardAccount_eq: $rewardAccount }) {
+    ...ChannelFields
+  }
+}
+
+fragment ChannelPayoutsUpdatedEvent on ChannelPayoutsUpdatedEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  commitment
+  payloadSize
+  payloadHash
+  minCashoutAllowed
+  maxCashoutAllowed
+  channelCashoutsEnabled
+  payloadDataObject {
+    id
+  }
+}
+
+query getChannelPayoutsUpdatedEventByCommitment($commitment: String!) {
+  channelPayoutsUpdatedEvents(where: { commitment_eq: $commitment }, orderBy: [createdAt_DESC], limit: 1) {
+    ...ChannelPayoutsUpdatedEvent
   }
 }

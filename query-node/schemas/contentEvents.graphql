@@ -532,3 +532,188 @@ type ChannelVisibilitySetByModeratorEvent @entity {
   "Why channel's visibility status was set"
   rationale: String!
 }
+
+type ChannelRewardClaimedEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The channel that claimed the reward"
+  channel: Channel!
+
+  "Reward amount claimed"
+  amount: BigInt!
+}
+
+type ChannelRewardClaimedAndWithdrawnEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The channel that claimed the reward"
+  channel: Channel!
+
+  "Reward amount claimed"
+  amount: BigInt!
+
+  "Destination account ID. Null in case the funds destination was Council"
+  account: String
+
+  "Content actor"
+  actor: ContentActor!
+}
+
+type ChannelFundsWithdrawnEvent implements Event @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "The channel that claimed the reward"
+  channel: Channel!
+
+  "Reward amount claimed"
+  amount: BigInt!
+
+  "Destination account ID. Null in case the funds destination was Council"
+  account: String
+
+  "Content actor"
+  actor: ContentActor!
+}
+
+type ChannelPayoutsUpdatedEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Merkle root of the channel payouts"
+  commitment: String
+
+  "Storage data object corresponding to the channel payouts payload"
+  payloadDataObject: StorageDataObject
+
+  "Size of the serialized channel payouts payload"
+  payloadSize: BigInt
+
+  "Hash of the serialized channel payouts payload"
+  payloadHash: String
+
+  "Minimum amount of channel reward cashout allowed at a time"
+  minCashoutAllowed: BigInt
+
+  "Maximum amount of channel reward cashout allowed at a time"
+  maxCashoutAllowed: BigInt
+
+  "Can channel cashout the rewards"
+  channelCashoutsEnabled: Boolean
+}
+
+type PaymentContextVideo @variant {
+  "Video for which the payment was made"
+  video: Video!
+}
+
+type PaymentContextChannel @variant {
+  "Channel for which the payment was made"
+  channel: Channel!
+}
+
+"Various Channel Payment Contexts"
+union PaymentContext = PaymentContextVideo | PaymentContextChannel
+
+"Direct channel payment by any member by-passing the council payouts"
+type ChannelPaymentMadeEvent @entity {
+  ### GENERIC DATA ###
+
+  "(network}-{blockNumber}-{indexInBlock}."
+  id: ID!
+
+  "Hash of the extrinsic which caused the event to be emitted."
+  inExtrinsic: String
+
+  "Blocknumber of the block in which the event was emitted."
+  inBlock: Int!
+
+  "Network the block was produced in."
+  network: Network!
+
+  "Index of event in block from which it was emitted."
+  indexInBlock: Int!
+
+  ### SPECIFIC DATA ###
+
+  "Actor that made the payment"
+  payer: Membership!
+
+  "Amount of the payment"
+  amount: BigInt!
+
+  "Payment and payee context"
+  paymentContext: PaymentContext
+
+  "Channel that received the payment (if any)"
+  payeeChannel: Channel
+
+  "Reason of the payment"
+  rationale: String
+}

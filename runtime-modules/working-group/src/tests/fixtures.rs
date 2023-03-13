@@ -760,7 +760,7 @@ pub(crate) fn get_stake_balance(account_id: &u64) -> u64 {
     existing_lock.map_or(0, |lock| lock.amount)
 }
 
-fn get_current_lead_account_id() -> u64 {
+pub(crate) fn get_current_lead_account_id() -> u64 {
     let leader_worker_id = TestWorkingGroup::current_lead();
 
     if let Some(leader_worker_id) = leader_worker_id {

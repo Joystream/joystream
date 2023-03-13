@@ -2,11 +2,12 @@ import { VideoCategory } from 'query-node/dist/model'
 import { invalidMetadata, logger } from '../common'
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { ICreateVideoCategory } from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 
 export async function createVideoCategory(
   store: DatabaseManager,
   event: SubstrateEvent,
-  categoryData: ICreateVideoCategory
+  categoryData: DecodedMetadataObject<ICreateVideoCategory>
 ): Promise<VideoCategory> {
   const videoCategoryId = await getNewCategoryId(store, event)
 

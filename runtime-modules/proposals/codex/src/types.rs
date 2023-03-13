@@ -17,7 +17,10 @@ use working_group::StakePolicy;
 /// Encodes proposal using its details information.
 pub trait ProposalEncoder<T: crate::Config> {
     /// Encodes proposal using its details information.
-    fn encode_proposal(proposal_details: ProposalDetailsOf<T>) -> Vec<u8>;
+    fn encode_proposal(
+        proposal_details: ProposalDetailsOf<T>,
+        member_controller_account: <T as frame_system::Config>::AccountId,
+    ) -> Vec<u8>;
 }
 
 /// _ProposalDetails_ alias for type simplification

@@ -535,18 +535,21 @@ decl_module! {
         ) {
             Self::ensure_details_checks(&proposal_details)?;
 
-            let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
-            // TODO: encode_proposal could take a reference instead of moving to prevent cloning
-            // since the encode trait takes a reference to `self`.
-            // (Note: this is an useful change since this could be a ~3MB copy in the case of
-            // a Runtime Upgrade). See: https://github.com/Joystream/joystream/issues/2161
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
             let account_id =
                 T::MembershipOriginValidator::ensure_member_controller_account_origin(
                     origin,
                     general_proposal_parameters.member_id
                 )?;
+
+            let proposal_parameters = Self::get_proposal_parameters(&proposal_details);
+            // TODO: encode_proposal could take a reference instead of moving to prevent cloning
+            // since the encode trait takes a reference to `self`.
+            // (Note: this is an useful change since this could be a ~3MB copy in the case of
+            // a Runtime Upgrade). See: https://github.com/Joystream/joystream/issues/2161
+            let proposal_code = T::ProposalEncoder::encode_proposal(
+                proposal_details.clone(),
+                account_id.clone()
+            );
 
             <proposals_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
                 &proposal_parameters,

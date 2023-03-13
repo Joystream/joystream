@@ -769,15 +769,13 @@ impl<ChannelId: Clone, OwnedNft: Clone, VideoAssetsSet, RepayableBloatBond>
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]
-pub struct ChannelPayoutsPayloadParametersRecord<AccountId, Balance> {
-    pub uploader_account: AccountId,
+pub struct ChannelPayoutsPayloadParametersRecord<Balance> {
     pub object_creation_params: DataObjectCreationParameters,
     pub expected_data_size_fee: Balance,
     pub expected_data_object_state_bloat_bond: Balance,
 }
 
-pub type ChannelPayoutsPayloadParameters<T> =
-    ChannelPayoutsPayloadParametersRecord<<T as frame_system::Config>::AccountId, BalanceOf<T>>;
+pub type ChannelPayoutsPayloadParameters<T> = ChannelPayoutsPayloadParametersRecord<BalanceOf<T>>;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Debug, Eq, TypeInfo)]

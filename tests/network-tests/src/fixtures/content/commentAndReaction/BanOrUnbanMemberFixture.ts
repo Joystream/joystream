@@ -4,7 +4,7 @@ import {
   IBanOrUnbanMemberFromChannel,
   IChannelOwnerRemarked,
 } from '@joystream/metadata-protobuf'
-import { ChannelId, MemberId } from '@joystream/types/primitives'
+import { MemberId } from '@joystream/types/primitives'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { assert } from 'chai'
@@ -20,7 +20,7 @@ type ChannelOwnerRemarkedEventDetails = EventDetails<EventType<'content', 'Chann
 
 export type BanOrUnbanMemberParams = {
   asMember: MemberId
-  channelId: ChannelId
+  channelId: number
   msg: IBanOrUnbanMemberFromChannel
 }
 
@@ -52,7 +52,7 @@ export class BanOrUnbanMembersFixture extends StandardizedFixture {
           option: params.msg.option,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(ChannelOwnerRemarked, msg))
+      return this.api.tx.content.channelOwnerRemark(params.channelId, Utils.metadataToBytes(ChannelOwnerRemarked, msg))
     })
   }
 
@@ -66,7 +66,7 @@ export class BanOrUnbanMembersFixture extends StandardizedFixture {
       Utils.assert(qChannel, 'Query node: Channel not found')
 
       if (action.msg.option === BanOrUnbanMemberFromChannel.Option.BAN) {
-        const qBannedMember = qChannel.bannedMembers.find((m) => m.id === action.asMember.toString())
+        const qBannedMember = qChannel.bannedMembers.find((m) => m.id === action.msg.memberId.toString())
         Utils.assert(
           qBannedMember,
           `Query node: Expected member ${action.msg.memberId.toString()}  banned from channel ${

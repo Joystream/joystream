@@ -53,6 +53,9 @@ fragment ChannelFields on Channel {
     iso
   }
   isCensored
+  entryApp {
+    ...AppFields
+  }
   ownerMember {
     id
   }
@@ -70,6 +73,10 @@ fragment ChannelFields on Channel {
     id
   }
   rewardAccount
+  cumulativeRewardClaimed
+  videos {
+    ...VideoFields
+  }
 }
 
 fragment VideoCategoryFields on VideoCategory {
@@ -160,6 +167,10 @@ fragment VideoFields on Video {
   isPublic
   isExplicit
   hasMarketing
+  ytVideoId
+  entryApp {
+    ...AppFields
+  }
   license {
     ...LicenseFields
   }
@@ -322,6 +333,12 @@ query getChannelById($id: ID!) {
 query getChannelsByIds($ids: [ID!]) {
   channels(where: { id_in: $ids }) {
     ...ChannelFields
+  }
+}
+
+query getChannelsCount {
+  channelsConnection {
+    totalCount
   }
 }
 
