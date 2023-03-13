@@ -90,7 +90,7 @@ sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystr
 frame-benchmarking-cli = { package = 'frame-benchmarking-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 frame-benchmarking = { package = 'frame-benchmarking', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 serde_json = "1.0.79"
-# node-inspect = { path = "../inspect", optional = true }
+node-inspect = { path = "../inspect", optional = true }
 
 [target.'cfg(any(target_arch="x86_64", target_arch="aarch64"))'.dependencies]
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
@@ -130,7 +130,7 @@ substrate-build-script-utils = { package = 'substrate-build-script-utils', optio
 substrate-frame-cli = { package = 'substrate-frame-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-balances = { package = 'pallet-balances', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-# node-inspect = { path = "../inspect", optional = true }
+node-inspect = { path = "../inspect", optional = true }
 sc-storage-monitor = { package = 'sc-storage-monitor', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 [features]
@@ -143,7 +143,7 @@ cli = [
 	"clap",
 	"clap_complete",
 	"substrate-build-script-utils",
-	# "node-inspect",
+	"node-inspect",
 ]
 
 runtime-benchmarks = [

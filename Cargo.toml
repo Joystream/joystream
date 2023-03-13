@@ -20,7 +20,7 @@ members = [
 	"runtime-modules/utility",
 	"runtime-modules/project-token",    
 	"bin/node",
-	# "bin/inspect",
+	"bin/inspect",
 	"bin/utils/chain-spec-builder/",
 	"bin/utils/session-keys/",
 	"bin/utils/call-sizes/",

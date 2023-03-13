@@ -8,8 +8,8 @@ homepage = "https://substrate.io"
 repository = "https://github.com/paritytech/substrate/"
 
 [dependencies]
-clap = { version = "3.1.6", features = ["derive"] }
-codec = { package = "parity-scale-codec", version = "3.1.5" }
+clap = { version = "4.0.9", features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.2.2" }
 thiserror = "1.0"
 sc-cli = { package = 'sc-cli', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 sc-client-api = { package = 'sc-client-api', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }

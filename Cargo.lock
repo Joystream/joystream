@@ -3306,6 +3306,7 @@ dependencies = [
  "jsonrpsee",
  "log",
  "nix 0.23.2",
+ "node-inspect",
  "overrides",
  "pallet-balances",
  "pallet-im-online",
@@ -4754,6 +4755,23 @@ dependencies = [
  "memoffset 0.7.1",
  "pin-utils",
  "static_assertions",
+]
+
+[[package]]
+name = "node-inspect"
+version = "0.9.0-dev"
+dependencies = [
+ "clap 4.1.8",
+ "overrides",
+ "parity-scale-codec",
+ "sc-cli",
+ "sc-client-api",
+ "sc-executor",
+ "sc-service",
+ "sp-blockchain",
+ "sp-core",
+ "sp-runtime",
+ "thiserror",
 ]
 
 [[package]]
