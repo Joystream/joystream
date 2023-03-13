@@ -146,4 +146,7 @@ cli = [
 	# "node-inspect",
 ]
 
-runtime-benchmarks = ["node-runtime/runtime-benchmarks", "frame-benchmarking-cli"]
+runtime-benchmarks = [
+	"node-runtime/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks"
+]

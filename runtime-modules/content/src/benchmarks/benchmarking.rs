@@ -1544,7 +1544,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::TokenAmountTransferredByIssuer(
+                    project_token::Event::<T>::TokenAmountTransferredByIssuer(
                         token_id,
                         curator_member_id,
                         Transfers(outputs.0
@@ -1584,7 +1584,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::TransferPolicyChangedToPermissionless(
+                    project_token::Event::<T>::TransferPolicyChangedToPermissionless(
                         token_id
                     )
                 ).into()
@@ -1612,7 +1612,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::TokenDeissued(token_id)
+                    project_token::Event::<T>::TokenDeissued(token_id)
                 ).into()
             );
         }
@@ -1664,7 +1664,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::TokenSaleInitialized(
+                    project_token::Event::<T>::TokenSaleInitialized(
                         token_id,
                         token.next_sale_id - 1,
                         token.sale.unwrap(),
@@ -1709,7 +1709,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::UpcomingTokenSaleUpdated(
+                    project_token::Event::<T>::UpcomingTokenSaleUpdated(
                         token_id,
                         sale_id,
                         new_start_block,
@@ -1765,7 +1765,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::TokenSaleFinalized(
+                    project_token::Event::<T>::TokenSaleFinalized(
                         token_id,
                         sale_id,
                         TokenBalanceOf::<T>::from(DEFAULT_CRT_SALE_UPPER_BOUND) - tokens_sold,
@@ -1814,7 +1814,7 @@ benchmarks! {
             // Check event emitted
             assert_past_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::RevenueSplitIssued(
+                    project_token::Event::<T>::RevenueSplitIssued(
                         token_id,
                         start,
                         duration,
@@ -1868,7 +1868,7 @@ benchmarks! {
             // Check event emitted
             assert_past_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::RevenueSplitIssued(
+                    project_token::Event::<T>::RevenueSplitIssued(
                         token_id,
                         start,
                         duration,
@@ -1948,7 +1948,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::RevenueSplitFinalized(
+                    project_token::Event::<T>::RevenueSplitFinalized(
                         token_id,
                         channel_acc,
                         leftovers
@@ -1992,7 +1992,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::PatronageRateDecreasedTo(
+                    project_token::Event::<T>::PatronageRateDecreasedTo(
                         token_id,
                         new_block_rate.to_yearly_rate_representation(T::BlocksPerYear::get())
                     ),
@@ -2038,7 +2038,7 @@ benchmarks! {
             // Check event emitted
             assert_last_event::<T>(
                 <T as project_token::Config>::RuntimeEvent::from(
-                    project_token::RuntimeEvent::<T>::PatronageCreditClaimed(
+                    project_token::Event::<T>::PatronageCreditClaimed(
                         token_id,
                         actually_claimed,
                         collaborator_member_id

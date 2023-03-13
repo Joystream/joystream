@@ -3,9 +3,9 @@
 use super::*;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_system::EventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
-use frame_system::RuntimeEventRecord;
 use membership::Module as Membership;
 use sp_runtime::traits::{Bounded, One};
 use sp_std::prelude::*;
