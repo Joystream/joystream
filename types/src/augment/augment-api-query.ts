@@ -970,6 +970,14 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       bloatBond: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
+       * Max patronage rate allowed
+       **/
+      maxYearlyPatronageRate: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      /**
+       * Minimum slope parameters allowed for AMM curve
+       **/
+      minAmmSlopeParameter: AugmentedQuery<ApiType, () => Observable<u128>, []>;
+      /**
        * Minimum revenue split duration constraint
        **/
       minRevenueSplitDuration: AugmentedQuery<ApiType, () => Observable<u32>, []>;
