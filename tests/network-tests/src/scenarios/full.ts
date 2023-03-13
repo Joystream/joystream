@@ -59,6 +59,7 @@ scenario('Full', async ({ job, env }) => {
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
   job('transferring invites', transferringInvites).after(coreJob)
+  job('inviting members', invitingMembers).after(coreJob)
   job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
@@ -86,11 +87,10 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
   job('worker actions', workerActions).requires(hireLeads)
-  const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
+  job('group budget', groupBudget).requires(hireLeads)
 
-  // Memberships (depending on hired lead, group budget set)
+  // Memberships (depending on hired leads)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('inviting members', invitingMembers).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
