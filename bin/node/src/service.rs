@@ -616,6 +616,7 @@ mod tests {
         RuntimeAppPublic,
     };
     use sp_timestamp;
+    use std::convert::TryInto;
     use std::sync::Arc;
 
     type AccountPublic = <Signature as Verify>::Signer;
@@ -788,6 +789,7 @@ mod tests {
                     .expect("error importing test block");
             },
             |service, _| {
+                let tip = 0;
                 let amount = 5 * CENTS;
                 let to: Address = AccountPublic::from(bob.public()).into_account().into();
                 let from: Address = AccountPublic::from(charlie.public()).into_account().into();
