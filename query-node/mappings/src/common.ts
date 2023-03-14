@@ -162,6 +162,10 @@ export function unwrap<T extends Codec, R>(value: Option<T>): T | undefined {
   return value.isSome ? value.unwrap() : undefined
 }
 
+export function whenDef<T, R>(value: T | null | undefined, fn: (value: T) => R): R | undefined {
+  if (value !== null && typeof value !== 'undefined') return fn(value)
+}
+
 export function hasValuesForProperties<
   T extends Record<string, unknown>,
   P extends keyof T & string,
