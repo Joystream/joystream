@@ -8,7 +8,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # code build tools
     sudo apt-get update -y
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config \
-      unzip libc6-dev make libssl-dev python3 cmake
+      unzip libc6-dev make libssl-dev python3 cmake \
+      protobuf-compiler libprotobuf-dev
     # docker
     sudo apt-get install -y docker.io containerd runc
     # docker-compose
@@ -22,7 +23,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     fi
     # install additional packages
     brew update
-    brew install coreutils gnu-tar jq curl llvm gnu-sed cmake || :
+    brew install coreutils gnu-tar jq curl llvm gnu-sed cmake protobuf || :
     echo "It is recommended to setup Docker desktop from: https://www.docker.com/products/docker-desktop"
     echo "It is also recommended to install qemu emulators with following command:"
     echo "docker run --privileged --rm tonistiigi/binfmt --install all"
