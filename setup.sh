@@ -34,10 +34,10 @@ curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
 
-rustup install nightly-2022-05-11
-rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
+rustup install nightly-2022-11-15
+rustup target add wasm32-unknown-unknown --toolchain nightly-2022-11-15
 
-rustup component add --toolchain nightly-2022-05-11 clippy
+rustup component add --toolchain nightly-2022-11-15 clippy
 rustup component add rustfmt
 
 # Install substrate keychain tool

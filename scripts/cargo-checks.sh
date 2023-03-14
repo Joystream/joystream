@@ -9,7 +9,7 @@ cargo fmt --all -- --check
 
 source ./features.sh
 
-export WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
+export WASM_BUILD_TOOLCHAIN=nightly-2022-11-15
 
 echo 'running clippy (rust linter)'
 # When custom build.rs triggers wasm-build-runner-impl to build we get error:

@@ -1,12 +1,13 @@
-FROM rust:1.61.0-buster AS rust
+FROM rust:1.67.0-buster AS rust
 WORKDIR /joystream
 RUN apt-get update && \
   apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev cmake
+RUN apt install -y protobuf-compiler libprotobuf-dev
 RUN rustup self update
-RUN rustup install nightly-2022-05-11 --force
-RUN rustup default nightly-2022-05-11
-RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
-RUN rustup component add --toolchain nightly-2022-05-11 clippy
+RUN rustup install nightly-2022-11-15
+RUN rustup default nightly-2022-11-15
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2022-11-15
+RUN rustup component add --toolchain nightly-2022-11-15 clippy
 RUN rustup install nightly
 RUN cargo +nightly install cargo-chef
 
@@ -24,7 +25,7 @@ FROM rust AS cacher
 LABEL description="Cargo chef cook dependencies"
 WORKDIR /joystream
 COPY --from=planner /joystream/recipe.json /joystream/recipe.json
-ARG WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
+ARG WASM_BUILD_TOOLCHAIN=nightly-2022-11-15
 # Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path /joystream/recipe.json
 
@@ -44,7 +45,7 @@ COPY --from=cacher $CARGO_HOME $CARGO_HOME
 # Ensure our tests and linter pass before actual build
 ARG CARGO_FEATURES
 RUN echo "CARGO_FEATURES=$CARGO_FEATURES"
-ARG WASM_BUILD_TOOLCHAIN=nightly-2022-05-11
+ARG WASM_BUILD_TOOLCHAIN=nightly-2022-11-15
 ARG GIT_COMMIT_HASH="unknown"
 ARG CODE_SHASUM
 RUN SUBSTRATE_CLI_GIT_COMMIT_HASH="${GIT_COMMIT_HASH}-docker-build-${CODE_SHASUM}" \
