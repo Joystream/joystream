@@ -8,7 +8,7 @@ use crate::{
 use balances::Pallet as Balances;
 use common::council::CouncilBudgetManager;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::storage::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
 use frame_system::Pallet as System;

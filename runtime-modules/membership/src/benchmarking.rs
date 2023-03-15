@@ -6,7 +6,7 @@ use crate::{
 };
 use balances::Pallet as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Pallet as System;

@@ -5,7 +5,7 @@ use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::Module as Token;
 use balances::Pallet as Balances;
 use common::membership::MembershipTypes;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;

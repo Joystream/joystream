@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks_instance, Zero};
+use frame_benchmarking::v1::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
 use frame_system::EventRecord;
 use frame_system::Pallet as System;

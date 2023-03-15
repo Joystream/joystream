@@ -13,7 +13,7 @@ use crate::{
 
 use balances::Pallet as Balances;
 use common::{working_group::WorkingGroupAuthenticator, MembershipTypes};
-use frame_benchmarking::account;
+use frame_benchmarking::v1::account;
 use frame_support::{
     dispatch::DispatchError,
     storage::{StorageDoubleMap, StorageMap, StorageValue},

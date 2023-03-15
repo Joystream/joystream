@@ -309,12 +309,12 @@ impl_runtime_apis! {
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    impl frame_benchmarking::Benchmark<Block> for Runtime {
+    impl frame_benchmarking::v1::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
-            Vec<frame_benchmarking::BenchmarkList>,
+            Vec<frame_benchmarking::v1::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
+            use frame_benchmarking::v1::{baseline, Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use crate::*;
 
@@ -335,9 +335,9 @@ impl_runtime_apis! {
         }
 
         fn dispatch_benchmark(
-            config: frame_benchmarking::BenchmarkConfig
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch,  TrackedStorageKey};
+            config: frame_benchmarking::v1::BenchmarkConfig
+        ) -> Result<Vec<frame_benchmarking::v1::BenchmarkBatch>, sp_runtime::RuntimeString> {
+            use frame_benchmarking::v1::{baseline, Benchmarking, BenchmarkBatch,  TrackedStorageKey};
             use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency

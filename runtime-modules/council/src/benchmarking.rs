@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use balances::Pallet as Balances;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;

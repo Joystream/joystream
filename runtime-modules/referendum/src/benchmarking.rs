@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use frame_benchmarking::{account, benchmarks_instance, Zero};
+use frame_benchmarking::v1::{account, benchmarks_instance, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;

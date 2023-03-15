@@ -5,7 +5,7 @@ use crate::Module as ProposalsEngine;
 use balances::Pallet as Balances;
 use core::convert::TryInto;
 use council::Module as Council;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;

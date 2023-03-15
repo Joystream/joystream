@@ -14,7 +14,7 @@ use common::{
     merkle_tree::helpers::{build_merkle_path_helper, generate_merkle_root_helper},
     BudgetManager,
 };
-use frame_benchmarking::{benchmarks, Zero};
+use frame_benchmarking::v1::{benchmarks, Zero};
 use frame_support::{
     storage::StorageMap,
     traits::{Currency, Get},

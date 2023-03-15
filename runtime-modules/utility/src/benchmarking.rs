@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use super::*;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::One;

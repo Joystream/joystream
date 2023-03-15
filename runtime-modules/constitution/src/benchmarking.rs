@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::{Call, Config, ConstitutionInfo, Event, Module as Pallet};
-use frame_benchmarking::benchmarks;
+use frame_benchmarking::v1::benchmarks;
 use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::Hash;

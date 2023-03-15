@@ -10,7 +10,7 @@ use common::to_kb;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use content::NftLimitPeriod;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;

@@ -4,7 +4,7 @@ use super::*;
 use crate::Module as ProposalsDiscussion;
 use balances::Pallet as Balances;
 use council::Module as Council;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
