@@ -59,13 +59,14 @@ import {
   UpdateChannelPayoutsProposalDetails,
 } from 'query-node/dist/model'
 import {
+  asBN,
   bytesToString,
   genericEventFields,
   getWorkingGroupModuleName,
   INT32MAX,
-  perpareString,
   toNumber,
   unwrap,
+  whenDef,
 } from './common'
 import { ProposalsEngine, ProposalsCodex } from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
@@ -286,8 +287,8 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asUpdateChannelPayouts
 
     details.commitment = unwrap(specificDetails.commitment)?.toString()
-    details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
-    details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
+    details.minCashoutAllowed = whenDef(unwrap(specificDetails.minCashoutAllowed), asBN)
+    details.maxCashoutAllowed = whenDef(unwrap(specificDetails.maxCashoutAllowed), asBN)
     details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
 
     const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
