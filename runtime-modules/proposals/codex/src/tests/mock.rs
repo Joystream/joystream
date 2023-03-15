@@ -7,7 +7,7 @@ use frame_support::{
     dispatch::DispatchError,
     parameter_types,
     traits::{
-        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnUnbalanced,
+        ConstU32, ConstU64, Currency, EitherOfDiverse, Imbalance, LockIdentifier, OnUnbalanced,
         OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
@@ -111,7 +111,7 @@ frame_support::construct_runtime!(
 parameter_types! {
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::simple_max(
-            frame_support::weights::constants::WEIGHT_PER_SECOND * 2
+            frame_support::weights::Weight::from_ref_time(frame_support::weights::constants::WEIGHT_REF_TIME_PER_SECOND * 2)
         );
     pub static SessionsPerEra: SessionIndex = 3;
     pub static ExistentialDeposit: Balance = 1;
@@ -220,6 +220,9 @@ impl onchain::Config for OnChainSeqPhragmen {
     type Solver = SequentialPhragmen<AccountId, Perbill>;
     type DataProvider = Staking;
     type WeightInfo = ();
+    type MaxWinners = ConstU32<2_000>;
+    type VotersBound = ConstU32<5_000>;
+    type TargetsBound = ConstU32<2_000>;
 }
 
 pub struct MockReward {}
@@ -258,33 +261,35 @@ impl staking::Config for Test {
     type Reward = MockReward;
     type SessionsPerEra = SessionsPerEra;
     type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
     type BondingDuration = BondingDuration;
     type SessionInterface = ();
     type EraPayout = staking::ConvertCurve<RewardCurve>;
     type NextNewSession = ();
     type MaxNominatorRewardedPerValidator = ConstU32<64>;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
-    type ElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
+    type ElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type GenesisElectionProvider = Self::ElectionProvider;
     // NOTE: consider a macro and use `UseNominatorsAndValidatorsMap<Self>` as well.
     type VoterList = BagsList;
+    type TargetList = staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type OnStakerSlash = OnStakerSlashMock<Test>;
     type BenchmarkingConfig = TestBenchmarkingConfig;
     type WeightInfo = ();
     type BondingRestriction = ();
+    type HistoryDepth = ConstU32<120>;
+    type AdminOrigin = EnsureRoot<AccountId>;
 }
 
 impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
 where
-    Call: From<LocalCall>,
+    RuntimeCall: From<LocalCall>,
 {
-    type OverarchingCall = Call;
+    type OverarchingCall = RuntimeCall;
     type Extrinsic = Extrinsic;
 }
 
-pub type Extrinsic = TestXt<Call, ()>;
+pub type Extrinsic = TestXt<RuntimeCall, ()>;
 
 parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
@@ -726,7 +731,8 @@ impl referendum::Config<ReferendumInstance> for Test {
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 

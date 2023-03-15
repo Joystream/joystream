@@ -43,8 +43,8 @@ frame-executive = { package = 'frame-executive', default-features = false, git =
 frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
-pallet-bags-list = { package = 'pallet-bags-list', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
+pallet-bags-list = { package = 'pallet-bags-list', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 # Pallets
 pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
@@ -100,7 +100,6 @@ substrate-wasm-builder = { git = "https://github.com/joystream/substrate", rev =
 
 [features]
 default = ['std']
-no_std = []
 std = [
     # Third-party dependencies
     'serde',
@@ -144,7 +143,7 @@ std = [
     'pallet-grandpa/std',
     'pallet-babe/std',
     'pallet-session/std',
-    "pallet-session-benchmarking?/std",
+    'pallet-session-benchmarking?/std',
     'pallet-authority-discovery/std',
     'pallet-authorship/std',
     'pallet-insecure-randomness-collective-flip/std',
@@ -181,7 +180,7 @@ runtime-benchmarks = [
     "hex-literal",
     "frame-support/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
-    "frame-benchmarking",
+    "frame-benchmarking/runtime-benchmarks",
     "frame-system-benchmarking/runtime-benchmarks",
     "frame-system/runtime-benchmarks",
 

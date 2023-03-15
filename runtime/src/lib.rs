@@ -54,16 +54,14 @@ extern crate lazy_static; // for proposals_configuration module
 
 use codec::Decode;
 use frame_election_provider_support::{
-    onchain, BalancingConfig, ElectionDataProvider, ExtendedBalance, SequentialPhragmen, VoteWeight,
+    onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
 };
-use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
+    ConstU16, ConstU32, Contains, Currency, EitherOfDiverse, Imbalance, KeyOwnerProofSystem,
     LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
-use frame_support::weights::{
-    constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, DispatchClass, Weight,
-};
+use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, Weight};
+use frame_support::{dispatch::DispatchClass, pallet_prelude::Get};
 pub use weights::{
     block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
     rocksdb_weights::constants::RocksDbWeight,
@@ -108,6 +106,7 @@ use static_assertions::const_assert;
 pub use frame_system::Call as SystemCall;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
+#[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -596,7 +595,7 @@ impl pallet_staking::Config for Runtime {
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
-    type OnStakerSlash = (); // NominationPools;
+    type OnStakerSlash = ();
     type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
     type BondingRestriction = RestrictStakingAccountsFromBonding;
@@ -1037,7 +1036,8 @@ impl referendum::Config<ReferendumInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = VotingStakingManager;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = Balance;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;

@@ -171,7 +171,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
-use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
+use sp_arithmetic::traits::{SaturatedConversion, Zero};
 use sp_std::convert::TryInto;
 use sp_std::{vec, vec::Vec};
 

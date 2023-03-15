@@ -20,4 +20,4 @@ echo 'running cargo clippy'
 BUILD_DUMMY_WASM_BINARY=1 cargo "+$WASM_BUILD_TOOLCHAIN" clippy --release --all -- -D warnings
 
 echo 'running cargo unit tests'
-cargo "+$WASM_BUILD_TOOLCHAIN" test --release --all --features "${FEATURES}"
+cargo "+$WASM_BUILD_TOOLCHAIN" test --release --all --features runtime-benchmarks,"${FEATURES}" 
