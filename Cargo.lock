@@ -11332,8 +11332,3 @@ dependencies = [
  "libc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "ss58-registry"
-version = "1.23.0"
-source = "git+https://github.com/bwhm/ss58-registry?rev=a70121e7bbb56f983f6f17771cc79d8f19b481a0#a70121e7bbb56f983f6f17771cc79d8f19b481a0"
