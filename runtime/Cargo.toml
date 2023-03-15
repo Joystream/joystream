@@ -156,6 +156,7 @@ std = [
     'substrate-utility/std',
     'pallet-bags-list/std',
     'pallet-election-provider-multi-phase/std',
+    'pallet-election-provider-support-benchmarking?/std',
 
     # Joystream
     'common/std',

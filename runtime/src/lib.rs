@@ -293,7 +293,7 @@ impl frame_system::Config for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-    type SystemWeightInfo = frame_system::weights::SubstrateWeight<Runtime>;
+    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
     type SS58Prefix = ConstU16<JOY_ADDRESS_PREFIX>;
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
@@ -305,7 +305,7 @@ impl substrate_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = substrate_utility::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::substrate_utility::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -338,7 +338,7 @@ impl pallet_babe::Config for Runtime {
     type HandleEquivocation =
         pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences, ReportLongevity>;
 
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_babe::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
 }
 
@@ -365,7 +365,7 @@ impl pallet_grandpa::Config for Runtime {
         ReportLongevity,
     >;
 
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_grandpa::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
     type MaxSetIdSessionEntries = MaxSetIdSessionEntries;
 }
@@ -408,7 +408,7 @@ impl pallet_timestamp::Config for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -510,7 +510,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 impl pallet_session::historical::Config for Runtime {
@@ -597,7 +597,7 @@ impl pallet_staking::Config for Runtime {
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
     type OnStakerSlash = (); // NominationPools;
-    type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
     type BondingRestriction = RestrictStakingAccountsFromBonding;
 }
@@ -756,7 +756,7 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type MaxElectingVoters = MaxElectingVoters;
     type MaxWinners = MaxActiveValidators; // How does this relate with staking pallet
     type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
-    type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Self>;
+    type WeightInfo = weights::pallet_election_provider_multi_phase::SubstrateWeight<Self>;
 }
 
 parameter_types! {
@@ -766,7 +766,7 @@ parameter_types! {
 impl pallet_bags_list::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ScoreProvider = Staking;
-    type WeightInfo = pallet_bags_list::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_bags_list::SubstrateWeight<Runtime>;
     type BagThresholds = BagThresholds;
     type Score = VoteWeight;
 }
@@ -788,7 +788,7 @@ impl pallet_im_online::Config for Runtime {
     type ValidatorSet = Historical;
     type ReportUnresponsiveness = Offences;
     type UnsignedPriority = ImOnlineUnsignedPriority;
-    type WeightInfo = pallet_im_online::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_im_online::SubstrateWeight<Runtime>;
     type MaxKeys = MaxKeys;
     type MaxPeerInHeartbeats = MaxPeerInHeartbeats;
     type MaxPeerDataEncodingSize = MaxPeerDataEncodingSize;
@@ -1773,7 +1773,7 @@ impl pallet_vesting::Config for Runtime {
     type Currency = Balances;
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
-    type WeightInfo = pallet_vesting::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_vesting::SubstrateWeight<Runtime>;
     type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
     // `VestingInfo` encode length is 36bytes. 28 schedules gets encoded as 1009 bytes, which is the
     // highest number of schedules that encodes less than 2^10.
@@ -1802,7 +1802,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
