@@ -260,55 +260,31 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
 }
 
 pub(crate) fn max_proposal_stake() -> Balance {
-    let mut stakes = vec![];
-    stakes
-        .push(<Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Config>::RuntimeUpgradeProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Config>::SignalProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Config>::FundingRequestProposalParameters::get());
-    stakes.push(
-        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(
-        ),
-    );
-    stakes.push(
+    let stakes = vec![
+        <Runtime as proposals_codex::Config>::SetMaxValidatorCountProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::RuntimeUpgradeProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SignalProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::FundingRequestProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::CreateWorkingGroupLeadOpeningProposalParameters::get(),
         <Runtime as proposals_codex::Config>::FillWorkingGroupLeadOpeningProposalParameters::get(),
-    );
-    stakes.push(
         <Runtime as proposals_codex::Config>::UpdateWorkingGroupBudgetProposalParameters::get(),
-    );
-    stakes.push(
-        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(
-        ),
-    );
-    stakes
-        .push(<Runtime as proposals_codex::Config>::SlashWorkingGroupLeadProposalParameters::get());
-    stakes.push(
+        <Runtime as proposals_codex::Config>::DecreaseWorkingGroupLeadStakeProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SlashWorkingGroupLeadProposalParameters::get(),
         <Runtime as proposals_codex::Config>::SetWorkingGroupLeadRewardProposalParameters::get(),
-    );
-    stakes.push(
         <Runtime as proposals_codex::Config>::TerminateWorkingGroupLeadProposalParameters::get(),
-    );
-    stakes.push(<Runtime as proposals_codex::Config>::AmendConstitutionProposalParameters::get());
-    stakes.push(
-        <Runtime as proposals_codex::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(
-        ),
-    );
-    stakes.push(<Runtime as proposals_codex::Config>::SetMembershipPriceProposalParameters::get());
-    stakes.push(
+        <Runtime as proposals_codex::Config>::AmendConstitutionProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::CancelWorkingGroupLeadOpeningProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetMembershipPriceProposalParameters::get(),
         <Runtime as proposals_codex::Config>::SetCouncilBudgetIncrementProposalParameters::get(),
-    );
-    stakes.push(<Runtime as proposals_codex::Config>::SetCouncilorRewardProposalParameters::get());
-    stakes.push(
+        <Runtime as proposals_codex::Config>::SetCouncilorRewardProposalParameters::get(),
         <Runtime as proposals_codex::Config>::SetInitialInvitationBalanceProposalParameters::get(),
-    );
-    stakes.push(<Runtime as proposals_codex::Config>::SetInvitationCountProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Config>::SetMembershipLeadInvitationQuotaProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Config>::SetReferralCutProposalParameters::get());
-    stakes.push(<Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get());
-    stakes
-        .push(<Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get());
-    stakes
-        .push(<Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get());
+        <Runtime as proposals_codex::Config>::SetInvitationCountProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetMembershipLeadInvitationQuotaProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetReferralCutProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get(),
+    ];
 
     stakes
         .iter()
