@@ -34,9 +34,9 @@ staking-handler = { package = 'pallet-staking-handler', default-features = false
 [features]
 default = ['std']
 runtime-benchmarks = [
-    'frame-benchmarking',
-	'membership',
-	'working-group',
+    'frame-benchmarking/runtime-benchmarks',
+	'membership/runtime-benchmarks',
+	'working-group/runtime-benchmarks',
 	'staking-handler',
     'sp-core',
 	'common/runtime-benchmarks',
@@ -56,4 +56,5 @@ std = [
 	'membership/std',
 	'working-group/std',
 	'scale-info/std',
+	'frame-benchmarking?/std',
 ]

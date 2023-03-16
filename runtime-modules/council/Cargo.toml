@@ -32,8 +32,8 @@ membership = { package = 'pallet-membership', default-features = false, path = '
 [features]
 default = ['std']
 runtime-benchmarks = [
-    'frame-benchmarking',
-    'membership',
+    'frame-benchmarking/runtime-benchmarks',
+    'membership/runtime-benchmarks',
     'common/runtime-benchmarks',
 ]
 std = [
@@ -51,4 +51,5 @@ std = [
     'referendum/std',
     'staking-handler/std',
     'scale-info/std',
+    'frame-benchmarking?/std',
 ]

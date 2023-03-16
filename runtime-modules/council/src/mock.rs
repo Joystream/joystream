@@ -819,14 +819,12 @@ where
     }
 
     pub fn check_new_council_elected_hook() {
-        let result = LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
+        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
 
         // clear election sign
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (false,);
         });
-
-        result
     }
 
     pub fn set_candidacy_note(
@@ -1496,7 +1494,7 @@ pub fn set_invitation_lock(
     amount: Balance<Runtime>,
 ) {
     <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );

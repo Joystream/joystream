@@ -33,7 +33,7 @@ strum = {version = "0.19", default-features = false}
 [features]
 default = ['std']
 runtime-benchmarks = [
-    "frame-benchmarking",
+    "frame-benchmarking/runtime-benchmarks",
     "common/runtime-benchmarks",
 ]
 std = [
@@ -49,4 +49,5 @@ std = [
     'sp-arithmetic/std',
     'scale-info/std',
     'working-group/std',
+    'frame-benchmarking?/std',
 ]

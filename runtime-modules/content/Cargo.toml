@@ -40,7 +40,7 @@ derive-new = "0.5"
 [features]
 default = ['std']
 runtime-benchmarks = [
-	"frame-benchmarking",
+	"frame-benchmarking/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"membership/runtime-benchmarks",
 	"storage/runtime-benchmarks",
@@ -63,4 +63,5 @@ std = [
 	'membership/std',
 	'project-token/std',
 	'scale-info/std',
+	'frame-benchmarking?/std',
 ]

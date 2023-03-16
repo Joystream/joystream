@@ -46,9 +46,9 @@ sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/j
 [features]
 default = ['std']
 runtime-benchmarks = [
-    'frame-benchmarking',
-    'balances',
-    'council',
+    'frame-benchmarking/runtime-benchmarks',
+    'balances/runtime-benchmarks',
+    'council/runtime-benchmarks',
     'common/runtime-benchmarks',
 ]
 std = [

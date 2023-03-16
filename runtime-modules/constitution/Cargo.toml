@@ -23,7 +23,7 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 [features]
 default = ['std']
 runtime-benchmarks = [
-    "frame-benchmarking",
+    "frame-benchmarking/runtime-benchmarks",
     "common/runtime-benchmarks",
 ]
 std = [
@@ -36,4 +36,5 @@ std = [
     'scale-info/std',
     'pallet-balances/std',
     'common/std',
+    'frame-benchmarking?/std',
 ]

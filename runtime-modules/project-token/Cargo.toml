@@ -31,7 +31,7 @@ sp-storage = { package = 'sp-storage', default-features = false, git = 'https://
 [features]
 default = ['std']
 runtime-benchmarks = [
-	"frame-benchmarking",
+	"frame-benchmarking/runtime-benchmarks",
 	"common/runtime-benchmarks",
 ]
 std = [
@@ -48,4 +48,5 @@ std = [
 	'codec/std',
 	'serde',
 	'scale-info/std',
+	'frame-benchmarking?/std'
 ]    

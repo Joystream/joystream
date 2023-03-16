@@ -36,10 +36,10 @@ derive-new = "0.5"
 [features]
 default = ['std']
 runtime-benchmarks = [
-    "frame-benchmarking",
+    "frame-benchmarking/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
-    "working-group",
-    "membership",
+    "working-group/runtime-benchmarks",
+    "membership/runtime-benchmarks",
     'sp-core',
 ]
 std = [
@@ -55,6 +55,7 @@ std = [
     'common/std',
     'scale-info/std',
     'working-group/std',
+    'frame-benchmarking?/std',
 ]
 playground-runtime = []
 testing-runtime = []

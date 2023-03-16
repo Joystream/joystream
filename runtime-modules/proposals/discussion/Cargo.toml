@@ -33,10 +33,10 @@ referendum = { package = 'pallet-referendum', default-features = false, path = '
 [features]
 default = ['std']
 runtime-benchmarks = [
-    'frame-benchmarking',
-	'membership',
-    'referendum',
-    'council',
+    'frame-benchmarking/runtime-benchmarks',
+	'membership/runtime-benchmarks',
+    'referendum/runtime-benchmarks',
+    'council/runtime-benchmarks',
     'common/runtime-benchmarks',
 ]
 std = [
@@ -52,5 +52,6 @@ std = [
     'council/std',
     'membership/std',
     'scale-info/std',
-    'sp-runtime/std'
+    'sp-runtime/std',
+    'frame-benchmarking?/std',
 ]
