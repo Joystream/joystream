@@ -11,7 +11,7 @@ use crate::{
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{
-    ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, Get, LockIdentifier, OnFinalize,
+    ConstU16, ConstU32, ConstU64, Currency, EitherOfDiverse, Get, LockIdentifier, OnFinalize,
     OnInitialize, WithdrawReasons,
 };
 
@@ -213,7 +213,8 @@ impl referendum::Config<ReferendumInstance> for Runtime {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 

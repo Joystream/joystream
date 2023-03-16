@@ -14,8 +14,8 @@ use frame_support::traits::{
     ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
 use frame_support::{
-    parameter_types, storage::weak_bounded_vec::WeakBoundedVec, traits::EnsureOneOf, StorageMap,
-    StorageValue,
+    parameter_types, storage::weak_bounded_vec::WeakBoundedVec, traits::EitherOfDiverse,
+    StorageMap, StorageValue,
 };
 use frame_system::{ensure_signed, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
@@ -77,7 +77,8 @@ impl Config for Runtime {
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 

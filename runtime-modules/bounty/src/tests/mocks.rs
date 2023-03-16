@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{ConstU32, Currency, EnsureOneOf, LockIdentifier};
+use frame_support::traits::{ConstU32, Currency, EitherOfDiverse, LockIdentifier};
 use frame_support::{ensure, parameter_types, PalletId};
 use frame_system::{ensure_signed, EnsureRoot, EnsureSigned};
 use sp_core::H256;
@@ -333,7 +333,8 @@ impl referendum::Config<ReferendumInstance> for Test {
     type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = u64;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;

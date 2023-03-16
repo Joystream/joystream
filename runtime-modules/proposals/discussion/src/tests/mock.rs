@@ -8,7 +8,7 @@ use common::locks::{
 use frame_support::traits::{LockIdentifier, OnFinalize, OnInitialize, WithdrawReasons};
 use frame_support::{
     parameter_types,
-    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
+    traits::{ConstU16, ConstU32, ConstU64, EitherOfDiverse},
     PalletId,
 };
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -329,7 +329,8 @@ impl referendum::Config<ReferendumInstance> for Test {
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 

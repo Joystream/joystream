@@ -7,7 +7,9 @@ use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
-    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf, LockIdentifier, OnFinalize, OnInitialize},
+    traits::{
+        ConstU16, ConstU32, ConstU64, EitherOfDiverse, LockIdentifier, OnFinalize, OnInitialize,
+    },
 };
 use frame_system::{EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
 use sp_core::H256;
@@ -425,7 +427,8 @@ impl referendum::Config<ReferendumInstance> for Test {
     type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = u64;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
