@@ -40,7 +40,7 @@ referendum = { package = 'pallet-referendum', default-features = false, path = '
 council = { package = 'pallet-council', default-features = false, path = '../../council'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 frame-election-provider-support = { package = 'frame-election-provider-support', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-pallet-bags-list = { package = 'pallet-bags-list', features = ["runtime-benchmarks"], git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+pallet-bags-list = { package = 'pallet-bags-list', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 [features]
