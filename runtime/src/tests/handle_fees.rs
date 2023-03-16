@@ -8,11 +8,11 @@ use frame_support::traits::{Currency, Imbalance, OnUnbalanced};
 fn block_author_only_receives_tips() {
     initial_test_ext().execute_with(|| {
         fn author() -> AccountId {
-            account_from_member_id(0).into()
+            account_from_member_id(0)
         }
 
         fn user() -> AccountId {
-            account_from_member_id(1).into()
+            account_from_member_id(1)
         }
 
         let user_starting_balance = currency::DOLLARS * 5000;

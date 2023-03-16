@@ -84,7 +84,7 @@ benchmarks! {
         verify {
 
             let channel_id: T::ChannelId = One::one();
-            assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(channel_id));
 
             let channel = ChannelById::<T>::get(channel_id);
             let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
@@ -178,7 +178,7 @@ benchmarks! {
         origin, actor, channel_id, update_params.clone())
         verify {
 
-            assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(channel_id));
 
             assert_last_event::<T>(
                 <T as Config>::RuntimeEvent::from(
@@ -248,7 +248,7 @@ benchmarks! {
         origin, actor, channel_id, update_params.clone())
         verify {
 
-            assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(channel_id));
 
             assert_last_event::<T>(
                 <T as Config>::RuntimeEvent::from(
@@ -657,7 +657,7 @@ benchmarks! {
      */
 
     create_curator_group {
-        let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
+        let a in 0 .. T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
 
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = Pallet::<T>::next_curator_group_id();
@@ -680,7 +680,7 @@ benchmarks! {
         }
 
     update_curator_group_permissions {
-        let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
+        let a in 0 .. T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
 
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
@@ -1215,7 +1215,7 @@ benchmarks! {
      */
 
     initialize_channel_transfer {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
         let (_, new_owner_id) = member_funded_account::<T>();
         let new_owner = ChannelOwner::Member(new_owner_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
@@ -1287,7 +1287,7 @@ benchmarks! {
     }
 
     accept_channel_transfer_curator_to_curator {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
 
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1339,7 +1339,7 @@ benchmarks! {
     }
 
     accept_channel_transfer_member_to_curator {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
 
         let (channel_id, member_id, member_account_id, content_lead_acc_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
@@ -1392,7 +1392,7 @@ benchmarks! {
     }
 
     accept_channel_transfer_member_to_member {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
 
         let (channel_id, member_id, member_account_id, content_lead_acc_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;

@@ -245,7 +245,7 @@ impl CreateChannelFixture {
 
         if actual_result.is_ok() {
             // ensure channel is on chain
-            assert!(ChannelById::<Test>::contains_key(&channel_id));
+            assert!(ChannelById::<Test>::contains_key(channel_id));
 
             // channel counter increased
             assert_eq!(
@@ -312,7 +312,7 @@ impl CreateChannelFixture {
                         )
                     },
                     self.params.clone(),
-                    channel_account.clone()
+                    channel_account
                 ))
             );
 
@@ -335,7 +335,7 @@ impl CreateChannelFixture {
             assert_eq!(balance_post, balance_pre);
             assert_eq!(beg_obj_id, end_obj_id);
             assert!(!storage::Bags::<Test>::contains_key(&channel_bag_id));
-            assert!(!ChannelById::<Test>::contains_key(&channel_id));
+            assert!(!ChannelById::<Test>::contains_key(channel_id));
             assert_eq!(NextChannelId::<Test>::get(), channel_id);
         }
     }
@@ -501,7 +501,7 @@ impl CreateVideoFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(VideoById::<Test>::contains_key(&video_id));
+            assert!(VideoById::<Test>::contains_key(video_id));
 
             assert_eq!(
                 Content::next_video_id(),
@@ -547,7 +547,7 @@ impl CreateVideoFixture {
                 }));
             }
         } else {
-            assert!(!VideoById::<Test>::contains_key(&video_id));
+            assert!(!VideoById::<Test>::contains_key(video_id));
 
             assert_eq!(Content::next_video_id(), video_id);
 
@@ -1211,7 +1211,7 @@ pub trait ChannelDeletion {
                     self.expected_event_on_success()
                 );
 
-                assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
+                assert!(!<ChannelById<Test>>::contains_key(self.get_channel_id()));
                 assert!(!channel_objects_ids.iter().any(|id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                 }));
@@ -1247,7 +1247,7 @@ impl DeleteChannelFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             channel_bag_witness: channel_bag_witness(ChannelId::one()),
-            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+            num_objects_to_delete: DATA_OBJECTS_NUMBER,
         }
     }
 
@@ -1336,7 +1336,7 @@ impl DeleteChannelAsModeratorFixture {
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
             channel_bag_witness: channel_bag_witness(ChannelId::one()),
-            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+            num_objects_to_delete: DATA_OBJECTS_NUMBER,
             rationale: b"rationale".to_vec(),
         }
     }
@@ -1453,7 +1453,7 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
+        let channel_pre = ChannelById::<Test>::get(self.channel_id);
 
         let actual_result = Content::set_channel_paused_features_as_moderator(
             RuntimeOrigin::signed(self.sender),
@@ -1465,7 +1465,7 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let channel_post = ChannelById::<Test>::get(&self.channel_id);
+        let channel_post = ChannelById::<Test>::get(self.channel_id);
 
         if actual_result.is_ok() {
             assert_eq!(channel_post.paused_features, self.new_paused_features);
@@ -1739,7 +1739,7 @@ pub trait VideoDeletion {
 
     fn call_and_assert(&self, expected_result: DispatchResult) {
         let storage_root_pre = storage_root(StateVersion::V1);
-        let video_pre = <VideoById<Test>>::get(&self.get_video_id());
+        let video_pre = <VideoById<Test>>::get(self.get_video_id());
         let video_bloat_bond_reciever = video_pre
             .video_state_bloat_bond
             .get_recipient(self.get_sender());
@@ -2067,7 +2067,7 @@ impl UpdateChannelPayoutsFixture {
                     .payload
                     .as_ref()
                     .map(|_| snapshot_pre.next_object_id),
-                self.uploader_account.clone()
+                self.uploader_account
             ))
         );
         if let Some(commitment) = self.params.commitment {
@@ -2137,7 +2137,7 @@ impl UpdateChannelPayoutsFixture {
         let actual_result = Content::update_channel_payouts(
             self.origin.clone(),
             self.params.clone(),
-            self.uploader_account.clone(),
+            self.uploader_account,
         );
 
         let snapshot_post = self.get_state_snapshot();
@@ -5807,7 +5807,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Test>,
 ) {
     <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );
@@ -5817,5 +5817,5 @@ pub fn set_staking_candidate_lock(
     who: &<Test as frame_system::Config>::AccountId,
     amount: BalanceOf<Test>,
 ) {
-    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(who, amount);
 }

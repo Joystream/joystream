@@ -226,7 +226,7 @@ where
     )
     .unwrap();
 
-    assert!(WorkerById::<T, I>::contains_key(&worker_id));
+    assert!(WorkerById::<T, I>::contains_key(worker_id));
 
     (caller_id, worker_id)
 }
@@ -339,7 +339,7 @@ fn create_storage_bucket_helper<T: Config>(account_id: T::AccountId) -> T::Stora
     Module::<T>::create_storage_bucket(RawOrigin::Signed(account_id).into(), None, true, 0, 0)
         .unwrap();
 
-    assert!(<StorageBucketById<T>>::contains_key(&storage_bucket_id));
+    assert!(<StorageBucketById<T>>::contains_key(storage_bucket_id));
 
     storage_bucket_id
 }
@@ -483,7 +483,7 @@ benchmarks! {
     }: _ (RawOrigin::Signed(lead_account_id), storage_bucket_id)
     verify {
 
-        assert!(!StorageBucketById::<T>::contains_key(&storage_bucket_id));
+        assert!(!StorageBucketById::<T>::contains_key(storage_bucket_id));
         assert_last_event::<T>(
             RawEvent::StorageBucketDeleted(storage_bucket_id).into()
         );
@@ -595,12 +595,12 @@ benchmarks! {
     verify {
         if let Some(cid) = add_cids.iter().next(){
             let cid_bounded: Base58Multihash = cid.clone().try_into().unwrap();
-            assert!(Blacklist::contains_key(&cid_bounded));
+            assert!(Blacklist::contains_key(cid_bounded));
         }
 
         if let Some(cid) = remove_cids.iter().next(){
             let cid_bounded: Base58Multihash = cid.clone().try_into().unwrap();
-            assert!(!Blacklist::contains_key(&cid_bounded));
+            assert!(!Blacklist::contains_key(cid_bounded));
         }
 
         assert_last_event::<T>(
@@ -617,7 +617,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id), None, false, 0, 0)
     verify {
-        assert!(StorageBucketById::<T>::contains_key(&storage_bucket_id));
+        assert!(StorageBucketById::<T>::contains_key(storage_bucket_id));
         assert_last_event::<T>(
             RawEvent::StorageBucketCreated(storage_bucket_id, None, false, 0, 0).into()
         );
@@ -987,7 +987,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()))
     verify {
-        assert!(DistributionBucketFamilyById::<T>::contains_key(&family_id));
+        assert!(DistributionBucketFamilyById::<T>::contains_key(family_id));
         assert_last_event::<T>(RawEvent::DistributionBucketFamilyCreated(family_id).into());
     }
 
@@ -997,7 +997,7 @@ benchmarks! {
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), family_id)
     verify {
-        assert!(!DistributionBucketFamilyById::<T>::contains_key(&family_id));
+        assert!(!DistributionBucketFamilyById::<T>::contains_key(family_id));
         assert_last_event::<T>(RawEvent::DistributionBucketFamilyDeleted(family_id).into());
     }
 
@@ -1010,7 +1010,7 @@ benchmarks! {
         let bucket_id = Module::<T>::create_distribution_bucket_id(family_id, bucket_idx);
     }: _ (RawOrigin::Signed(lead_account_id.clone()), family_id, bucket_status)
     verify {
-        assert!(DistributionBucketByFamilyIdById::<T>::contains_key(&family_id, &bucket_idx));
+        assert!(DistributionBucketByFamilyIdById::<T>::contains_key(family_id, bucket_idx));
         assert_last_event::<T>(
             RawEvent::DistributionBucketCreated(family_id, bucket_status, bucket_id).into()
         );
@@ -1025,7 +1025,7 @@ benchmarks! {
     verify {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
 
         assert_eq!(bucket.accepting_new_bags, new_bucket_status);
         assert_last_event::<T>(
@@ -1041,7 +1041,7 @@ benchmarks! {
     verify {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
-        assert!(!DistributionBucketByFamilyIdById::<T>::contains_key(&family_id, &bucket_idx));
+        assert!(!DistributionBucketByFamilyIdById::<T>::contains_key(family_id, bucket_idx));
 
         assert_last_event::<T>(
             RawEvent::DistributionBucketDeleted(bucket_id).into()
@@ -1126,7 +1126,7 @@ benchmarks! {
     verify {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
 
         assert_eq!(bucket.distributing, distributing);
 
@@ -1171,7 +1171,7 @@ benchmarks! {
     verify {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
 
         assert!(bucket.pending_invitations.contains(&worker_id));
 
@@ -1199,12 +1199,12 @@ benchmarks! {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
 
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
         assert!(bucket.pending_invitations.contains(&worker_id));
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), worker_id)
     verify {
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
         assert!(!bucket.pending_invitations.contains(&worker_id));
 
         assert_last_event::<T>(
@@ -1239,12 +1239,12 @@ benchmarks! {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
 
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
         assert!(bucket.operators.contains(&worker_id));
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), bucket_id.clone(), worker_id)
     verify {
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
         assert!(!bucket.operators.contains(&worker_id));
 
         assert_last_event::<T>(
@@ -1287,7 +1287,7 @@ benchmarks! {
     verify {
         let (family_id, bucket_idx) =
             (bucket_id.distribution_bucket_family_id, bucket_id.distribution_bucket_index);
-        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(&family_id, &bucket_idx);
+        let bucket = Module::<T>::distribution_bucket_by_family_id_by_index(family_id, bucket_idx);
         assert!(bucket.operators.contains(&worker_id));
 
         assert_last_event::<T>(

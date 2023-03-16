@@ -1923,7 +1923,7 @@ impl<T: Config> Module<T> {
 
     fn ensure_category_exists(category_id: &T::CategoryId) -> Result<CategoryOf<T>, Error<T>> {
         ensure!(
-            <CategoryById<T>>::contains_key(&category_id),
+            <CategoryById<T>>::contains_key(category_id),
             Error::<T>::CategoryDoesNotExist
         );
 
@@ -1938,7 +1938,7 @@ impl<T: Config> Module<T> {
         Self::ensure_is_forum_lead_account(&account_id)?;
 
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxTotalCategories>(
-            <CategoryCounter<T>>::get().into() as u64,
+            <CategoryCounter<T>>::get().into(),
         )?;
 
         // If not root, then check that we can create in parent category

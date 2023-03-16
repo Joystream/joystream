@@ -102,11 +102,7 @@ fn bonding_with_non_staked_account_works() {
 
         // bonding succeeds
         assert_eq!(
-            <Staking as StakingInterface>::bond(
-                &validator_1.clone().into(),
-                stake_amount,
-                &validator_1.clone().into()
-            ),
+            <Staking as StakingInterface>::bond(&validator_1, stake_amount, &validator_1),
             Ok(())
         );
 
@@ -154,11 +150,7 @@ fn bonding_with_staked_account_fails() {
 
         // bonding should fail
         assert_err!(
-            <Staking as StakingInterface>::bond(
-                &validator_1.clone().into(),
-                bond_amount,
-                &validator_1.clone().into()
-            ),
+            <Staking as StakingInterface>::bond(&validator_1, bond_amount, &validator_1),
             pallet_staking::Error::<Runtime>::BondingRestricted
         );
     });

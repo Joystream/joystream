@@ -1303,7 +1303,7 @@ decl_module! {
                 ChannelById::<T>::mutate(channel_id, |channel| {
                     Self::increment_nft_counters(channel);
                 });
-                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
+                VideoById::<T>::mutate(video_id, |video| video.nft_status = nft_status);
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_objects_ids));
@@ -2539,7 +2539,7 @@ decl_module! {
             Self::withdraw_bid_payment(&participant_account_id, old_bid.amount)?;
 
             // remove
-            OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
+            OpenAuctionBidByVideoAndMember::<T>::remove(video_id, participant_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
@@ -3083,7 +3083,7 @@ decl_module! {
             //
 
             ChannelById::<T>::mutate(
-                &channel_id,
+                channel_id,
                 |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
             );
 
@@ -3118,7 +3118,7 @@ decl_module! {
 
             if channel.transfer_status.is_pending() {
                 ChannelById::<T>::mutate(
-                    &channel_id,
+                    channel_id,
                     |channel| {
                         channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                     });
@@ -3170,7 +3170,7 @@ decl_module! {
                 Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
             }
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                 channel.owner = new_owner;
                 channel.collaborators = new_collaborators;
@@ -3295,7 +3295,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = Some(token_id);
             });
 
@@ -3753,7 +3753,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = None;
             });
         }
@@ -4385,7 +4385,7 @@ impl<T: Config> Module<T> {
         amount: BalanceOf<T>,
     ) {
         T::CouncilBudgetManager::withdraw(reward_account, amount);
-        ChannelById::<T>::mutate(&channel_id, |channel| {
+        ChannelById::<T>::mutate(channel_id, |channel| {
             channel.cumulative_reward_claimed =
                 channel.cumulative_reward_claimed.saturating_add(amount)
         });
@@ -4552,10 +4552,10 @@ impl<T: Config> Module<T> {
         let a = (*num_objects_to_delete) as u32;
 
         //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
+        let b = channel_bag_witness.storage_buckets_num;
 
         //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+        let c = channel_bag_witness.distribution_buckets_num;
 
         WeightInfoContent::<T>::delete_channel(a, b, c)
     }
@@ -4731,10 +4731,10 @@ impl<T: Config> Module<T> {
         let a = (*num_objects_to_delete) as u32;
 
         //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
+        let b = channel_bag_witness.storage_buckets_num;
 
         //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+        let c = channel_bag_witness.distribution_buckets_num;
 
         //rationale
         let d = to_kb((*rationale).len() as u32);

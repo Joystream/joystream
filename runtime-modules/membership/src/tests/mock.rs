@@ -265,16 +265,9 @@ impl
     }
 }
 
+#[derive(Default)]
 pub struct TestExternalitiesBuilder {
     system_config: Option<frame_system::GenesisConfig>,
-}
-
-impl Default for TestExternalitiesBuilder {
-    fn default() -> Self {
-        Self {
-            system_config: None,
-        }
-    }
 }
 
 impl TestExternalitiesBuilder {

@@ -360,7 +360,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(

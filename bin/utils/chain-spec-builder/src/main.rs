@@ -330,7 +330,7 @@ fn generate_chain_spec(
         },
         vec![],
         telemetry_endpoints,
-        Some(&*"/joy/testnet/0"),
+        Some("/joy/testnet/0"),
         None, // Some(&*"joy"),
         Some(joy_chain_spec_properties()),
         Default::default(),

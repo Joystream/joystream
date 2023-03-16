@@ -837,7 +837,7 @@ impl<T: Config<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
 
         // store revealed vote
-        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
+        Votes::<T, I>::mutate(account_id, |vote| vote.vote_for = Some(*option_id));
     }
 
     // Release stake associated to the user's last vote.
@@ -993,11 +993,11 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
             cycle_id: &u64,
             account_id: &T::AccountId,
         ) -> Result<(), Error<T, I>> {
-            if !Votes::<T, I>::contains_key(&account_id) {
+            if !Votes::<T, I>::contains_key(account_id) {
                 return Ok(());
             }
 
-            let existing_vote = Votes::<T, I>::get(&account_id);
+            let existing_vote = Votes::<T, I>::get(account_id);
 
             // don't allow repeated vote
             if existing_vote.cycle_id == *cycle_id {

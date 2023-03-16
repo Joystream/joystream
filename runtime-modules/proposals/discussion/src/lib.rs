@@ -394,7 +394,7 @@ decl_module! {
                 Error::<T>::PostDoesntExist
             );
 
-            let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
+            let post_author_id = <PostThreadIdByPostId<T>>::get(thread_id, post_id).author_id;
 
             T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -440,7 +440,7 @@ decl_module! {
 
             let thread_mode = Self::ensure_thread_mode_ok(&mode)?;
 
-            let thread = Self::thread_by_id(&thread_id);
+            let thread = Self::thread_by_id(thread_id);
 
             let is_councilor =
                     T::CouncilOriginValidator::ensure_member_consulate(origin, member_id)

@@ -341,7 +341,7 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
         .build_storage::<Runtime>()
         .unwrap();
 
-    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+    let mut result = Into::<sp_io::TestExternalities>::into(t);
 
     // Make sure we are not in block 0 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
@@ -779,7 +779,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         // check if the account was added to AccountsOptedOut
         let account_id = ensure_signed(mock_origin).unwrap();
         assert!(AccountsOptedOut::<Runtime, DefaultInstance>::contains_key(
-            &account_id
+            account_id
         ));
 
         // check event was emitted

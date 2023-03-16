@@ -28,7 +28,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Test>,
 ) {
     <Test as Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );
@@ -683,7 +683,7 @@ impl AddStakingAccountFixture {
 
         if actual_result.is_ok() {
             assert!(<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
-                &self.staking_account_id,
+                self.staking_account_id,
             ));
         }
     }
@@ -736,7 +736,7 @@ impl RemoveStakingAccountFixture {
             );
 
             assert!(!<crate::StakingAccountIdMemberStatus<Test>>::contains_key(
-                &self.staking_account_id,
+                self.staking_account_id,
             ));
         }
     }
@@ -777,7 +777,7 @@ impl ConfirmStakingAccountFixture {
         assert_eq!(expected_result, actual_result);
 
         if actual_result.is_ok() {
-            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(&ALICE_ACCOUNT_ID,).confirmed);
+            assert!(<crate::StakingAccountIdMemberStatus<Test>>::get(ALICE_ACCOUNT_ID,).confirmed);
         }
     }
 
@@ -845,14 +845,14 @@ impl CreateMemberFixture {
             let handle_hash = <Test as frame_system::Config>::Hashing::hash(&self.params.handle);
             let profile = get_membership_by_id(expected_member_id);
 
-            assert_eq!(Membership::handles(handle_hash.clone()), expected_member_id);
+            assert_eq!(Membership::handles(handle_hash), expected_member_id);
             assert_eq!(Membership::members_created(), expected_member_id + 1);
             assert_eq!(
                 profile,
                 MembershipObject {
                     handle_hash,
-                    root_account: self.params.root_account.clone(),
-                    controller_account: self.params.controller_account.clone(),
+                    root_account: self.params.root_account,
+                    controller_account: self.params.controller_account,
                     verified: self.params.is_founding_member,
                     invites: Membership::initial_invitation_count()
                 }

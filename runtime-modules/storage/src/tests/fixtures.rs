@@ -859,8 +859,8 @@ impl DeleteDynamicBagFixture {
             .iter()
             .map(|id| {
                 <crate::DistributionBucketByFamilyIdById<Test>>::get(
-                    &id.distribution_bucket_family_id,
-                    &id.distribution_bucket_index,
+                    id.distribution_bucket_family_id,
+                    id.distribution_bucket_index,
                 )
             })
             .clone()
@@ -892,8 +892,8 @@ impl DeleteDynamicBagFixture {
             .iter()
             .map(|id| {
                 <crate::DistributionBucketByFamilyIdById<Test>>::get(
-                    &id.distribution_bucket_family_id,
-                    &id.distribution_bucket_index,
+                    id.distribution_bucket_family_id,
+                    id.distribution_bucket_index,
                 )
             })
             .clone()

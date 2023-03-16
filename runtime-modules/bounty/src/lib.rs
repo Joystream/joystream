@@ -1675,7 +1675,7 @@ decl_module! {
         ) {
             let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(origin, contributor.clone())?;
             ensure!(
-                BountyContributions::<T>::contains_key(&bounty_id, &contributor),
+                BountyContributions::<T>::contains_key(bounty_id, &contributor),
                 Error::<T>::InvalidContributorActorSpecified,
                 );
 
@@ -1813,7 +1813,7 @@ impl<T: Config> Module<T> {
 
         bounty_funder_manager.transfer_funds_from_bounty_account(*bounty_id, withdrawal_amount);
 
-        <BountyContributions<T>>::remove(&bounty_id, &funder);
+        <BountyContributions<T>>::remove(bounty_id, &funder);
 
         Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
             *bounty_id,
@@ -1834,7 +1834,7 @@ impl<T: Config> Module<T> {
             .transfer_funds_from_bounty_account(*bounty_id, funding.funder_state_bloat_bond_amount);
 
         //Remove contribution from
-        <BountyContributions<T>>::remove(&bounty_id, &funder);
+        <BountyContributions<T>>::remove(bounty_id, &funder);
 
         Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
             *bounty_id,
@@ -2036,11 +2036,11 @@ impl<T: Config> Module<T> {
         funder: &BountyActor<MemberId<T>>,
     ) -> Result<Contribution<T>, DispatchError> {
         ensure!(
-            <BountyContributions<T>>::contains_key(&bounty_id, &funder),
+            <BountyContributions<T>>::contains_key(bounty_id, funder),
             Error::<T>::NoBountyContributionFound,
         );
 
-        let funding = <BountyContributions<T>>::get(&bounty_id, &funder);
+        let funding = <BountyContributions<T>>::get(bounty_id, funder);
 
         Ok(funding)
     }
@@ -2146,10 +2146,10 @@ impl<T: Config> Module<T> {
 
         //Check if is the first time a funder is contributiong
         //returns Contribution
-        match <BountyContributions<T>>::contains_key(&bounty_id, &funder) {
+        match <BountyContributions<T>>::contains_key(bounty_id, funder) {
             //Adds funds to an existing amount, is_first_contribution will be set to false
             true => (
-                Self::contribution_by_bounty_by_actor(bounty_id, &funder),
+                Self::contribution_by_bounty_by_actor(bounty_id, funder),
                 adjusted_amount,
                 adjusted_amount,
             ),

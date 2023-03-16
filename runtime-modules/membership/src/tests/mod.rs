@@ -157,8 +157,8 @@ fn gift_membership_succeeds_with_same_root_and_controller() {
         run_to_block(starting_block);
 
         let params = get_bob_gift_membership_parameters_single_account();
-        let credit_root_account = params.clone().credit_root_account;
-        let credit_controller_account = params.clone().credit_controller_account;
+        let credit_root_account = params.credit_root_account;
+        let credit_controller_account = params.credit_controller_account;
 
         assert_eq!(params.root_account, params.controller_account);
 
@@ -187,12 +187,10 @@ fn gift_membership_succeeds_with_same_root_and_controller() {
 
         // usable-balance
         let locked_balance = params
-            .clone()
             .apply_controller_account_invitation_lock
             .unwrap_or_else(Zero::zero)
             .saturating_add(
                 params
-                    .clone()
                     .apply_root_account_invitation_lock
                     .unwrap_or_else(Zero::zero),
             );

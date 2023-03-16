@@ -1115,7 +1115,7 @@ benchmarks! {
 
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
+            caller_id.clone(), lead_id.saturated_into(), category_id,
             text.clone(), text
         );
 
@@ -1177,7 +1177,7 @@ benchmarks! {
 
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
+            caller_id.clone(), lead_id.saturated_into(), category_id,
             text.clone(), text
         );
 

@@ -231,16 +231,11 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        if Membership::membership(member_id).is_some()
+        Membership::membership(member_id).is_some()
             || MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
             || LEAD_MEMBER_ID == *member_id
-        {
-            true
-        } else {
-            false
-        }
     }
 
     fn get_leader_member_id() -> Option<Self::MemberId> {
@@ -248,7 +243,7 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId> {
-        ContentWorkingGroup::get_worker_member_id(curator_id).or_else(|| match *curator_id {
+        ContentWorkingGroup::get_worker_member_id(curator_id).or(match *curator_id {
             DEFAULT_CURATOR_ID => Some(DEFAULT_CURATOR_MEMBER_ID),
             UNAUTHORIZED_CURATOR_ID => Some(UNAUTHORIZED_CURATOR_MEMBER_ID),
             _ => None,
@@ -542,8 +537,8 @@ impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, U256> for () 
     }
 
     fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
-        return Membership::is_member_controller_account(member_id, account_id)
-            || TestMemberships::is_member_controller_account(member_id, account_id);
+        Membership::is_member_controller_account(member_id, account_id)
+            || TestMemberships::is_member_controller_account(member_id, account_id)
     }
 }
 thread_local! {
@@ -899,9 +894,9 @@ impl MemberOriginValidator<RuntimeOrigin, u64, U256> for TestMemberships {
 
     fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
         Membership::is_member_controller_account(member_id, account_id)
-            || MEMBER_IDS.contains(&member_id)
-            || COLABORATOR_IDS.contains(&member_id)
-            || CURATOR_IDS.contains(&member_id)
+            || MEMBER_IDS.contains(member_id)
+            || COLABORATOR_IDS.contains(member_id)
+            || CURATOR_IDS.contains(member_id)
             || LEAD_MEMBER_ID == *member_id
     }
 }

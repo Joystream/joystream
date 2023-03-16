@@ -527,7 +527,7 @@ pub fn delete_thread_mock(
     thread_id: <Runtime as Config>::ThreadId,
     result: DispatchResult,
 ) {
-    let origin = mock::OriginType::Signed(sender.clone());
+    let origin = mock::OriginType::Signed(*sender);
     let storage_root_pre = storage_root(StateVersion::V1);
     let thread = ThreadById::<Runtime>::get(category_id, thread_id);
     let bloat_bond_reciever = thread.cleanup_pay_off.get_recipient(sender);
@@ -592,7 +592,7 @@ pub fn delete_post_mock(
 ) {
     let number_of_editable_posts =
         <ThreadById<Runtime>>::get(category_id, thread_id).number_of_editable_posts;
-    let origin = mock::OriginType::Signed(sender.clone());
+    let origin = mock::OriginType::Signed(*sender);
     let storage_root_pre = storage_root(StateVersion::V1);
     let post = PostById::<Runtime>::get(thread_id, post_id);
     let bloat_bond_reciever = post.cleanup_pay_off.get_recipient(sender);
@@ -1096,7 +1096,7 @@ pub fn run_to_block(n: u64) {
 }
 
 pub fn ed() -> BalanceOf<Runtime> {
-    ExistentialDeposit::get().into()
+    ExistentialDeposit::get()
 }
 
 pub fn set_invitation_lock(
@@ -1104,7 +1104,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Runtime>,
 ) {
     <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );
@@ -1114,5 +1114,5 @@ pub fn set_staking_candidate_lock(
     who: &<Runtime as frame_system::Config>::AccountId,
     amount: BalanceOf<Runtime>,
 ) {
-    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+    <Runtime as membership::Config>::StakingCandidateStakingHandler::lock(who, amount);
 }

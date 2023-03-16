@@ -71,7 +71,7 @@ pub(crate) fn create_new_members(count: u64) -> Vec<MemberId> {
 
     (0..count)
         .map(|i| {
-            let member_id = first_member_id + i as u64;
+            let member_id = first_member_id + i;
             let account_id = account_from_member_id(member_id);
             insert_member(account_id.clone());
             set_staking_account(account_id.clone(), account_id, member_id);
@@ -83,7 +83,7 @@ pub(crate) fn create_new_members(count: u64) -> Vec<MemberId> {
 pub(crate) fn setup_new_council(cycle_id: u64) {
     let council_size = <Runtime as council::Config>::CouncilSize::get();
     let num_extra_candidates = <Runtime as council::Config>::MinNumberOfExtraCandidates::get() + 1;
-    let councilor_stake: u128 = <Runtime as council::Config>::MinCandidateStake::get().into();
+    let councilor_stake: u128 = <Runtime as council::Config>::MinCandidateStake::get();
 
     // council members that will be elected
     let council_member_ids = create_new_members(council_size as u64);
@@ -127,18 +127,14 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
     run_to_block(current_block + <Runtime as council::Config>::AnnouncingPeriodDuration::get());
 
     let voter_stake: u128 =
-        <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get().into();
+        <Runtime as referendum::Config<ReferendumInstance>>::MinimumStake::get();
 
     for (i, member_id) in voter_ids.iter().enumerate() {
         let voter = account_from_member_id(*member_id);
         increase_total_balance_issuance_using_account_id(voter.clone(), voter_stake + 1);
 
-        let commitment = Referendum::calculate_commitment(
-            &voter,
-            &[0u8],
-            &cycle_id,
-            &council_member_ids[i as usize],
-        );
+        let commitment =
+            Referendum::calculate_commitment(&voter, &[0u8], &cycle_id, &council_member_ids[i]);
 
         Referendum::vote(
             RawOrigin::Signed(voter.clone()).into(),
@@ -159,7 +155,7 @@ pub(crate) fn setup_new_council(cycle_id: u64) {
         Referendum::reveal_vote(
             RawOrigin::Signed(voter.clone()).into(),
             vec![0u8],
-            council_member_ids[i as usize],
+            council_member_ids[i],
         )
         .unwrap();
     }

@@ -253,8 +253,7 @@ where
 
         assert_eq!((self.successful_call)(), Ok(()));
 
-        let proposal_id =
-            <Test as proposals_engine::Config>::ProposalId::from(ProposalsEngine::proposal_count());
+        let proposal_id = ProposalsEngine::proposal_count();
         // a discussion was created
         assert!(<crate::ThreadIdByProposalId<Test>>::contains_key(
             proposal_id
@@ -556,7 +555,7 @@ fn create_funding_request_proposal_call_fails_with_zero_balance() {
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 funding_request_proposal_zero_balance,
             ),
             Err(Error::<Test>::InvalidFundingRequestProposalBalance.into())
@@ -585,7 +584,7 @@ fn create_funding_request_proposal_call_fails_with_exceeding_balance() {
                 increase_total_balance_issuance_using_account_id(account, 15000000);
                 common::FundingRequestParameters {
                     amount: single_request_budget + 1u64,
-                    account: account,
+                    account,
                 }
             })
             .collect::<Vec<_>>();
@@ -790,8 +789,7 @@ fn create_veto_proposal_common_checks_succeed() {
         )
         .unwrap();
 
-        let proposal_details =
-            ProposalDetails::VetoProposal(ProposalsEngine::proposal_count().into());
+        let proposal_details = ProposalDetails::VetoProposal(ProposalsEngine::proposal_count());
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -847,8 +845,8 @@ fn create_veto_proposal_fails_with_invalid_proposal_id() {
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
-                ProposalDetails::VetoProposal(1u32.into()),
+                general_proposal_parameters,
+                ProposalDetails::VetoProposal(1u32),
             ),
             Err(Error::<Test>::InvalidProposalId.into())
         );
@@ -2579,7 +2577,7 @@ fn create_update_channel_payouts_proposal_fails_when_min_cashout_exceeds_max_cas
         assert_eq!(
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(1).into(),
-                general_proposal_parameters.clone(),
+                general_proposal_parameters,
                 details,
             ),
             Err(Error::<Test>::InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout.into())

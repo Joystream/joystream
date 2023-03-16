@@ -52,7 +52,7 @@ fn assert_was_fired<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number) as u8)
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number))
         .try_into()
         .unwrap()
 }

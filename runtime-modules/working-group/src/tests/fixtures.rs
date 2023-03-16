@@ -20,7 +20,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Test>,
 ) {
     <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );

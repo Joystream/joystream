@@ -598,9 +598,7 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_assets_to_remove(
-                ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
-            )
+            .with_assets_to_remove((DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)).collect())
             .call_and_assert(Err(
                 Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
             ));
@@ -1308,11 +1306,11 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
         DeleteChannelAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER - 1)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
         // As lead
         DeleteChannelAsModeratorFixture::default()
-            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER - 1)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
     })
 }

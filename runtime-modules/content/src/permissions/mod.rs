@@ -372,7 +372,7 @@ pub fn ensure_actor_has_channel_permissions<T: Config>(
         ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(channel).map(|_| None),
         ContentActor::Curator(curator_group_id, curator_id) => {
             ensure_channel_is_owned_by_curator_group::<T>(channel, curator_group_id)?;
-            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            let group = Module::<T>::curator_group_by_id(curator_group_id);
             let agent_permissions =
                 group.get_existing_group_member_channel_agent_permissions::<T>(curator_id)?;
             ensure_agent_has_required_permissions::<T>(agent_permissions, required_permissions)?;
@@ -530,7 +530,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
     match actor {
         ContentActor::Lead => Ok(()),
         ContentActor::Curator(curator_group_id, ..) => {
-            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            let group = Module::<T>::curator_group_by_id(curator_group_id);
             group.ensure_group_member_can_perform_moderation_actions::<T>(
                 actions,
                 channel_privilege_level,

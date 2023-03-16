@@ -139,7 +139,7 @@ benchmarks! {
             invites,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
@@ -262,8 +262,8 @@ benchmarks! {
         let handle_updated_hash = T::Hashing::hash(&handle_updated);
 
         assert!(!MemberIdByHandleHash::<T>::contains_key(handle_old_hash));
-        assert!(MemberIdByHandleHash::<T>::contains_key(&handle_updated_hash));
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_updated_hash), member_id);
+        assert!(MemberIdByHandleHash::<T>::contains_key(handle_updated_hash));
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_updated_hash), member_id);
 
         assert_last_event::<T>(RawEvent::MemberProfileUpdated(
                 member_id,
@@ -501,7 +501,7 @@ benchmarks! {
 
         assert_eq!(T::WorkingGroup::get_budget(), new_wg_budget);
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), invited_member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), invited_member_id);
 
         assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
 
@@ -555,7 +555,7 @@ benchmarks! {
             invites: 0,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(gifted_membership));
 
@@ -829,7 +829,7 @@ benchmarks! {
             invites,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 

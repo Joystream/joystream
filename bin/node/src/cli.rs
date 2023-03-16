@@ -44,6 +44,7 @@ pub struct Cli {
 
 /// Possible subcommands of the main binary.
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// The custom inspect subcommmand for decoding blocks and extrinsics.
     #[clap(

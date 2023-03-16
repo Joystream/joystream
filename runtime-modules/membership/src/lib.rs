@@ -567,11 +567,11 @@ decl_module! {
 
             if let Some(new_handle_hash) = new_handle_hash {
                 // remove old handle hash
-                <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
+                <MemberIdByHandleHash<T>>::remove(membership.handle_hash);
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
 
-                <MembershipById<T>>::insert(&member_id, Membership::<T> {
+                <MembershipById<T>>::insert(member_id, Membership::<T> {
                     handle_hash: new_handle_hash,
                     ..membership
                 });
@@ -649,7 +649,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(target_member_id, Membership::<T> {
                 verified: is_verified,
                 ..membership
             });
@@ -717,13 +717,13 @@ decl_module! {
             //
 
             // Decrease source member invite number.
-            <MembershipById<T>>::insert(&source_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(source_member_id, Membership::<T> {
                 invites: source_membership.invites.saturating_sub(number_of_invites),
                 ..source_membership
             });
 
             // Increase target member invite number.
-            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(target_member_id, Membership::<T> {
                 invites: target_membership.invites.saturating_add(number_of_invites),
                 ..target_membership
             });
@@ -794,7 +794,7 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::insert(&params.inviting_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(params.inviting_member_id, Membership::<T> {
                 invites: membership.invites.saturating_sub(1),
                 ..membership
             });

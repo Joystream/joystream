@@ -1633,7 +1633,7 @@ fn active_proposal_rejection_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         assert_eq!(
-            <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
+            <VoteExistsByProposalByVoter<Test>>::get(proposal_id, 2),
             VoteKind::Abstain
         );
 
@@ -2182,7 +2182,7 @@ fn proposal_early_rejection_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
 
         assert_eq!(
-            <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
+            <VoteExistsByProposalByVoter<Test>>::get(proposal_id, 2),
             VoteKind::Reject
         );
 

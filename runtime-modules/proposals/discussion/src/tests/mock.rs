@@ -417,7 +417,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Test>,
 ) {
     <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );
@@ -427,5 +427,5 @@ pub fn set_staking_candidate_lock(
     who: &<Test as frame_system::Config>::AccountId,
     amount: BalanceOf<Test>,
 ) {
-    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(who, amount);
 }
