@@ -49,7 +49,7 @@ ARG WASM_BUILD_TOOLCHAIN=nightly-2022-11-15
 ARG GIT_COMMIT_HASH="unknown"
 ARG CODE_SHASUM
 RUN SUBSTRATE_CLI_GIT_COMMIT_HASH="${GIT_COMMIT_HASH}-docker-build-${CODE_SHASUM}" \
-  cargo build --release --features "${CARGO_FEATURES}"
+  cargo build --release --locked --features "${CARGO_FEATURES}"
 
 FROM ubuntu:22.04
 LABEL description="Joystream node"
