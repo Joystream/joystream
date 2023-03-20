@@ -59,4 +59,5 @@ fi
   --validator --chain ${DATA_PATH}/chain-spec.json \
   --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all \
-  --pruning=archive --no-telemetry
+  --pruning=archive --no-telemetry \
+  --no-hardware-benchmarks

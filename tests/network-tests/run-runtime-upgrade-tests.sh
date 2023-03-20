@@ -142,8 +142,10 @@ function export_chainspec_file_to_disk() {
 
 # cleanup
 function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
+    docker logs ${CONTAINER_ID} --tail 50
     docker rm --volumes target-node
+    docker logs processor --tail 100 || :
+    docker logs indexer --tail 100 || :
     docker-compose -f ../../docker-compose.yml down -v --remove-orphans
     docker volume prune -f # sometimes volumes are still running
 }
@@ -151,9 +153,7 @@ function cleanup() {
 # entrypoint
 function main {
     # Start a query-node
-    if [ "${NO_QN}" != true ]; then
-        ../../query-node/start.sh
-    fi
+    ../../query-node/start.sh
 
     CONTAINER_ID=""
     export JOYSTREAM_NODE_TAG=${RUNTIME}
