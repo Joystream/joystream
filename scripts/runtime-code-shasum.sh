@@ -2,10 +2,8 @@
 
 # Compute a hash over files related to building joystream/node docker image
 
-# Cargo workspace root
-export WORKSPACE_ROOT=`cargo metadata --offline --no-deps --format-version 1 | jq .workspace_root -r`
-
-cd ${WORKSPACE_ROOT}
+# Assuming cargo workspace root is same as the git repo root
+cd $(git rev-parse --show-toplevel)
 
 TAR=tar
 SED=sed
