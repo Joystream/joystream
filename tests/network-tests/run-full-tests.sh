@@ -23,7 +23,9 @@ then
       printf "***************************JOSYTREAM NODE LOGS****************************\n"
       printf "**************************************************************************\n\n"
       docker logs ${NODE_CONTAINER_ID} --tail 50
-      
+      docker stop ${NODE_CONTAINER_ID}
+      docker rm ${NODE_CONTAINER_ID}
+
       printf "\n\n\n"
       printf "**************************************************************************\n"
       printf "****************************HYDRA INDEXER LOGS****************************\n"
@@ -34,8 +36,7 @@ then
       printf "**************************************************************************\n"
       printf "*************************QUERY NODE PROCESSOR LOGS************************\n"
       printf "**************************************************************************\n\n"
-      docker logs indexer --tail 50
-
+      docker logs processor --tail 50
 
       docker-compose -f ../../docker-compose.yml down -v
   }
