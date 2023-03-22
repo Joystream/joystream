@@ -2,35 +2,40 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { ChannelMetadata, ChannelModeratorRemarked, ChannelOwnerRemarked } from '@joystream/metadata-protobuf'
+import {
+  AppAction,
+  ChannelMetadata,
+  ChannelModeratorRemarked,
+  ChannelOwnerRemarked,
+} from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId } from '@joystream/types/primitives'
 import {
   Channel,
+  ChannelAssetsDeletedByModeratorEvent,
+  ChannelDeletedByModeratorEvent,
+  ChannelNftCollectors,
+  ChannelVisibilitySetByModeratorEvent,
   Collaborator,
   ContentActor,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
+  MemberBannedFromChannelEvent,
   Membership,
   MetaprotocolTransactionSuccessful,
   StorageBag,
   StorageDataObject,
-  ChannelAssetsDeletedByModeratorEvent,
-  ChannelDeletedByModeratorEvent,
-  ChannelVisibilitySetByModeratorEvent,
-  ChannelNftCollectors,
-  MemberBannedFromChannelEvent,
 } from 'query-node/dist/model'
-import { In, FindOptionsWhere } from 'typeorm'
+import { FindOptionsWhere, In } from 'typeorm'
 import { Content } from '../../generated/types'
 import {
-  deserializeMetadata,
-  inconsistentState,
-  genericEventFields,
-  logger,
-  saveMetaprotocolTransactionSuccessful,
-  saveMetaprotocolTransactionErrored,
   bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  inconsistentState,
+  logger,
+  saveMetaprotocolTransactionErrored,
+  saveMetaprotocolTransactionSuccessful,
 } from '../common'
 import {
   processBanOrUnbanMemberFromChannelMessage,
@@ -41,9 +46,12 @@ import {
 import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
-  processChannelMetadata,
-  unsetAssetRelations,
+  generateAppActionCommitment,
   mapAgentPermission,
+  processAppActionMetadata,
+  processChannelMetadata,
+  u8aToBytes,
+  unsetAssetRelations,
 } from './utils'
 import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
@@ -56,6 +64,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
     new Content.ChannelCreatedEvent(event).params
 
+  // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
+  const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
+
   // create entity
   const channel = new Channel({
     // main data
@@ -64,12 +75,10 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     videos: [],
     createdInBlock: event.blockNumber,
     activeVideosCounter: 0,
-
-    // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
-    ...(await convertChannelOwnerToMemberOrCuratorGroup(store, owner)),
-
+    ...channelOwner,
     rewardAccount: rewardAccount.toString(),
     channelStateBloatBond: channelStateBloatBond.amount,
+    totalVideosCreated: 0,
   })
 
   // deserialize & process metadata
@@ -80,13 +89,38 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const metadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) || {}
-    await processChannelMetadata(ctx, channel, metadata, dataObjects)
+    const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap(), { skipWarning: true })
+
+    if (appAction) {
+      const channelMetadataBytes = u8aToBytes(appAction.rawAction)
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
+      const creatorType = channel.ownerMember ? AppAction.CreatorType.MEMBER : AppAction.CreatorType.CURATOR_GROUP
+      const creatorId = (channel.ownerMember ? channel.ownerMember.id : channel.ownerCuratorGroup?.id) ?? ''
+      const expectedCommitment = generateAppActionCommitment(
+        // Note: Curator channels not supported yet
+        channelOwner.ownerMember?.totalChannelsCreated ?? -1,
+        creatorId,
+        AppAction.ActionType.CREATE_CHANNEL,
+        creatorType,
+        channelCreationParameters.assets.toU8a(),
+        channelMetadataBytes.toU8a(true),
+        appAction.metadata || new Uint8Array()
+      )
+      await processAppActionMetadata(ctx, channel, appAction, expectedCommitment, (entity: Channel) =>
+        processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
+      )
+    } else {
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) ?? {}
+      await processChannelMetadata(ctx, channel, channelMetadata, dataObjects)
+    }
   }
 
   // save entity
   await store.save<Channel>(channel)
-
+  if (channelOwner.ownerMember) {
+    channelOwner.ownerMember.totalChannelsCreated += 1
+    await store.save<Membership>(channelOwner.ownerMember)
+  }
   // update channel permissions
   await updateChannelAgentsPermissions(store, channel, channelCreationParameters.collaborators)
 
@@ -120,8 +154,16 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
       inconsistentState(`storageBag for channel ${channelId} does not exist`)
     }
 
-    const newMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes) || {}
-    await processChannelMetadata(ctx, channel, newMetadata, newDataObjects)
+    const newMetadata = deserializeMetadata(AppAction, newMetadataBytes, { skipWarning: true })
+
+    if (newMetadata) {
+      const channelMetadataBytes = u8aToBytes(newMetadata.rawAction)
+      const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
+      await processChannelMetadata(ctx, channel, channelMetadata ?? {}, newDataObjects)
+    } else {
+      const realNewMetadata = deserializeMetadata(ChannelMetadata, newMetadataBytes)
+      await processChannelMetadata(ctx, channel, realNewMetadata ?? {}, newDataObjects)
+    }
   }
 
   // save channel
@@ -179,18 +221,12 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, channelId] = new Content.ChannelDeletedEvent(event).params
-
-  // TODO: remove manual deletion of referencing records after
-  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
-
-  await removeChannelReferencingRelations(store, channelId.toString())
-
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  await removeChannel(store, channelId)
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
   const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  await removeChannel(store, channelId)
 
   // common event processing - second
 
@@ -279,7 +315,6 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
   try {
     const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
     const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
-
     const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)
 
     await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
@@ -333,8 +368,6 @@ async function updateChannelAgentsPermissions(
 
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
-    const permissionsArray = Array.from(permissions)
-
     const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),
@@ -355,7 +388,7 @@ async function processOwnerRemark(
   const messageType = decodedMessage.channelOwnerRemarked
 
   if (messageType === 'pinOrUnpinComment') {
-    await processPinOrUnpinCommentMessage(store, event, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
+    await processPinOrUnpinCommentMessage(store, event, channelId, decodedMessage.pinOrUnpinComment!)
 
     return {}
   }
@@ -364,7 +397,6 @@ async function processOwnerRemark(
     await processBanOrUnbanMemberFromChannelMessage(
       store,
       event,
-      contentActor,
       channelId,
       decodedMessage.banOrUnbanMemberFromChannel!
     )
@@ -373,13 +405,7 @@ async function processOwnerRemark(
   }
 
   if (messageType === 'videoReactionsPreference') {
-    await processVideoReactionsPreferenceMessage(
-      store,
-      event,
-      contentActor,
-      channelId,
-      decodedMessage.videoReactionsPreference!
-    )
+    await processVideoReactionsPreferenceMessage(store, event, channelId, decodedMessage.videoReactionsPreference!)
 
     return {}
   }
@@ -420,6 +446,13 @@ async function processModeratorRemark(
   }
 
   return inconsistentState('Unsupported message type in moderator remark action', messageType)
+}
+
+async function removeChannel(store: DatabaseManager, channelId: u64): Promise<void> {
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+  await removeChannelReferencingRelations(store, channelId.toString())
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }
 
 async function removeChannelReferencingRelations(store: DatabaseManager, channelId: string): Promise<void> {

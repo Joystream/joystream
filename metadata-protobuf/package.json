@@ -1,6 +1,6 @@
 {
   "name": "@joystream/metadata-protobuf",
-  "version": "2.5.1",
+  "version": "2.7.0",
   "description": "Joystream Metadata Protobuf Library",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -8,11 +8,13 @@
     ".": "./lib/index.js",
     "./utils": "./lib/utils.js",
     "./licenses": "./lib/licenses.js",
-    "./consts": "./lib/consts.js"
+    "./consts": "./lib/consts.js",
+    "./json": "./lib/json/index.js"
   },
   "typesVersions": {
     "*": {
       "lib/index.d.ts": ["lib/index.d.ts"],
+      "json": [ "lib/json/index.d.ts" ],
       "*": [ "lib/*" ]
     }
   },
