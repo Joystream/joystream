@@ -45,7 +45,7 @@ jobs:
 
       - name: Test Generate Weights
         run: |
-          ./scripts/generate-weights.sh 1 1 && git diff
+          ./scripts/generate-weights.sh 2 1 && git diff
         if: env.GIT_DIFF
 
   # Build and test joystream-node with all runtime profiles
