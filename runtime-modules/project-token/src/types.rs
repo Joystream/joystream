@@ -943,11 +943,11 @@ where
         schedule: VestingSchedule<BlockNumber, Balance>,
         bloat_bond: RepayableBloatBond,
     ) -> Result<Self, DispatchError> {
-        let next_vesting_transfer_id = if let VestingSource::IssuerTransfer(_) = source {
-            1
-        } else {
-            0
+        let next_vesting_transfer_id = match source {
+            VestingSource::IssuerTransfer(_) => 1,
+            _ => 0,
         };
+
         let vesting_schedules = [(source, schedule.clone())]
             .iter()
             .cloned()
@@ -1297,11 +1297,7 @@ where
                 rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
             };
 
-        let total_supply = params
-            .initial_allocation
-            .iter()
-            .map(|(_, v)| v.amount)
-            .sum();
+        let total_supply = params.initial_allocation.values().map(|v| v.amount).sum();
 
         Ok(TokenData {
             symbol: params.symbol,
@@ -1347,7 +1343,7 @@ where
     Balance: Sum + Copy,
 {
     pub fn total_amount(&self) -> Balance {
-        self.0.iter().map(|(_, payment)| payment.amount).sum()
+        self.0.values().map(|payment| payment.amount).sum()
     }
 }
 
@@ -1361,8 +1357,8 @@ where
 {
     pub fn total_amount(&self) -> Balance {
         self.0
-            .iter()
-            .map(|(_, validated_payment)| validated_payment.payment.amount)
+            .values()
+            .map(|validated_payment| validated_payment.payment.amount)
             .sum()
     }
 }

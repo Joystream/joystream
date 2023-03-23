@@ -336,7 +336,7 @@ benchmarks! {
         owner_member_id
     )
     verify {
-        assert!(!AccountInfoByTokenAndMember::<T>::contains_key(token_id, &owner_member_id));
+        assert!(!AccountInfoByTokenAndMember::<T>::contains_key(token_id, owner_member_id));
         assert_last_event::<T>(
             RawEvent::AccountDustedBy(
                 token_id,
@@ -382,7 +382,7 @@ benchmarks! {
         proof
     )
     verify {
-        assert!(AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id));
+        assert!(AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id));
         assert_last_event::<T>(
             RawEvent::MemberJoinedWhitelist(
                 token_id,
@@ -429,7 +429,7 @@ benchmarks! {
     )
     verify {
         assert!(
-            Token::<T>::account_info_by_token_and_member(token_id, &member_id)
+            Token::<T>::account_info_by_token_and_member(token_id, member_id)
             == AccountData {
                 amount: DEFAULT_SALE_PURCHASE.into(),
                 vesting_schedules: vec![
@@ -492,7 +492,7 @@ benchmarks! {
     )
     verify {
         assert_eq!(
-            Token::<T>::account_info_by_token_and_member(token_id, &participant_id).staked(),
+            Token::<T>::account_info_by_token_and_member(token_id, participant_id).staked(),
             DEFAULT_SPLIT_PARTICIPATION.into()
         );
         assert_eq!(
@@ -546,7 +546,7 @@ benchmarks! {
         participant_id
     )
     verify {
-        assert!(Token::<T>::account_info_by_token_and_member(token_id, &participant_id).split_staking_status.is_none());
+        assert!(Token::<T>::account_info_by_token_and_member(token_id, participant_id).split_staking_status.is_none());
         assert_last_event::<T>(
             RawEvent::RevenueSplitLeft(
                 token_id,
@@ -564,7 +564,7 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
-        let amount_to_burn = Token::<T>::account_info_by_token_and_member(token_id, &owner_member_id).amount;
+        let amount_to_burn = Token::<T>::account_info_by_token_and_member(token_id, owner_member_id).amount;
         let bloat_bond = BloatBond::<T>::get();
     }: _(
         RawOrigin::Signed(owner_account.clone()),

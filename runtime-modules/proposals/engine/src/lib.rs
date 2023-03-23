@@ -819,6 +819,7 @@ impl<T: Config> Module<T> {
                 None
             })
             .for_each(|(proposal_id, proposal)| {
+                #[allow(deprecated)]
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(proposal_id, None);
                 <Proposals<T>>::insert(proposal_id, proposal.clone());
 
@@ -1029,6 +1030,7 @@ impl<T: Config> Module<T> {
     fn remove_proposal_data(proposal_id: &T::ProposalId) -> DispatchResult {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
+        #[allow(deprecated)]
         <VoteExistsByProposalByVoter<T>>::remove_prefix(proposal_id, None);
         let _ = Self::decrease_active_proposal_counter();
 
