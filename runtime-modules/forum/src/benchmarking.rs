@@ -550,7 +550,7 @@ benchmarks! {
             archived: new_archival_status,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: if i == 1 { 1 } else { 0 },
+            num_direct_moderators: u32::from(i == 1),
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -634,7 +634,7 @@ benchmarks! {
             archived: false,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: if i == 1 { 1 } else { 0 },
+            num_direct_moderators: u32::from(i == 1),
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -718,7 +718,7 @@ benchmarks! {
             archived: false,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: if i == 1 { 1 } else { 0 },
+            num_direct_moderators: u32::from(i == 1),
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
