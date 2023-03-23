@@ -6,7 +6,7 @@ use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Get, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 
 use sp_std::vec::Vec;
@@ -15,7 +15,7 @@ use crate::{
     AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
     BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
     InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys, Signature,
-    System, TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    System, TransactionPayment, VoterList, BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
 
 use frame_support::weights::Weight;
@@ -60,11 +60,11 @@ pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, Si
 pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
-// Does this executive with customonruntimeupgrade prevent individual pallets' on runtime
-// upgrade migrations from running??
-/// Custom runtime upgrade handler.
-pub struct CustomOnRuntimeUpgrade;
-impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
+// On runtime upgrade, stored calls of proposals are not guarnateed to still
+// represent the intended module and dispatch call, so for safety we cancel
+// all proposals.
+pub struct CancelActiveAndPendingProposals;
+impl OnRuntimeUpgrade for CancelActiveAndPendingProposals {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
@@ -72,14 +72,52 @@ impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
     }
 }
 
-/// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
+pub struct MigrateStakingPalletToV8;
+impl OnRuntimeUpgrade for MigrateStakingPalletToV8 {
+    fn on_runtime_upgrade() -> Weight {
+        pallet_staking::migrations::v8::migrate::<Runtime>()
+    }
+}
+
+pub struct StakingMigrationV11OldPallet;
+impl Get<&'static str> for StakingMigrationV11OldPallet {
+    fn get() -> &'static str {
+        "BagsList"
+    }
+}
+
+/// Migrations to run on runtime upgrade.
+/// Migrations will run before pallet on_runtime_upgrade hooks
+/// Always include 'CancelActiveAndPendingProposals' as first migration
+pub type Migrations = (
+    CancelActiveAndPendingProposals,
+    // == start Staking migrations (from Release v7 to Release v13)
+    MigrateStakingPalletToV8,
+    // list will not produce duplicates..
+    pallet_staking::migrations::v9::InjectValidatorsIntoVoterList<Runtime>,
+    // slash all pending slashes correctly
+    pallet_staking::migrations::v10::MigrateToV10<Runtime>,
+    // Rename BagsList to VoterList
+    pallet_staking::migrations::v11::MigrateToV11<Runtime, VoterList, StakingMigrationV11OldPallet>,
+    // Kill HistoryDepth storage
+    pallet_staking::migrations::v12::MigrateToV12<Runtime>,
+    // Migrate to new storage versioning
+    pallet_staking::migrations::v13::MigrateToV13<Runtime>,
+    // == end Staking Migrations
+    // unreserve balances from old stored calls in multisig pallet
+    pallet_multisig::migrations::v1::MigrateToV1<Runtime>,
+    pallet_election_provider_multi_phase::migrations::v1::MigrateToV1<Runtime>,
+    pallet_grandpa::migrations::CleanupSetIdSessionMap<Runtime>,
+);
+
+/// Executive: handles dispatch to the various modules with Migrations.
 pub type Executive = frame_executive::Executive<
     Runtime,
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    CustomOnRuntimeUpgrade,
+    Migrations,
 >;
 
 /// Export of the private const generated within the macro.
@@ -90,7 +128,7 @@ mod benches {
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
-        [pallet_bags_list, BagsList]
+        [pallet_bags_list, VoterList]
         [pallet_balances, Balances]
         [pallet_election_provider_multi_phase, ElectionProviderMultiPhase]
         [pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]

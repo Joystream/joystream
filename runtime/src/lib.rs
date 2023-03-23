@@ -591,7 +591,7 @@ impl pallet_staking::Config for Runtime {
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
-    type VoterList = BagsList;
+    type VoterList = VoterList;
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
@@ -762,7 +762,8 @@ parameter_types! {
     pub const BagThresholds: &'static [u64] = &voter_bags::THRESHOLDS;
 }
 
-impl pallet_bags_list::Config for Runtime {
+type VoterBagsListInstance = pallet_bags_list::Instance1;
+impl pallet_bags_list::Config<VoterBagsListInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ScoreProvider = Staking;
     type WeightInfo = weights::pallet_bags_list::SubstrateWeight<Runtime>;
@@ -1847,7 +1848,7 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-        BagsList: pallet_bags_list,
+        VoterList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
         // Joystream
