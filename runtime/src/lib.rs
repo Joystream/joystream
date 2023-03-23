@@ -941,7 +941,6 @@ pub type CouncilModule = council::Module<Runtime>;
     feature = "staging-runtime",
     feature = "playground-runtime",
     feature = "testing-runtime",
-    feature = "runtime-benchmarks"
 )))]
 parameter_types! {
     // referendum parameters
@@ -961,11 +960,11 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
-// Common playground and benchmarking coucil and elections configuration
+// playground council and elections configuration - also recommended for benchmarking
 // Periods are shorter to:
 // - allow easier testing
 // - prevent benchmarks System::events() from accumulating too much data and overflowing the memory
-#[cfg(any(feature = "playground-runtime", feature = "runtime-benchmarks"))]
+#[cfg(feature = "playground-runtime")]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -983,14 +982,15 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = 33;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
-    pub const CouncilSize: u32 = 3;
-}
-
 #[cfg(feature = "playground-runtime")]
+#[cfg(not(feature = "runtime-benchmarks"))]
 parameter_types! {
     pub const CouncilSize: u32 = 1;
+}
+
+#[cfg(all(feature = "playground-runtime", feature = "runtime-benchmarks"))]
+parameter_types! {
+    pub const CouncilSize: u32 = 3;
 }
 
 // Staging coucil and elections configuration

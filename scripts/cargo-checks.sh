@@ -16,8 +16,7 @@ export WASM_BUILD_TOOLCHAIN=nightly-2022-11-15
 # So we skip building the WASM binary by setting BUILD_DUMMY_WASM_BINARY=1
 # Aggressive linting
 echo 'running cargo clippy'
-#cargo "+$WASM_BUILD_TOOLCHAIN" clippy --release --all --features "${FEATURES}" -- -D warnings
-cargo "+$WASM_BUILD_TOOLCHAIN" clippy --release --all --features runtime-benchmarks,"${FEATURES}"
+cargo "+$WASM_BUILD_TOOLCHAIN" clippy --release --all --features "${FEATURES}" -- -D warnings
 
 echo 'running cargo unit tests'
-cargo "+$WASM_BUILD_TOOLCHAIN" test --release --all --features runtime-benchmarks,"${FEATURES}"
+cargo "+$WASM_BUILD_TOOLCHAIN" test --release --all --features "${FEATURES}"

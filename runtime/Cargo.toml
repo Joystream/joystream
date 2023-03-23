@@ -177,6 +177,7 @@ std = [
     'log/std',
 ]
 runtime-benchmarks = [
+    "playground-runtime",
     "hex-literal",
     "frame-support/runtime-benchmarks",
     "sp-runtime/runtime-benchmarks",
