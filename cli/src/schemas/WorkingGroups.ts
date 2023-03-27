@@ -1,5 +1,11 @@
 import { ApiPromise } from '@polkadot/api'
-import { WorkingGroupOpeningInputParameters, WorkingGroupUpdateStatusInputParameters, JsonSchema } from '../Types'
+import {
+  WorkingGroupOpeningInputParameters,
+  WorkingGroupUpdateStatusInputParameters,
+  JsonSchema,
+  JsonArraySchema,
+  WorkingGroupDiscretionarySpendingInputParameters,
+} from '../Types'
 
 export const WorkingGroupOpeningInputSchema: (api: ApiPromise) => JsonSchema<WorkingGroupOpeningInputParameters> = (
   api
@@ -61,6 +67,13 @@ export const WorkingGroupOpeningInputSchema: (api: ApiPromise) => JsonSchema<Wor
     },
   },
 })
+
+export const WorkingGroupsDiscretionarySpendingSchema = {
+  address: { type: 'string', required: true, description: 'Wallet Address of Receiver' },
+  amount: { type: 'string', required: true, description: 'Amount of JOY to be sent to receiver ' },
+  rationale: { type: 'string', required: true, description: 'Reason for discretionary spending' },
+}
+
 
 export const WorkingGroupUpdateStatusInputSchema: JsonSchema<WorkingGroupUpdateStatusInputParameters> = {
   type: 'object',
