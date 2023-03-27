@@ -15,12 +15,6 @@ yarn --cwd codegen install
 yarn clean
 yarn codegen:noinstall
 cp mappings/src/queryTemplates.ts generated/graphql-server/src/
-yarn typegen # if this fails try to run this command outside of yarn workspaces
-
-################################################
-# temporary patches TODO: create proper solution
-
-sed -i -e "s#new TypeRegistry();#new TypeRegistry() as any;#" ./mappings/generated/types/index.ts
 
 ################################################
 
@@ -36,5 +30,3 @@ yarn workspace query-node codegen
 yarn workspace query-node build
 
 yarn workspace query-node-mappings build
-
-

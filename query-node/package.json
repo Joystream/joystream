@@ -30,7 +30,7 @@
     "hydra-typegen": "./codegen/node_modules/.bin/hydra-typegen",
     "codegen": "yarn hydra-cli codegen --schema ../../schemas/",
     "codegen:noinstall": "yarn codegen --no-install",
-    "typegen": "rm -rf ./mappings/generated && yarn hydra-typegen typegen manifest.yml --debug",
+    "typegen": "yarn hydra-typegen typegen manifest.yml --debug",
     "mappings:build": "yarn workspace query-node-mappings build",
     "format": "prettier ./ --write"
   },
