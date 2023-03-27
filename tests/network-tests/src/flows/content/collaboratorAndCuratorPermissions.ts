@@ -25,7 +25,7 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
   // settings
   const testingPermissions = ['AddVideo', 'DeleteVideo'] as AddCuratorToGroupParams['permissions']
   const extraTestingPermissions = ['UpdateVideoMetadata'] as AddCuratorToGroupParams['permissions']
-  const memberCount = 1
+  const memberCount = 2
   const curatorCount = 1
   const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
@@ -36,7 +36,7 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
   await new FixtureRunner(createMembersFixture).run()
 
   const {
-    members: [author],
+    members: [author, collaborator],
     curators: [curatorId],
   } = createMembersFixture.getCreatedItems()
 
@@ -71,9 +71,9 @@ export default async function collaboratorCuratorPermissions({ api, query, env }
   const notUsed = 0
   const notUsedString = ''
   const oneChannel = 1
-  const collaborators = [{ memberId: curatorId.toNumber(), permissions: testingPermissions }]
+  const collaborators = [{ memberId: collaborator.memberId.toNumber(), permissions: testingPermissions }]
   const nextCollaborators = [
-    { memberId: curatorId.toNumber(), permissions: testingPermissions.concat(extraTestingPermissions) },
+    { memberId: collaborator.memberId.toNumber(), permissions: testingPermissions.concat(extraTestingPermissions) },
   ]
 
   const createChannelsAndVideosFixture = new CreateChannelsAndVideosFixture(
