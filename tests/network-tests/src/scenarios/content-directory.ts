@@ -19,7 +19,6 @@ scenario('Content directory', async ({ job }) => {
 
   // following jobs must be run sequentially due to some QN queries that could interfere
   const channelJob = job('manage channels and videos through CLI', channelsAndVideos).requires(leadSetupJob)
-  job('direct channel payment by members', directChannelPayment).after(channelJob)
   const videoCategoriesJob = job('video categories', testVideoCategories).after(channelJob)
   const subtitlesJob = job('Add and Update Video Subtitles', addAndUpdateVideoSubtitles).after(videoCategoriesJob)
   const videoCountersJob = job('check active video counters', activeVideoCounters).after(subtitlesJob)
@@ -30,5 +29,9 @@ scenario('Content directory', async ({ job }) => {
   const videoCommentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     curatorModerationActionsJob
   )
-  job('curators and collaborators permissions', collaboratorAndCuratorPermissions).after(videoCommentsAndReactionsJob)
+  const collaboratorAndCuratorPermissionsJob = job(
+    'curators and collaborators permissions',
+    collaboratorAndCuratorPermissions
+  ).after(videoCommentsAndReactionsJob)
+  job('direct channel payment by members', directChannelPayment).after(collaboratorAndCuratorPermissionsJob)
 })

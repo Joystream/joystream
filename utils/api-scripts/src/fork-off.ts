@@ -29,6 +29,9 @@ const skippedModulesPrefix = [
   // Joystream specific
   'Council', // empty council
   'Referendum',
+  'Instance2WorkingGroup', // empty storage working group
+  'Instance3WorkingGroup', // empty content working group
+  'Instance9WorkingGroup', // empty distribution working group
 ]
 
 async function main() {

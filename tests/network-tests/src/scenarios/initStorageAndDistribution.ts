@@ -6,7 +6,7 @@ import electCouncil from '../flows/council/elect'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Init storage and distribution', async ({ job }) => {
-  const councilJob = job('electing council', electCouncil)
+  const councilJob = job('electing council', electCouncil())
   const setupLead = job('setup leads', leaderSetup(true, ['storageWorkingGroup', 'distributionWorkingGroup'])).after(
     councilJob
   )
