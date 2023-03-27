@@ -592,6 +592,34 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
   }
 
+  async sendAndFollowTxMulti(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
+    this.log(
+      chalk.magentaBright(
+        `\nSending ${tx.method.section}.${tx.method.method} extrinsic from ${
+          account.meta.name ? account.meta.name : account.address
+        }...`
+      )
+    )
+    this.log('Tx params:', this.humanize(tx.args))
+
+    // Calculate fee and ask for confirmation
+    const fee = await this.getApi().estimateFee(account, tx)
+
+    this.log(`Tx fee of ${chalk.cyan(formatBalance(fee))} will be deduced from you account`)
+
+    try {
+      const res = await this.sendExtrinsic(account, tx)
+      this.log(chalk.green(`Extrinsic successful!`))
+      return res
+    } catch (e) {
+      if (e instanceof ExtrinsicFailedError) {
+        throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
+      } else {
+        throw e
+      }
+    }
+  }
+
   private humanize(p: unknown): any {
     if (Array.isArray(p)) {
       return p.map((v) => this.humanize(v))
@@ -621,6 +649,21 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     // TODO: Replace all usages with "sendAndFollowTx"
     const tx = await this.getUnaugmentedApi().tx[module][method](...params)
     return this.sendAndFollowTx(account, tx)
+  }
+
+  async sendAndFollowNamedTxMuilt<
+    Module extends keyof AugmentedSubmittables<'promise'>,
+    Method extends keyof AugmentedSubmittables<'promise'>[Module] & string,
+    Submittable extends AugmentedSubmittables<'promise'>[Module][Method]
+  >(
+    account: KeyringPair,
+    module: Module,
+    method: Method,
+    params: Submittable extends (...args: any[]) => any ? Parameters<Submittable> : []
+  ): Promise<SubmittableResult> {
+    // TODO: Replace all usages with "sendAndFollowTx"
+    const tx = await this.getUnaugmentedApi().tx[module][method](...params)
+    return this.sendAndFollowTxMulti(account, tx)
   }
 
   public findEvent<S extends EventSection, M extends EventMethod<S>, E = EventType<S, M>>(

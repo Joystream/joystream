@@ -255,6 +255,14 @@ export type WorkingGroupOpeningInputParameters = Omit<IOpeningMetadata, 'applica
     type: 'TEXTAREA' | 'TEXT'
   }[]
 }
+export type WorkingGroupDiscretionarySpendingInputParameters = [
+  {
+    address: string
+    amount: string
+    rationale: string
+  }
+]
+
 
 export type WorkingGroupUpdateStatusInputParameters = IWorkingGroupMetadata
 
@@ -307,6 +315,10 @@ export type JsonSchemaProperties<T> = {
 export type JsonSchema<T> = Omit<AnyJSONSchema, 'type' | 'properties'> & {
   type: 'object'
   properties: JsonSchemaProperties<T>
+}
+
+export type JsonArraySchema<T> = Omit<AnyJSONSchema, 'type'> & {
+  type: 'array'
 }
 
 // Storage node related types
