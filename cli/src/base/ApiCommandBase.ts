@@ -607,10 +607,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     this.log(`Tx fee of ${chalk.cyan(formatBalance(fee))} will be deduced from you account`)
 
-    // await this.requireConfirmation(
-    //   `Tx fee of ${chalk.cyan(formatBalance(fee))} will be deduced from you account, do you confirm the transfer?`
-    // )
-
     try {
       const res = await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
