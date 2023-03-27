@@ -89,6 +89,7 @@ function start_old_joystream_node {
 function set_new_runtime_wasm_path() {
     docker create --name target-node joystream/node:${TARGET_RUNTIME}
     docker cp target-node:/joystream/runtime.compact.compressed.wasm ${DATA_PATH}/new_runtime.wasm
+    docker rm target-node
 }
 
 #######################################
@@ -134,7 +135,7 @@ function export_chainspec_file_to_disk() {
     # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time
     # exporting should give some essential tasks errors but they are harmless https://github.com/paritytech/substrate/issues/10583
     echo >&2 "exporting state"
-    docker-compose -f ../../docker-compose.yml run \
+    docker-compose -f ../../docker-compose.yml run --rm \
         -v ${DATA_PATH}:/spec joystream-node export-state \
         --chain /spec/chain-spec-raw.json \
         --base-path /data --pruning archive >${DATA_PATH}/exported-state.json
@@ -142,8 +143,9 @@ function export_chainspec_file_to_disk() {
 
 # cleanup
 function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 50
-    docker rm --volumes target-node
+    docker logs ${CONTAINER_ID} --tail 100
+    docker stop ${CONTAINER_ID}
+    docker rm ${CONTAINER_ID}
     docker logs processor --tail 100 || :
     docker logs indexer --tail 100 || :
     docker-compose -f ../../docker-compose.yml down -v --remove-orphans
