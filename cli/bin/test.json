@@ -1,17 +1,17 @@
 [
   {
     "address": "j4TKJMpok4bGz4grxWB2W5V5iQv7S3vNuzU1ZqmA62NqimbJW",
-    "amount": 13,
-    "rationale": "test"
+    "amount": 10000000000,
+    "rationale": "test1"
   },
   {
     "address": "j4TKJMpok4bGz4grxWB2W5V5iQv7S3vNuzU1ZqmA62NqimbJW",
-    "amount": 56,
-    "rationale": "test"
+    "amount": 20000000000,
+    "rationale": "test2"
   },
   {
     "address": "j4TKJMpok4bGz4grxWB2W5V5iQv7S3vNuzU1ZqmA62NqimbJW",
-    "amount": 5,
-    "rationale": "test"
+    "amount": 30000000000,
+    "rationale": "test3"
   }
 ]
