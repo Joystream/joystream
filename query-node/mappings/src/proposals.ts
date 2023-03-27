@@ -58,7 +58,16 @@ import {
   ProposalStatus,
   UpdateChannelPayoutsProposalDetails,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, INT32MAX, toNumber, unwrap } from './common'
+import {
+  asBN,
+  bytesToString,
+  genericEventFields,
+  getWorkingGroupModuleName,
+  INT32MAX,
+  toNumber,
+  unwrap,
+  whenDef,
+} from './common'
 import {
   ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
   ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
