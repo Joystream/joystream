@@ -1,17 +1,11 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { GroupMember, WorkingGroupDiscretionarySpendingInputParameters } from '../../Types'
+import { WorkingGroupDiscretionarySpendingInputParameters } from '../../Types'
 import { WorkingGroupsDiscretionarySpendingSchema } from '../../schemas/WorkingGroups'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
-import { isValidBalance, validateAddress } from '../../helpers/validation'
+import { isValidBalance } from '../../helpers/validation'
 import { IOFlags, getInputJson } from '../../helpers/InputOutput'
-import {
-  IOpeningMetadata,
-  IWorkingGroupMetadataAction,
-  OpeningMetadata,
-  WorkingGroupMetadataAction,
-} from '@joystream/metadata-protobuf'
 
 export default class WorkingGroupsDiscretionarySpendingMulti extends WorkingGroupsCommandBase {
   static description = "Change given worker's reward (amount only). Requires lead access."
@@ -19,16 +13,6 @@ export default class WorkingGroupsDiscretionarySpendingMulti extends WorkingGrou
     input: IOFlags.input,
     ...WorkingGroupsCommandBase.flags,
   }
-
-  // prepareMetadata(openingParamsJson: WorkingGroupDiscretionarySpendingInputParameters): IOpeningMetadata {
-  //   return {
-  //     ...openingParamsJson,
-  //     applicationFormQuestions: openingParamsJson.applicationFormQuestions?.map((q) => ({
-  //       question: q.question,
-  //       type: OpeningMetadata.ApplicationFormQuestion.InputType[q.type],
-  //     })),
-  //   }
-  // }
 
   async getInputFromFile(filePath: string): Promise<WorkingGroupDiscretionarySpendingInputParameters> {
     return getInputJson<WorkingGroupDiscretionarySpendingInputParameters>(
