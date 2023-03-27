@@ -1,11 +1,5 @@
 import { ApiPromise } from '@polkadot/api'
-import {
-  WorkingGroupOpeningInputParameters,
-  WorkingGroupUpdateStatusInputParameters,
-  JsonSchema,
-  JsonArraySchema,
-  WorkingGroupDiscretionarySpendingInputParameters,
-} from '../Types'
+import { WorkingGroupOpeningInputParameters, WorkingGroupUpdateStatusInputParameters, JsonSchema } from '../Types'
 
 export const WorkingGroupOpeningInputSchema: (api: ApiPromise) => JsonSchema<WorkingGroupOpeningInputParameters> = (
   api
