@@ -10,7 +10,6 @@ import {
   inconsistentState,
   invalidMetadata,
   perpareString,
-  toNumber,
 } from './common'
 import {
   CategoryCreatedEvent,
@@ -47,7 +46,22 @@ import {
   PostStatusRemoved,
   ForumThreadTag,
 } from 'query-node/dist/model'
-import { Forum } from '../generated/types'
+import {
+  Forum_CategoryArchivalStatusUpdatedEvent_V1001 as CategoryArchivalStatusUpdatedEvent_V1001,
+  Forum_CategoryCreatedEvent_V1001 as CategoryCreatedEvent_V1001,
+  Forum_CategoryDeletedEvent_V1001 as CategoryDeletedEvent_V1001,
+  Forum_CategoryMembershipOfModeratorUpdatedEvent_V1001 as CategoryMembershipOfModeratorUpdatedEvent_V1001,
+  Forum_CategoryStickyThreadUpdateEvent_V1001 as CategoryStickyThreadUpdateEvent_V1001,
+  Forum_PostAddedEvent_V1001 as PostAddedEvent_V1001,
+  Forum_PostDeletedEvent_V1001 as PostDeletedEvent_V1001,
+  Forum_PostModeratedEvent_V1001 as PostModeratedEvent_V1001,
+  Forum_PostTextUpdatedEvent_V1001 as PostTextUpdatedEvent_V1001,
+  Forum_ThreadCreatedEvent_V1001 as ThreadCreatedEvent_V1001,
+  Forum_ThreadDeletedEvent_V1001 as ThreadDeletedEvent_V1001,
+  Forum_ThreadMetadataUpdatedEvent_V1001 as ThreadMetadataUpdatedEvent_V1001,
+  Forum_ThreadModeratedEvent_V1001 as ThreadModeratedEvent_V1001,
+  Forum_ThreadMovedEvent_V1001 as ThreadMovedEvent_V1001,
+} from '../../types'
 import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
 import { ForumPostMetadata, ForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
@@ -206,7 +220,7 @@ async function unsetThreadTags({ store }: StoreContext & EventContext, tags: For
 }
 
 export async function forum_CategoryCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [categoryId, parentCategoryId, titleBytes, descriptionBytes] = new Forum.CategoryCreatedEvent(event).params
+  const [categoryId, parentCategoryId, titleBytes, descriptionBytes] = new CategoryCreatedEvent_V1001(event).params
 
   const category = new ForumCategory({
     id: categoryId.toString(),
@@ -229,7 +243,7 @@ export async function forum_CategoryArchivalStatusUpdated({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [categoryId, newArchivalStatus, privilegedActor] = new Forum.CategoryArchivalStatusUpdatedEvent(event).params
+  const [categoryId, newArchivalStatus, privilegedActor] = new CategoryArchivalStatusUpdatedEvent_V1001(event).params
   const category = await getCategory(store, categoryId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
@@ -252,7 +266,7 @@ export async function forum_CategoryArchivalStatusUpdated({
 }
 
 export async function forum_CategoryDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [categoryId, privilegedActor] = new Forum.CategoryDeletedEvent(event).params
+  const [categoryId, privilegedActor] = new CategoryDeletedEvent_V1001(event).params
   const category = await getCategory(store, categoryId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
@@ -272,7 +286,7 @@ export async function forum_CategoryDeleted({ event, store }: EventContext & Sto
 
 export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [categoryId, threadId, postId, memberId, threadMetaBytes, postTextBytes] = new Forum.ThreadCreatedEvent(event)
+  const [categoryId, threadId, postId, memberId, threadMetaBytes, postTextBytes] = new ThreadCreatedEvent_V1001(event)
     .params
   const author = new Membership({ id: memberId.toString() })
 
@@ -319,7 +333,7 @@ export async function forum_ThreadCreated(ctx: EventContext & StoreContext): Pro
 
 export async function forum_ThreadModerated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [threadId, rationaleBytes, privilegedActor] = new Forum.ThreadModeratedEvent(event).params
+  const [threadId, rationaleBytes, privilegedActor] = new ThreadModeratedEvent_V1001(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
   const thread = await getThread(store, threadId.toString())
 
@@ -344,7 +358,7 @@ export async function forum_ThreadModerated(ctx: EventContext & StoreContext): P
 
 export async function forum_ThreadMetadataUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [threadId, , , newMetadataBytes] = new Forum.ThreadMetadataUpdatedEvent(event).params
+  const [threadId, , , newMetadataBytes] = new ThreadMetadataUpdatedEvent_V1001(event).params
   const thread = await getThread(store, threadId.toString())
 
   const { title: newTitle, tags: newTagIds } = parseThreadMetadata(newMetadataBytes)
@@ -379,7 +393,7 @@ export async function forum_ThreadMetadataUpdated(ctx: EventContext & StoreConte
 
 export async function forum_ThreadDeleted(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [threadId, , , hide] = new Forum.ThreadDeletedEvent(event).params
+  const [threadId, , , hide] = new ThreadDeletedEvent_V1001(event).params
   const thread = await getThread(store, threadId.toString())
 
   const threadDeletedEvent = new ThreadDeletedEvent({
@@ -401,7 +415,7 @@ export async function forum_ThreadDeleted(ctx: EventContext & StoreContext): Pro
 }
 
 export async function forum_ThreadMoved({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [threadId, newCategoryId, privilegedActor, oldCategoryId] = new Forum.ThreadMovedEvent(event).params
+  const [threadId, newCategoryId, privilegedActor, oldCategoryId] = new ThreadMovedEvent_V1001(event).params
   const thread = await getThread(store, threadId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
@@ -420,7 +434,7 @@ export async function forum_ThreadMoved({ event, store }: EventContext & StoreCo
 }
 
 export async function forum_PostAdded({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new Forum.PostAddedEvent(event).params
+  const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new PostAddedEvent_V1001(event).params
 
   const thread = await getThread(store, threadId.toString())
   const metadata = deserializeMetadata(ForumPostMetadata, metadataBytes)
@@ -461,7 +475,7 @@ export async function forum_PostAdded({ event, store }: EventContext & StoreCont
 }
 
 export async function forum_CategoryStickyThreadUpdate({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [categoryId, newStickyThreadsIdsSet, privilegedActor] = new Forum.CategoryStickyThreadUpdateEvent(event).params
+  const [categoryId, newStickyThreadsIdsSet, privilegedActor] = new CategoryStickyThreadUpdateEvent_V1001(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
   const newStickyThreadsIds = Array.from(newStickyThreadsIdsSet.values()).map((id) => id.toString())
   const threadsToSetSticky = await store.getMany(ForumThread, {
@@ -497,7 +511,7 @@ export async function forum_CategoryMembershipOfModeratorUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [moderatorId, categoryId, canModerate] = new Forum.CategoryMembershipOfModeratorUpdatedEvent(event).params
+  const [moderatorId, categoryId, canModerate] = new CategoryMembershipOfModeratorUpdatedEvent_V1001(event).params
   const moderator = await getWorker(store, 'forumWorkingGroup', moderatorId.toNumber())
   const category = await getCategory(store, categoryId.toString(), ['moderators'])
 
@@ -519,13 +533,13 @@ export async function forum_CategoryMembershipOfModeratorUpdated({
 }
 
 export async function forum_PostModerated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [postId, rationaleBytes, privilegedActor] = new Forum.PostModeratedEvent(event).params
+  const [postId, rationaleBytes, privilegedActor] = new PostModeratedEvent_V1001(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
   await moderatePost(store, event, 'runtime', postId.toString(), actorWorker, bytesToString(rationaleBytes))
 }
 
 export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [postId, , , , newTextBytes] = new Forum.PostTextUpdatedEvent(event).params
+  const [postId, , , , newTextBytes] = new PostTextUpdatedEvent_V1001(event).params
   const post = await getPost(store, postId.toString())
 
   const postTextUpdatedEvent = new PostTextUpdatedEvent({
@@ -541,7 +555,7 @@ export async function forum_PostTextUpdated({ event, store }: EventContext & Sto
 }
 
 export async function forum_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [rationaleBytes, userId, postsData] = new Forum.PostDeletedEvent(event).params
+  const [rationaleBytes, userId, postsData] = new PostDeletedEvent_V1001(event).params
 
   const postDeletedEvent = new PostDeletedEvent({
     ...genericEventFields(event),

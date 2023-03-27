@@ -3,12 +3,17 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import { Curator, CuratorGroup, CuratorAgentPermissions } from 'query-node/dist/model'
-import { Content } from '../../generated/types'
 import { inconsistentState, logger } from '../common'
 import { mapAgentPermission } from './utils'
 import { BTreeSet } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
+import {
+  Content_CuratorAddedEvent_V1001 as CuratorAddedEvent_V1001,
+  Content_CuratorGroupCreatedEvent_V1001 as CuratorGroupCreatedEvent_V1001,
+  Content_CuratorGroupStatusSetEvent_V1001 as CuratorGroupStatusSetEvent_V1001,
+  Content_CuratorRemovedEvent_V1001 as CuratorRemovedEvent_V1001,
+} from '../../../types'
 
 async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
   const existingCurator = await store.get(Curator, {
@@ -36,7 +41,7 @@ async function ensureCurator(store: DatabaseManager, curatorId: string): Promise
 
 export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId] = new Content.CuratorGroupCreatedEvent(event).params
+  const [curatorGroupId] = new CuratorGroupCreatedEvent_V1001(event).params
 
   // create new curator group
   const curatorGroup = new CuratorGroup({
@@ -55,7 +60,7 @@ export async function content_CuratorGroupCreated({ store, event }: EventContext
 
 export async function content_CuratorGroupStatusSet({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, isActive] = new Content.CuratorGroupStatusSetEvent(event).params
+  const [curatorGroupId, isActive] = new CuratorGroupStatusSetEvent_V1001(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -79,7 +84,7 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 
 export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId, permissions] = new Content.CuratorAddedEvent(event).params
+  const [curatorGroupId, curatorId, permissions] = new CuratorAddedEvent_V1001(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {
@@ -107,7 +112,7 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
 export async function content_CuratorRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId] = new Content.CuratorRemovedEvent(event).params
+  const [curatorGroupId, curatorId] = new CuratorRemovedEvent_V1001(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {

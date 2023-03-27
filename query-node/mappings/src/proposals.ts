@@ -58,16 +58,15 @@ import {
   ProposalStatus,
   UpdateChannelPayoutsProposalDetails,
 } from 'query-node/dist/model'
+import { bytesToString, genericEventFields, getWorkingGroupModuleName, INT32MAX, toNumber, unwrap } from './common'
 import {
-  bytesToString,
-  genericEventFields,
-  getWorkingGroupModuleName,
-  INT32MAX,
-  perpareString,
-  toNumber,
-  unwrap,
-} from './common'
-import { ProposalsEngine, ProposalsCodex } from '../generated/types'
+  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
+  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
+  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
+  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
+  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
+} from '../../types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
@@ -327,7 +326,7 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    new ProposalsCodex.ProposalCreatedEvent(event).params
+    new ProposalCreatedEvent_V1001(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
@@ -368,7 +367,7 @@ export async function proposalsEngine_ProposalStatusUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, status] = new ProposalsEngine.ProposalStatusUpdatedEvent(event).params
+  const [proposalId, status] = new ProposalStatusUpdatedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let newStatus: typeof ProposalIntermediateStatus
@@ -400,7 +399,7 @@ export async function proposalsEngine_ProposalDecisionMade({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, decision] = new ProposalsEngine.ProposalDecisionMadeEvent(event).params
+  const [proposalId, decision] = new ProposalDecisionMadeEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let decisionStatus: typeof ProposalDecisionStatus
@@ -456,7 +455,7 @@ export async function proposalsEngine_ProposalDecisionMade({
 }
 
 export async function proposalsEngine_ProposalExecuted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, executionStatus] = new ProposalsEngine.ProposalExecutedEvent(event).params
+  const [proposalId, executionStatus] = new ProposalExecutedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let newStatus: typeof ProposalExecutionStatus
@@ -489,7 +488,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
 }
 
 export async function proposalsEngine_Voted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalsEngine.VotedEvent(event).params
+  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalVotedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let vote: ProposalVoteKind
@@ -518,7 +517,7 @@ export async function proposalsEngine_Voted({ store, event }: EventContext & Sto
 }
 
 export async function proposalsEngine_ProposalCancelled({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, proposalId] = new ProposalsEngine.ProposalCancelledEvent(event).params
+  const [, proposalId] = new ProposalCancelledEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   const proposalCancelledEvent = new ProposalCancelledEvent({

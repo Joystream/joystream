@@ -3,53 +3,53 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
-  IMakeChannelPayment,
   AppAction,
   ChannelMetadata,
   ChannelModeratorRemarked,
   ChannelOwnerRemarked,
+  IMakeChannelPayment,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
+import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 import {
   Channel,
   ChannelAssetsDeletedByModeratorEvent,
   ChannelDeletedByModeratorEvent,
+  ChannelFundsWithdrawnEvent,
   ChannelNftCollectors,
+  ChannelPaymentMadeEvent,
+  ChannelPayoutsUpdatedEvent,
+  ChannelRewardClaimedAndWithdrawnEvent,
+  ChannelRewardClaimedEvent,
   ChannelVisibilitySetByModeratorEvent,
   Collaborator,
   ContentActor,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
+  DataObjectTypeChannelPayoutsPayload,
   MemberBannedFromChannelEvent,
   Membership,
   MetaprotocolTransactionSuccessful,
+  PaymentContextChannel,
+  PaymentContextVideo,
   StorageBag,
   StorageDataObject,
-  ChannelPayoutsUpdatedEvent,
-  ChannelRewardClaimedAndWithdrawnEvent,
-  ChannelRewardClaimedEvent,
-  DataObjectTypeChannelPayoutsPayload,
-  ChannelFundsWithdrawnEvent,
-  PaymentContextVideo,
-  PaymentContextChannel,
-  ChannelPaymentMadeEvent,
   Video,
 } from 'query-node/dist/model'
 import { FindOptionsWhere, In } from 'typeorm'
-import { Content } from '../../generated/types'
 import {
   bytesToString,
   deserializeMetadata,
   genericEventFields,
+  getMemberById,
   inconsistentState,
+  invalidMetadata,
   logger,
   saveMetaprotocolTransactionErrored,
   saveMetaprotocolTransactionSuccessful,
-  unwrap,
-  getMemberById,
-  invalidMetadata,
   unexpectedData,
+  unwrap,
 } from '../common'
 import {
   processBanOrUnbanMemberFromChannelMessage,
@@ -66,20 +66,34 @@ import {
   u8aToBytes,
   unsetAssetRelations,
 } from './utils'
-import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
+import { generateAppActionCommitment } from '@joystream/js/utils'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { BaseModel } from '@joystream/warthog'
+import { AccountId32, Balance } from '@polkadot/types/interfaces'
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import BN from 'bn.js'
-import { AccountId32, Balance } from '@polkadot/types/interfaces'
-import { BaseModel } from '@joystream/warthog'
-import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import { generateAppActionCommitment } from '@joystream/js/utils'
+import {
+  Content_ChannelAgentRemarkedEvent_V1001 as ChannelAgentRemarkedEvent_V1001,
+  Content_ChannelAssetsDeletedByModeratorEvent_V1001 as ChannelAssetsDeletedByModeratorEvent_V1001,
+  Content_ChannelAssetsRemovedEvent_V1001 as ChannelAssetsRemovedEvent_V1001,
+  Content_ChannelCreatedEvent_V1001 as ChannelCreatedEvent_V1001,
+  Content_ChannelDeletedByModeratorEvent_V1001 as ChannelDeletedByModeratorEvent_V1001,
+  Content_ChannelDeletedEvent_V1001 as ChannelDeletedEvent_V1001,
+  Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
+  Content_ChannelOwnerRemarkedEvent_V1001 as ChannelOwnerRemarkedEvent_V1001,
+  Content_ChannelPayoutsUpdatedEvent_V1001 as ChannelPayoutsUpdatedEvent_V1001,
+  Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
+  Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
+  Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
+  Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
+} from '../../../types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
-    new Content.ChannelCreatedEvent(event).params
+    new ChannelCreatedEvent_V1001(event).params
 
   // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
   const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
@@ -148,7 +162,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [, channelId, channelUpdateParameters, newDataObjects] = new Content.ChannelUpdatedEvent(event).params
+  const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent_V1001(event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -196,7 +210,7 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 }
 
 export async function content_ChannelAssetsRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, , dataObjectIds] = new Content.ChannelAssetsRemovedEvent(event).params
+  const [, , dataObjectIds] = new ChannelAssetsRemovedEvent_V1001(event).params
 
   await deleteChannelAssets(store, [...dataObjectIds])
 }
@@ -205,7 +219,7 @@ export async function content_ChannelAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [actor, channelId, dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
+  const [actor, channelId, dataObjectIds, rationale] = new ChannelAssetsDeletedByModeratorEvent_V1001(event).params
 
   await deleteChannelAssets(store, [...dataObjectIds])
 
@@ -237,7 +251,7 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 }
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, channelId] = new Content.ChannelDeletedEvent(event).params
+  const [, channelId] = new ChannelDeletedEvent_V1001(event).params
 
   // TODO: remove manual deletion of referencing records after
   // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
@@ -248,7 +262,7 @@ export async function content_ChannelDeleted({ store, event }: EventContext & St
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
+  const [actor, channelId, rationale] = new ChannelDeletedByModeratorEvent_V1001(event).params
   await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 
   // common event processing - second
@@ -269,7 +283,7 @@ export async function content_ChannelVisibilitySetByModerator({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [actor, channelId, isCensored, rationale] = new Content.ChannelVisibilitySetByModeratorEvent(event).params
+  const [actor, channelId, isCensored, rationale] = new ChannelVisibilitySetByModeratorEvent_V1001(event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -306,7 +320,7 @@ export async function content_ChannelVisibilitySetByModerator({
 
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
+  const [channelId, message] = new ChannelOwnerRemarkedEvent_V1001(ctx.event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -354,7 +368,7 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
 
 export async function content_ChannelAgentRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [moderator, channelId, message] = new Content.ChannelAgentRemarkedEvent(ctx.event).params
+  const [moderator, channelId, message] = new ChannelAgentRemarkedEvent_V1001(ctx.event).params
 
   try {
     const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
@@ -480,7 +494,7 @@ async function processModeratorRemark(
 
 export async function content_ChannelPayoutsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [updateChannelPayoutParameters, dataObjectId] = new Content.ChannelPayoutsUpdatedEvent(event).params
+  const [updateChannelPayoutParameters, dataObjectId] = new ChannelPayoutsUpdatedEvent_V1001(event).params
 
   const asDataObjectId = unwrap(dataObjectId)
   const payloadDataObject = await store.get(StorageDataObject, { where: { id: asDataObjectId?.toString() } })
@@ -512,8 +526,8 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
 }
 
 export async function content_ChannelRewardUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  // load event data
-  const [cumulativeRewardEarned, claimedAmount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
+  // load event data (was impossible to emit before v2001)
+  const [cumulativeRewardEarned, claimedAmount, channelId] = new ChannelRewardUpdatedEvent_V2001(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -545,8 +559,7 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // load event data
-  const [owner, channelId, withdrawnAmount, destination] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event)
-    .params
+  const [owner, channelId, withdrawnAmount, destination] = new ChannelRewardClaimedAndWithdrawnEvent_V1001(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })
@@ -578,7 +591,7 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 export async function content_ChannelFundsWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
   // load event data
   // load event data
-  const [owner, channelId, amount, destination] = new Content.ChannelFundsWithdrawnEvent(event).params
+  const [owner, channelId, amount, destination] = new ChannelFundsWithdrawnEvent_V1001(event).params
 
   // load channel
   const channel = await store.get(Channel, { where: { id: channelId.toString() } })

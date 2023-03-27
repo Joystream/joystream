@@ -35,7 +35,14 @@ import {
   VideoSubtitle,
   VideoVisibilitySetByModeratorEvent,
 } from 'query-node/dist/model'
-import { Content } from '../../generated/types'
+import {
+  Content_VideoAssetsDeletedByModeratorEvent_V1001 as VideoAssetsDeletedByModeratorEvent_V1001,
+  Content_VideoDeletedByModeratorEvent_V1001 as VideoDeletedByModeratorEvent_V1001,
+  Content_VideoDeletedEvent_V1001 as VideoDeletedEvent_V1001,
+  Content_VideoUpdatedEvent_V1001 as VideoUpdatedEvent_V1001,
+  Content_VideoVisibilitySetByModeratorEvent_V1001 as VideoVisibilitySetByModeratorEvent_V1001,
+  Content_VideoCreatedEvent_V1001 as VideoCreatedEvent_V1001,
+} from '../../../types'
 import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
@@ -73,8 +80,9 @@ interface ContentUpdatedEventData {
 export async function content_ContentCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, channelId, contentId, contentCreationParameters, newDataObjectIds] =
-    new Content.VideoCreatedEvent(event).params
+  const [contentActor, channelId, contentId, contentCreationParameters, newDataObjectIds] = new VideoCreatedEvent_V1001(
+    event
+  ).params
   const { meta } = contentCreationParameters
 
   const contentCreatedEventData: ContentCreatedEventData = {
@@ -189,8 +197,7 @@ export async function processCreateVideoMessage(
 export async function content_ContentUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx
   // read event data
-  const [contentActor, contentId, contentUpdateParameters, newDataObjectIds] = new Content.VideoUpdatedEvent(event)
-    .params
+  const [contentActor, contentId, contentUpdateParameters, newDataObjectIds] = new VideoUpdatedEvent_V1001(event).params
   const { newMeta } = contentUpdateParameters
 
   const contentUpdatedEventData: ContentUpdatedEventData = {
@@ -280,7 +287,7 @@ export async function processUpdateVideoMessage(
 
 export async function content_ContentDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [actor, contentId] = new Content.VideoDeletedEvent(event).params
+  const [actor, contentId] = new VideoDeletedEvent_V1001(event).params
 
   await deleteVideo(store, contentId)
 
@@ -300,7 +307,7 @@ export async function content_VideoAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [actor, videoId, dataObjectIds, areNftAssets, rationale] = new Content.VideoAssetsDeletedByModeratorEvent(event)
+  const [actor, videoId, dataObjectIds, areNftAssets, rationale] = new VideoAssetsDeletedByModeratorEvent_V1001(event)
     .params
 
   const assets = await store.getMany(StorageDataObject, {
@@ -332,7 +339,7 @@ export async function content_VideoAssetsDeletedByModerator({
 
 export async function content_VideoDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [actor, videoId, rationale] = new Content.VideoDeletedByModeratorEvent(event).params
+  const [actor, videoId, rationale] = new VideoDeletedByModeratorEvent_V1001(event).params
 
   await deleteVideo(store, videoId)
 
@@ -354,7 +361,7 @@ export async function content_VideoVisibilitySetByModerator({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [actor, videoId, isCensored, rationale] = new Content.VideoVisibilitySetByModeratorEvent(event).params
+  const [actor, videoId, isCensored, rationale] = new VideoVisibilitySetByModeratorEvent_V1001(event).params
 
   // load video
   const video = await store.get(Video, {
