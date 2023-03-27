@@ -12,7 +12,7 @@ export default class WorkingGroupsDiscetionarySpending extends WorkingGroupsComm
       description: 'Wallet Address of Receiver',
     },
     {
-      name: 'string',
+      name: 'amount',
       required: true,
       description: 'Amount of JOY to be sent to receiver ',
     },
