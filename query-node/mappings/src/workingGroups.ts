@@ -4,7 +4,7 @@ eslint-disable @typescript-eslint/naming-convention
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 
 import {
-  Council_BudgetBalanceSetEvent_V1001,
+  StorageWorkingGroup_BudgetSetEvent_V1001,
   StorageWorkingGroup_WorkerRewardAmountUpdatedEvent_V1001 as WorkingGroup_WorkerRewardAmountUpdatedEvent_V1001,
   StorageWorkingGroup_ApplicationWithdrawnEvent_V1001 as WorkingGroup_ApplicationWithdrawnEvent_V1001,
   StorageWorkingGroup_AppliedOnOpeningEvent_V1001 as WorkingGroup_AppliedOnOpeningEvent_V1001,
@@ -992,7 +992,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
 }
 
 export async function workingGroups_BudgetSet({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [newBudget] = new Council_BudgetBalanceSetEvent_V1001(event).params
+  const [newBudget] = new StorageWorkingGroup_BudgetSetEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
 
   const budgetSetEvent = new BudgetSetEvent({

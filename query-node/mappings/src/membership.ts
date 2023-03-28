@@ -423,11 +423,9 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
 }
 
 export async function members_MemberInvited({ store, event, block }: EventContext & StoreContext): Promise<void> {
-  console.log('block', block)
   const { specVersion } = block.runtimeVersion
-  const { specVersion: v2001, params: asV2001 } = new MemberInvitedEvent_V2001(event)
-  const { params: asV1001 } = new MemberInvitedEvent_V1001(event)
-  const [memberId, inviteMembershipParameters, maybeInvitedMemberBalance] = specVersion === v2001 ? asV2001 : asV1001
+  const [memberId, inviteMembershipParameters, maybeInvitedMemberBalance] =
+    specVersion === 2001 ? new MemberInvitedEvent_V2001(event).params : new MemberInvitedEvent_V1001(event).params
 
   const entryMethod = new MembershipEntryInvited()
   const invitedMember = await createNewMemberFromParams(store, memberId, entryMethod, inviteMembershipParameters, 0)
@@ -592,11 +590,8 @@ export async function members_LeaderInvitationQuotaUpdated({
 export async function members_MemberRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store, block } = ctx
   const { specVersion } = block.runtimeVersion
-  console.log('block', block, typeof specVersion)
-  const { specVersion: v2001, params: asV2001 } = new MemberRemarkedEvent_V2001(event)
-  const { params: asV1001 } = new MemberRemarkedEvent_V1001(event)
-
-  const [memberId, metadataBytes, payment] = specVersion === v2001 ? asV2001 : asV1001
+  const [memberId, metadataBytes, payment] =
+    specVersion === 2001 ? new MemberRemarkedEvent_V2001(event).params : new MemberRemarkedEvent_V1001(event).params
 
   try {
     const metadata = deserializeMetadata(MemberRemarked, metadataBytes)

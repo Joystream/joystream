@@ -531,7 +531,7 @@ export async function storage_DistributionBucketInvitationCancelled({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [bucketId, workerId] = new DistributionBucketOperatorInvitedEvent_V1001(event).params
+  const [bucketId, workerId] = new DistributionBucketInvitationCancelledEvent_V1001(event).params
 
   const invitedOperator = await getById(store, DistributionBucketOperator, distributionOperatorId(bucketId, workerId))
 
