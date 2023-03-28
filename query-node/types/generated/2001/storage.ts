@@ -13,7 +13,7 @@ import {
   PalletStorageDynamicBagIdType,
   PalletStorageUploadParametersRecord,
   PalletStorageVoucher,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 
 /**
  * Emits on creating the storage bucket.

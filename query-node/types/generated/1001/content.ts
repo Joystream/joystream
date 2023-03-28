@@ -18,7 +18,7 @@ import {
   PalletContentUpdateChannelPayoutsParametersRecord,
   PalletContentVideoCreationParametersRecord,
   PalletContentVideoUpdateParametersRecord,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 import { AccountId32 } from "@polkadot/types/interfaces";
 
 export class Content_CuratorGroupCreatedEvent_V1001 {

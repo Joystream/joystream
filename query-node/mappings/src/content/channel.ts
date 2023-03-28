@@ -82,7 +82,7 @@ import {
   Content_ChannelDeletedEvent_V1001 as ChannelDeletedEvent_V1001,
   Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
   Content_ChannelOwnerRemarkedEvent_V1001 as ChannelOwnerRemarkedEvent_V1001,
-  Content_ChannelPayoutsUpdatedEvent_V1001 as ChannelPayoutsUpdatedEvent_V1001,
+  Content_ChannelPayoutsUpdatedEvent_V2001 as ChannelPayoutsUpdatedEvent_V2001,
   Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
   Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
   Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
@@ -494,7 +494,7 @@ async function processModeratorRemark(
 
 export async function content_ChannelPayoutsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [updateChannelPayoutParameters, dataObjectId] = new ChannelPayoutsUpdatedEvent_V1001(event).params
+  const [updateChannelPayoutParameters, dataObjectId] = new ChannelPayoutsUpdatedEvent_V2001(event).params
 
   const asDataObjectId = unwrap(dataObjectId)
   const payloadDataObject = await store.get(StorageDataObject, { where: { id: asDataObjectId?.toString() } })

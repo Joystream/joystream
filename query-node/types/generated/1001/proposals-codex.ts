@@ -8,7 +8,7 @@ import { u32, u64 } from "@polkadot/types";
 import {
   PalletProposalsCodexGeneralProposalParams,
   PalletProposalsCodexProposalDetails,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 
 /**
  * A proposal was created

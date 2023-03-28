@@ -10,7 +10,7 @@ import {
   PalletProposalsEngineProposalStatusesProposalDecision,
   PalletProposalsEngineProposalStatusesProposalStatus,
   PalletProposalsEngineVoteKind,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 
 /**
  * Emits on proposal creation.

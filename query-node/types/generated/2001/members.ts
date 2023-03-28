@@ -10,7 +10,7 @@ import {
   PalletMembershipCreateMemberParameters,
   PalletMembershipGiftMembershipParameters,
   PalletMembershipInviteMembershipParameters,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 import { AccountId32 } from "@polkadot/types/interfaces";
 import { Codec } from "@polkadot/types/types";
 

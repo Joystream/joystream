@@ -7,7 +7,7 @@ import { typeRegistry } from "./typeRegistry";
 import {
   PalletCommonBalanceKind,
   PalletCommonWorkingGroupIterableEnumsWorkingGroup,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 import { u128 } from "@polkadot/types";
 
 /**

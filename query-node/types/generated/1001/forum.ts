@@ -8,7 +8,7 @@ import { BTreeMap, BTreeSet, Bytes, Option, bool, u64 } from "@polkadot/types";
 import {
   PalletForumExtendedPostIdObject,
   PalletForumPrivilegedActor,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 
 /**
  * A category was introduced

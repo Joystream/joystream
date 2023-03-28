@@ -5,7 +5,7 @@ import { SubstrateEvent, SubstrateExtrinsic } from "@joystream/hydra-common";
 import { typeRegistry } from "./typeRegistry";
 
 import { Bytes, Vec, u128, u32, u64 } from "@polkadot/types";
-import { PalletReferendumOptionResult } from "@polkadot/types/lookup";
+import { PalletReferendumOptionResult } from "./types-lookup";
 import { AccountId32, H256 } from "@polkadot/types/interfaces";
 
 /**

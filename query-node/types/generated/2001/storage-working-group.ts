@@ -10,7 +10,7 @@ import {
   PalletWorkingGroupOpeningType,
   PalletWorkingGroupRewardPaymentType,
   PalletWorkingGroupStakePolicy,
-} from "@polkadot/types/lookup";
+} from "./types-lookup";
 import { AccountId32, H256 } from "@polkadot/types/interfaces";
 
 /**

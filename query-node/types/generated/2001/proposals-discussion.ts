@@ -5,7 +5,7 @@ import { SubstrateEvent, SubstrateExtrinsic } from "@joystream/hydra-common";
 import { typeRegistry } from "./typeRegistry";
 
 import { Bytes, bool, u64 } from "@polkadot/types";
-import { PalletProposalsDiscussionThreadModeBTreeSet } from "@polkadot/types/lookup";
+import { PalletProposalsDiscussionThreadModeBTreeSet } from "./types-lookup";
 
 /**
  * Emits on thread creation.

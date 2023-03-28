@@ -203,6 +203,7 @@ typegen:
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
   outDir: ./types/generated
+  typegenBinPath: ../node_modules/.bin/polkadot-types-from-defs
 mappings:
   # js module that exports the handler functions
   mappingsModule: mappings/lib/mappings/src
