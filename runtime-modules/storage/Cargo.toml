@@ -59,3 +59,4 @@ std = [
 ]
 playground-runtime = []
 testing-runtime = []
+try-runtime = [ "frame-support/try-runtime"]

@@ -45,6 +45,7 @@ frame-system = { package = 'frame-system', default-features = false, git = 'http
 frame-election-provider-support = { package = 'frame-election-provider-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-election-provider-multi-phase = { package = 'pallet-election-provider-multi-phase', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 pallet-bags-list = { package = 'pallet-bags-list', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+frame-try-runtime = { package = 'frame-try-runtime', default-features = false, optional = true, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 # Pallets
 pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
@@ -134,6 +135,7 @@ std = [
     'frame-benchmarking/std',
     'pallet-offences-benchmarking?/std',
     'frame-system-benchmarking?/std',
+    'frame-try-runtime/std',
 
     # Pallets
     'pallet-timestamp/std',
@@ -225,3 +227,42 @@ staging-runtime = []
 playground-runtime = []
 # configuration suitable for integration testing
 testing-runtime = []
+
+try-runtime = [
+    "frame-try-runtime",
+    "frame-executive/try-runtime",
+    "frame-system/try-runtime",
+    "frame-support/try-runtime",
+    "pallet-authority-discovery/try-runtime",
+    "pallet-authorship/try-runtime",
+    "pallet-babe/try-runtime",
+    "pallet-bags-list/try-runtime",
+    "pallet-balances/try-runtime",
+    "pallet-election-provider-multi-phase/try-runtime",
+    "pallet-grandpa/try-runtime",
+    "pallet-im-online/try-runtime",
+    "pallet-multisig/try-runtime",
+    "pallet-offences/try-runtime",
+    "pallet-insecure-randomness-collective-flip/try-runtime",
+    "pallet-session/try-runtime",
+    "pallet-staking/try-runtime",
+    "pallet-timestamp/try-runtime",
+    "pallet-transaction-payment/try-runtime",
+    "pallet-vesting/try-runtime",
+    "substrate-utility/try-runtime",
+    # joystream
+    'forum/try-runtime',
+    'membership/try-runtime',
+    'council/try-runtime',
+    'referendum/try-runtime',
+    'working-group/try-runtime',
+    'storage/try-runtime',
+    'proposals-engine/try-runtime',
+    'proposals-discussion/try-runtime',
+    'proposals-codex/try-runtime',
+    'pallet-constitution/try-runtime',
+    'bounty/try-runtime',
+    'joystream-utility/try-runtime',
+    'content/try-runtime',
+    'project-token/try-runtime',
+]

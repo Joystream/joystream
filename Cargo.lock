@@ -2358,6 +2358,7 @@ source = "git+https://github.com/joystream/substrate.git?rev=50cf239147a6f569e56
 dependencies = [
  "frame-support",
  "frame-system",
+ "frame-try-runtime",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -2504,6 +2505,18 @@ source = "git+https://github.com/joystream/substrate.git?rev=50cf239147a6f569e56
 dependencies = [
  "parity-scale-codec",
  "sp-api",
+]
+
+[[package]]
+name = "frame-try-runtime"
+version = "0.10.0-dev"
+source = "git+https://github.com/joystream/substrate.git?rev=50cf239147a6f569e563bcadec6c7a1c5ad5c67e#50cf239147a6f569e563bcadec6c7a1c5ad5c67e"
+dependencies = [
+ "frame-support",
+ "parity-scale-codec",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -3374,6 +3387,7 @@ dependencies = [
  "sp-core",
  "sp-finality-grandpa",
  "sp-inherents",
+ "sp-io",
  "sp-keyring",
  "sp-keystore",
  "sp-runtime",
@@ -3388,6 +3402,7 @@ dependencies = [
  "substrate-state-trie-migration-rpc",
  "tempfile",
  "tokio",
+ "try-runtime-cli",
  "wait-timeout",
 ]
 
@@ -3402,6 +3417,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
  "getrandom 0.2.8",
  "hex-literal",
  "impl-serde 0.3.1",
@@ -10166,6 +10182,43 @@ name = "try-lock"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
+
+[[package]]
+name = "try-runtime-cli"
+version = "0.10.0-dev"
+source = "git+https://github.com/joystream/substrate.git?rev=50cf239147a6f569e563bcadec6c7a1c5ad5c67e#50cf239147a6f569e563bcadec6c7a1c5ad5c67e"
+dependencies = [
+ "async-trait",
+ "clap 4.1.11",
+ "frame-remote-externalities",
+ "frame-try-runtime",
+ "hex",
+ "log",
+ "parity-scale-codec",
+ "sc-cli",
+ "sc-executor",
+ "sc-service",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-consensus-aura",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-debug-derive",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-rpc",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-timestamp",
+ "sp-transaction-storage-proof",
+ "sp-version",
+ "sp-weights",
+ "substrate-rpc-client",
+ "zstd",
+]
 
 [[package]]
 name = "tt-call"

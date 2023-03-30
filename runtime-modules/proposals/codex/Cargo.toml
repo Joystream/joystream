@@ -74,3 +74,4 @@ std = [
     'frame-election-provider-support/std',
     'sp-staking/std',
 ]
+try-runtime = [ "frame-support/try-runtime"]

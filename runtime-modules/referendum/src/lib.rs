@@ -1119,3 +1119,10 @@ impl<T: Config<I>, I: Instance> EnsureChecks<T, I> {
         Ok(cast_vote)
     }
 }
+
+impl<T: Config<I>, I: Instance> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T, I> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
+    }
+}

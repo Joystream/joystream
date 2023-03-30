@@ -55,3 +55,4 @@ std = [
     'sp-runtime/std',
     'frame-benchmarking?/std',
 ]
+try-runtime = [ "frame-support/try-runtime"]

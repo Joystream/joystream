@@ -14,8 +14,9 @@ use sp_std::vec::Vec;
 use crate::{
     AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
     BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
-    InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys, Signature,
-    System, TransactionPayment, VoterList, BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    InherentDataExt, ProposalsEngine, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeVersion,
+    SessionKeys, Signature, System, TransactionPayment, VoterList, BABE_GENESIS_EPOCH_CONFIG,
+    VERSION,
 };
 
 use frame_support::weights::Weight;
@@ -343,6 +344,28 @@ impl_runtime_apis! {
             encoded: Vec<u8>,
         ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
             SessionKeys::decode_into_raw_public_keys(&encoded)
+        }
+    }
+
+    #[cfg(feature = "try-runtime")]
+    impl frame_try_runtime::TryRuntime<Block> for Runtime {
+        fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
+            // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
+            // have a backtrace here. If any of the pre/post migration checks fail, we shall stop
+            // right here and right now.
+            let weight = Executive::try_runtime_upgrade(checks).unwrap();
+            (weight, RuntimeBlockWeights::get().max_block)
+        }
+
+        fn execute_block(
+            block: Block,
+            state_root_check: bool,
+            signature_check: bool,
+            select: frame_try_runtime::TryStateSelect
+        ) -> Weight {
+            // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
+            // have a backtrace here.
+            Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
         }
     }
 
