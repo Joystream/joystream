@@ -1,7 +1,7 @@
 import { EventContext, StoreContext } from '@joystream/hydra-common'
 import BN from 'bn.js'
 import { BudgetUpdatedEvent, WorkingGroup } from 'query-node/dist/model'
-import { JoystreamUtility_UpdatedWorkingGroupBudgetEvent_V1001 } from '../../types'
+import { JoystreamUtility_UpdatedWorkingGroupBudgetEvent_V1001 } from '../generated/types'
 import { genericEventFields, getWorkingGroupByName, getWorkingGroupModuleName } from './common'
 
 export async function joystreamUtility_UpdatedWorkingGroupBudget({

@@ -11,6 +11,6 @@
   },
   "dependencies": {
     "@joystream/hydra-cli": "4.0.0-alpha.11",
-    "@joystream/hydra-typegen": "file:../../joystream-hydra-typegen.tgz"
+    "@joystream/hydra-typegen": "file:../../joystream-hydra-typegen.1.tgz"
   }
 }

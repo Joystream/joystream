@@ -64,7 +64,7 @@ import {
   Members_StakingAccountAddedEvent_V1001 as StakingAccountAddedEvent_V1001,
   Members_StakingAccountConfirmedEvent_V1001 as StakingAccountConfirmedEvent_V1001,
   Members_StakingAccountRemovedEvent_V1001 as StakingAccountRemovedEvent_V1001,
-} from '../../types'
+} from '../generated/types'
 import { membershipConfig } from './bootstrap-data'
 import {
   bytesToString,

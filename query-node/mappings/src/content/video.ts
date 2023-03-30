@@ -42,7 +42,7 @@ import {
   Content_VideoUpdatedEvent_V1001 as VideoUpdatedEvent_V1001,
   Content_VideoVisibilitySetByModeratorEvent_V1001 as VideoVisibilitySetByModeratorEvent_V1001,
   Content_VideoCreatedEvent_V1001 as VideoCreatedEvent_V1001,
-} from '../../../types'
+} from '../../generated/types'
 import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'

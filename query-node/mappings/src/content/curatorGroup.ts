@@ -13,7 +13,7 @@ import {
   Content_CuratorGroupCreatedEvent_V1001 as CuratorGroupCreatedEvent_V1001,
   Content_CuratorGroupStatusSetEvent_V1001 as CuratorGroupStatusSetEvent_V1001,
   Content_CuratorRemovedEvent_V1001 as CuratorRemovedEvent_V1001,
-} from '../../../types'
+} from '../../generated/types'
 
 async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
   const existingCurator = await store.get(Curator, {

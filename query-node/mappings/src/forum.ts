@@ -61,7 +61,7 @@ import {
   Forum_ThreadMetadataUpdatedEvent_V1001 as ThreadMetadataUpdatedEvent_V1001,
   Forum_ThreadModeratedEvent_V1001 as ThreadModeratedEvent_V1001,
   Forum_ThreadMovedEvent_V1001 as ThreadMovedEvent_V1001,
-} from '../../types'
+} from '../generated/types'
 import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
 import { ForumPostMetadata, ForumThreadMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'

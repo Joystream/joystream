@@ -23,7 +23,7 @@ import {
   ProposalsDiscussion_PostDeletedEvent_V1001 as PostDeletedEvent_V1001,
   ProposalsDiscussion_PostUpdatedEvent_V1001 as PostUpdatedEvent_V1001,
   ProposalsDiscussion_ThreadModeChangedEvent_V1001 as ThreadModeChangedEvent_V1001,
-} from '../../types'
+} from '../generated/types'
 import { ProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import { In } from 'typeorm'
 

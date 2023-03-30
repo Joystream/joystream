@@ -33,7 +33,7 @@ import {
   Storage_StorageBucketStatusUpdatedEvent_V1001 as StorageBucketStatusUpdatedEvent_V1001,
   Storage_StorageBucketVoucherLimitsSetEvent_V1001 as StorageBucketVoucherLimitsSetEvent_V1001,
   Storage_StorageBucketsUpdatedForBagEvent_V1001 as StorageBucketsUpdatedForBagEvent_V1001,
-} from '../../../types'
+} from '../../generated/types'
 import {
   DistributionBucket,
   DistributionBucketFamily,

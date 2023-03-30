@@ -87,7 +87,7 @@ import {
   Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
   Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
   Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
-} from '../../../types'
+} from '../../generated/types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event } = ctx

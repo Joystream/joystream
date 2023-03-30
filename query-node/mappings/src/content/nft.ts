@@ -61,7 +61,7 @@ import {
   Content_OfferStartedEvent_V1001 as OfferStartedEvent_V1001,
   Content_OpenAuctionBidAcceptedEvent_V1001 as OpenAuctionBidAcceptedEvent_V1001,
   Content_OpenAuctionStartedEvent_V1001 as OpenAuctionStartedEvent_V1001,
-} from '../../../types'
+} from '../../generated/types'
 import { In } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'

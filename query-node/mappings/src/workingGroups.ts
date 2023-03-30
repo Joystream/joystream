@@ -26,7 +26,7 @@ import {
   StorageWorkingGroup_WorkerRoleAccountUpdatedEvent_V1001 as WorkingGroup_WorkerRoleAccountUpdatedEvent_V1001,
   StorageWorkingGroup_WorkerStartedLeavingEvent_V1001 as WorkingGroup_WorkerStartedLeavingEvent_V1001,
   StorageWorkingGroup_WorkingGroupBudgetFundedEvent_V1001 as WorkingGroup_WorkingGroupBudgetFundedEvent_V1001,
-} from '../../types'
+} from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,

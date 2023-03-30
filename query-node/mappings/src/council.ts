@@ -82,7 +82,7 @@ import {
   Referendum_VoteCastEvent_V1001 as VoteCastEvent_V1001,
   Referendum_VoteRevealedEvent_V1001 as VoteRevealedEvent_V1001,
   Council_VotingPeriodStartedEvent_V1001 as VotingPeriodStartedEvent_V1001,
-} from '../../types'
+} from '../generated/types'
 
 /// /////////////// Common - Gets //////////////////////////////////////////////
 

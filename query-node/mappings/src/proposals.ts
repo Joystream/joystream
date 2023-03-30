@@ -75,7 +75,7 @@ import {
   ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
   ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
   ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
-} from '../../types'
+} from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'

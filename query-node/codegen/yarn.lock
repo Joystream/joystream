@@ -342,9 +342,9 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@file:../../joystream-hydra-typegen.tgz":
-  version "4.0.0-alpha.9"
-  resolved "file:../../joystream-hydra-typegen.tgz#59d72edc36cdbb95da066a2ba3dc32ea533ae13d"
+"@joystream/hydra-typegen@file:../../joystream-hydra-typegen.1.tgz":
+  version "4.0.0-alpha.11"
+  resolved "file:../../joystream-hydra-typegen.1.tgz#50c8c28ae068b3fa0e41c4273eef77e3f5bf0380"
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
