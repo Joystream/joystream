@@ -1,7 +1,7 @@
-version: '4.0'
+version: '5.0'
 description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: '4'
+hydraVersion: '5'
 dataSource:
   kind: substrate
   chain: joystream
