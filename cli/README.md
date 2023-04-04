@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/1.2.0 darwin-x64 node-v14.16.1
+@joystream/cli/1.2.0 darwin-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -2121,15 +2121,15 @@ OPTIONS
   --hex=hex
       (required) Hex-encoded protobuf message'
 
-  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|CouncilCandidacyNoteMetadata|ForumPo
-  stMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditComment|DeleteComment|PinO
-  rUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoCategory|AppMetadata|Cre
-  ateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarked|PersonMetadata|ProposalsDiscussionPostMe
-  tadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|StorageBucketOperatorMetadata|DistributionBuc
-  ketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|PublishedBeforeJoystream|License|MediaType|Subti
-  tleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMetadata|ApplicationMetadata|WorkingGroupMeta
-  data|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupMetadataAction|ModeratePost|RemarkMetadataA
-  ction)
+  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|ChannelPayoutsMetadata|CouncilCandid
+  acyNoteMetadata|ForumPostMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditCom
+  ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
+  ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
+  d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
+  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
+  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
+  etadataAction|ModeratePost|RemarkMetadataAction)
       Type of the message
 ```
 
@@ -2150,15 +2150,15 @@ OPTIONS
   --jsonString=jsonString
       JSON-encoded message input (eg. '{"videoId":1}'
 
-  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|CouncilCandidacyNoteMetadata|ForumPo
-  stMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditComment|DeleteComment|PinO
-  rUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoCategory|AppMetadata|Cre
-  ateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarked|PersonMetadata|ProposalsDiscussionPostMe
-  tadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|StorageBucketOperatorMetadata|DistributionBuc
-  ketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|PublishedBeforeJoystream|License|MediaType|Subti
-  tleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMetadata|ApplicationMetadata|WorkingGroupMeta
-  data|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupMetadataAction|ModeratePost|RemarkMetadataA
-  ction)
+  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|ChannelPayoutsMetadata|CouncilCandid
+  acyNoteMetadata|ForumPostMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditCom
+  ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
+  ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
+  d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
+  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
+  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
+  etadataAction|ModeratePost|RemarkMetadataAction)
       Type of the message
 ```
 
@@ -2173,15 +2173,15 @@ USAGE
   $ joystream-cli util:messageStructure
 
 OPTIONS
-  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|CouncilCandidacyNoteMetadata|ForumPo
-  stMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditComment|DeleteComment|PinO
-  rUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoCategory|AppMetadata|Cre
-  ateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarked|PersonMetadata|ProposalsDiscussionPostMe
-  tadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|StorageBucketOperatorMetadata|DistributionBuc
-  ketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|PublishedBeforeJoystream|License|MediaType|Subti
-  tleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMetadata|ApplicationMetadata|WorkingGroupMeta
-  data|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupMetadataAction|ModeratePost|RemarkMetadataA
-  ction)
+  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|ChannelPayoutsMetadata|CouncilCandid
+  acyNoteMetadata|ForumPostMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditCom
+  ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
+  ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
+  d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
+  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
+  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
+  etadataAction|ModeratePost|RemarkMetadataAction)
       Type of the message
 ```
 
