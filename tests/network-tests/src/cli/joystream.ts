@@ -137,8 +137,8 @@ export class JoystreamCLI extends CLI {
   /**
     Creates a new video category.
   */
-  async createVideoCategory(name: string): Promise<void> {
-    await this.run('content:createVideoCategory', [name])
+  async createVideoCategory(name: string, asMember: string): Promise<void> {
+    await this.run('content:createVideoCategory', [name, '--useMemberId', asMember])
   }
 
   /**

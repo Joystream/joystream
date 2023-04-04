@@ -1,7 +1,7 @@
-version: '4.0'
+version: '5.0'
 description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: '4'
+hydraVersion: '5'
 dataSource:
   kind: substrate
   chain: joystream
@@ -9,7 +9,7 @@ entities:
   - generated/graphql-server/dist/src/modules/**/*.model.js
 typegen:
   metadata:
-    source: ../chain-metadata.json
+    source: ./chain-metadata/
   events:
     # Membership
     - members.MembershipBought
@@ -203,9 +203,7 @@ typegen:
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
   outDir: ./mappings/generated/types
-  customTypes:
-    lib: '@joystream/types/augment/all/types'
-    typedefsLoc: '../types/augment/all/defs.json'
+  typegenBinPath: ../node_modules/.bin/polkadot-types-from-defs
 mappings:
   # js module that exports the handler functions
   mappingsModule: mappings/lib/src

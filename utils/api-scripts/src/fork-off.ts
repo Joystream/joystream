@@ -1,5 +1,5 @@
-import { xxhashAsHex } from '@polkadot/util-crypto'
 import { ApiPromise, WsProvider } from '@polkadot/api'
+import { xxhashAsHex } from '@polkadot/util-crypto'
 import fs from 'fs'
 import path from 'path'
 
@@ -29,6 +29,9 @@ const skippedModulesPrefix = [
   // Joystream specific
   'Council', // empty council
   'Referendum',
+  'Instance2WorkingGroup', // empty storage working group
+  'Instance3WorkingGroup', // empty content working group
+  'Instance9WorkingGroup', // empty distribution working group
 ]
 
 async function main() {
@@ -63,7 +66,16 @@ async function main() {
   // Grab the items to be moved, then iterate through and insert into storage
   storage.result
     .filter((i) => prefixes.some((prefix) => i[0].startsWith(prefix)))
-    .forEach(([key, value]) => (chainSpec.genesis.raw.top[key] = value))
+    .forEach(([key, value]) => {
+      if (
+        // encoded storage key for `minAuctionDuration` key
+        key !== '0xb5a494c92fa4747cc071573e93b32b87f9ad4eaa35a4c52d9289acbc42eba9d9' &&
+        // encoded storage key for `nftLimitsEnabled` key
+        key !== '0xb5a494c92fa4747cc071573e93b32b87d2c14024f1b303fdc87019c4c1facfde'
+      ) {
+        chainSpec.genesis.raw.top[key] = value
+      }
+    })
 
   // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
   delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']

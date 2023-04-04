@@ -184,9 +184,15 @@ function main {
     # wait 1 minute
     sleep 90
 
-    trap cleanup EXIT
+    # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
+    if [ "${NO_STORAGE}" != true ]; then
+        ./start-storage.sh
+        export REUSE_KEYS=true
+        export SKIP_STORAGE_AND_DISTRIBUTION=true
+    fi
 
     ./run-test-scenario.sh runtimeUpgrade
+    ./run-test-scenario.sh content-directory
 }
 
 # main entrypoint

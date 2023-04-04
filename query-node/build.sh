@@ -18,11 +18,6 @@ cp mappings/src/queryTemplates.ts generated/graphql-server/src/
 yarn typegen # if this fails try to run this command outside of yarn workspaces
 
 ################################################
-# temporary patches TODO: create proper solution
-
-sed -i -e "s#new TypeRegistry();#new TypeRegistry() as any;#" ./mappings/generated/types/index.ts
-
-################################################
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
@@ -36,5 +31,3 @@ yarn workspace query-node codegen
 yarn workspace query-node build
 
 yarn workspace query-node-mappings build
-
-
