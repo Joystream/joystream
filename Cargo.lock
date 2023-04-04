@@ -3413,6 +3413,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
  "frame-executive",
+ "frame-remote-externalities",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -3454,6 +3455,7 @@ dependencies = [
  "pallet-staking",
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
+ "pallet-staking-runtime-api",
  "pallet-storage",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -3479,12 +3481,14 @@ dependencies = [
  "sp-session",
  "sp-staking",
  "sp-std",
+ "sp-tracing",
  "sp-transaction-pool",
  "sp-version",
  "sp-weights",
  "static_assertions",
  "strum 0.19.5",
  "substrate-wasm-builder",
+ "tokio",
 ]
 
 [[package]]
@@ -5700,6 +5704,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "pallet-staking-runtime-api"
+version = "4.0.0-dev"
+source = "git+https://github.com/joystream/substrate.git?rev=50cf239147a6f569e563bcadec6c7a1c5ad5c67e#50cf239147a6f569e563bcadec6c7a1c5ad5c67e"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]

@@ -65,6 +65,7 @@ pallet-im-online = { package = 'pallet-im-online', default-features = false, git
 substrate-utility = { package = 'pallet-utility', version = "4.0.0-dev", default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+pallet-staking-runtime-api = { package = 'pallet-staking-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e', default-features = false, optional = true }
@@ -95,6 +96,9 @@ project-token = { package = 'pallet-project-token', default-features = false, pa
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 strum = {version = "0.19", default-features = false}
+remote-externalities = { package = "frame-remote-externalities", git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+tokio = { version = "1.24.2", features = ["macros"] }
+sp-tracing = { package = 'sp-tracing', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
 [build-dependencies]
 substrate-wasm-builder = { git = "https://github.com/joystream/substrate", rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
@@ -158,6 +162,7 @@ std = [
     'pallet-bags-list/std',
     'pallet-election-provider-multi-phase/std',
     'pallet-election-provider-support-benchmarking?/std',
+    'pallet-staking-runtime-api/std',
 
     # Joystream
     'common/std',

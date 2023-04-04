@@ -591,7 +591,8 @@ impl pallet_staking::Config for Runtime {
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
-    type VoterList = VoterList;
+    type VoterList = BagsList;
+    // type VoterList = VoterList; // not renaming for now
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
@@ -1848,7 +1849,9 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-        VoterList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        BagsList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        // Not renaming BagsList to VoterList until migration test failing can be fixed
+        // VoterList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
         // Joystream
@@ -1878,3 +1881,48 @@ construct_runtime!(
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
     }
 );
+
+#[cfg(all(test, feature = "try-runtime"))]
+mod remote_tests {
+    use super::*;
+    use frame_try_runtime::{runtime_decl_for_TryRuntime::TryRuntime, UpgradeCheckSelect};
+    use remote_externalities::{
+        Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig, Transport,
+    };
+    use std::env::var;
+
+    #[tokio::test]
+    async fn run_migrations() {
+        if var("RUN_MIGRATION_TESTS").is_err() {
+            return;
+        }
+
+        sp_tracing::try_init_simple();
+        let transport: Transport = var("WS")
+            .unwrap_or("wss://rpc.joystream.org:443".to_string())
+            .into();
+        let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
+        let mut ext = Builder::<Block>::default()
+            .mode(if let Some(state_snapshot) = maybe_state_snapshot {
+                Mode::OfflineOrElseOnline(
+                    OfflineConfig {
+                        state_snapshot: state_snapshot.clone(),
+                    },
+                    OnlineConfig {
+                        transport,
+                        state_snapshot: Some(state_snapshot),
+                        ..Default::default()
+                    },
+                )
+            } else {
+                Mode::Online(OnlineConfig {
+                    transport,
+                    ..Default::default()
+                })
+            })
+            .build()
+            .await
+            .unwrap();
+        ext.execute_with(|| Runtime::on_runtime_upgrade(UpgradeCheckSelect::PreAndPost));
+    }
+}
