@@ -78,6 +78,8 @@ import {
   Content_ChannelAssetsDeletedByModeratorEvent_V1001 as ChannelAssetsDeletedByModeratorEvent_V1001,
   Content_ChannelAssetsRemovedEvent_V1001 as ChannelAssetsRemovedEvent_V1001,
   Content_ChannelCreatedEvent_V1001 as ChannelCreatedEvent_V1001,
+  Content_ChannelDeletedByModeratorEvent_V1001 as ChannelDeletedByModeratorEvent_V1001,
+  Content_ChannelDeletedEvent_V1001 as ChannelDeletedEvent_V1001,
   Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
   Content_ChannelOwnerRemarkedEvent_V1001 as ChannelOwnerRemarkedEvent_V1001,
   Content_ChannelPayoutsUpdatedEvent_V2001 as ChannelPayoutsUpdatedEvent_V2001,
@@ -85,8 +87,6 @@ import {
   Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
   Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
   Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
-  Content_ChannelDeletedByModeratorEvent_V1001,
-  Content_ChannelDeletedEvent_V1001,
 } from '../../generated/types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
@@ -251,12 +251,12 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 }
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, channelId] = new Content_ChannelDeletedEvent_V1001(event).params
+  const [, channelId] = new ChannelDeletedEvent_V1001(event).params
   await removeChannel(store, channelId)
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [actor, channelId, rationale] = new Content_ChannelDeletedByModeratorEvent_V1001(event).params
+  const [actor, channelId, rationale] = new ChannelDeletedByModeratorEvent_V1001(event).params
   await removeChannel(store, channelId)
 
   // common event processing - second
