@@ -38,7 +38,7 @@ import {
   VideoReactionsCountByReactionType,
   VideoReactionsPreferenceEvent,
 } from 'query-node/dist/model'
-import { genericEventFields, inconsistentState, newMetaprotocolEntityId } from '../common'
+import { genericEventFields, inconsistentState, newMetaprotocolEntityId, unexpectedData } from '../common'
 
 // TODO: Ensure video is actually a video
 // TODO: make sure comment is fully removed (all of its reactions)
@@ -594,7 +594,6 @@ export async function processModerateCommentMessage(
 export async function processPinOrUnpinCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelOwner: typeof ContentActor,
   channelId: ChannelId,
   message: IPinOrUnpinComment
 ): Promise<void> {
@@ -629,7 +628,6 @@ export async function processPinOrUnpinCommentMessage(
 export async function processBanOrUnbanMemberFromChannelMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelOwner: typeof ContentActor,
   channelId: ChannelId,
   message: IBanOrUnbanMemberFromChannel
 ): Promise<void> {
@@ -637,6 +635,12 @@ export async function processBanOrUnbanMemberFromChannelMessage(
 
   // load channel
   const channel = await getChannel(store, channelId.toString(), ['bannedMembers'])
+
+  const member = await store.get(Membership, { where: { id: memberId.toString() } })
+  if (!member) {
+    // Error will be caught inside `content_ChannelOwnerRemarked`
+    unexpectedData(`Member by id '${memberId.toString()}' not found!`)
+  }
 
   // ban member from channel; if member is already banned it remains banned
   if (option === BanOrUnbanMemberFromChannel.Option.BAN) {
@@ -668,7 +672,6 @@ export async function processBanOrUnbanMemberFromChannelMessage(
 export async function processVideoReactionsPreferenceMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelOwner: typeof ContentActor,
   channelId: ChannelId,
   message: IVideoReactionsPreference
 ): Promise<void> {

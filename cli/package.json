@@ -143,6 +143,9 @@
       },
       "sign-offline": {
         "description": "Sign unsigned transactions, created with 'advanced-transactions', offline"
+      },
+      "util": {
+        "description": "General Joystream utilities"
       }
     }
   },

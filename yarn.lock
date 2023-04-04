@@ -2483,6 +2483,54 @@
   resolved "https://registry.yarnpkg.com/@microsoft/fetch-event-source/-/fetch-event-source-2.0.1.tgz#9ceecc94b49fbaa15666e38ae8587f64acce007d"
   integrity sha512-W6CLUJ2eBMw3Rec70qrsEW0jOm/3twwJv21mrmj2yORiaVmVYGS4sSS5yUwvQc1ZlDLYGPnClVWmUUMagKNsfA==
 
+"@mongodb-js/zstd-darwin-arm64@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-darwin-arm64/-/zstd-darwin-arm64-1.1.0.tgz#24822d7117dc72dca9a9b8a5f7851e20a510ac8b"
+  integrity sha512-3XUa82KqWvtFEsx8WYwgdVCjC5Xnz77Hg54O3q7sw8LVPM/faFnGKGH2NSmNnucbabtEpLECz4iahK0bUotl4Q==
+
+"@mongodb-js/zstd-darwin-x64@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-darwin-x64/-/zstd-darwin-x64-1.1.0.tgz#9439e81c5762038a8733285ac0f5e7f368daa504"
+  integrity sha512-5veErRDyMHJbq/3cRSMrg6WkByXHhmhqZAK7Y4gn8owHcSIuC4ztOT+cH7AQWI7M47JkpcJX640cOMYYtWJbfg==
+
+"@mongodb-js/zstd-linux-arm64-gnu@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-linux-arm64-gnu/-/zstd-linux-arm64-gnu-1.1.0.tgz#b284472259e535eb1a70fccb1025d558cf2675cf"
+  integrity sha512-M5FRUlDUV3PvpAM/VmPLVczDJOZOaT7qxl1i6fXNGZ0DDmnSDigZBUmc+w3tQGKi0/VRZiwdyBZcQQgqBeKr7g==
+
+"@mongodb-js/zstd-linux-arm64-musl@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-linux-arm64-musl/-/zstd-linux-arm64-musl-1.1.0.tgz#3604b3183bd472b69e1936edc533eaad3778b1b5"
+  integrity sha512-3EdhHJKOd/8eXg4Q/ID+HGKUifIY0dqULPGpFveM7iBpV0QrpVOU7iDjVoFEROTqUubHN246Lmvj7VZ3z4F9+A==
+
+"@mongodb-js/zstd-linux-x64-gnu@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-linux-x64-gnu/-/zstd-linux-x64-gnu-1.1.0.tgz#99077b73c02e4d34f04ef7fae6bf66ef79e159a7"
+  integrity sha512-kNLvetxCFYx7QPEo/kR8h3ZApvjXtUYWuct9Mz52Rw67K3Cq5fJDjTAhroMsJCK2doNgjI1dxAQIhZziwnaMCg==
+
+"@mongodb-js/zstd-linux-x64-musl@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-linux-x64-musl/-/zstd-linux-x64-musl-1.1.0.tgz#3372c8bbef0a9dba310c4ecf4d1c2254bfe95fbb"
+  integrity sha512-lJxI/4kVPQUXWRxi4DOpBziO1y8EFuBGp7QLWzPgVhxY8boGYQhybZqj2L+KmLG3gsrh4dstQWhaIojDRM7UiQ==
+
+"@mongodb-js/zstd-win32-x64-msvc@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd-win32-x64-msvc/-/zstd-win32-x64-msvc-1.1.0.tgz#ab4db0ce4fe4d0d150442366a6ef2fb251426fc4"
+  integrity sha512-nct2+7xL5FYeteH+nLCskYerHE7yaneqGJuR2/2n4GsUPMyIbyKwa0VOEAKP1QF/OrwLMswtdRUPtyI8q2PF9Q==
+
+"@mongodb-js/zstd@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@mongodb-js/zstd/-/zstd-1.1.0.tgz#f7cbaf2d700115155842322403f3684869026285"
+  integrity sha512-+dRj3tSgenHhdqZ1d9ii7PKrXerXOZgDKJE9E2IFxC2lOecgOnSnInAD1o6hCFmyJ5NDQrcsrJKxkOlptwA1mw==
+  optionalDependencies:
+    "@mongodb-js/zstd-darwin-arm64" "1.1.0"
+    "@mongodb-js/zstd-darwin-x64" "1.1.0"
+    "@mongodb-js/zstd-linux-arm64-gnu" "1.1.0"
+    "@mongodb-js/zstd-linux-arm64-musl" "1.1.0"
+    "@mongodb-js/zstd-linux-x64-gnu" "1.1.0"
+    "@mongodb-js/zstd-linux-x64-musl" "1.1.0"
+    "@mongodb-js/zstd-win32-x64-msvc" "1.1.0"
+
 "@multiformats/base-x@^4.0.1":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@multiformats/base-x/-/base-x-4.0.1.tgz#95ff0fa58711789d53aefb2590a8b7a4e715d121"
