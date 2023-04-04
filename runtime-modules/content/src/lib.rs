@@ -333,15 +333,15 @@ decl_module! {
 
         /// Exports const - default global weekly NFT limit.
         const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultGlobalWeeklyNftLimit::get();
 
         /// Exports const - default channel daily NFT limit.
         const DefaultChannelDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultChannelDailyNftLimit::get();
 
         /// Exports const - default channel weekly NFT limit.
         const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultChannelWeeklyNftLimit::get();
 
         /// Export const - min cashout allowed limits
         const MinimumCashoutAllowedLimit: BalanceOf<T> = T::MinimumCashoutAllowedLimit::get();
