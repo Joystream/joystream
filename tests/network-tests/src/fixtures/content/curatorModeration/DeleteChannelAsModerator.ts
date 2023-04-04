@@ -12,7 +12,7 @@ import { EventDetails, EventType } from '../../../types'
 type ChannelDeletedByModeratorEventDetails = EventDetails<EventType<'content', 'ChannelDeletedByModerator'>>
 
 export type DeleteChannelAsModeratorParams = {
-  asCurator: [CuratorGroupId, WorkerId]
+  asCurator?: [CuratorGroupId, WorkerId]
   channelId: number
   numOfObjectsToDelete: number
   rationale: string
@@ -32,9 +32,11 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
 
   protected async getSignerAccountOrAccounts(): Promise<string[]> {
     return await Promise.all(
-      this.deleteChannelAsModeratorParams.map(async ({ asCurator }) =>
-        (await this.api.query.contentWorkingGroup.workerById(asCurator[1])).unwrap().roleAccountId.toString()
-      )
+      this.deleteChannelAsModeratorParams.map(async ({ asCurator }) => {
+        return asCurator
+          ? (await this.api.query.contentWorkingGroup.workerById(asCurator[1])).unwrap().roleAccountId.toString()
+          : await this.api.getLeadRoleKey('contentWorkingGroup')
+      })
     )
   }
 
@@ -42,7 +44,7 @@ export class DeleteChannelAsModeratorFixture extends StandardizedFixture {
     return Promise.all(
       this.deleteChannelAsModeratorParams.map(async ({ asCurator, channelId, numOfObjectsToDelete, rationale }) =>
         this.api.tx.content.deleteChannelAsModerator(
-          createType('PalletContentPermissionsContentActor', { Curator: asCurator }),
+          createType('PalletContentPermissionsContentActor', asCurator ? { Curator: asCurator } : 'Lead'),
           channelId,
           await this.api.channelBagWitness(channelId),
           numOfObjectsToDelete,

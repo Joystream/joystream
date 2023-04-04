@@ -2,3 +2,4 @@ lib/
 doc/
 proto/
 compiled/
+src/json/messages.json
