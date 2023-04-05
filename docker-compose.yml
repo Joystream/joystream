@@ -281,28 +281,76 @@ services:
     ports:
       - "3002:3002"
 
-  orion:
-    container_name: orion
-    image: joystream/orion
-    environment:
-      - ORION_PORT=6116
-      - ORION_MONGO_HOSTNAME=mongo
-      - ORION_FEATURED_CONTENT_SECRET=password123
-      - ORION_ADMIN_SECRET=password123
-      - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
-      - APP_PRIVATE_KEY=secret123
-    ports:
-      - "6116:6116"
+  squid-archive:
+    image: subsquid/substrate-ingest:firesquid
     depends_on:
-      - mongo
-    restart: always
+      - db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${SUBSQUID_ARCHIVE_DB_NAME}
+      - DB_HOST=db
+    command: [
+        '-e',
+        '${JOYSTREAM_NODE_WS}',
+        '-c',
+        '20',
+        '--out',
+        'postgres://postgres:postgres@db:${DB_PORT}/${SUBSQUID_ARCHIVE_DB_NAME}',
+      ]
 
-  mongo:
-    restart: always
-    container_name: mongo
-    image: library/mongo:4.4
-    volumes:
-      - orion-mongo-data:/data/db
+  squid-archive-gateway:
+      image: subsquid/substrate-gateway:firesquid
+      depends_on:
+        - db
+      restart: unless-stopped
+      env_file:
+        - .env
+      environment:
+        - DB_NAME=${SUBSQUID_ARCHIVE_DB_NAME}
+        - DB_HOST=db
+        - DATABASE_MAX_CONNECTIONS=5
+        - RUST_LOG=actix_web=info,actix_server=info
+      command: [
+          '--database-url',
+          'postgres://postgres:postgres@db:${DB_PORT}/${SUBSQUID_ARCHIVE_DB_NAME}',
+        ]
+      ports:
+        - '127.0.0.1:${SQUID_ARCHIVE_GATEWAY_PORT}:8000'
+
+  orion-processor:
+    image: orion:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_HOST=db
+      - GQL_PORT=${ORION_API_PORT}
+      - ARCHIVE_GATEWAY_URL=http://squid-archive-gateway:${SQUID_ARCHIVE_GATEWAY_PORT}/graphql
+    command: >
+      sh -c "npx squid-typeorm-migration apply && \
+             node lib/processor.js"
+    ports:
+      - '127.0.0.1:${PROCESSOR_PROMETHEUS_PORT}:${PROCESSOR_PROMETHEUS_PORT}'
+
+  orion-api:
+    image: orion:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_HOST=db
+      - GQL_PORT=${ORION_API_PORT}
+    command: ["npm", "run", "query-node-start"]
+    ports:
+      - '${ORION_API_PORT}:${ORION_API_PORT}'
 
 volumes:
   chain-data:
