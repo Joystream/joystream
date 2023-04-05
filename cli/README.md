@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/1.2.0 darwin-x64 node-v14.16.1
+@joystream/cli/1.2.0 darwin-x64 node-v14.18.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -175,6 +175,9 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli membership:updateAccounts`](#joystream-cli-membershipupdateaccounts)
 - [`joystream-cli sign-offline:signUnsignedTx`](#joystream-cli-sign-offlinesignunsignedtx)
 - [`joystream-cli staking:validate`](#joystream-cli-stakingvalidate)
+- [`joystream-cli util:decodeMessage`](#joystream-cli-utildecodemessage)
+- [`joystream-cli util:encodeMessage`](#joystream-cli-utilencodemessage)
+- [`joystream-cli util:messageStructure`](#joystream-cli-utilmessagestructure)
 - [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 - [`joystream-cli working-groups:apply`](#joystream-cli-working-groupsapply)
 - [`joystream-cli working-groups:cancelOpening OPENINGID`](#joystream-cli-working-groupscancelopening-openingid)
@@ -2105,6 +2108,84 @@ OPTIONS
 ```
 
 _See code: [src/commands/staking/validate.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/staking/validate.ts)_
+
+## `joystream-cli util:decodeMessage`
+
+Decode a protobuf message (from hex to json)
+
+```
+USAGE
+  $ joystream-cli util:decodeMessage
+
+OPTIONS
+  --hex=hex
+      (required) Hex-encoded protobuf message'
+
+  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|ChannelPayoutsMetadata|CouncilCandid
+  acyNoteMetadata|ForumPostMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditCom
+  ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
+  ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
+  d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
+  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
+  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
+  etadataAction|ModeratePost|RemarkMetadataAction)
+      Type of the message
+```
+
+_See code: [src/commands/util/decodeMessage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/util/decodeMessage.ts)_
+
+## `joystream-cli util:encodeMessage`
+
+Encode a protobuf message (from json to hex)
+
+```
+USAGE
+  $ joystream-cli util:encodeMessage
+
+OPTIONS
+  -i, --input=input
+      Path to a file containing a JSON-encoded message
+
+  --jsonString=jsonString
+      JSON-encoded message input (eg. '{"videoId":1}'
+
+  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|ChannelPayoutsMetadata|CouncilCandid
+  acyNoteMetadata|ForumPostMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditCom
+  ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
+  ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
+  d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
+  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
+  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
+  etadataAction|ModeratePost|RemarkMetadataAction)
+      Type of the message
+```
+
+_See code: [src/commands/util/encodeMessage.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/util/encodeMessage.ts)_
+
+## `joystream-cli util:messageStructure`
+
+Show message structure (available fields, their types and indexes)
+
+```
+USAGE
+  $ joystream-cli util:messageStructure
+
+OPTIONS
+  --type=(AppActionMetadata|AppAction|BountyMetadata|BountyWorkData|ChannelMetadata|ChannelPayoutsMetadata|CouncilCandid
+  acyNoteMetadata|ForumPostMetadata|ForumThreadMetadata|MembershipMetadata|ReactVideo|ReactComment|CreateComment|EditCom
+  ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
+  ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
+  d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
+  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
+  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
+  etadataAction|ModeratePost|RemarkMetadataAction)
+      Type of the message
+```
+
+_See code: [src/commands/util/messageStructure.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/util/messageStructure.ts)_
 
 ## `joystream-cli working-groups:application WGAPPLICATIONID`
 

@@ -83,10 +83,10 @@ import {
   Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
   Content_ChannelOwnerRemarkedEvent_V1001 as ChannelOwnerRemarkedEvent_V1001,
   Content_ChannelPayoutsUpdatedEvent_V2001 as ChannelPayoutsUpdatedEvent_V2001,
+  Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
   Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
   Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
   Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
-  Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
 } from '../../generated/types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
@@ -252,18 +252,12 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, channelId] = new ChannelDeletedEvent_V1001(event).params
-
-  // TODO: remove manual deletion of referencing records after
-  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
-
-  await removeChannelReferencingRelations(store, channelId.toString())
-
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  await removeChannel(store, channelId)
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
   const [actor, channelId, rationale] = new ChannelDeletedByModeratorEvent_V1001(event).params
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  await removeChannel(store, channelId)
 
   // common event processing - second
 
@@ -425,7 +419,7 @@ async function processOwnerRemark(
   const messageType = decodedMessage.channelOwnerRemarked
 
   if (messageType === 'pinOrUnpinComment') {
-    await processPinOrUnpinCommentMessage(store, event, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
+    await processPinOrUnpinCommentMessage(store, event, channelId, decodedMessage.pinOrUnpinComment!)
 
     return {}
   }
@@ -434,7 +428,6 @@ async function processOwnerRemark(
     await processBanOrUnbanMemberFromChannelMessage(
       store,
       event,
-      contentActor,
       channelId,
       decodedMessage.banOrUnbanMemberFromChannel!
     )
@@ -443,13 +436,7 @@ async function processOwnerRemark(
   }
 
   if (messageType === 'videoReactionsPreference') {
-    await processVideoReactionsPreferenceMessage(
-      store,
-      event,
-      contentActor,
-      channelId,
-      decodedMessage.videoReactionsPreference!
-    )
+    await processVideoReactionsPreferenceMessage(store, event, channelId, decodedMessage.videoReactionsPreference!)
 
     return {}
   }
@@ -668,6 +655,13 @@ export async function processChannelPaymentFromMember(
   await store.save<ChannelPaymentMadeEvent>(paymentMadeEvent)
 
   return paymentMadeEvent
+}
+
+async function removeChannel(store: DatabaseManager, channelId: u64): Promise<void> {
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+  await removeChannelReferencingRelations(store, channelId.toString())
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }
 
 async function removeChannelReferencingRelations(store: DatabaseManager, channelId: string): Promise<void> {
