@@ -79,7 +79,7 @@ jobs:
         if: env.GIT_DIFF
       - name: OnRuntimeUpgrade (try-runtime)
         run: |
-          cargo build --release --features try-runtime
+          cargo +nightly-2022-11-15 build --release --features try-runtime
           RUST_LOG=info,runtime=debug ./target/release/joystream-node try-runtime \
             --runtime ./target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.compressed.wasm \
             on-runtime-upgrade \
