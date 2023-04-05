@@ -133,7 +133,7 @@ mod benches {
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
-        [pallet_bags_list, VoterList]
+        [pallet_bags_list, BagsList]
         [pallet_balances, Balances]
         [pallet_election_provider_multi_phase, ElectionProviderMultiPhase]
         [pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]
