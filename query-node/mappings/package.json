@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "@polkadot/types": "8.9.1",
-    "@joystream/hydra-common": "5.0.0-alpha.1",
-    "@joystream/hydra-db-utils": "5.0.0-alpha.1",
+    "@joystream/hydra-common": "5.0.0-alpha.3",
+    "@joystream/hydra-db-utils": "5.0.0-alpha.3",
     "@joystream/warthog": "^2.41.9",
     "@joystream/js": "^1.4.0",
     "@apollo/client": "^3.2.5"
