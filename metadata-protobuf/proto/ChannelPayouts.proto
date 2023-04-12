@@ -1,0 +1,64 @@
+syntax = "proto2";
+
+message ChannelPayoutsMetadata {
+/**
+ Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
+ This allows first calculating, and then setting the byte offset of each `ChannelPayoutProof` accurately, e.g. 
+ `byte_offset` = `size(Header)` + `position_where_record_for_channel_exists_in_Body`
+ If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutProof` 
+ w.r.t the start of the payload would be improbable since the header size won't be known.
+**/
+  message Header {
+    // Length in bytes of entire payload
+    required fixed64 payload_length_in_bytes = 1;
+
+    // Length in bytes of payload header
+    required fixed64 header_length_in_bytes = 2; 
+
+    // Number of channels
+    required fixed32 number_of_channels = 3; 
+
+    message ChannelPayoutByteOffset {
+      // Channel id 
+      required fixed32 channel_id = 1; 
+    
+      // Byte offset from start of payload where payout record for given channel Id exists
+      required fixed64 byte_offset = 2; 
+    }
+
+    // List of byte offsets for all channels
+    repeated ChannelPayoutByteOffset channel_payout_byte_offsets = 4; 
+  }
+
+  // Channel payout full body structure, it will not be downloaded by clients in full
+  message Body {
+    message ChannelPayoutProof {
+      required uint32 channel_id = 1;
+    
+      // Since protobuf does not support 128 bit unsigned inetgers so string representation is being used
+      // here, after message decoding the string would be converted to BN to pervent precision loss
+      required string cumulative_reward_earned = 2; 
+    
+      enum Side {
+        Left = 0;
+        Right = 1;
+      }
+    
+      message ProofElement {
+        required string hash = 1;
+        required Side side = 2;
+      }
+    
+      repeated ProofElement merkle_branch = 3; 
+    
+      // reward rationale for channel;
+      required string reason = 4; 
+    }
+    
+    // List of channel payouts
+    repeated ChannelPayoutProof channel_payouts = 1; 
+  }
+
+  required Header header = 1; // Payload header
+  required Body body = 2; // Payload body
+}

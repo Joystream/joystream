@@ -73,6 +73,7 @@ fragment ChannelFields on Channel {
     id
   }
   rewardAccount
+  cumulativeRewardClaimed
   videos {
     ...VideoFields
   }

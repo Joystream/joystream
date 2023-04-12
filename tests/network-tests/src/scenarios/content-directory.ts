@@ -8,6 +8,7 @@ import nftAuctionAndOffers from '../flows/content/nftAuctionAndOffers'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 import leadOpening from '../flows/working-groups/leadOpening'
 import { scenario } from '../Scenario'
+import directChannelPayment from '../flows/content/directChannelPayment'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Content directory', async ({ job }) => {
@@ -28,5 +29,9 @@ scenario('Content directory', async ({ job }) => {
   const videoCommentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     curatorModerationActionsJob
   )
-  job('curators and collaborators permissions', collaboratorAndCuratorPermissions).after(videoCommentsAndReactionsJob)
+  const collaboratorAndCuratorPermissionsJob = job(
+    'curators and collaborators permissions',
+    collaboratorAndCuratorPermissions
+  ).after(videoCommentsAndReactionsJob)
+  job('direct channel payment by members', directChannelPayment).after(collaboratorAndCuratorPermissionsJob)
 })

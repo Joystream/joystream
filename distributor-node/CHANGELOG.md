@@ -1,15 +1,22 @@
+### 1.1.0 (Ephesus release)
+
+- `dev:batchUpload` command was removed as it relied on no longer available `sudo` extrinsic
+- Any other references to `sudo` were removed (not affecting any functionality besides the removed `dev:batchUpload` command)
+- Updated `@joystream/types` and `@joystream/metadata-protobuf` dependencies
+- Minor fix for invalid elasticsearch log metadata format in `verbose` mode (https://github.com/Joystream/joystream/issues/3877)
+
 ### 1.0.1
 
 - `@joystream/types` dependency version bump for consistency with mainnet release versioning
 
-### 1.0.0
+### 1.0.0 (Mainnet release)
 
 - Adds connected query-node's state information to the `/status` endpoint.
 - Bumps the major version of the node since it's now Joystream mainnet compatible.
 
-### 0.2.0
+### 0.2.0 (Carthage release)
 
-- **Carthage release:** Support for mime-type provided as part of `SubtitleMetadata` (video subtitles). It is now treated as fallback `mime-type` as long as it's a valid `text/*` type and the `file-type` package fails to detect any type from the file signature (magic number),
+- Support for mime-type provided as part of `SubtitleMetadata` (video subtitles). It is now treated as fallback `mime-type` as long as it's a valid `text/*` type and the `file-type` package fails to detect any type from the file signature (magic number),
 - **Security:** Sensitive information (like private keys) is now hidden in the node's logs,
 - Requesting an asset which has not been accepted by any storage provider yet (`isAccepted == false`) now results in `404: Data object has not been uploaded yet` (previously `500: Failed to download object {id} from any availablable storage provider`),
 - Fixed links in CLI docs,

@@ -12,8 +12,6 @@ import { Utils } from '../../utils'
 import { StakeDecreasedEventFieldsFragment, WorkerFieldsFragment } from '../../graphql/generated/queries'
 
 export class DecreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
-  protected asSudo: boolean
-
   protected workerIds: WorkerId[]
   protected amounts: BN[]
   protected workers: Worker[] = []
@@ -24,13 +22,11 @@ export class DecreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
     query: QueryNodeApi,
     group: WorkingGroupModuleName,
     workerIds: WorkerId[],
-    amounts: BN[],
-    asSudo = false
+    amounts: BN[]
   ) {
     super(api, query, group)
     this.workerIds = workerIds
     this.amounts = amounts
-    this.asSudo = asSudo
   }
 
   protected async loadWorkersData(): Promise<void> {
@@ -43,14 +39,14 @@ export class DecreaseWorkerStakesFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
-    return this.asSudo ? (await this.api.query.sudo.key()).toString() : await this.api.getLeadRoleKey(this.group)
+    return await this.api.getLeadRoleKey(this.group)
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     const extrinsics = this.workerIds.map((workerId, i) =>
       this.api.tx[this.group].decreaseStake(workerId, this.amounts[i])
     )
-    return this.asSudo ? extrinsics.map((tx) => this.api.tx.sudo.sudo(tx)) : extrinsics
+    return extrinsics
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {

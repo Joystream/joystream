@@ -1,39 +1,60 @@
 import { FlowProps } from '../../Flow'
-import { InviteMembersHappyCaseFixture } from '../../fixtures/membership'
-
+import { BuyMembershipHappyCaseFixture, InviteMembersHappyCaseFixture } from '../../fixtures/membership'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { assert } from 'chai'
+import { PassProposalsFixture } from '../../fixtures/proposals'
+import { Utils } from '../../utils'
+import { u64 } from '@polkadot/types'
+import { Resource } from '../../Resources'
 
-export default async function invitingMembers({ api, query, env }: FlowProps): Promise<void> {
+export default async function invitingMembers({ api, query, env, lock }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:inviting-members')
   debug('Started')
   api.enableDebugTxLogs()
 
-  const N: number = +env.MEMBERS_INVITE_N!
+  Utils.assert(env.MEMBERS_INVITE_N)
+  const N: number = +env.MEMBERS_INVITE_N
   assert(N > 0)
 
-  const [, leader] = await api.getLeader('membershipWorkingGroup')
-  const leaderController = await api.getControllerAccountOfMember(leader.memberId)
-  await api.makeSudoCall(api.tx.members.setLeaderInvitationQuota(N * 3))
+  const inviterAccs = (await api.createKeyPairs(3)).map(({ key }) => key.address)
+  const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, inviterAccs)
+  await new FixtureRunner(buyMembershipHappyCaseFixture).run()
+  const inviterMemberIds = buyMembershipHappyCaseFixture.getCreatedMembers()
 
-  const inviteMembers = async () => {
+  // Membership WG balance required
+  const fundBudgetforInvites = async (memberIdFunder: u64, noOfInvitees: number) => {
+    const initialInvitationBalance = (await api.query.members.initialInvitationBalance()).toBn()
+    await api.fundWorkingGroupBudget(
+      'membershipWorkingGroup',
+      memberIdFunder,
+      initialInvitationBalance.muln(noOfInvitees)
+    )
+  }
+
+  assert.isAtLeast(inviterMemberIds.length, 3)
+  for (let i = 0; i < 3; ++i) {
     const inviteesAccs = (await api.createKeyPairs(N)).map(({ key }) => key.address)
+    await fundBudgetforInvites(inviterMemberIds[i], N)
     const inviteMembersHappyCaseFixture = new InviteMembersHappyCaseFixture(
       api,
       query,
-      { account: leaderController, memberId: leader.memberId },
+      { account: inviterAccs[i], memberId: inviterMemberIds[i] },
       inviteesAccs
     )
     await new FixtureRunner(inviteMembersHappyCaseFixture).runWithQueryNodeChecks()
-  }
-
-  await inviteMembers()
-
-  // Update initialInvitationBalance and try again, do it twice just to be sure the correct value is always used
-  for (let i = 0; i < 2; ++i) {
-    await api.makeSudoCall(api.tx.members.setInitialInvitationBalance(10_000_000_000 * i))
-    await inviteMembers()
+    if (i !== 2) {
+      // Update initialInvitationBalance before trying again.
+      // This will be done twice just to be sure the correct initialInvitationBalance value is always used.
+      const passProposalsFixture = new PassProposalsFixture(api, query, [
+        {
+          SetInitialInvitationBalance: Utils.joy(i + 1),
+        },
+      ])
+      const unlockWgSpending = await lock(Resource.MembershipWgBudget)
+      await new FixtureRunner(passProposalsFixture).run()
+      unlockWgSpending()
+    }
   }
 
   debug('Done')

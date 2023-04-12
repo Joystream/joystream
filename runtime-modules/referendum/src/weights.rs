@@ -53,6 +53,7 @@ pub trait WeightInfo {
 	fn reveal_vote_space_replace_last_winner(_i: u32, ) -> Weight;
 	fn reveal_vote_already_existing(_i: u32, ) -> Weight;
 	fn release_vote_stake() -> Weight;
+	fn opt_out_of_voting() -> Weight;
 }
 
 /// Weights for referendum using the Substrate node and recommended hardware.
@@ -74,13 +75,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1 as Weight))
 			.saturating_add(T::DbWeight::get().writes(1 as Weight))
 	}
+	// Storage: Instance1Referendum AccountsOptedOut (r:1 w:0)
 	// Storage: Instance1Referendum Stage (r:1 w:0)
 	// Storage: Instance1Referendum Votes (r:1 w:1)
 	// Storage: Balances Locks (r:1 w:1)
 	// Storage: System Account (r:1 w:1)
 	fn vote() -> Weight {
-		(43_910_000 as Weight)
-			.saturating_add(T::DbWeight::get().reads(4 as Weight))
+		(57_013_000 as Weight)
+            .saturating_add(T::DbWeight::get().reads(5 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
 	// Storage: Instance1Referendum Stage (r:1 w:1)
@@ -136,6 +138,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4 as Weight))
 			.saturating_add(T::DbWeight::get().writes(3 as Weight))
 	}
+	// Storage: Instance1Referendum AccountsOptedOut (r:0 w:1)
+	fn opt_out_of_voting() -> Weight {
+		(22_013_000 as Weight)
+			.saturating_add(T::DbWeight::get().reads(1 as Weight))
+			.saturating_add(T::DbWeight::get().writes(1 as Weight))
+	}
 }
 
 // Default implementation for tests
@@ -162,6 +170,9 @@ impl WeightInfo for () {
 		0
 	}
 	fn release_vote_stake() -> Weight {
+		0
+	}
+	fn opt_out_of_voting() -> Weight {
 		0
 	}
 }

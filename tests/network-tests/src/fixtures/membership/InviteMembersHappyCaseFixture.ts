@@ -10,6 +10,7 @@ import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { asMembershipExternalResource, generateParamsFromAccountId } from './utils'
 import { SubmittableResult } from '@polkadot/api'
+import BN from 'bn.js'
 
 type MemberInvitedEventDetails = EventDetails<EventType<'members', 'MemberInvited'>>
 
@@ -17,6 +18,8 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
   protected inviterContext: MemberContext
   protected accounts: string[]
   protected initialInvitesCount?: number
+  protected initialInvitationBalance?: BN
+  protected expectedWGBudget?: BN
   protected events: MemberInvitedEventDetails[] = []
 
   public constructor(api: Api, query: QueryNodeApi, inviterContext: MemberContext, accounts: string[]) {
@@ -97,6 +100,8 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
     assert.equal(qEvent.metadata.name, metadata.name)
     assert.equal(qEvent.metadata.about, metadata.about)
     assert.equal(qEvent.metadata.avatar?.avatarUri, metadata.avatarUri || undefined)
+    Utils.assert(this.initialInvitationBalance, 'Initial invitation balance not set')
+    assert.equal(qEvent.initialBalance.toString(), this.initialInvitationBalance.toString())
     assert.includeDeepMembers(
       qEvent.metadata.externalResources ?? [],
       metadata.externalResources?.map(asMembershipExternalResource) ?? []
@@ -104,18 +109,21 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
   }
 
   async execute(): Promise<void> {
-    const initialInvitationBalance = await this.api.query.members.initialInvitationBalance()
-    const initialWgBudget = initialInvitationBalance.muln(this.accounts.length)
-    // Top up working group budget to allow funding invited members
-    await this.api.makeSudoCall(this.api.tx.membershipWorkingGroup.setBudget(initialWgBudget))
+    // Membership WG balance MUST be already set up to support addition of new members
     // Load initial invites count
     this.initialInvitesCount = (await this.api.query.members.membershipById(this.inviterContext.memberId))
       .unwrap()
       .invites.toNumber()
+    // Load initial invitation balance
+    this.initialInvitationBalance = await this.api.query.members.initialInvitationBalance()
+    const initialWgBudget = await this.api.query.membershipWorkingGroup.budget()
+    const requiredBudget = this.initialInvitationBalance.muln(this.accounts.length)
     // Execute
     await super.execute()
+    // Verify WG budget
     const postExecutionWgBudget = await this.api.query.membershipWorkingGroup.budget()
-    assert.equal(postExecutionWgBudget.toString(), '0')
+    this.expectedWGBudget = initialWgBudget.sub(requiredBudget)
+    assert.equal(postExecutionWgBudget.toString(), this.expectedWGBudget.toString())
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -135,16 +143,18 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
 
     const { inviteCount, invitees } = qInviter
     // Assert that inviteCount was correctly updated
-    assert.equal(inviteCount, this.initialInvitesCount! - this.accounts.length)
+    Utils.assert(this.initialInvitesCount, 'Initial invites count not set')
+    assert.equal(inviteCount, this.initialInvitesCount - this.accounts.length)
     // Assert that all invited members are part of "invitees" field
     assert.isNotEmpty(invitees)
     assert.includeMembers(
       invitees.map(({ id }) => id),
       invitedMembersIds.map((id) => id.toString())
     )
-
+    // Verify WG budget in the QN
     const membershipWg = await this.query.getWorkingGroup('membershipWorkingGroup')
-    Utils.assert(membershipWg)
-    assert.equal(membershipWg.budget, '0')
+    Utils.assert(membershipWg, 'QN: membershipWorkingGroup not found')
+    Utils.assert(this.expectedWGBudget, 'Expected WG budget not set')
+    assert.equal(membershipWg.budget.toString(), this.expectedWGBudget.toString())
   }
 }

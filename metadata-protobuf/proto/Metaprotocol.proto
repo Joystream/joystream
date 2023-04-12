@@ -113,6 +113,18 @@ message CreateVideoCategory {
     optional string parent_category_id = 3;
 }
 
+message MakeChannelPayment {
+    // Reason why payment is being made
+    optional string rationale = 1;
+
+    // Context of payment, if it is being made for channel or specific video.
+    // default is assumed to be `channel` if no conext provided
+    oneof payment_context {
+        uint64 video_id = 2;
+        // Other possible contexts, e.g. playlist etc.
+    }
+}
+
 message AppMetadata {
     // Url where user can read more about the project or company for this app
     optional string website_url = 2;
@@ -153,6 +165,8 @@ message MemberRemarked {
         CreateVideoCategory create_video_category = 6;
         CreateApp create_app = 7;
         UpdateApp update_app = 8;
+        // DeleteApp delete_app = 9;
+        MakeChannelPayment make_channel_payment = 10;
     }
 }
 

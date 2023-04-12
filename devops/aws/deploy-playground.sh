@@ -52,7 +52,6 @@ if [ $? -eq 0 ]; then
     --extra-vars "branch_name=$BRANCH_NAME git_repo=$GIT_REPO skip_chain_setup=$SKIP_CHAIN_SETUP
                   stack_name=$STACK_NAME runtime_profile=$RUNTIME_PROFILE
                   ssh_pub_key='${SSH_PUB_KEY}'
-                  sudo_suri='${SUDO_SURI}'
                   treasury_suri='${TREASURY_SURI}'
                   initial_balances='${INITIAL_BALANCES}'
                   init_chain_scenario='${INIT_CHAIN_SCENARIO}'"

@@ -1036,6 +1036,10 @@ declare module '@polkadot/api-base/types/storage' {
     };
     referendum: {
       /**
+       * Accounts that permanently opted out of voting in referendum.
+       **/
+      accountsOptedOut: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Null>, [AccountId32]>;
+      /**
        * Current referendum stage.
        **/
       stage: AugmentedQuery<ApiType, () => Observable<PalletReferendumReferendumStage>, []>;
@@ -1446,12 +1450,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-    };
-    sudo: {
-      /**
-       * The `AccountId` of the sudo key.
-       **/
-      key: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []>;
     };
     system: {
       /**

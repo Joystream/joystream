@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
 import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Balance, Call } from '@polkadot/types/interfaces'
+import { Balance } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'
 import { IEvent } from '@polkadot/types/types'
 import { DispatchError } from '@polkadot/types/interfaces/system'
@@ -66,10 +66,6 @@ export class RuntimeApi {
     return this._api.createType.bind(this._api)
   }
 
-  public sudo(tx: SubmittableExtrinsic<'promise'>): SubmittableExtrinsic<'promise'> {
-    return this._api.tx.sudo.sudo(tx)
-  }
-
   public async estimateFee(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<Balance> {
     const paymentInfo = await tx.paymentInfo(account)
     return paymentInfo.partialFee
@@ -105,11 +101,7 @@ export class RuntimeApi {
   }
 
   sendExtrinsic(keyPair: KeyringPair, tx: SubmittableExtrinsic<'promise'>): Promise<SubmittableResult> {
-    let txName = `${tx.method.section}.${tx.method.method}`
-    if (txName === 'sudo.sudo') {
-      const innerCall = tx.args[0] as Call
-      txName = `sudo.sudo(${innerCall.section}.${innerCall.method})`
-    }
+    const txName = `${tx.method.section}.${tx.method.method}`
     this.logger.info(`Sending ${txName} extrinsic from ${keyPair.address}`)
     return new Promise((resolve, reject) => {
       let unsubscribe: () => void
@@ -129,22 +121,7 @@ export class RuntimeApi {
                   new ExtrinsicFailedError(`Extrinsic execution error: ${this.formatDispatchError(dispatchError)}`)
                 )
               } else if (event.method === 'ExtrinsicSuccess') {
-                const sudidEvent = this.findEvent(result, 'sudo', 'Sudid')
-
-                if (sudidEvent) {
-                  const [dispatchResult] = sudidEvent.data
-                  if (dispatchResult.isOk) {
-                    resolve(result)
-                  } else {
-                    reject(
-                      new ExtrinsicFailedError(
-                        `Sudo extrinsic execution error! ${this.formatDispatchError(dispatchResult.asErr)}`
-                      )
-                    )
-                  }
-                } else {
-                  resolve(result)
-                }
+                resolve(result)
               }
             })
         } else if (result.isError) {

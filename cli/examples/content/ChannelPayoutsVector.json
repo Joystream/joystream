@@ -1,0 +1,52 @@
+[
+  {
+    "channelId": 1,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for most viewed video"
+  },
+  {
+    "channelId": 2,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for best channel in sports category"
+  },
+  {
+    "channelId": 3,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for best content creator"
+  },
+  {
+    "channelId": 4,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for most viewed video"
+  },
+  {
+    "channelId": 5,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for best channel in sports category"
+  },
+  {
+    "channelId": 6,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for best content creator"
+  },
+  {
+    "channelId": 7,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for most viewed video"
+  },
+  {
+    "channelId": 8,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for best channel in sports category"
+  },
+  {
+    "channelId": 9,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for best content creator"
+  },
+  {
+    "channelId": 10,
+    "cumulativeRewardEarned": "2666666666660",
+    "reason": "reward for most viewed video"
+  }
+]

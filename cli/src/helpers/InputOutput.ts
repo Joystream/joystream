@@ -76,6 +76,16 @@ export function saveOutputJsonToFile(outputFilePath: string, data: any): void {
   }
 }
 
+export function saveOutputToFile(outputFilePath: string, data: any): void {
+  try {
+    fs.writeFileSync(outputFilePath, data)
+  } catch (e) {
+    throw new CLIError(`Could not save the output to: ${outputFilePath}. Check permissions...`, {
+      exit: ExitCodes.FsOperationFailed,
+    })
+  }
+}
+
 export function ensureOutputFileIsWriteable(outputFilePath: string | undefined): void {
   if (outputFilePath === undefined) {
     return

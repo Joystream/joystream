@@ -50,12 +50,12 @@ export function getVideoCategoryDefaults(index: number) {
   }
 }
 
-export function getChannelDefaults(cliExamplesFolderPath: string) {
+export function getChannelDefaults(cliExamplesFolderPath: string, withAssets = true) {
   return {
     title: 'Active video counters Testing channel',
     description: 'Channel for testing active video counters.',
-    avatarPhotoPath: cliExamplesFolderPath + '/avatar-photo-1.png',
-    coverPhotoPath: cliExamplesFolderPath + '/cover-photo-1.png',
+    avatarPhotoPath: withAssets ? cliExamplesFolderPath + '/avatar-photo-1.png' : undefined,
+    coverPhotoPath: withAssets ? cliExamplesFolderPath + '/cover-photo-1.png' : undefined,
     isPublic: true,
     language: 'en',
   }

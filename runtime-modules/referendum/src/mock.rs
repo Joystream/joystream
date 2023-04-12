@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
+    AccountsOptedOut, BalanceOf, CastVote, Config, Error, Instance, Module, OptionResult, RawEvent,
     ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
     Votes,
 };
@@ -13,12 +13,11 @@ use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
     ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
-
 use frame_support::{
     parameter_types, storage::weak_bounded_vec::WeakBoundedVec, traits::EnsureOneOf, StorageMap,
     StorageValue,
 };
-use frame_system::{EnsureRoot, EnsureSigned, RawOrigin};
+use frame_system::{ensure_signed, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
 use sp_core::H256;
 use sp_runtime::traits::One;
@@ -757,6 +756,36 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .unwrap()
                 .event,
             Event::Referendum(RawEvent::StakeReleased(account_id))
+        );
+    }
+
+    pub fn opt_out_of_voting(
+        origin: OriginType<<Runtime as frame_system::Config>::AccountId>,
+        expected_result: Result<(), Error<Runtime, DefaultInstance>>,
+    ) -> () {
+        let mock_origin = InstanceMockUtils::<Runtime, DefaultInstance>::mock_origin(origin);
+        assert_eq!(
+            Module::<Runtime>::opt_out_of_voting(mock_origin.clone()),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        // check if the account was added to AccountsOptedOut
+        let account_id = ensure_signed(mock_origin).unwrap();
+        assert!(AccountsOptedOut::<Runtime, DefaultInstance>::contains_key(
+            &account_id
+        ));
+
+        // check event was emitted
+        assert_eq!(
+            frame_system::Pallet::<Runtime>::events()
+                .last()
+                .unwrap()
+                .event,
+            Event::Referendum(RawEvent::AccountOptedOutOfVoting(account_id))
         );
     }
 }

@@ -3,7 +3,7 @@ import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { App, Membership } from 'query-node/dist/model'
-import { logger, inconsistentState } from '../common'
+import { logger, unexpectedData } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
@@ -22,7 +22,7 @@ export async function processCreateAppMessage(
   })
 
   if (isAppExists) {
-    inconsistentState('App already exists', { name })
+    unexpectedData('App already exists', { name })
   }
 
   const newApp = new App({
@@ -55,11 +55,11 @@ export async function processUpdateAppMessage(
   const app = await getAppById(store, appId)
 
   if (!app) {
-    inconsistentState("App doesn't exists", { appId })
+    unexpectedData("App doesn't exists", { appId })
   }
 
   if (app.ownerMember.id !== memberId) {
-    inconsistentState("App doesn't belong to the member", { appId, memberId })
+    unexpectedData("App doesn't belong to the member", { appId, memberId })
   }
 
   if (appMetadata) {

@@ -1,7 +1,7 @@
-version: '4.0'
+version: '5.0'
 description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: '4'
+hydraVersion: '5'
 dataSource:
   kind: substrate
   chain: joystream
@@ -9,7 +9,7 @@ entities:
   - generated/graphql-server/dist/src/modules/**/*.model.js
 typegen:
   metadata:
-    source: ../chain-metadata.json
+    source: ./chain-metadata/
   events:
     # Membership
     - members.MembershipBought
@@ -103,6 +103,10 @@ typegen:
     - content.ChannelVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
+    - content.ChannelPayoutsUpdated
+    - content.ChannelRewardUpdated
+    - content.ChannelFundsWithdrawn
+    - content.ChannelRewardClaimedAndWithdrawn
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -153,6 +157,7 @@ typegen:
     - council.BudgetIncrementUpdated
     - council.CouncilorRewardUpdated
     - council.RequestFunded
+    - council.CouncilBudgetFunded
     # Referendum
     - referendum.ReferendumStarted
     - referendum.ReferendumStartedForcefully
@@ -198,9 +203,7 @@ typegen:
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
   outDir: ./mappings/generated/types
-  customTypes:
-    lib: '@joystream/types/augment/all/types'
-    typedefsLoc: '../types/augment/all/defs.json'
+  typegenBinPath: ../node_modules/.bin/polkadot-types-from-defs
 mappings:
   # js module that exports the handler functions
   mappingsModule: mappings/lib/src
@@ -757,6 +760,14 @@ mappings:
       handler: content_VideoVisibilitySetByModerator
     - event: content.ChannelVisibilitySetByModerator
       handler: content_ChannelVisibilitySetByModerator
+    - event: content.ChannelPayoutsUpdated
+      handler: content_ChannelPayoutsUpdated
+    - event: content.ChannelRewardUpdated
+      handler: content_ChannelRewardUpdated
+    - event: content.ChannelFundsWithdrawn
+      handler: content_ChannelFundsWithdrawn
+    - event: content.ChannelRewardClaimedAndWithdrawn
+      handler: content_ChannelRewardClaimedAndWithdrawn
 
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked
@@ -895,6 +906,8 @@ mappings:
       handler: council_CouncilorRewardUpdated
     - event: council.RequestFunded
       handler: council_RequestFunded
+    - event: council.CouncilBudgetFunded
+      handler: council_CouncilBudgetFunded
     # Referendum
     - event: referendum.ReferendumStarted
       handler: referendum_ReferendumStarted

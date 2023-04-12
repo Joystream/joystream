@@ -100,25 +100,6 @@ export class Sender {
           }
         } else {
           assert(success)
-          const sudid = result.findRecord('sudo', 'Sudid')
-          if (sudid) {
-            const dispatchResult = sudid.event.data[0] as DispatchResult
-            assert(dispatchResult)
-            if (dispatchResult.isError) {
-              const err = dispatchResult.asError
-              if (err.isModule) {
-                try {
-                  const { name } = this.api.registry.findMetaError(err.asModule)
-                  this.debug('Sudo Dispatch Failed', name, sentTx)
-                } catch (findmetaerror) {
-                  // example Error: findMetaError: Unable to find Error with index 0x1400/[{"index":20,"error":0}]
-                  this.debug('Sudo Dispatch Failed (error details not found)', err.asModule.toHuman(), sentTx)
-                }
-              } else {
-                this.debug('Sudo Dispatch Failed', err.toHuman(), sentTx)
-              }
-            }
-          }
         }
       }
 

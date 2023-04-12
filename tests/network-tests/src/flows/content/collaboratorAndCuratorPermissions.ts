@@ -1,7 +1,7 @@
 import BN from 'bn.js'
-import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import {
   AddCuratorToCuratorGroupFixture,
   AddCuratorToGroupParams,
@@ -9,11 +9,11 @@ import {
   CreateCuratorGroupFixture,
   CreateMembersFixture,
   CuratorGroupParams,
-  UpdateChannelCollaboratorsFixture,
   DeleteChannelWithVideosFixture,
+  UpdateChannelCollaboratorsFixture,
 } from '../../fixtures/content'
-import { createJoystreamCli } from '../utils'
 import { DeleteChannelAsModeratorFixture } from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
+import { createJoystreamCli } from '../utils'
 
 export default async function collaboratorCuratorPermissions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:collaborator-and-curator-permissions')
@@ -26,7 +26,7 @@ export default async function collaboratorCuratorPermissions({ api, query }: Flo
   // settings
   const testingPermissions = ['AddVideo', 'DeleteVideo'] as AddCuratorToGroupParams['permissions']
   const extraTestingPermissions = ['UpdateVideoMetadata'] as AddCuratorToGroupParams['permissions']
-  const memberCount = 1
+  const memberCount = 2
   const curatorCount = 1
   const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
@@ -37,7 +37,7 @@ export default async function collaboratorCuratorPermissions({ api, query }: Flo
   await new FixtureRunner(createMembersFixture).run()
 
   const {
-    members: [author],
+    members: [author, collaborator],
     curators: [curatorId],
   } = createMembersFixture.getCreatedItems()
 
@@ -72,9 +72,9 @@ export default async function collaboratorCuratorPermissions({ api, query }: Flo
   const notUsed = 0
   const notUsedString = ''
   const channelsCount = 2
-  const collaborators = [{ memberId: curatorId.toNumber(), permissions: testingPermissions }]
+  const collaborators = [{ memberId: collaborator.memberId.toNumber(), permissions: testingPermissions }]
   const nextCollaborators = [
-    { memberId: curatorId.toNumber(), permissions: testingPermissions.concat(extraTestingPermissions) },
+    { memberId: collaborator.memberId.toNumber(), permissions: testingPermissions.concat(extraTestingPermissions) },
   ]
 
   const createChannelsAndVideosFixture = new CreateChannelsAndVideosFixture(

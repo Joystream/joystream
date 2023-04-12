@@ -56,9 +56,26 @@ import {
   ProposalDiscussionThread,
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
+  UpdateChannelPayoutsProposalDetails,
 } from 'query-node/dist/model'
-import { bytesToString, genericEventFields, getWorkingGroupModuleName, INT32MAX, toNumber } from './common'
-import { ProposalsEngine, ProposalsCodex } from '../generated/types'
+import {
+  asBN,
+  bytesToString,
+  genericEventFields,
+  getWorkingGroupModuleName,
+  INT32MAX,
+  toNumber,
+  unwrap,
+  whenDef,
+} from './common'
+import {
+  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
+  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
+  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
+  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
+  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
+} from '../generated/types'
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
@@ -270,6 +287,21 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asVetoProposal
     details.proposalId = specificDetails.toString()
     return details
+  }
+  // UpdateChannelPayoutsProposalDetails
+  else if (proposalDetails.isUpdateChannelPayouts) {
+    const details = new UpdateChannelPayoutsProposalDetails()
+    const specificDetails = proposalDetails.asUpdateChannelPayouts
+
+    details.commitment = unwrap(specificDetails.commitment)?.toString()
+    details.minCashoutAllowed = whenDef(unwrap(specificDetails.minCashoutAllowed), asBN)
+    details.maxCashoutAllowed = whenDef(unwrap(specificDetails.maxCashoutAllowed), asBN)
+    details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
+
+    const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
+    details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
+
+    return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
   }
@@ -303,7 +335,7 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
 
 export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    new ProposalsCodex.ProposalCreatedEvent(event).params
+    new ProposalCreatedEvent_V1001(event).params
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
@@ -344,7 +376,7 @@ export async function proposalsEngine_ProposalStatusUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, status] = new ProposalsEngine.ProposalStatusUpdatedEvent(event).params
+  const [proposalId, status] = new ProposalStatusUpdatedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let newStatus: typeof ProposalIntermediateStatus
@@ -376,7 +408,7 @@ export async function proposalsEngine_ProposalDecisionMade({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, decision] = new ProposalsEngine.ProposalDecisionMadeEvent(event).params
+  const [proposalId, decision] = new ProposalDecisionMadeEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let decisionStatus: typeof ProposalDecisionStatus
@@ -432,7 +464,7 @@ export async function proposalsEngine_ProposalDecisionMade({
 }
 
 export async function proposalsEngine_ProposalExecuted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, executionStatus] = new ProposalsEngine.ProposalExecutedEvent(event).params
+  const [proposalId, executionStatus] = new ProposalExecutedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let newStatus: typeof ProposalExecutionStatus
@@ -440,7 +472,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     newStatus = new ProposalStatusExecuted()
   } else if (executionStatus.isExecutionFailed) {
     const status = new ProposalStatusExecutionFailed()
-    status.errorMessage = executionStatus.asExecutionFailed.error.toString()
+    status.errorMessage = executionStatus.asExecutionFailed.error.toHuman() as string
     newStatus = status
   } else {
     throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)
@@ -465,7 +497,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
 }
 
 export async function proposalsEngine_Voted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalsEngine.VotedEvent(event).params
+  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalVotedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let vote: ProposalVoteKind
@@ -494,7 +526,7 @@ export async function proposalsEngine_Voted({ store, event }: EventContext & Sto
 }
 
 export async function proposalsEngine_ProposalCancelled({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, proposalId] = new ProposalsEngine.ProposalCancelledEvent(event).params
+  const [, proposalId] = new ProposalCancelledEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   const proposalCancelledEvent = new ProposalCancelledEvent({

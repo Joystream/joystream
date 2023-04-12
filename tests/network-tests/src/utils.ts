@@ -11,6 +11,8 @@ import { BLOCKTIME } from './consts'
 import { MetadataInput } from './types'
 import { encodeDecode, metaToObject } from '@joystream/metadata-protobuf/utils'
 import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { createHash } from 'blake3-wasm'
+import * as multihash from 'multihashes'
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
@@ -45,7 +47,7 @@ export class Utils {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
-  public static readRuntimeFromFile(path: string): string {
+  public static readContentFromFile(path: string): string {
     return '0x' + fs.readFileSync(path).toString('hex')
   }
 
@@ -64,6 +66,19 @@ export class Utils {
   public static metadataFromBytes<T>(metaClass: AnyMetadataClass<T>, bytes: Bytes): DecodedMetadataObject<T> {
     // We use `toObject()` to get rid of .prototype defaults for optional fields
     return metaToObject(metaClass, metaClass.decode(bytes.toU8a(true)))
+  }
+
+  public static async calculateFileHash(filePath: string): Promise<string> {
+    const fileStream = fs.createReadStream(filePath)
+
+    let blake3Hash: Uint8Array
+    return new Promise<string>((resolve, reject) => {
+      fileStream
+        .pipe(createHash())
+        .on('data', (data) => (blake3Hash = data))
+        .on('end', () => resolve(multihash.toB58String(multihash.encode(blake3Hash, 'blake3'))))
+        .on('error', (err) => reject(err))
+    })
   }
 
   public static getDeserializedMetadataFormInput<T>(
@@ -126,7 +141,7 @@ export class Utils {
   ): Promise<void> {
     const debug = extendDebug(`awaiting:${name}`)
     return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timoeut reached`)), timeoutMs)
+      const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timeout reached`)), timeoutMs)
       const check = async () => {
         if (await conditionFunc({ debug })) {
           clearInterval(interval)

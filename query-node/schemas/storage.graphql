@@ -173,6 +173,10 @@ type DataObjectTypeVideoSubtitle @variant {
   video: Video!
 }
 
+type DataObjectTypeChannelPayoutsPayload @variant {
+  _phantom: Int
+}
+
 type DataObjectTypeUnknown @variant {
   _phantom: Int
 }
@@ -183,6 +187,7 @@ union DataObjectType =
   | DataObjectTypeVideoMedia
   | DataObjectTypeVideoThumbnail
   | DataObjectTypeVideoSubtitle
+  | DataObjectTypeChannelPayoutsPayload
   | DataObjectTypeUnknown
 
 type StorageDataObject @entity {
