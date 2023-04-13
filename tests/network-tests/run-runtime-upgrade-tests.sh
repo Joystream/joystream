@@ -179,11 +179,13 @@ function main {
     # 4. copy chainspec to disk
     export_chainspec_file_to_disk
     echo >&2 "chainspec exported"
-    # 5. start node
+    # 5. start node using new binary to test rpc endpoint code being different
+    # than runtime version to look for breaking decoding of types early.
+    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
     CONTAINER_ID=$(start_old_joystream_node)
     echo >&2 "mainnet node starting"
 
-    # wait 1 minute
+    # Wait for chain and query node to get in sync
     sleep 90
 
     # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
