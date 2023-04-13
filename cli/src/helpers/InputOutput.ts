@@ -10,7 +10,7 @@ export const IOFlags = {
   input: flags.string({
     char: 'i',
     required: false,
-    description: `Path to JSON file to use as input (if not specified - the input can be provided interactively)`,
+    description: `Path to JSON file to use as input`,
   }),
   output: flags.string({
     char: 'o',
