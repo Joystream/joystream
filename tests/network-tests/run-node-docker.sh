@@ -18,7 +18,7 @@ RUNTIME=${RUNTIME:=$(../../scripts/runtime-code-shasum.sh)}
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=$(docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
 
@@ -47,7 +47,7 @@ else
 fi
 
 # Create a chain spec file
-docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
+docker run --pull never --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
   --fund-accounts \
   --authorities //Alice \
@@ -56,7 +56,7 @@ docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystrea
   --initial-balances-path /spec/initial-balances.json
 
 # Convert the chain spec file to a raw chainspec file
-docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
+docker run --pull never --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
   --chain /spec/chain-spec.json > ${DATA_PATH}/chain-spec-raw.json
 
