@@ -69,13 +69,16 @@ function create_raw_chain_spec() {
 }
 
 # Start a chain with generated chain spec
-function start_old_joystream_node {
-    docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
+function start_joystream_node {
+    docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec \
+        -v ${DATA_PATH}/chain:/chain \
+        --name joystream-node \
         -p 9944:9944 -p 9933:9933 joystream-node \
         --validator --unsafe-ws-external --unsafe-rpc-external \
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
         --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
-        --keystore-path /spec/keystore/auth-0
+        --keystore-path /spec/keystore/auth-0 \
+        --base-path /chain
 }
 
 #######################################
@@ -179,10 +182,8 @@ function main {
     # 4. copy chainspec to disk
     export_chainspec_file_to_disk
     echo >&2 "chainspec exported"
-    # 5. start node using new binary to test rpc endpoint code being different
-    # than runtime version to look for breaking decoding of types early.
-    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
-    CONTAINER_ID=$(start_old_joystream_node)
+    # 5. start node
+    CONTAINER_ID=$(start_joystream_node)
     echo >&2 "mainnet node starting"
 
     # Wait for chain and query node to get in sync
@@ -196,6 +197,16 @@ function main {
     fi
 
     ./run-test-scenario.sh runtimeUpgrade
+
+    # 7. start node using new binary
+    docker stop ${CONTAINER_ID}
+    docker rm ${CONTAINER_ID}
+    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
+    CONTAINER_ID=$(start_joystream_node)
+    echo >&2 "restarting node with new binary"
+
+    sleep 90
+
     ./run-test-scenario.sh content-directory
 }
 
