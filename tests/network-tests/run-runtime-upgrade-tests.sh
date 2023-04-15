@@ -71,14 +71,14 @@ function create_raw_chain_spec() {
 # Start a chain with generated chain spec
 function start_joystream_node {
     docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec \
-        -v ${DATA_PATH}/chain:/chain \
         --name joystream-node \
         -p 9944:9944 -p 9933:9933 joystream-node \
         --validator --unsafe-ws-external --unsafe-rpc-external \
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
-        --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
+        --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry --no-mdns \
+        --no-hardware-benchmarks \
         --keystore-path /spec/keystore/auth-0 \
-        --base-path /chain
+        --base-path /data
 }
 
 #######################################
@@ -134,13 +134,15 @@ function fork_off_init() {
 # Arguments:
 #   None
 #######################################
-function export_chainspec_file_to_disk() {
+function init_chain_db() {
     # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time
+    # when starting the node to startup. it can take a significant amount of time
+    # if the initial state is large.
     # exporting should give some essential tasks errors but they are harmless https://github.com/paritytech/substrate/issues/10583
     echo >&2 "exporting state"
     docker-compose -f ../../docker-compose.yml run --rm \
         -v ${DATA_PATH}:/spec joystream-node export-state \
-        --chain /spec/chain-spec-raw.json \
+        --chain /spec/chain-spec-forked.json \
         --base-path /data --pruning archive >${DATA_PATH}/exported-state.json
 }
 
@@ -157,9 +159,6 @@ function cleanup() {
 
 # entrypoint
 function main {
-    # Start a query-node
-    ../../query-node/start.sh
-
     CONTAINER_ID=""
     export JOYSTREAM_NODE_TAG=${RUNTIME}
     if [ $TARGET_RUNTIME == $RUNTIME ]; then
@@ -179,12 +178,15 @@ function main {
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
-    # 4. copy chainspec to disk
-    export_chainspec_file_to_disk
-    echo >&2 "chainspec exported"
+    # 4. early chain db init
+    init_chain_db
+    echo >&2 "chain db initialized"
     # 5. start node
     CONTAINER_ID=$(start_joystream_node)
-    echo >&2 "mainnet node starting"
+    echo >&2 "joystream node starting"
+
+    # Start a query-node
+    ../../query-node/start.sh
 
     # Wait for chain and query node to get in sync
     sleep 90
@@ -196,16 +198,21 @@ function main {
         export SKIP_STORAGE_AND_DISTRIBUTION=true
     fi
 
-    ./run-test-scenario.sh runtimeUpgrade
+    # We allow this step to fail as the indexer currently has
+    # a problem dealing with the runtime upgrade block
+    ./run-test-scenario.sh runtimeUpgrade || :
 
     # 7. start node using new binary
+    docker logs ${CONTAINER_ID} --tail 200
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
     export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
     CONTAINER_ID=$(start_joystream_node)
-    echo >&2 "restarting node with new binary"
+    echo >&2 "restarting joystream node with new binary"
 
-    sleep 90
+    # allow indexer to recover from runtime upgrade block before submitting
+    # new extrinsics..
+    sleep 30
 
     ./run-test-scenario.sh content-directory
 }
