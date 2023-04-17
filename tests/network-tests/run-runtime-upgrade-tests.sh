@@ -4,9 +4,6 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-# Log only to stderr
-# Only output from this script should be the container id of the node at the very end
-
 # Location that will be mounted to /spec in containers
 # This is where the initial balances files and generated chainspec files will be located.
 DATA_PATH=$PWD/data
@@ -146,21 +143,8 @@ function init_chain_db() {
         --base-path /data --pruning archive >${DATA_PATH}/exported-state.json
 }
 
-# cleanup
-function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 100
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-    docker logs processor --tail 100 || :
-    docker logs indexer --tail 100 || :
-    docker-compose -f ../../docker-compose.yml down -v --remove-orphans
-    docker volume prune -f # sometimes volumes are still running
-}
-
 # entrypoint
 function main {
-    CONTAINER_ID=""
-    export JOYSTREAM_NODE_TAG=${RUNTIME}
     if [ $TARGET_RUNTIME == $RUNTIME ]; then
         echo >&2 "Same tag for runtime and target runtime aborting..."
         exit 1
@@ -178,6 +162,9 @@ function main {
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
+
+    CONTAINER_ID=""
+    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
     # 4. early chain db init
     init_chain_db
     echo >&2 "chain db initialized"
@@ -202,16 +189,9 @@ function main {
     # a problem dealing with the runtime upgrade block
     ./run-test-scenario.sh runtimeUpgrade || :
 
-    # 7. start node using new binary
-    docker logs ${CONTAINER_ID} --tail 200
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
-    CONTAINER_ID=$(start_joystream_node)
-    echo >&2 "restarting joystream node with new binary"
+    # restart indexer
+    docker restart indexer
 
-    # allow indexer to recover from runtime upgrade block before submitting
-    # new extrinsics..
     sleep 30
 
     ./run-test-scenario.sh content-directory
