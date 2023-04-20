@@ -1,3 +1,7 @@
+### 1.2.1
+
+- Bumped Hydra dependencies to `5.0.0-alpha.4` to include processor syncing bug fix: https://github.com/Joystream/hydra/issues/519
+
 ### 1.2.0 (Ephesus Release)
 
 - Adds support to the Query Node for successfully processing the events across Runtime upgrades.
