@@ -177,7 +177,7 @@ jobs:
 
   runtime_upgrade:
     name: Runtime Upgrade from production runtime
-    needs: [build_images]
+    needs: build_images
     runs-on: ubuntu-latest
     steps:
       # Checkout master branch
@@ -187,14 +187,14 @@ jobs:
           repository: Joystream/joystream
           ref: master
 
-      - name: compute base runtime shasum
+      - name: pull base runtime image
+        id: pull_base_image
         env:
           RUNTIME_PROFILE: 'TESTING'
         run: |
-          export BASE_RUNTIME=`scripts/runtime-code-shasum.sh`
-      - name: pull base runtime
-        run: |
-          docker pull joystream/node:${{ RUNTIME }}
+          export RUNTIME=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME}"
+          docker pull joystream/node:$RUNTIME
           docker images
 
       # Get new runtime built for this workflow (target runtime)
@@ -209,8 +209,10 @@ jobs:
           docker images
 
       # Checkout workflow's branch/tag/commit
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: checkout workflow branch
+        uses: actions/checkout@v3
+      - name: setup node
+        uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Install packages and dependencies
@@ -220,8 +222,8 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         env:
-          RUNTIME: ${{ BASE_RUNTIME }}
           TARGET_RUNTIME: latest
+          RUNTIME: ${{ steps.pull_base_image.outputs.shasum }}
         run: |
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
