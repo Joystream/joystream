@@ -1,0 +1,41 @@
+# Publish production runtime build joystream/node:latest
+name: joystream-node-docker-publish
+
+on:
+  - workflow_dispatch
+
+env:
+  REPOSITORY: joystream/node
+
+jobs:
+  repo-check:
+    name: Check if main image already published
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '14.x'
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
+        run: |
+          export TAG_SHASUM=`scripts/runtime-code-shasum.sh`
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Publish joystream/node:latest manifest
+        run: |
+          IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
+          LATEST_TAG=${{ env.REPOSITORY }}:latest
+          docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64
+          docker manifest annotate $LATEST_TAG $IMAGE-amd64 --arch amd64
+          docker manifest annotate $LATEST_TAG $IMAGE-arm64 --arch arm64
+          docker manifest push $LATEST_TAG
