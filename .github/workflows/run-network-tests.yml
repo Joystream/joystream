@@ -175,112 +175,44 @@ jobs:
           export NO_STORAGE=${{ matrix.no_storage }}
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
-  build_master_testing:
-    name: Build joystream node images for mainnet-testing
+  runtime_upgrade:
+    name: Runtime Upgrade from production runtime
+    needs: [build_images]
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
-    outputs:
-      use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
+      # Checkout master branch
       - name: check out master repo
         uses: actions/checkout@v3
         with:
           repository: Joystream/joystream
           ref: master
 
-      - id: compute_shasum
+      - name: compute base runtime shasum
         env:
           RUNTIME_PROFILE: 'TESTING'
         run: |
-          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
-          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
-
-      - name: Setup cache directory
-        run: mkdir ~/docker-images
-
-      - name: Cache docker images
-        uses: actions/cache@v3
-        env:
-          cache-name: joystream-node-docker-image-master
-        with:
-          path: ~/docker-images
-          key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
-
-      - name: Check if we have cached image
-        continue-on-error: true
+          export BASE_RUNTIME=`scripts/runtime-code-shasum.sh`
+      - name: pull base runtime
         run: |
-          if [ -f ~/docker-images/joystream-node-docker-image-master.tar.gz ]; then
-            docker load --input ~/docker-images/joystream-node-docker-image-master.tar.gz
-            cp ~/docker-images/joystream-node-docker-image-master.tar.gz .
-          fi
+          docker pull joystream/node:${{ RUNTIME }}
+          docker images
 
-      - name: Check if we have pre-built image on Dockerhub
-        continue-on-error: true
+      # Get new runtime built for this workflow (target runtime)
+      # tagged in local repo as joystream/node:latest
+      - name: Get artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.build_images.outputs.use_artifact }}
+      - name: Install artifacts
         run: |
-          if ! [ -f joystream-node-docker-image-master.tar.gz ]; then
-            docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:mainnetDev
-            docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetDev
-            gzip joystream-node-docker-image.tar
-            cp joystream-node-docker-image-master.tar.gz ~/docker-images/
-          fi
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
 
-      - name: Check we now have an image
-        id: check_master_image
-        uses: andstor/file-existence-action@v1
-        with:
-          files: 'joystream-node-docker-image-master.tar.gz'
-
-      - name: Set up Docker Buildx master
-        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
-        id: builder2
-        if: steps.check_master_image.outputs.files_exists == 'false'
-
-      - name: Build master image
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: joystream-node.Dockerfile
-          platforms: linux/amd64
-          build-args: |
-            CARGO_FEATURES=testing-runtime
-            CODE_SHASUM=${{ steps.compute_shasum_master.outputs.shasum }}
-          push: false
-          tags: joystream/node:mainnetDev
-          builder: ${{ steps.builder2.outputs.name }}
-          load: true
-        if: steps.check_master_image.outputs.files_exists == 'false'
-
-      - name: Save joystream/node image to cache
-        run: |
-          docker save --output joystream-node-docker-image-master.tar joystream/node:mainnetDev
-          gzip joystream-node-docker-image-master.tar
-          cp joystream-node-docker-image-master.tar.gz ~/docker-images/
-        if: steps.check_master_image.outputs.files_exists == 'false'
-
-      - name: Save joystream/node image (master) to Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
-          path: joystream-node-docker-image-master.tar.gz
-
-  runtime_upgrade:
-    name: Runtime Upgrade From production runtime
-    needs: [build_master_testing, build_images]
-    if: github.ref != 'refs/heads/master'
-    runs-on: ubuntu-latest
-    steps:
+      # Checkout workflow's branch/tag/commit
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: '14.x'
-      - name: Install artifacts
-        uses: actions/download-artifact@v3
-      - name: load docker images
-        run: |
-          docker load --input ${{needs.build_images.outputs.use_artifact}}/*
-          docker load --input ${{needs.build_master_testing.outputs.use_artifact}}/*
-          docker images
       - name: Install packages and dependencies
         run: |
           yarn build:packages
@@ -288,7 +220,7 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         env:
-          RUNTIME: mainnetDev
+          RUNTIME: ${{ BASE_RUNTIME }}
           TARGET_RUNTIME: latest
         run: |
           export HOME=${PWD}
