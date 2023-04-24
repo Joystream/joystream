@@ -45,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+      runtime: ${{ steps.compute_shasum.outputs.shasum }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -65,7 +66,7 @@ jobs:
       - name: Cache docker images
         uses: actions/cache@v3
         env:
-          cache-name: joystream-node-docker
+          cache-name: joystream-node-docker-1
         with:
           path: ~/docker-images
           key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
@@ -83,8 +84,7 @@ jobs:
         run: |
           if ! [ -f joystream-node-docker-image.tar.gz ]; then
             docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:latest
-            docker save --output joystream-node-docker-image.tar joystream/node:latest
+            docker save --output joystream-node-docker-image.tar joystream/node:${{ steps.compute_shasum.outputs.shasum }}
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
           fi
@@ -117,7 +117,7 @@ jobs:
             CARGO_FEATURES=testing-runtime
             CODE_SHASUM=${{ steps.compute_shasum.outputs.shasum }}
           push: false
-          tags: joystream/node
+          tags: joystream/node:${{ steps.compute_shasum.outputs.shasum }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
           builder: ${{ steps.builder1.outputs.name }}
@@ -126,7 +126,7 @@ jobs:
 
       - name: Save joystream/node image to cache
         run: |
-          docker save --output joystream-node-docker-image.tar joystream/node
+          docker save --output joystream-node-docker-image.tar joystream/node:${{ steps.compute_shasum.outputs.shasum }}
           gzip joystream-node-docker-image.tar
           cp joystream-node-docker-image.tar.gz ~/docker-images/
         if: steps.check_files.outputs.files_exists == 'false'
@@ -171,7 +171,7 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         run: |
-          export RUNTIME=latest
+          export RUNTIME=${{ needs.build_images.outputs.runtime }}
           export NO_STORAGE=${{ matrix.no_storage }}
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
@@ -222,7 +222,7 @@ jobs:
         run: yarn workspace network-tests build
       - name: Execute network tests
         env:
-          TARGET_RUNTIME: latest
+          TARGET_RUNTIME: ${{ needs.build_images.outputs.runtime }}
           RUNTIME: ${{ steps.pull_base_image.outputs.shasum }}
         run: |
           export HOME=${PWD}
