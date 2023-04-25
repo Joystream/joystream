@@ -1,3 +1,8 @@
+### 3.2.0
+
+- Updated `joystream/types` and `@joystream/metadata-protobuf` dependencies.
+- Dropped `sudo` based dev commands
+
 ### 3.1.1
 
 - `@joystream/types` dependency version bump for consistency with mainnet release versioning
