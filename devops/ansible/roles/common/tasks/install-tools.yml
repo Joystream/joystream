@@ -1,16 +1,10 @@
 ---
 # Install developer tools
 
-- name: Install aptitude
-  become: true
-  apt:
-    name: aptitude
-    state: latest
-    update_cache: true
-
 - name: Install required system packages
   become: true
   apt:
+    update_cache: yes
     pkg:
       - coreutils
       - apt-transport-https
