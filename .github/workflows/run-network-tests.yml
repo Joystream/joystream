@@ -211,16 +211,31 @@ jobs:
       # Checkout workflow's branch/tag/commit
       - name: checkout workflow branch
         uses: actions/checkout@v3
+      - name: Check for runtime code changes
+        uses: technote-space/get-diff-action@v3
+        with:
+          PREFIX_FILTER: |
+            bin
+            runtime
+            runtime-modules
+          SUFFIX_FILTER: |
+            .rs
+          FILES: |
+            Cargo.lock
+            Cargo.toml
       - name: setup node
         uses: actions/setup-node@v3
         with:
           node-version: '14.x'
       - name: Install packages and dependencies
+        if: env.GIT_DIFF
         run: |
           yarn build:packages
       - name: Ensure tests are runnable
+        if: env.GIT_DIFF
         run: yarn workspace network-tests build
       - name: Execute network tests
+        if: env.GIT_DIFF
         env:
           TARGET_RUNTIME: ${{ needs.build_images.outputs.runtime }}
           RUNTIME: ${{ steps.pull_base_image.outputs.shasum }}
