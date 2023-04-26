@@ -179,6 +179,7 @@ jobs:
     name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/master'
     steps:
       # Checkout master branch
       - name: check out master repo
