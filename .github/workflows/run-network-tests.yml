@@ -216,7 +216,6 @@ jobs:
         uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
-            bin
             runtime
             runtime-modules
           SUFFIX_FILTER: |
