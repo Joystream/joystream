@@ -31,6 +31,8 @@
       - cmake
       - dpkg
       - lsb-release
+      - protobuf-compiler
+      - libprotobuf-dev
     state: latest
 
 - name: Add Docker GPG Key and repo
