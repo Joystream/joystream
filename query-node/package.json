@@ -1,6 +1,6 @@
 {
   "name": "query-node-root",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "GraphQL server and mappings. Generated with ♥ by Hydra-CLI",
   "scripts": {
     "build": "./build.sh",
@@ -37,7 +37,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@joystream/hydra-processor": "5.0.0-alpha.1",
+    "@joystream/hydra-processor": "5.0.0-alpha.4",
     "@types/bn.js": "^5.1.0",
     "bn.js": "^5.2.1",
     "tslib": "^2.0.0"

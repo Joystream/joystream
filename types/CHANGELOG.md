@@ -1,3 +1,11 @@
+### 2.1.0
+
+- Bumped version for dependants version release to get the proper types version. [ref](https://github.com/Joystream/joystream/commit/f899922645013cd5aad6d8036aeae2180f123cf7)
+
+### 2.0.0 (Ephesus release)
+
+- Generated Ephesus augment api from metadata
+
 ### 1.0.0
 
 - No changes, version bumped for consistency with mainnet release versioning.
