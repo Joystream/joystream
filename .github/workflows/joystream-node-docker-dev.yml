@@ -47,15 +47,34 @@ jobs:
           export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }} > /dev/null ; echo $?)
           echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        # uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
+        uses: docker/setup-buildx-action@v2
+        id: builder1
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx
+        if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: joystream-node.Dockerfile
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           build-args: |
             CARGO_FEATURES=${{ matrix.cargo_features }}
             CODE_SHASUM=${{ steps.compute_shasum.outputs.shasum }}
           push: true
           tags: ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache
+          builder: ${{ steps.builder1.outputs.name }}
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
