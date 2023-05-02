@@ -60,7 +60,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx
+          key: ${{ runner.os }}-buildx-dev
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
 
       - name: Build and push
