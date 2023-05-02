@@ -62,7 +62,7 @@ pallet-staking = { package = 'pallet-staking', default-features = false, git = '
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-substrate-utility = { package = 'pallet-utility', version = "4.0.0-dev", default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+substrate-utility = { package = 'pallet-utility', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-staking-runtime-api = { package = 'pallet-staking-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
@@ -90,7 +90,7 @@ pallet-constitution = { package = 'pallet-constitution', default-features = fals
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../runtime-modules/staking-handler'}
 bounty = { package = 'pallet-bounty', default-features = false, path = '../runtime-modules/bounty'}
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content'}
-joystream-utility = { package = 'pallet-utility', default-features = false, path = '../runtime-modules/utility'}
+joystream-utility = { package = 'pallet-joystream-utility', default-features = false, path = '../runtime-modules/utility'}
 project-token = { package = 'pallet-project-token', default-features = false, path = '../runtime-modules/project-token'}
 
 [dev-dependencies]

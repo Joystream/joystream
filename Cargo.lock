@@ -827,6 +827,7 @@ dependencies = [
  "pallet-content",
  "pallet-council",
  "pallet-forum",
+ "pallet-joystream-utility",
  "pallet-membership",
  "pallet-project-token",
  "pallet-proposals-codex",
@@ -835,7 +836,6 @@ dependencies = [
  "pallet-referendum",
  "pallet-staking-handler",
  "pallet-storage",
- "pallet-utility 2.0.0",
  "pallet-working-group",
 ]
 
@@ -3441,6 +3441,7 @@ dependencies = [
  "pallet-grandpa",
  "pallet-im-online",
  "pallet-insecure-randomness-collective-flip",
+ "pallet-joystream-utility",
  "pallet-membership",
  "pallet-multisig",
  "pallet-offences",
@@ -3460,8 +3461,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "pallet-utility 2.0.0",
- "pallet-utility 4.0.0-dev",
+ "pallet-utility",
  "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
@@ -5392,6 +5392,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-joystream-utility"
+version = "2.0.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-council",
+ "pallet-membership",
+ "pallet-referendum",
+ "pallet-staking-handler",
+ "pallet-timestamp",
+ "pallet-working-group",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "strum 0.19.5",
+]
+
+[[package]]
 name = "pallet-membership"
 version = "6.0.0"
 dependencies = [
@@ -5819,32 +5845,6 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-transaction-storage-proof",
-]
-
-[[package]]
-name = "pallet-utility"
-version = "2.0.0"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "pallet-balances",
- "pallet-common",
- "pallet-council",
- "pallet-membership",
- "pallet-referendum",
- "pallet-staking-handler",
- "pallet-timestamp",
- "pallet-working-group",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-arithmetic",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "strum 0.19.5",
 ]
 
 [[package]]
