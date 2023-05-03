@@ -176,7 +176,7 @@ function main {
     ../../query-node/start.sh
 
     # Wait for chain and query node to get in sync
-    sleep 90
+    sleep 200
 
     # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
     if [ "${NO_STORAGE}" != true ]; then
@@ -202,9 +202,9 @@ function main {
     # restart indexer
     docker restart indexer
 
-    sleep 30
+    sleep 90
 
-    ./run-test-scenario.sh post-runtime-upgrade
+    ./run-test-scenario.sh postRuntimeUpgrade
 
     ./run-test-scenario.sh content-directory
 }
