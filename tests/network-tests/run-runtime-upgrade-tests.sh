@@ -164,7 +164,7 @@ function main {
     echo >&2 "new wasm path set"
 
     CONTAINER_ID=""
-    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
+    export JOYSTREAM_NODE_TAG=${RUNTIME}
     # 4. early chain db init
     init_chain_db
     echo >&2 "chain db initialized"
@@ -189,10 +189,22 @@ function main {
     # a problem dealing with the runtime upgrade block
     ./run-test-scenario.sh runtimeUpgrade || :
 
+    # stop joystream-node, but don't remove volumes
+    echo >&2 "stopping joystream-node"
+    docker stop ${CONTAINER_ID}
+    docker rm ${CONTAINER_ID}
+
+    # start new joystream-node - ensure that new node is compatible with old database
+    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
+    CONTAINER_ID=$(start_joystream_node)
+    echo >&2 "starting new joystream-node"
+
     # restart indexer
     docker restart indexer
 
     sleep 30
+
+    ./run-test-scenario.sh post-runtime-upgrade
 
     ./run-test-scenario.sh content-directory
 }
