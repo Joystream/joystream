@@ -68,7 +68,9 @@ jobs:
         with:
           context: .
           file: joystream-node.Dockerfile
-          platforms: linux/amd64,linux/arm64
+          # arm64 cross compiling takes longer than 6h, so we only build for amd64
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           build-args: |
             CARGO_FEATURES=${{ matrix.cargo_features }}
             CODE_SHASUM=${{ steps.compute_shasum.outputs.shasum }}
