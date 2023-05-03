@@ -868,8 +868,8 @@ declare module '@polkadot/types/lookup' {
     readonly type: 'Winner' | 'Rejected';
   }
 
-  /** @name PalletUtilityRawEvent (101) */
-  export interface PalletUtilityRawEvent extends Enum {
+  /** @name PalletJoystreamUtilityRawEvent (101) */
+  export interface PalletJoystreamUtilityRawEvent extends Enum {
     readonly isSignaled: boolean;
     readonly asSignaled: Bytes;
     readonly isRuntimeUpgraded: boolean;
@@ -3356,6 +3356,29 @@ declare module '@polkadot/types/lookup' {
     readonly type: 'CreateBounty' | 'FundBounty' | 'TerminateBounty' | 'SwitchOracle' | 'WithdrawFunding' | 'AnnounceWorkEntry' | 'SubmitWork' | 'EndWorkingPeriod' | 'SubmitOracleJudgment' | 'WithdrawEntrantStake' | 'WithdrawOracleReward' | 'ContributorRemark' | 'OracleRemark' | 'EntrantRemark' | 'CreatorRemark';
   }
 
+  /** @name PalletJoystreamUtilityCall (384) */
+  export interface PalletJoystreamUtilityCall extends Enum {
+    readonly isExecuteSignalProposal: boolean;
+    readonly asExecuteSignalProposal: {
+      readonly signal: Bytes;
+    } & Struct;
+    readonly isExecuteRuntimeUpgradeProposal: boolean;
+    readonly asExecuteRuntimeUpgradeProposal: {
+      readonly wasm: Bytes;
+    } & Struct;
+    readonly isUpdateWorkingGroupBudget: boolean;
+    readonly asUpdateWorkingGroupBudget: {
+      readonly workingGroup: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
+      readonly amount: u128;
+      readonly balanceKind: PalletCommonBalanceKind;
+    } & Struct;
+    readonly isBurnAccountTokens: boolean;
+    readonly asBurnAccountTokens: {
+      readonly amount: u128;
+    } & Struct;
+    readonly type: 'ExecuteSignalProposal' | 'ExecuteRuntimeUpgradeProposal' | 'UpdateWorkingGroupBudget' | 'BurnAccountTokens';
+  }
+
   /** @name PalletContentCall (385) */
   export interface PalletContentCall extends Enum {
     readonly isCreateCuratorGroup: boolean;
@@ -4918,6 +4941,14 @@ declare module '@polkadot/types/lookup' {
     readonly isWorkEntryDoesntBelongToWorker: boolean;
     readonly isOracleRewardAlreadyWithdrawn: boolean;
     readonly type: 'ArithmeticError' | 'MinFundingAmountCannotBeGreaterThanMaxAmount' | 'BountyDoesntExist' | 'SwitchOracleOriginIsRoot' | 'InvalidStageUnexpectedFunding' | 'InvalidStageUnexpectedNoFundingContributed' | 'InvalidStageUnexpectedCancelled' | 'InvalidStageUnexpectedWorkSubmission' | 'InvalidStageUnexpectedJudgment' | 'InvalidStageUnexpectedSuccessfulBountyWithdrawal' | 'InvalidStageUnexpectedFailedBountyWithdrawal' | 'InsufficientBalanceForBounty' | 'NoBountyContributionFound' | 'InsufficientBalanceForStake' | 'ConflictingStakes' | 'WorkEntryDoesntExist' | 'CherryLessThenMinimumAllowed' | 'CannotSubmitWorkToClosedContractBounty' | 'ClosedContractMemberListIsEmpty' | 'ClosedContractMemberListIsTooLarge' | 'ClosedContractMemberNotFound' | 'InvalidOracleMemberId' | 'InvalidStakingAccountForMember' | 'ZeroWinnerReward' | 'TotalRewardShouldBeEqualToTotalFunding' | 'EntrantStakeIsLessThanMininum' | 'FundingAmountCannotBeZero' | 'FundingPeriodCannotBeZero' | 'WinnerShouldHasWorkSubmission' | 'InvalidContributorActorSpecified' | 'InvalidOracleActorSpecified' | 'InvalidEntrantWorkerSpecified' | 'InvalidCreatorActorSpecified' | 'WorkEntryDoesntBelongToWorker' | 'OracleRewardAlreadyWithdrawn';
+  }
+
+  /** @name PalletJoystreamUtilityError (548) */
+  export interface PalletJoystreamUtilityError extends Enum {
+    readonly isInsufficientFundsForBudgetUpdate: boolean;
+    readonly isZeroTokensBurn: boolean;
+    readonly isInsufficientFundsForBurn: boolean;
+    readonly type: 'InsufficientFundsForBudgetUpdate' | 'ZeroTokensBurn' | 'InsufficientFundsForBurn';
   }
 
   /** @name PalletContentVideoRecord (549) */

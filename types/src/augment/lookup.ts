@@ -781,9 +781,9 @@ export default {
     }
   },
   /**
-   * Lookup101: pallet_utility::RawEvent<Balance, sp_core::crypto::AccountId32>
+   * Lookup101: pallet_joystream_utility::RawEvent<Balance, sp_core::crypto::AccountId32>
    **/
-  PalletUtilityRawEvent: {
+  PalletJoystreamUtilityRawEvent: {
     _enum: {
       Signaled: 'Bytes',
       RuntimeUpgraded: 'Bytes',
@@ -2901,6 +2901,27 @@ export default {
     }
   },
   /**
+   * Lookup384: pallet_joystream_utility::Call<T>
+   **/
+  PalletJoystreamUtilityCall: {
+    _enum: {
+      execute_signal_proposal: {
+        signal: 'Bytes',
+      },
+      execute_runtime_upgrade_proposal: {
+        wasm: 'Bytes',
+      },
+      update_working_group_budget: {
+        workingGroup: 'PalletCommonWorkingGroupIterableEnumsWorkingGroup',
+        amount: 'u128',
+        balanceKind: 'PalletCommonBalanceKind',
+      },
+      burn_account_tokens: {
+        amount: 'u128'
+      }
+    }
+  },
+  /**
    * Lookup385: pallet_content::Call<T>
    **/
   PalletContentCall: {
@@ -4201,6 +4222,12 @@ export default {
    **/
   PalletBountyError: {
     _enum: ['ArithmeticError', 'MinFundingAmountCannotBeGreaterThanMaxAmount', 'BountyDoesntExist', 'SwitchOracleOriginIsRoot', 'InvalidStageUnexpectedFunding', 'InvalidStageUnexpectedNoFundingContributed', 'InvalidStageUnexpectedCancelled', 'InvalidStageUnexpectedWorkSubmission', 'InvalidStageUnexpectedJudgment', 'InvalidStageUnexpectedSuccessfulBountyWithdrawal', 'InvalidStageUnexpectedFailedBountyWithdrawal', 'InsufficientBalanceForBounty', 'NoBountyContributionFound', 'InsufficientBalanceForStake', 'ConflictingStakes', 'WorkEntryDoesntExist', 'CherryLessThenMinimumAllowed', 'CannotSubmitWorkToClosedContractBounty', 'ClosedContractMemberListIsEmpty', 'ClosedContractMemberListIsTooLarge', 'ClosedContractMemberNotFound', 'InvalidOracleMemberId', 'InvalidStakingAccountForMember', 'ZeroWinnerReward', 'TotalRewardShouldBeEqualToTotalFunding', 'EntrantStakeIsLessThanMininum', 'FundingAmountCannotBeZero', 'FundingPeriodCannotBeZero', 'WinnerShouldHasWorkSubmission', 'InvalidContributorActorSpecified', 'InvalidOracleActorSpecified', 'InvalidEntrantWorkerSpecified', 'InvalidCreatorActorSpecified', 'WorkEntryDoesntBelongToWorker', 'OracleRewardAlreadyWithdrawn']
+  },
+  /**
+   * Lookup548: pallet_joystream_utility::Error<T>
+   **/
+  PalletJoystreamUtilityError: {
+    _enum: ['InsufficientFundsForBudgetUpdate', 'ZeroTokensBurn', 'InsufficientFundsForBurn']
   },
   /**
    * Lookup549: pallet_content::types::VideoRecord<ChannelId, pallet_content::nft::types::OwnedNft<pallet_content::nft::types::TransactionalStatusRecord<MemberId, Balance, pallet_content::nft::types::EnglishAuctionRecord<BlockNumber, Balance, MemberId, bounded_collections::bounded_btree_set::BoundedBTreeSet<T, S>>, pallet_content::nft::types::OpenAuctionRecord<BlockNumber, AuctionId, Balance, bounded_collections::bounded_btree_set::BoundedBTreeSet<T, S>>>, MemberId, AuctionId>, bounded_collections::bounded_btree_set::BoundedBTreeSet<T, S>, pallet_common::bloat_bond::RepayableBloatBond<sp_core::crypto::AccountId32, Balance>>
