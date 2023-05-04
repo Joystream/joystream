@@ -48,6 +48,7 @@ impl TokenDataBuilder {
             revenue_split: self.revenue_split,
             next_revenue_split_id: 0u32,
             revenue_split_rate: self.revenue_split_rate,
+            amm_curve: None,
         }
     }
 
@@ -56,10 +57,6 @@ impl TokenDataBuilder {
             revenue_split_rate,
             ..self
         }
-    }
-
-    pub fn with_symbol(self, symbol: <Test as frame_system::Config>::Hash) -> Self {
-        Self { symbol, ..self }
     }
 
     pub fn with_supply(self, supply: Balance) -> Self {
@@ -121,6 +118,9 @@ impl GenesisConfigBuilder {
             min_revenue_split_duration: MIN_REVENUE_SPLIT_DURATION.into(),
             min_revenue_split_time_to_start: MIN_REVENUE_SPLIT_TIME_TO_START.into(),
             sale_platform_fee: Permill::zero(),
+            amm_deactivation_threshold: Permill::from_percent(5),
+            bond_tx_fees: DEFAULT_AMM_BUY_FEES,
+            unbond_tx_fees: DEFAULT_AMM_SELL_FEES,
         }
     }
 
@@ -194,6 +194,9 @@ impl GenesisConfigBuilder {
             min_revenue_split_duration: self.min_revenue_split_duration,
             min_revenue_split_time_to_start: self.min_revenue_split_time_to_start,
             sale_platform_fee: self.sale_platform_fee,
+            amm_deactivation_threshold: self.amm_deactivation_threshold,
+            amm_buy_tx_fees: self.bond_tx_fees,
+            amm_sell_tx_fees: self.unbond_tx_fees,
         }
     }
 }

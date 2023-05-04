@@ -33,11 +33,12 @@ use frame_support::{
     PalletId,
 };
 use frame_system::ensure_signed;
+use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
-    Permill,
+    traits::{AccountIdConversion, CheckedAdd, Convert, UniqueSaturatedInto},
+    PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
@@ -72,7 +73,7 @@ type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
 /// Pallet Configuration
 pub trait Config:
-    frame_system::Config + balances::Config + storage::Config + membership::Config
+    frame_system::Config + balances::Config + storage::Config + membership::Config + timestamp::Config
 {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -166,6 +167,15 @@ decl_storage! { generate_storage_info
 
         /// Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
+
+        /// Percentage threshold for deactivating the amm functionality
+        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
+
+        /// AMM buy transaction fee percentage
+        pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill;
+
+        /// AMM sell transaction fee percentage
+        pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
     }
 
     add_extra_genesis {
@@ -190,7 +200,7 @@ decl_storage! { generate_storage_info
             // - https://github.com/Joystream/joystream/issues/3497
             // - https://github.com/Joystream/joystream/issues/3510
 
-            let module_account_id = crate::Module::<T>::module_treasury_account();
+            let module_account_id = Module::<T>::module_treasury_account();
             let deposit = T::JoyExistentialDeposit::get();
 
             let _ = Joy::<T>::deposit_creating(&module_account_id, deposit);
@@ -803,6 +813,165 @@ decl_module! {
             Self::deposit_event(RawEvent::RevenueSplitLeft(token_id, member_id, staking_info.amount));
             Ok(())
         }
+
+        /// Mint desired `token_id` amount into user account via JOY exchnage
+        /// Preconditions
+        /// - origin, member_id pair must be a valid authentication pair
+        /// - token_id must exist
+        /// - user usable JOY balance must be enough for buying (+ existential deposit)
+        /// - deadline constraint respected if provided
+        /// - slippage tolerance constraints respected if provided
+        /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        ///
+        /// Postconditions
+        /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
+        /// - respective JOY amount transferred from user balance to amm treasury account
+        /// - event deposited
+        #[weight = 100_000_000] // TODO: adjust weight
+        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+            if amount.is_zero() {
+                return Ok(()); // noop
+            }
+
+            let sender = ensure_signed(origin.clone())?;
+
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
+
+            let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
+            let amm_treasury_account = Self::amm_treasury_account(token_id);
+            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Buy)?;
+            let bloat_bond = Self::bloat_bond();
+            let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
+
+            let joys_required = if !user_account_data_exists {
+                buy_price.saturating_add(bloat_bond)
+            } else {
+                buy_price
+            };
+
+            Self::ensure_can_transfer_joy(&sender, joys_required)?;
+
+            // slippage tolerance check
+            if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
+                ensure!(price.saturating_sub(desired_price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+            }
+
+            // timestamp deadline check
+            if let Some(deadline) = deadline {
+                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
+            }
+
+            // == MUTATION SAFE ==
+
+            if !user_account_data_exists {
+               let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
+                            amount,
+                            // No restrictions on repayable bloat bond,
+                            // since only usable balance is allowed
+                            RepayableBloatBond::new(bloat_bond, None)
+                    );
+                Self::do_insert_new_account_for_token(token_id, &member_id, new_account_info);
+                Self::transfer_joy(&sender, &amm_treasury_account, bloat_bond)?;
+            } else {
+                AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                    account_data.increase_amount_by(amount);
+                });
+            }
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.increase_supply_by(amount);
+                token_data.increase_amm_bought_amount_by(amount);
+            });
+
+            // TODO: redirect tx fees revenue to council
+            Self::transfer_joy(&sender, &amm_treasury_account, buy_price)?;
+
+            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, buy_price));
+
+            Ok(())
+        }
+
+        /// Burn desired `token_id` amount from user account and get JOY from treasury account
+        /// Preconditions
+        /// - origin, member_id pair must be a valid authentication pair
+        /// - token_id must exist
+        /// - token_id, member_id must be valid account coordinates
+        /// - user usable CRT balance must be at least `amount`
+        /// - deadline constraint respected if provided
+        /// - slippage tolerance constraints respected if provided
+        /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        /// - amm treasury account must have sufficient JOYs for the operation
+        ///
+        /// Postconditions
+        /// - `amount` burned from user account
+        /// - total supply decreased by amount
+        /// - respective JOY amount transferred from amm treasury account to user account
+        /// - event deposited
+        #[weight = 100_000_000] // TODO: adjust weight
+        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+            if amount.is_zero() {
+                return Ok(()); // noop
+            }
+
+            let sender = ensure_signed(origin.clone())?;
+
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
+            let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
+
+            ensure!(
+                user_acc_data.transferrable::<T>(Self::current_block()) >= amount,
+                Error::<T>::InsufficientTokenBalance,
+            );
+
+            let amm_treasury_account = Self::amm_treasury_account(token_id);
+
+            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Sell)?;
+
+            // slippage tolerance check
+            if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
+                ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+            }
+
+            // timestamp deadline check
+            if let Some(deadline) = deadline {
+                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
+            }
+
+            let sell_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);
+
+            // TODO: redirect tx fees revenue to council
+            Self::ensure_can_transfer_joy(&amm_treasury_account, sell_price)?;
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                account_data.decrease_amount_by(amount);
+            });
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.decrease_supply_by(amount);
+                token_data.decrease_amm_bought_amount_by(amount);
+            });
+
+            Self::transfer_joy(&amm_treasury_account, &sender, sell_price)?;
+
+            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
+
+            Ok(())
+        }
+
     }
 }
 
@@ -817,6 +986,7 @@ impl<T: Config>
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
         TransfersWithVestingOf<T>,
+        AmmParams,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -835,6 +1005,15 @@ impl<T: Config>
             return token_info.sale.is_none();
         }
         true
+    }
+
+    /// Establish whether AMM is active
+    /// Postconditions: true if token @ token_id exists && has active AMM, false otherwise
+    fn is_amm_active(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return OfferingStateOf::<T>::ensure_amm_of::<T>(&token_info).is_ok();
+        }
+        false
     }
 
     /// Change to permissionless
@@ -1351,6 +1530,81 @@ impl<T: Config>
 
         Ok(sale.funds_collected)
     }
+
+    /// Activate Amm functionality for the token
+    /// Preconditions
+    /// - token_id must exist
+    /// - offering state for `token_id` must be `Idle`
+    ///
+    /// Postconditions
+    /// - token `amm_curve` activated with specified parameters
+    /// - amm treasuryaccount created with existential deposit (if necessary)
+    /// - event deposited
+    fn activate_amm(
+        token_id: T::TokenId,
+        member_id: T::MemberId,
+        params: AmmParams,
+    ) -> DispatchResult {
+        let token_data = Self::ensure_token_exists(token_id)?;
+
+        ensure!(
+            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(),
+            Error::<T>::TokenIssuanceNotInIdleState
+        );
+
+        // == MUTATION SAFE ==
+
+        let curve = AmmCurveOf::<T>::from_params(params);
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.amm_curve = Some(curve.clone())
+        });
+
+        // deposit existential deposit if the account is newly created
+        let amm_treasury_account = Self::amm_treasury_account(token_id);
+        if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
+            let _ =
+                Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
+        }
+
+        Self::deposit_event(RawEvent::AmmActivated(token_id, member_id, curve));
+
+        Ok(())
+    }
+
+    /// Deactivate the amm functionality
+    /// Preconditions
+    /// - (origin, member_id) must be a valid authentication pair
+    /// - token_id must be a valid
+    /// - token must be in `Amm` state
+    ///
+    /// Postconditions
+    /// - Amm Curve set to None
+    /// - state set to idle
+    /// - event deposited
+    fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        let token_data = Self::ensure_token_exists(token_id)?;
+        Self::ensure_amm_can_be_deactivated(&token_data)?;
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.amm_curve = None;
+        });
+
+        // burn amount exceeding existential deposit
+        let amm_treasury_account = Self::amm_treasury_account(token_id);
+        let amount_to_burn = Joy::<T>::usable_balance(&amm_treasury_account)
+            .saturating_sub(T::JoyExistentialDeposit::get());
+        let _ = burn_from_usable::<T>(&amm_treasury_account, amount_to_burn);
+
+        Self::deposit_event(RawEvent::AmmDeactivated(
+            token_id,
+            member_id,
+            amount_to_burn,
+        ));
+
+        Ok(())
+    }
 }
 
 /// Module implementation
@@ -1622,6 +1876,11 @@ impl<T: Config> Module<T> {
         <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 
+    /// Returns the account for the AMM treasury
+    pub fn amm_treasury_account(token_id: T::TokenId) -> T::AccountId {
+        <T as Config>::ModuleId::get().into_sub_account_truncating(&("AMM", token_id))
+    }
+
     pub(crate) fn validate_destination(
         dst: T::MemberId,
         dst_acc_data: &Option<AccountDataOf<T>>,
@@ -1869,5 +2128,18 @@ impl<T: Config> Module<T> {
             )
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
+    }
+
+    pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
+        let AmmCurve {
+            provided_supply, ..
+        } = OfferingStateOf::<T>::ensure_amm_of::<T>(token)?;
+        let threshold = Self::amm_deactivation_threshold();
+        let pct_of_issuance_minted = Permill::from_rational(provided_supply, token.total_supply);
+        ensure!(
+            pct_of_issuance_minted <= threshold,
+            Error::<T>::OutstandingAmmProvidedSupplyTooLarge,
+        );
+        Ok(())
     }
 }

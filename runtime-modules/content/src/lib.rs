@@ -35,7 +35,7 @@ pub mod weights;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
+    AmmParams, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
     UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
@@ -185,6 +185,7 @@ pub trait Config:
         TokenSaleParamsOf<Self>,
         UploadContextOf<Self>,
         TransfersWithVestingOf<Self>,
+        AmmParams,
     >;
 
     /// Minimum cashout allowed limit
@@ -3076,6 +3077,11 @@ decl_module! {
                     T::ProjectToken::is_sale_unscheduled(token_id),
                     Error::<T>::ChannelTransfersBlockedDuringTokenSales,
                 );
+
+                ensure!(
+                    !T::ProjectToken::is_amm_active(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringActiveAmm
+                );
             }
 
             //
@@ -3756,6 +3762,70 @@ decl_module! {
             ChannelById::<T>::mutate(&channel_id, |channel| {
                 channel.creator_token_id = None;
             });
+        }
+
+        /// Activate Amm functionality for token
+        #[weight = 100_000_000] // TODO: Adjust weight
+        pub fn activate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: AmmParams,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_activate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::activate_amm(
+                token_id,
+                member_id,
+                params,
+            )?;
+
+        }
+
+        /// Deactivate Amm functionality for token
+        #[weight = 100_000_000] // TODO: Adjust weight
+        pub fn deactivate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_deactivate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::deactivate_amm(
+                token_id,
+                member_id,
+            )?;
+
         }
     }
 }

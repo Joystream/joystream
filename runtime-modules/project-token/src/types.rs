@@ -11,7 +11,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Unsigned, Zero};
 use sp_runtime::{
-    traits::{Convert, Hash, UniqueSaturatedInto},
+    traits::{CheckedAdd, CheckedMul, CheckedSub, Convert, Hash, UniqueSaturatedInto},
     PerThing, Permill, Perquintill, SaturatedConversion,
 };
 use sp_std::{
@@ -115,6 +115,9 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
 
     /// Latest Token Revenue split (active / inactive)
     pub next_revenue_split_id: RevenueSplitId,
+
+    /// Amm Curve functionality
+    pub amm_curve: Option<AmmCurve<Balance>>,
 }
 
 /// Revenue Split State
@@ -569,9 +572,86 @@ where
     }
 }
 
+/// Represents token's amm with linear pricing function y = ax + b
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
+pub struct AmmParams {
+    /// Slope parameter : a
+    pub slope: Permill,
+
+    /// Intercept : b
+    pub intercept: Permill,
+}
+
+/// Represents token's amm curve with linear pricing function y = ax + b
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
+pub struct AmmCurve<Balance> {
+    /// Slope parameter : a
+    pub slope: Permill,
+
+    /// Intercept : b
+    pub intercept: Permill,
+
+    // amount of token added to circulation by the AMM so far
+    pub provided_supply: Balance,
+}
+
+#[derive(Debug)]
+pub(crate) enum AmmOperation {
+    Sell,
+    Buy,
+}
+impl<Balance: Zero + Copy + Saturating> AmmCurve<Balance> {
+    pub(crate) fn from_params(params: AmmParams) -> Self {
+        Self {
+            slope: params.slope,
+            intercept: params.intercept,
+            provided_supply: Balance::zero(),
+        }
+    }
+    pub(crate) fn eval<T: Config>(
+        &self,
+        amount: <T as Config>::Balance,
+        supply_pre: <T as Config>::Balance,
+        bond_operation: AmmOperation,
+    ) -> Result<JoyBalanceOf<T>, DispatchError> {
+        let amount_sq = amount
+            .checked_mul(&amount)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let first_term = Permill::from_percent(50).mul_floor(self.slope.mul_floor(amount_sq));
+        let second_term = self.intercept.mul_floor(amount);
+        let mixed = amount
+            .checked_mul(&supply_pre)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let third_term = self.slope.mul_floor(mixed);
+        let res = match bond_operation {
+            AmmOperation::Buy => first_term
+                .checked_add(&second_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+            AmmOperation::Sell => second_term
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_sub(&first_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+        };
+        Ok(res.into())
+    }
+
+    pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
+        self.provided_supply = self.provided_supply.saturating_add(amount);
+    }
+
+    pub(crate) fn decrease_amm_bought_amount_by(&mut self, amount: Balance) {
+        self.provided_supply = self.provided_supply.saturating_sub(amount);
+    }
+}
+
 /// Represents token's offering state
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum OfferingState<TokenSale> {
+pub enum OfferingState<TokenSale, AmmCurve> {
     /// Idle state
     Idle,
 
@@ -581,28 +661,31 @@ pub enum OfferingState<TokenSale> {
     /// Active sale state
     Sale(TokenSale),
 
-    /// state for IBCO, it might get decorated with the JOY reserve
-    /// amount for the token
-    BondingCurve,
+    /// state for Amm
+    Amm(AmmCurve),
 }
 
-impl<TokenSale> OfferingState<TokenSale> {
+impl<TokenSale, AmmCurve> OfferingState<TokenSale, AmmCurve> {
     pub(crate) fn of<T: crate::Config>(token: &TokenDataOf<T>) -> OfferingStateOf<T> {
-        token
-            .sale
-            .as_ref()
-            .map_or(OfferingStateOf::<T>::Idle, |sale| {
-                let current_block = <frame_system::Pallet<T>>::block_number();
-                if current_block < sale.start_block {
-                    OfferingStateOf::<T>::UpcomingSale(sale.clone())
-                } else if current_block >= sale.start_block
-                    && current_block < sale.start_block.saturating_add(sale.duration)
-                {
-                    OfferingStateOf::<T>::Sale(sale.clone())
-                } else {
-                    OfferingStateOf::<T>::Idle
-                }
-            })
+        if let Some(curve) = token.amm_curve.clone() {
+            OfferingStateOf::<T>::Amm(curve)
+        } else {
+            token
+                .sale
+                .as_ref()
+                .map_or(OfferingStateOf::<T>::Idle, |sale| {
+                    let current_block = <frame_system::Pallet<T>>::block_number();
+                    if current_block < sale.start_block {
+                        OfferingStateOf::<T>::UpcomingSale(sale.clone())
+                    } else if current_block >= sale.start_block
+                        && current_block < sale.start_block.saturating_add(sale.duration)
+                    {
+                        OfferingStateOf::<T>::Sale(sale.clone())
+                    } else {
+                        OfferingStateOf::<T>::Idle
+                    }
+                })
+        }
     }
 
     pub(crate) fn ensure_idle_of<T: crate::Config>(token: &TokenDataOf<T>) -> DispatchResult {
@@ -627,6 +710,15 @@ impl<TokenSale> OfferingState<TokenSale> {
         match Self::of::<T>(token) {
             OfferingStateOf::<T>::Sale(sale) => Ok(sale),
             _ => Err(Error::<T>::NoActiveSale.into()),
+        }
+    }
+
+    pub(crate) fn ensure_amm_of<T: crate::Config>(
+        token: &TokenDataOf<T>,
+    ) -> Result<AmmCurveOf<T>, DispatchError> {
+        match Self::of::<T>(token) {
+            OfferingStateOf::<T>::Amm(curve) => Ok(curve),
+            _ => Err(Error::<T>::NotInAmmState.into()),
         }
     }
 }
@@ -810,7 +902,7 @@ pub enum ValidatedWithBloatBond<MemberId, RepayableBloatBond> {
 // implementation
 
 /// Default trait for OfferingState
-impl<TokenSale> Default for OfferingState<TokenSale> {
+impl<TokenSale, AmmCurve> Default for OfferingState<TokenSale, AmmCurve> {
     fn default() -> Self {
         OfferingState::Idle
     }
@@ -1291,7 +1383,20 @@ where
             next_revenue_split_id: 0,
             // TODO: revenue split rate might be subjected to constraints: https://github.com/Joystream/atlas/issues/2728
             revenue_split_rate: params.revenue_split_rate,
+            amm_curve: None,
         })
+    }
+
+    pub(crate) fn increase_amm_bought_amount_by(&mut self, amount: Balance) {
+        if let Some(curve) = self.amm_curve.as_mut() {
+            curve.increase_amm_bought_amount_by(amount)
+        }
+    }
+
+    pub(crate) fn decrease_amm_bought_amount_by(&mut self, amount: Balance) {
+        if let Some(curve) = self.amm_curve.as_mut() {
+            curve.decrease_amm_bought_amount_by(amount)
+        }
     }
 }
 
@@ -1482,7 +1587,7 @@ pub(crate) type TokenSaleOf<T> = TokenSale<
 >;
 
 /// Alias for OfferingState
-pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>>;
+pub(crate) type OfferingStateOf<T> = OfferingState<TokenSaleOf<T>, AmmCurveOf<T>>;
 
 /// Alias for UploadContext
 pub type UploadContextOf<T> = UploadContext<<T as frame_system::Config>::AccountId, BagId<T>>;
@@ -1534,3 +1639,6 @@ pub type VestingSchedulesOf<T> = BoundedBTreeMap<
     VestingScheduleOf<T>,
     <T as Config>::MaxVestingSchedulesPerAccountPerToken,
 >;
+
+/// Alias for the amm curve
+pub type AmmCurveOf<T> = AmmCurve<<T as Config>::Balance>;

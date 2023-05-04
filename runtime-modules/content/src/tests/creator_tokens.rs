@@ -1,4 +1,6 @@
+mod activate_amm;
 mod claim_patronage_credit;
+mod deactivate_amm;
 mod deissue;
 mod finalize_creator_token_sale;
 mod finalize_revenue_split;

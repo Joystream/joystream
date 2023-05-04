@@ -1,8 +1,8 @@
 #![cfg(test)]
-use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
+use frame_support::{assert_err, assert_noop, assert_ok, StorageDoubleMap, StorageMap};
 use sp_runtime::{traits::Hash, Permill, Perquintill};
 
-use crate::tests::fixtures::default_upload_context;
+use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
 use crate::traits::PalletToken;
@@ -926,25 +926,20 @@ fn deissue_token_with_token_info_removed() {
 
 #[test]
 fn issue_token_fails_with_existing_symbol() {
-    let (token_id, init_supply) = (token!(1), balance!(100));
-    let (owner_id, owner_acc) = member!(1);
-    let sym = Hashing::hash_of(&"CRT".to_string());
-
-    let token_data = TokenDataBuilder::new_empty().with_symbol(sym).build();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
-        .build();
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        symbol: sym,
-        ..Default::default()
-    };
+    let config = GenesisConfigBuilder::new_empty().build();
+    let symbol = Hashing::hash_of(b"test");
 
     build_test_externalities(config).execute_with(|| {
-        let result = Token::issue_token(owner_acc, params, default_upload_context());
+        IssueTokenFixture::default()
+            .with_symbol(symbol)
+            .execute_call()
+            .unwrap();
 
-        assert_noop!(result, Error::<Test>::TokenSymbolAlreadyInUse);
+        let result = IssueTokenFixture::default()
+            .with_symbol(symbol)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::TokenSymbolAlreadyInUse);
     })
 }
 
@@ -1100,51 +1095,39 @@ fn issue_token_ok_with_event_deposit() {
 #[test]
 fn issue_token_ok_with_token_info_added() {
     let token_id = token!(1);
-    let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
-    let (owner_balance, mem1_balance, mem2_balance) = (balance!(100), balance!(200), balance!(300));
-    let initial_supply = owner_balance + mem1_balance + mem2_balance;
-    let non_owner_vesting = VestingScheduleParams {
-        blocks_before_cliff: block!(100),
-        cliff_amount_percentage: Permill::from_percent(50),
-        linear_vesting_duration: block!(100),
-    };
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
-        transfer_policy: TransferPolicyParams::Permissionless,
-        patronage_rate: yearly_rate!(10),
-        revenue_split_rate: DEFAULT_SPLIT_RATE,
-        ..Default::default()
-    }
-    .with_allocation(&owner_id, owner_balance, None)
-    .with_allocation(&mem1, mem1_balance, Some(non_owner_vesting.clone()))
-    .with_allocation(&mem2, mem2_balance, Some(non_owner_vesting.clone()));
-
-    let rate = BlockRate::from_yearly_rate(params.patronage_rate, BlocksPerYear::get());
-
+    let symbol = Hashing::hash_of(&token_id);
+    let transfer_policy = TransferPolicyParams::Permissionless;
+    let patronage_rate = yearly_rate!(10);
     let config = GenesisConfigBuilder::new_empty().build();
 
     build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params.clone(), default_upload_context());
+        let arrangement = IssueTokenFixture::default()
+            .with_split_rate(DEFAULT_SPLIT_RATE)
+            .with_transfer_policy(transfer_policy.clone())
+            .with_patronage_rate(patronage_rate)
+            .with_symbol(symbol);
+
+        arrangement.execute_call().unwrap();
 
         assert_eq!(
             <crate::TokenInfoById<Test>>::get(token_id),
             TokenDataOf::<Test> {
-                tokens_issued: initial_supply,
-                total_supply: initial_supply,
-                transfer_policy: params.transfer_policy.into(),
-                symbol: params.symbol,
-                accounts_number: 3u64, // owner account + acc1 + acc2
+                tokens_issued: DEFAULT_INITIAL_ISSUANCE,
+                total_supply: DEFAULT_INITIAL_ISSUANCE,
+                transfer_policy: transfer_policy.into(),
+                symbol: symbol,
+                accounts_number: 1u64, // owner account
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
                     unclaimed_patronage_tally_amount: balance!(0),
-                    rate,
+                    rate: BlockRate::from_yearly_rate(patronage_rate, BlocksPerYear::get()),
                 },
                 sale: None,
                 next_sale_id: 0,
                 next_revenue_split_id: 0,
                 revenue_split: RevenueSplitState::Inactive,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
+                amm_curve: None,
             }
         );
     })

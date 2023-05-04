@@ -195,6 +195,20 @@ fn initialize_channel_transfer_fails_during_ongoing_token_sales() {
 }
 
 #[test]
+fn initialize_channel_transfer_fails_when_amm_is_active() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        ActivateAmmFixture::default().call_and_assert(Ok(()));
+        InitializeChannelTransferFixture::default()
+            .with_new_member_channel_owner(THIRD_MEMBER_ID)
+            .call_and_assert(Err(
+                Error::<Test>::ChannelTransfersBlockedDuringActiveAmm.into()
+            ));
+    })
+}
+
+#[test]
 fn initialize_channel_transfer_fails_during_unfinalized_token_sales() {
     pub const SALE_STARTING_BLOCK: u64 = 10;
     with_default_mock_builder(|| {
