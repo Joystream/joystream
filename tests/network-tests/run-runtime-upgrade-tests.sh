@@ -150,16 +150,16 @@ function cleanup() {
 
 # entrypoint
 function main {
-    # Start a query-node
-    if [ "${NO_QN}" != true ]; then
-        ../../query-node/start.sh
-    fi
-
     CONTAINER_ID=""
     export JOYSTREAM_NODE_TAG=${RUNTIME}
     if [ $TARGET_RUNTIME == $RUNTIME ]; then
         echo >&2 "Same tag for runtime and target runtime aborting..."
-        exit 1
+        exit 0
+    fi
+
+    # Start a query-node
+    if [ "${NO_QN}" != true ]; then
+        ../../query-node/start.sh
     fi
 
     # 0. Generate config files
