@@ -10,7 +10,7 @@ import {
   IMakeChannelPayment,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
-import { BTreeMap, BTreeSet, createType, u64 } from '@polkadot/types'
+import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 import {
   Channel,
   ChannelAssetsDeletedByModeratorEvent,
@@ -60,7 +60,6 @@ import {
 import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
-  mapAgentPermission,
   processAppActionMetadata,
   processChannelMetadata,
   u8aToBytes,
@@ -71,7 +70,8 @@ import { generateAppActionCommitment } from '@joystream/js/utils'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { BaseModel } from '@joystream/warthog'
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
-import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V1001 } from '../../generated/types/1001/types-lookup'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V2002 } from '../../generated/types/2002/types-lookup'
 import BN from 'bn.js'
 import {
   Content_ChannelAgentRemarkedEvent_V1001 as ChannelAgentRemarkedEvent_V1001,
@@ -93,14 +93,11 @@ import {
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event, block } = ctx
-
-  if (block.runtimeVersion.specVersion < 2002) {
-    return
-  }
+  const { specVersion } = block.runtimeVersion
 
   // read event data
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
-    new ChannelCreatedEvent_V2002(event).params
+    specVersion < 2002 ? new ChannelCreatedEvent_V1001(event).params : new ChannelCreatedEvent_V2002(event).params
 
   // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
   const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
@@ -168,13 +165,11 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event, block } = ctx
-
-  if (block.runtimeVersion.specVersion < 2002) {
-    return
-  }
+  const { specVersion } = block.runtimeVersion
 
   // read event data
-  const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent_V2002(event).params
+  const [, channelId, channelUpdateParameters, newDataObjects] =
+    specVersion < 2002 ? new ChannelUpdatedEvent_V1001(event).params : new ChannelUpdatedEvent_V2002(event).params
 
   // load channel
   const channel = await store.get(Channel, {
@@ -397,7 +392,12 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
 async function updateChannelAgentsPermissions(
   store: DatabaseManager,
   channel: Channel,
-  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>
+  collaboratorsPermissions: BTreeMap<
+    u64,
+    BTreeSet<
+      PalletContentIterableEnumsChannelActionPermission_V1001 | PalletContentIterableEnumsChannelActionPermission_V2002
+    >
+  >
 ) {
   // safest way to update permission is to delete existing and creating new ones
 
@@ -414,7 +414,9 @@ async function updateChannelAgentsPermissions(
     const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),
-      permissions: Array.from(permissions).map(mapAgentPermission),
+      permissions: Array.from(permissions).map((permissions) => {
+        return permissions.toString()
+      }),
     })
 
     await store.save(collaborator)
