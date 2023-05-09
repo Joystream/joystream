@@ -85,7 +85,7 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
 export async function content_CuratorAdded({ store, event, block }: EventContext & StoreContext): Promise<void> {
   // read event data
   if (block.runtimeVersion.specVersion < 2002) {
-    return 
+    return
   }
   const [curatorGroupId, curatorId, permissions] = new CuratorAddedEvent_V2002(event).params
 
