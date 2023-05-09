@@ -9,7 +9,7 @@ import { BTreeSet } from '@polkadot/types'
 // Joystream types
 import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
 import {
-  Content_CuratorAddedEvent_V1001 as CuratorAddedEvent_V1001,
+  Content_CuratorAddedEvent_V2002 as CuratorAddedEvent_V2002,
   Content_CuratorGroupCreatedEvent_V1001 as CuratorGroupCreatedEvent_V1001,
   Content_CuratorGroupStatusSetEvent_V1001 as CuratorGroupStatusSetEvent_V1001,
   Content_CuratorRemovedEvent_V1001 as CuratorRemovedEvent_V1001,
@@ -82,9 +82,12 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
   logger.info('Curator group status has been set', { id: curatorGroupId, isActive })
 }
 
-export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function content_CuratorAdded({ store, event, block }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId, permissions] = new CuratorAddedEvent_V1001(event).params
+  if (block.runtimeVersion.specVersion < 2002) {
+    return 
+  }
+  const [curatorGroupId, curatorId, permissions] = new CuratorAddedEvent_V2002(event).params
 
   // load curator group
   const curatorGroup = await store.get(CuratorGroup, {

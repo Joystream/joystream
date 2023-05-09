@@ -10,7 +10,7 @@ import {
   IMakeChannelPayment,
 } from '@joystream/metadata-protobuf'
 import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
-import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
+import { BTreeMap, BTreeSet, createType, u64 } from '@polkadot/types'
 import {
   Channel,
   ChannelAssetsDeletedByModeratorEvent,
@@ -78,6 +78,7 @@ import {
   Content_ChannelAssetsDeletedByModeratorEvent_V1001 as ChannelAssetsDeletedByModeratorEvent_V1001,
   Content_ChannelAssetsRemovedEvent_V1001 as ChannelAssetsRemovedEvent_V1001,
   Content_ChannelCreatedEvent_V1001 as ChannelCreatedEvent_V1001,
+  Content_ChannelCreatedEvent_V2002 as ChannelCreatedEvent_V2002,
   Content_ChannelDeletedByModeratorEvent_V1001 as ChannelDeletedByModeratorEvent_V1001,
   Content_ChannelDeletedEvent_V1001 as ChannelDeletedEvent_V1001,
   Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
@@ -86,14 +87,19 @@ import {
   Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
   Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
   Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
+  Content_ChannelUpdatedEvent_V2002 as ChannelUpdatedEvent_V2002,
   Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
 } from '../../generated/types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
-  const { store, event } = ctx
+  const { store, event, block } = ctx
+
+  if (block.runtimeVersion.specVersion < 2002) {
+    return 
+  }
+
   // read event data
-  const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
-    new ChannelCreatedEvent_V1001(event).params
+  const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] = new ChannelCreatedEvent_V2002(event).params
 
   // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
   const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
@@ -160,9 +166,15 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 }
 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
-  const { store, event } = ctx
+  const { store, event, block } = ctx
+
+  if (block.runtimeVersion.specVersion < 2002) {
+    return 
+  }
+
   // read event data
-  const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent_V1001(event).params
+  const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent_V2002(event).params
+
 
   // load channel
   const channel = await store.get(Channel, {
@@ -667,7 +679,7 @@ async function removeChannel(store: DatabaseManager, channelId: u64): Promise<vo
 async function removeChannelReferencingRelations(store: DatabaseManager, channelId: string): Promise<void> {
   const loadReferencingEntities = async <T extends BaseModel & { channel: Partial<Channel> }>(
     store: DatabaseManager,
-    entityType: { new (): T },
+    entityType: { new(): T },
     channelId: string
   ) => {
     return await store.getMany(entityType, {
@@ -679,7 +691,7 @@ async function removeChannelReferencingRelations(store: DatabaseManager, channel
     await Promise.all(entities.map(async (r) => await store.remove<T>(r)))
   }
 
-  const referencingEntities: { new (): BaseModel & { channel: Partial<Channel> } }[] = [
+  const referencingEntities: { new(): BaseModel & { channel: Partial<Channel> } }[] = [
     Collaborator,
     ChannelNftCollectors,
     MemberBannedFromChannelEvent,
