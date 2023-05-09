@@ -90,14 +90,11 @@ export class App {
     }
   }
 
-  private hideSecrets(config: Config) {
-    const displaySafeConfig: DisplaySafeConfig = {
-      ...config,
-      keys: config.keys?.map((k) => _.mapValues(k, () => '###SECRET###' as const)),
-      operatorApi: _.mapValues(config.operatorApi, () => '###SECRET###' as const),
-    }
-
-    return displaySafeConfig
+  private hideSecrets(config: Config): DisplaySafeConfig {
+    let displaySafeConfig = hideConfigPath(config, 'keys')
+    displaySafeConfig = hideConfigPath(displaySafeConfig, 'operatorApi.hmacSecret')
+    displaySafeConfig = hideConfigPath(displaySafeConfig, 'logs.elastic.auth')
+    return displaySafeConfig as DisplaySafeConfig
   }
 
   public async start(): Promise<void> {
@@ -197,4 +194,29 @@ export class App {
       this.exitCritically()
     }
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+function hideConfigPath(config: object, path: string) {
+  const replaceValue = '###SECRET###' as const
+  const configCopy = { ...config }
+  const pathValue = _.get(config, path)
+  if (!pathValue) {
+    return config
+  }
+  let mappedValue: unknown = replaceValue
+  if (typeof pathValue === 'object') {
+    if (Array.isArray(pathValue)) {
+      mappedValue = pathValue.map((pathValueEl) => {
+        if (typeof pathValueEl === 'object') {
+          return _.mapValues(pathValueEl, () => replaceValue)
+        }
+        return '###SECRET###' as const
+      })
+    } else {
+      mappedValue = _.mapValues(pathValue, () => replaceValue)
+    }
+  }
+
+  return _.set(configCopy, path, mappedValue)
 }
