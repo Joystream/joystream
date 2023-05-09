@@ -211,7 +211,7 @@ function hideConfigPath(config: object, path: string) {
         if (typeof pathValueEl === 'object') {
           return _.mapValues(pathValueEl, () => replaceValue)
         }
-        return '###SECRET###' as const
+        return replaceValue
       })
     } else {
       mappedValue = _.mapValues(pathValue, () => replaceValue)
