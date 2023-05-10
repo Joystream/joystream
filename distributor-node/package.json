@@ -51,7 +51,7 @@
     "yaml": "^1.10.2"
   },
   "devDependencies": {
-    "@adobe/jsonschema2md": "^6.1.4",
+    "@adobe/jsonschema2md": "https://github.com/adobe/jsonschema2md#3926af64f38409811a8f4627e95557199c9c8c71",
     "@graphql-codegen/cli": "^1.21.4",
     "@graphql-codegen/import-types-preset": "^1.18.1",
     "@graphql-codegen/typescript": "^1.22.0",
