@@ -16,6 +16,9 @@ logs:
   # elastic:
   #   level: info
   #   endpoint: http://localhost:9200
+  #   auth:
+  #     username: username
+  #     password: password
 limits:
   storage: 100G
   maxConcurrentStorageNodeDownloads: 100
