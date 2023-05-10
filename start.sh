@@ -29,11 +29,7 @@ fi
 ./query-node/start.sh
 
 ## Orion
-docker-compose exec db psql -U postgres -c "CREATE DATABASE orion;"
-docker-compose up -d squid-archive
-docker-compose up -d squid-archive-gateway
-docker-compose up -d orion-processor
-docker-compose up -d orion-api
+./start-orion.sh
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
