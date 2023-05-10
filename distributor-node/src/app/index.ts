@@ -1,4 +1,4 @@
-import { Config, DisplaySafeConfig } from '../types'
+import { Config } from '../types'
 import { NetworkingService } from '../services/networking'
 import { LoggingService } from '../services/logging'
 import { StateCacheService } from '../services/cache/StateCacheService'
@@ -90,11 +90,11 @@ export class App {
     }
   }
 
-  private hideSecrets(config: Config): DisplaySafeConfig {
-    let displaySafeConfig = hideConfigPath(config, 'keys')
-    displaySafeConfig = hideConfigPath(displaySafeConfig, 'operatorApi.hmacSecret')
-    displaySafeConfig = hideConfigPath(displaySafeConfig, 'logs.elastic.auth')
-    return displaySafeConfig as DisplaySafeConfig
+  private hideSecrets(config: Config): Record<string, unknown> {
+    let displaySafeConfig = hidePath(config, 'keys')
+    displaySafeConfig = hidePath(displaySafeConfig, 'operatorApi.hmacSecret')
+    displaySafeConfig = hidePath(displaySafeConfig, 'logs.elastic.auth')
+    return displaySafeConfig
   }
 
   public async start(): Promise<void> {
@@ -196,27 +196,28 @@ export class App {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-function hideConfigPath(config: object, path: string) {
-  const replaceValue = '###SECRET###' as const
-  const configCopy = { ...config }
-  const pathValue = _.get(config, path)
-  if (!pathValue) {
-    return config
+function deepHide(object: unknown, replaceValue = '###SECRET###'): unknown {
+  if (Array.isArray(object)) {
+    return object.map((el) => deepHide(el))
   }
-  let mappedValue: unknown = replaceValue
-  if (typeof pathValue === 'object') {
-    if (Array.isArray(pathValue)) {
-      mappedValue = pathValue.map((pathValueEl) => {
-        if (typeof pathValueEl === 'object') {
-          return _.mapValues(pathValueEl, () => replaceValue)
-        }
-        return replaceValue
-      })
-    } else {
-      mappedValue = _.mapValues(pathValue, () => replaceValue)
-    }
+  if (typeof object === 'object' && object !== null) {
+    return _.mapValues(object, (value) => deepHide(value))
   }
+  if (object === null || object === undefined) {
+    return object
+  }
+  return replaceValue
+}
 
-  return _.set(configCopy, path, mappedValue)
+function hidePath(
+  object: Record<string, unknown>,
+  path: string,
+  replaceValue = '###SECRET###'
+): Record<string, unknown> {
+  const objectClone = { ...object }
+  const valueAtPath = _.get(objectClone, path)
+  if (valueAtPath) {
+    return _.set(objectClone, path, deepHide(valueAtPath, replaceValue))
+  }
+  return objectClone
 }
