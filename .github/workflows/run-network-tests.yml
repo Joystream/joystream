@@ -224,8 +224,6 @@ jobs:
             runtime-modules
           SUFFIX_FILTER: |
             .rs
-          FILES: |
-            Cargo.toml
       - name: setup node
         uses: actions/setup-node@v3
         with:
