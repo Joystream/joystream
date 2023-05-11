@@ -254,12 +254,6 @@ decl_module! {
             metadata: Vec<u8>
         ) -> DispatchResult {
 
-            // // security check
-            // ensure!(
-            //     outputs.len() <= T::MaxOutputs::get() as usize,
-            //     Error::<T>::TooManyTransferOutputs,
-            // );
-
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 src_member_id
