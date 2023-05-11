@@ -1,7 +1,7 @@
-version: '4.0'
+version: '5.0'
 description: Joystream query-node manifest file
 repository: https://github.com/Joystream/joystream
-hydraVersion: '4'
+hydraVersion: '5'
 dataSource:
   kind: substrate
   chain: joystream
@@ -9,7 +9,7 @@ entities:
   - generated/graphql-server/dist/src/modules/**/*.model.js
 typegen:
   metadata:
-    source: ../chain-metadata.json
+    source: ./chain-metadata/
   events:
     # Membership
     - members.MembershipBought
@@ -53,6 +53,8 @@ typegen:
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
     - storageWorkingGroup.LeadRemarked
+    - storageWorkingGroup.WorkerRemarked
+    - storageWorkingGroup.WorkingGroupBudgetFunded
     # Proposals
     - proposalsCodex.ProposalCreated
     - proposalsEngine.ProposalStatusUpdated
@@ -101,6 +103,10 @@ typegen:
     - content.ChannelVisibilitySetByModerator
     - content.ChannelOwnerRemarked
     - content.ChannelAgentRemarked
+    - content.ChannelPayoutsUpdated
+    - content.ChannelRewardUpdated
+    - content.ChannelFundsWithdrawn
+    - content.ChannelRewardClaimedAndWithdrawn
     # Storage
     - storage.StorageBucketCreated
     - storage.StorageBucketInvitationAccepted
@@ -151,6 +157,7 @@ typegen:
     - council.BudgetIncrementUpdated
     - council.CouncilorRewardUpdated
     - council.RequestFunded
+    - council.CouncilBudgetFunded
     # Referendum
     - referendum.ReferendumStarted
     - referendum.ReferendumStartedForcefully
@@ -196,9 +203,7 @@ typegen:
     # Utility
     - joystreamUtility.UpdatedWorkingGroupBudget
   outDir: ./mappings/generated/types
-  customTypes:
-    lib: '@joystream/types/augment/all/types'
-    typedefsLoc: '../types/augment/all/defs.json'
+  typegenBinPath: ../node_modules/.bin/polkadot-types-from-defs
 mappings:
   # js module that exports the handler functions
   mappingsModule: mappings/lib/src
@@ -287,6 +292,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: storageWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: storageWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Forum working group
     - event: forumWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -332,6 +339,12 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: forumWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: forumWorkingGroup.LeadRemarked
+      handler: workingGroups_LeadRemarked
+    - event: forumWorkingGroup.WorkerRemarked
+      handler: workingGroups_WorkerRemarked
+    - event: forumWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Membership working group
     - event: membershipWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -377,6 +390,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: membershipWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: membershipWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Content directory working group
     - event: contentWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -422,6 +437,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: contentWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: contentWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group alpha
     - event: operationsWorkingGroupAlpha.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -467,6 +484,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: operationsWorkingGroupAlpha.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: operationsWorkingGroupAlpha.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group beta
     - event: operationsWorkingGroupBeta.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -512,6 +531,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: operationsWorkingGroupBeta.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: operationsWorkingGroupBeta.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Operations working group gamma
     - event: operationsWorkingGroupGamma.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -557,6 +578,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: operationsWorkingGroupGamma.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: operationsWorkingGroupGamma.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Distribution working group
     - event: distributionWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -602,6 +625,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: distributionWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: distributionWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Apps working group
     - event: appWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
@@ -647,6 +672,8 @@ mappings:
       handler: workingGroups_NewMissedRewardLevelReached
     - event: appWorkingGroup.WorkerStartedLeaving
       handler: workingGroups_WorkerStartedLeaving
+    - event: appWorkingGroup.WorkingGroupBudgetFunded
+      handler: workingGroups_WorkingGroupBudgetFunded
     # Proposals
     - event: proposalsCodex.ProposalCreated
       handler: proposalsCodex_ProposalCreated
@@ -733,6 +760,14 @@ mappings:
       handler: content_VideoVisibilitySetByModerator
     - event: content.ChannelVisibilitySetByModerator
       handler: content_ChannelVisibilitySetByModerator
+    - event: content.ChannelPayoutsUpdated
+      handler: content_ChannelPayoutsUpdated
+    - event: content.ChannelRewardUpdated
+      handler: content_ChannelRewardUpdated
+    - event: content.ChannelFundsWithdrawn
+      handler: content_ChannelFundsWithdrawn
+    - event: content.ChannelRewardClaimedAndWithdrawn
+      handler: content_ChannelRewardClaimedAndWithdrawn
 
     - event: content.ChannelOwnerRemarked
       handler: content_ChannelOwnerRemarked
@@ -871,6 +906,8 @@ mappings:
       handler: council_CouncilorRewardUpdated
     - event: council.RequestFunded
       handler: council_RequestFunded
+    - event: council.CouncilBudgetFunded
+      handler: council_CouncilBudgetFunded
     # Referendum
     - event: referendum.ReferendumStarted
       handler: referendum_ReferendumStarted

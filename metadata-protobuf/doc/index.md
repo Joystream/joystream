@@ -10,14 +10,28 @@
 - [proto/Channel.proto](#proto/Channel.proto)
     - [ChannelMetadata](#.ChannelMetadata)
   
+- [proto/ChannelPayouts.proto](#proto/ChannelPayouts.proto)
+    - [ChannelPayoutsMetadata](#.ChannelPayoutsMetadata)
+    - [ChannelPayoutsMetadata.Body](#.ChannelPayoutsMetadata.Body)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutProof](#.ChannelPayoutsMetadata.Body.ChannelPayoutProof)
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement](#.ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement)
+    - [ChannelPayoutsMetadata.Header](#.ChannelPayoutsMetadata.Header)
+    - [ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset](#.ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset)
+  
+    - [ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side](#.ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side)
+  
 - [proto/Council.proto](#proto/Council.proto)
     - [CouncilCandidacyNoteMetadata](#.CouncilCandidacyNoteMetadata)
   
 - [proto/Forum.proto](#proto/Forum.proto)
     - [ForumPostMetadata](#.ForumPostMetadata)
-      
+    - [ForumThreadMetadata](#.ForumThreadMetadata)
+  
 - [proto/Membership.proto](#proto/Membership.proto)
     - [MembershipMetadata](#.MembershipMetadata)
+    - [MembershipMetadata.ExternalResource](#.MembershipMetadata.ExternalResource)
+  
+    - [MembershipMetadata.ExternalResource.ResourceType](#.MembershipMetadata.ExternalResource.ResourceType)
   
 - [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
@@ -27,6 +41,7 @@
     - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
     - [EditComment](#.EditComment)
+    - [MakeChannelPayment](#.MakeChannelPayment)
     - [MemberRemarked](#.MemberRemarked)
     - [ModerateComment](#.ModerateComment)
     - [PinOrUnpinComment](#.PinOrUnpinComment)
@@ -170,6 +185,137 @@
 
 
 
+<a name="proto/ChannelPayouts.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/ChannelPayouts.proto
+
+
+
+<a name=".ChannelPayoutsMetadata"></a>
+
+### ChannelPayoutsMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| header | [ChannelPayoutsMetadata.Header](#ChannelPayoutsMetadata.Header) | required | Payload header |
+| body | [ChannelPayoutsMetadata.Body](#ChannelPayoutsMetadata.Body) | required | Payload body |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body"></a>
+
+### ChannelPayoutsMetadata.Body
+Channel payout full body structure, it will not be downloaded by clients in full
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_payouts | [ChannelPayoutsMetadata.Body.ChannelPayoutProof](#ChannelPayoutsMetadata.Body.ChannelPayoutProof) | repeated | List of channel payouts |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutProof"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayoutProof
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [uint32](#uint32) | required |  |
+| cumulative_reward_earned | [string](#string) | required | Since protobuf does not support 128 bit unsigned inetgers so string representation is being used here, after message decoding the string would be converted to BN to pervent precision loss |
+| merkle_branch | [ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement](#ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement) | repeated |  |
+| reason | [string](#string) | required | reward rationale for channel; |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayoutProof.ProofElement
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| hash | [string](#string) | required |  |
+| side | [ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side](#ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side) | required |  |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Header"></a>
+
+### ChannelPayoutsMetadata.Header
+Fields in the payload header are encoded in fixed length 32/64 bits instead of [varint encoding](https://developers.google.com/protocol-buffers/docs/encoding#varints) (uint64/32).
+This allows first calculating, and then setting the byte offset of each `ChannelPayoutProof` accurately, e.g. 
+`byte_offset` = `size(Header)` &#43; `position_where_record_for_channel_exists_in_Body`
+If varint encoding is used for header fields, then calculating the byte offset of `ChannelPayoutProof` 
+w.r.t the start of the payload would be improbable since the header size won&#39;t be known.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| payload_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of entire payload |
+| header_length_in_bytes | [fixed64](#fixed64) | required | Length in bytes of payload header |
+| number_of_channels | [fixed32](#fixed32) | required | Number of channels |
+| channel_payout_byte_offsets | [ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset](#ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset) | repeated | List of byte offsets for all channels |
+
+
+
+
+
+
+<a name=".ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset"></a>
+
+### ChannelPayoutsMetadata.Header.ChannelPayoutByteOffset
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| channel_id | [fixed32](#fixed32) | required | Channel id |
+| byte_offset | [fixed64](#fixed64) | required | Byte offset from start of payload where payout record for given channel Id exists |
+
+
+
+
+
+ 
+
+
+<a name=".ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side"></a>
+
+### ChannelPayoutsMetadata.Body.ChannelPayoutProof.Side
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| Left | 0 |  |
+| Right | 1 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="proto/Council.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -227,16 +373,6 @@
 
 
 
-<a name=".ForumPostReaction"></a>
-
-### ForumPostReaction
-The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufjs
-
-
-
-
-
-
 <a name=".ForumThreadMetadata"></a>
 
 ### ForumThreadMetadata
@@ -253,18 +389,6 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 
 
  
-
-
-<a name=".ForumPostReaction.Reaction"></a>
-
-### ForumPostReaction.Reaction
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| CANCEL | 0 | This means cancelling any previous reaction |
-| LIKE | 1 |  |
-
 
  
 
@@ -293,12 +417,50 @@ The enum must be wrapped inside &#34;message&#34;, otherwide it breaks protobufj
 | avatar_object | [uint32](#uint32) | optional | Member&#39;s avatar - index into external [assets array](#.Assets) |
 | avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
 | about | [string](#string) | optional | Member&#39;s md-formatted about text |
+| externalResources | [MembershipMetadata.ExternalResource](#MembershipMetadata.ExternalResource) | repeated |  |
+
+
+
+
+
+
+<a name=".MembershipMetadata.ExternalResource"></a>
+
+### MembershipMetadata.ExternalResource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [MembershipMetadata.ExternalResource.ResourceType](#MembershipMetadata.ExternalResource.ResourceType) | optional |  |
+| value | [string](#string) | optional |  |
 
 
 
 
 
  
+
+
+<a name=".MembershipMetadata.ExternalResource.ResourceType"></a>
+
+### MembershipMetadata.ExternalResource.ResourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EMAIL | 0 |  |
+| HYPERLINK | 1 |  |
+| TWITTER | 2 |  |
+| TELEGRAM | 3 |  |
+| DISCORD | 4 |  |
+| FACEBOOK | 5 |  |
+| YOUTUBE | 6 |  |
+| MATRIX | 7 |  |
+| IRC | 8 |  |
+| WECHAT | 9 |  |
+| WHATSAPP | 10 |  |
+
 
  
 
@@ -429,6 +591,23 @@ edit comment by author
 
 
 
+<a name=".MakeChannelPayment"></a>
+
+### MakeChannelPayment
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rationale | [string](#string) | optional | Reason why payment is being made |
+| video_id | [uint64](#uint64) | optional |  |
+| channel_id | [uint64](#uint64) | optional |  |
+
+
+
+
+
+
 <a name=".MemberRemarked"></a>
 
 ### MemberRemarked
@@ -443,6 +622,7 @@ edit comment by author
 | edit_comment | [EditComment](#EditComment) | optional |  |
 | delete_comment | [DeleteComment](#DeleteComment) | optional |  |
 | create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
+| make_channel_payment | [MakeChannelPayment](#MakeChannelPayment) | optional |  |
 
 
 
@@ -1173,87 +1353,6 @@ Publication status before joystream
 | <a name="string" /> string | A string must always contain UTF-8 encoded or 7-bit ASCII text. | string | String | str/unicode | string | string | string | String (UTF-8) |
 | <a name="bytes" /> bytes | May contain any arbitrary sequence of bytes. | string | ByteString | str | []byte | ByteString | string | String (ASCII-8BIT) |
 
-<!-- 
-    This extra documentation will be appended to the generated docs.
--->
-
-## Referencing Assets
-<a name=".Assets"></a>
-
-Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
-
-Example in context of query-node processing the runtime event `VideoCreated`
-
-```rust
-// Runtime event associated with creating a Video
-VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
-
-struct VideoCreationParameters {
-  in_category: VideoCategoryId,
-  // binary serialized VideoMetadata protobuf message
-  meta: Vec<u8>,
-}
-
-// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
-assets = [
-    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
-    NewAsset::Upload({
-       content_id,
-       ipfs_hash,
-       size,
-       ...
-    }),
-];
-
-meta = VideoMetadata {
-    ...
-    // refers to second element: assets[1] which is being uploaded to the storage system
-    video: 1,
-    // refers to the first element assets[0] which is being referneced by a url string.
-    thumbnail_photo: 0,
-    ...
-};
-```<!-- 
-    This extra documentation will be appended to the generated docs.
--->
-
-## Referencing Assets
-<a name=".Assets"></a>
-
-Applications that process messages that contain a `uint32` field that references an asset such as a cover photo or video, should interpret this value as a zero based index into an array/vector that is received external (out of band) to the protobuf message.
-
-Example in context of query-node processing the runtime event `VideoCreated`
-
-```rust
-// Runtime event associated with creating a Video
-VideoCreated(video_id: VideoId, video: Video, assets: Vec<NewAsset>, params: VideoCreationParameters)
-
-struct VideoCreationParameters {
-  in_category: VideoCategoryId,
-  // binary serialized VideoMetadata protobuf message
-  meta: Vec<u8>,
-}
-
-// suppose assets is a vector of two elements. This is the "out of band" array being referenced by the VideoMetadata message
-assets = [
-    NewAsset::Uri("https://mydomain.net/thumbnail.png"),
-    NewAsset::Upload({
-       content_id,
-       ipfs_hash,
-       size,
-       ...
-    }),
-];
-
-meta = VideoMetadata {
-    ...
-    // refers to second element: assets[1] which is being uploaded to the storage system
-    video: 1,
-    // refers to the first element assets[0] which is being referneced by a url string.
-    thumbnail_photo: 0,
-    ...
-};
-```
 <!-- 
     This extra documentation will be appended to the generated docs.
 -->

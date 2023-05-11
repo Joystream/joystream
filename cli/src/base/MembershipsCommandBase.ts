@@ -1,8 +1,12 @@
+import { MemberId } from '@joystream/types/primitives'
+import { flags } from '@oclif/command'
+import { AccountId } from '@polkadot/types/interfaces'
+import { formatBalance } from '@polkadot/util'
+import { validateAddress } from '@polkadot/util-crypto'
+import chalk from 'chalk'
 import ExitCodes from '../ExitCodes'
 import { MemberDetails } from '../Types'
 import { memberHandle } from '../helpers/display'
-import { MemberId } from '@joystream/types/primitives'
-import { flags } from '@oclif/command'
 import AccountsCommandBase from './AccountsCommandBase'
 
 /**
@@ -81,5 +85,33 @@ export default abstract class MembershipsCommandBase extends AccountsCommandBase
     })
 
     return availableMemberships[memberIndex]
+  }
+
+  async getValidatedMemberRemarkParams(payment?: {
+    amount: string
+    account?: string
+  }): Promise<[MemberId, AccountId, [string, string] | null]> {
+    const {
+      id,
+      membership: { controllerAccount },
+    } = await this.getRequiredMemberContext(true)
+
+    if (payment) {
+      let { account, amount } = payment
+      if (!account) {
+        account = await this.promptForAnyAddress(`Select recipient for 'member_remark' transfer`)
+      } else if (validateAddress(account) !== true) {
+        this.error('Invalid recipient address', { exit: ExitCodes.InvalidInput })
+      }
+
+      await this.ensureJoyTransferIsPossible(controllerAccount.toString(), account, amount)
+
+      await this.requireConfirmation(
+        `Do you confirm transfer of ${chalk.cyan(formatBalance(amount))} to ${chalk.cyan(account)}?`
+      )
+      return [id, controllerAccount, [account, amount]]
+    }
+
+    return [id, controllerAccount, null]
   }
 }

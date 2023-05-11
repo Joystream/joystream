@@ -3,7 +3,30 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { EventContext, StoreContext, DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
 
-import { StorageWorkingGroup as WorkingGroups } from '../generated/types'
+import {
+  StorageWorkingGroup_BudgetSetEvent_V1001,
+  StorageWorkingGroup_WorkerRewardAmountUpdatedEvent_V1001 as WorkingGroup_WorkerRewardAmountUpdatedEvent_V1001,
+  StorageWorkingGroup_ApplicationWithdrawnEvent_V1001 as WorkingGroup_ApplicationWithdrawnEvent_V1001,
+  StorageWorkingGroup_AppliedOnOpeningEvent_V1001 as WorkingGroup_AppliedOnOpeningEvent_V1001,
+  StorageWorkingGroup_BudgetSpendingEvent_V1001 as WorkingGroup_BudgetSpendingEvent_V1001,
+  StorageWorkingGroup_LeadRemarkedEvent_V1001 as WorkingGroup_LeadRemarkedEvent_V1001,
+  StorageWorkingGroup_NewMissedRewardLevelReachedEvent_V1001 as WorkingGroup_NewMissedRewardLevelReachedEvent_V1001,
+  StorageWorkingGroup_OpeningAddedEvent_V1001 as WorkingGroup_OpeningAddedEvent_V1001,
+  StorageWorkingGroup_OpeningCanceledEvent_V1001 as WorkingGroup_OpeningCanceledEvent_V1001,
+  StorageWorkingGroup_OpeningFilledEvent_V1001 as WorkingGroup_OpeningFilledEvent_V1001,
+  StorageWorkingGroup_RewardPaidEvent_V1001 as WorkingGroup_RewardPaidEvent_V1001,
+  StorageWorkingGroup_StakeDecreasedEvent_V1001 as WorkingGroup_StakeDecreasedEvent_V1001,
+  StorageWorkingGroup_StakeIncreasedEvent_V1001 as WorkingGroup_StakeIncreasedEvent_V1001,
+  StorageWorkingGroup_StakeSlashedEvent_V1001 as WorkingGroup_StakeSlashedEvent_V1001,
+  StorageWorkingGroup_StatusTextChangedEvent_V1001 as WorkingGroup_StatusTextChangedEvent_V1001,
+  StorageWorkingGroup_TerminatedWorkerEvent_V1001 as WorkingGroup_TerminatedWorkerEvent_V1001,
+  StorageWorkingGroup_WorkerExitedEvent_V1001 as WorkingGroup_WorkerExitedEvent_V1001,
+  StorageWorkingGroup_WorkerRemarkedEvent_V1001 as WorkingGroup_WorkerRemarkedEvent_V1001,
+  StorageWorkingGroup_WorkerRewardAccountUpdatedEvent_V1001 as WorkingGroup_WorkerRewardAccountUpdatedEvent_V1001,
+  StorageWorkingGroup_WorkerRoleAccountUpdatedEvent_V1001 as WorkingGroup_WorkerRoleAccountUpdatedEvent_V1001,
+  StorageWorkingGroup_WorkerStartedLeavingEvent_V1001 as WorkingGroup_WorkerStartedLeavingEvent_V1001,
+  StorageWorkingGroup_WorkingGroupBudgetFundedEvent_V1001 as WorkingGroup_WorkingGroupBudgetFundedEvent_V1001,
+} from '../generated/types'
 import {
   ApplicationMetadata,
   IAddUpcomingOpening,
@@ -13,6 +36,7 @@ import {
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
   OpeningMetadata,
+  RemarkMetadataAction,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { Bytes } from '@polkadot/types'
@@ -26,6 +50,8 @@ import {
   INT32MAX,
   inconsistentState,
   getWorkingGroupByName,
+  getWorkingGroupLead,
+  invalidMetadata,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -82,10 +108,12 @@ import {
   BudgetSpendingEvent,
   LeaderSetEvent,
   WorkerStatusLeaving,
+  BudgetFundedEvent,
 } from 'query-node/dist/model'
 import { createType } from '@joystream/types'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
+import { moderatePost } from './forum'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -334,13 +362,25 @@ async function handleWorkingGroupMetadataAction(
 }
 
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, optPenalty, optRationale] = new WorkingGroups.TerminatedWorkerEvent(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
+  const [workerId, optPenalty, optRationale] = new WorkingGroup_TerminatedWorkerEvent_V1001(event).params
+  const group = await getWorkingGroup(store, event, ['leader'])
+  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, [
+    'application',
+    'workinggroupleader',
+  ])
 
-  const EventConstructor = worker.isLead ? TerminatedLeaderEvent : TerminatedWorkerEvent
+  if (worker.isLead) {
+    const terminatedLeaderEvent = new TerminatedLeaderEvent({
+      ...genericEventFields(event),
+      group,
+      worker,
+      penalty: optPenalty.unwrapOr(undefined),
+      rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
+    })
+    await store.save<TerminatedLeaderEvent>(terminatedLeaderEvent)
+  }
 
-  const terminatedEvent = new EventConstructor({
+  const terminatedWorkerEvent = new TerminatedWorkerEvent({
     ...genericEventFields(event),
     group,
     worker,
@@ -348,14 +388,15 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 
-  await store.save(terminatedEvent)
+  await store.save<TerminatedWorkerEvent>(terminatedWorkerEvent)
 
   const status = new WorkerStatusTerminated()
-  status.terminatedWorkerEventId = terminatedEvent.id
+  status.terminatedWorkerEventId = terminatedWorkerEvent.id
   worker.status = status
   worker.stake = new BN(0)
   worker.rewardPerBlock = new BN(0)
   worker.isActive = isWorkerActive(worker)
+  worker.workinggroupleader = [] // Make the worker not the group leader if there were
 
   await store.save<Worker>(worker)
 }
@@ -381,7 +422,7 @@ function isWorkerActive(worker: Worker): boolean {
 // Mapping functions
 export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   const [openingRuntimeId, metadataBytes, openingType, stakePolicy, optRewardPerBlock] =
-    new WorkingGroups.OpeningAddedEvent(event).params
+    new WorkingGroup_OpeningAddedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const eventTime = new Date(event.blockTimestamp)
 
@@ -422,7 +463,7 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
       stakeParameters: { stake, stakingAccountId },
     },
     applicationRuntimeId,
-  ] = new WorkingGroups.AppliedOnOpeningEvent(event).params
+  ] = new WorkingGroup_AppliedOnOpeningEvent_V1001(event).params
 
   const group = await getWorkingGroup(store, event)
   const openingstoreId = `${group.name}-${openingId.toString()}`
@@ -465,8 +506,9 @@ export async function workingGroups_LeaderSet({ store, event }: EventContext & S
 }
 
 export async function workingGroups_OpeningFilled({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroups.OpeningFilledEvent(event)
-    .params
+  const [openingRuntimeId, applicationIdToWorkerIdMap, applicationIdsSet] = new WorkingGroup_OpeningFilledEvent_V1001(
+    event
+  ).params
 
   const group = await getWorkingGroup(store, event)
   const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, [
@@ -574,7 +616,7 @@ async function removeIsLeadFromGroup(store: DatabaseManager, groupId: string) {
 }
 
 export async function workingGroups_OpeningCanceled({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [openingRuntimeId] = new WorkingGroups.OpeningCanceledEvent(event).params
+  const [openingRuntimeId] = new WorkingGroup_OpeningCanceledEvent_V1001(event).params
 
   const group = await getWorkingGroup(store, event)
   const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
@@ -610,7 +652,7 @@ export async function workingGroups_OpeningCanceled({ store, event }: EventConte
 }
 
 export async function workingGroups_ApplicationWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [applicationRuntimeId] = new WorkingGroups.ApplicationWithdrawnEvent(event).params
+  const [applicationRuntimeId] = new WorkingGroup_ApplicationWithdrawnEvent_V1001(event).params
 
   const group = await getWorkingGroup(store, event)
   const application = await getApplication(store, `${group.name}-${applicationRuntimeId.toString()}`)
@@ -633,7 +675,7 @@ export async function workingGroups_ApplicationWithdrawn({ store, event }: Event
 }
 
 export async function workingGroups_StatusTextChanged({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, optBytes] = new WorkingGroups.StatusTextChangedEvent(event).params
+  const [, optBytes] = new WorkingGroup_StatusTextChangedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
 
   // Since result cannot be empty at this point, but we already need to have an existing StatusTextChangedEvent
@@ -671,11 +713,47 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
+export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getWorkingGroupLead(store, group.name)
+
+    await moderatePost(store, event, 'leadRemark', postId, actor, rationale)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
+}
+
+export async function workingGroups_WorkerRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [workerId, metadataByte] = new WorkingGroup_WorkerRemarkedEvent_V1001(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getWorker(store, group.name, workerId)
+
+    await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
+}
+
 export async function workingGroups_WorkerRoleAccountUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [workerId, accountId] = new WorkingGroups.WorkerRoleAccountUpdatedEvent(event).params
+  const [workerId, accountId] = new WorkingGroup_WorkerRoleAccountUpdatedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -697,7 +775,7 @@ export async function workingGroups_WorkerRewardAccountUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [workerId, accountId] = new WorkingGroups.WorkerRewardAccountUpdatedEvent(event).params
+  const [workerId, accountId] = new WorkingGroup_WorkerRewardAccountUpdatedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -716,7 +794,7 @@ export async function workingGroups_WorkerRewardAccountUpdated({
 }
 
 export async function workingGroups_StakeIncreased({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, increaseAmount] = new WorkingGroups.StakeIncreasedEvent(event).params
+  const [workerId, increaseAmount] = new WorkingGroup_StakeIncreasedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -735,7 +813,7 @@ export async function workingGroups_StakeIncreased({ store, event }: EventContex
 }
 
 export async function workingGroups_RewardPaid({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroups.RewardPaidEvent(event).params
+  const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroup_RewardPaidEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -760,7 +838,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [workerId, newMissedRewardAmountOpt] = new WorkingGroups.NewMissedRewardLevelReachedEvent(event).params
+  const [workerId, newMissedRewardAmountOpt] = new WorkingGroup_NewMissedRewardLevelReachedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -780,7 +858,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
 }
 
 export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId] = new WorkingGroups.WorkerExitedEvent(event).params
+  const [workerId] = new WorkingGroup_WorkerExitedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
 
@@ -832,7 +910,7 @@ export async function workingGroups_WorkerRewardAmountUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [workerId, newRewardPerBlockOpt] = new WorkingGroups.WorkerRewardAmountUpdatedEvent(event).params
+  const [workerId, newRewardPerBlockOpt] = new WorkingGroup_WorkerRewardAmountUpdatedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -851,7 +929,8 @@ export async function workingGroups_WorkerRewardAmountUpdated({
 }
 
 export async function workingGroups_StakeSlashed({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroups.StakeSlashedEvent(event).params
+  const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroup_StakeSlashedEvent_V1001(event)
+    .params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -872,7 +951,7 @@ export async function workingGroups_StakeSlashed({ store, event }: EventContext 
 }
 
 export async function workingGroups_StakeDecreased({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, amount] = new WorkingGroups.StakeDecreasedEvent(event).params
+  const [workerId, amount] = new WorkingGroup_StakeDecreasedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
 
@@ -891,7 +970,7 @@ export async function workingGroups_StakeDecreased({ store, event }: EventContex
 }
 
 export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, optRationale] = new WorkingGroups.WorkerStartedLeavingEvent(event).params
+  const [workerId, optRationale] = new WorkingGroup_WorkerStartedLeavingEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
   const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
 
@@ -913,7 +992,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
 }
 
 export async function workingGroups_BudgetSet({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [newBudget] = new WorkingGroups.BudgetSetEvent(event).params
+  const [newBudget] = new StorageWorkingGroup_BudgetSetEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
 
   const budgetSetEvent = new BudgetSetEvent({
@@ -930,7 +1009,7 @@ export async function workingGroups_BudgetSet({ store, event }: EventContext & S
 }
 
 export async function workingGroups_BudgetSpending({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [reciever, amount, optRationale] = new WorkingGroups.BudgetSpendingEvent(event).params
+  const [reciever, amount, optRationale] = new WorkingGroup_BudgetSpendingEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
 
   const budgetSpendingEvent = new BudgetSpendingEvent({
@@ -944,6 +1023,28 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   await store.save<BudgetSpendingEvent>(budgetSpendingEvent)
 
   group.budget = group.budget.sub(amount)
+
+  await store.save<WorkingGroup>(group)
+}
+
+export async function workingGroups_WorkingGroupBudgetFunded({
+  store,
+  event,
+}: EventContext & StoreContext): Promise<void> {
+  const [memberId, amount, rationale] = new WorkingGroup_WorkingGroupBudgetFundedEvent_V1001(event).params
+  const group = await getWorkingGroup(store, event)
+
+  const budgetFundedEvent = new BudgetFundedEvent({
+    ...genericEventFields(event),
+    group,
+    member: new Membership({ id: memberId.toString() }),
+    amount,
+    rationale: bytesToString(rationale),
+  })
+
+  await store.save<BudgetFundedEvent>(budgetFundedEvent)
+
+  group.budget = group.budget.add(amount)
 
   await store.save<WorkingGroup>(group)
 }

@@ -1,11 +1,9 @@
-import { sendAndFollowSudoNamedTx, sendAndFollowNamedTx, getEvent } from './api'
-import { getAlicePair } from './accounts'
+import { sendAndFollowNamedTx, getEvent } from './api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
 import logger from '../../services/logger'
 import { timeout } from 'promise-timeout'
-import { createType } from '@joystream/types'
 import BN from 'bn.js'
 
 /**
@@ -36,7 +34,7 @@ export async function createStorageBucket(
     const invitedWorkerValue = api.createType('Option<u64>', invitedWorker)
 
     const tx = api.tx.storage.createStorageBucket(invitedWorkerValue, allowedNewBags, sizeLimit, objectsLimit)
-    bucketId = await sendAndFollowNamedTx(api, account, tx, false, (result) => {
+    bucketId = await sendAndFollowNamedTx(api, account, tx, (result) => {
       const event = getEvent(result, 'storage', 'StorageBucketCreated')
       const bucketId = event?.data[0]
 
@@ -100,49 +98,6 @@ export async function updateStorageBucketsForBag(
     const tx = api.tx.storage.updateStorageBucketsForBag(bagId, addBuckets, removeBuckets)
 
     return sendAndFollowNamedTx(api, account, tx)
-  })
-}
-
-/**
- * Uploads a data object info.
- *
- * @remarks
- * It sends an extrinsic to the runtime.
- *
- * @param api - runtime API promise
- * @param account - KeyringPair instance
- * @param objectSize - object size in bytes
- * @param objectCid - object CID (Content ID - multihash)
- * @param dataFee - expected 'DataObjectPerMegabyteFee' runtime value
- * @returns promise with a success flag.
- */
-export async function uploadDataObjects(
-  api: ApiPromise,
-  bagId: BagId,
-  objectSize: number,
-  objectCid: string,
-  dataFee: number,
-  stateBloatBond: number
-): Promise<boolean> {
-  return await extrinsicWrapper(() => {
-    const alice = getAlicePair()
-
-    const data = createType('PalletStorageUploadParametersRecord', {
-      bagId,
-      stateBloatBondSourceAccountId: alice.address,
-      expectedDataObjectStateBloatBond: stateBloatBond,
-      objectCreationList: [
-        {
-          size_: objectSize,
-          ipfsContentId: objectCid,
-        },
-      ],
-      expectedDataSizeFee: dataFee,
-    })
-
-    const tx = api.tx.storage.sudoUploadDataObjects(data)
-
-    return sendAndFollowSudoNamedTx(api, alice, tx)
   })
 }
 

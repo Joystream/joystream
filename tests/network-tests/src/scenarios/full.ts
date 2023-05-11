@@ -5,11 +5,8 @@ import moderation from '../flows/forum/moderation'
 import threadTags from '../flows/forum/threadTags'
 import leadOpening from '../flows/working-groups/leadOpening'
 import buyingMemberships from '../flows/membership/buyingMemberships'
-import creatingMembers from '../flows/membership/creatingMembers'
-import creatingFoundingMembers from '../flows/membership/creatingFoundingMembers'
 import updatingMemberProfile from '../flows/membership/updatingProfile'
 import updatingMemberAccounts from '../flows/membership/updatingAccounts'
-import invitingMebers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import openingsAndApplications from '../flows/working-groups/openingsAndApplications'
@@ -36,6 +33,13 @@ import updatingVerificationStatus from '../flows/membership/updateVerificationSt
 import commentsAndReactions from '../flows/content/commentsAndReactions'
 import addAndUpdateVideoSubtitles from '../flows/content/videoSubtitles'
 import { testVideoCategories } from '../flows/content/videoCategories'
+import channelPayouts from '../flows/proposals/channelPayouts'
+import directChannelPayment from '../flows/content/directChannelPayment'
+import failToElectWithBlacklist from '../flows/council/electWithBlacklist'
+import invitingMembers from '../flows/membership/invitingMembers'
+import { createAppActions } from '../flows/content/createAppActions'
+import { createApp } from '../flows/content/createApp'
+import { updateApp } from '../flows/content/updateApp'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -52,17 +56,16 @@ scenario('Full', async ({ job, env }) => {
 
   // Membership:
   job('buying members', buyingMemberships).after(coreJob)
-  job('creating members', creatingMembers).after(coreJob)
-  job('creating founding members', creatingFoundingMembers).after(coreJob)
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
-  job('inviting members', invitingMebers).after(coreJob)
   job('transferring invites', transferringInvites).after(coreJob)
+  job('inviting members', invitingMembers).after(coreJob)
   job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
   const secondCouncilJob = job('electing second council', electCouncil).requires(coreJob)
   const councilFailuresJob = job('council election failures', failToElect).requires(secondCouncilJob)
+  job('council election failure with blacklist', failToElectWithBlacklist).requires(councilFailuresJob)
 
   // Proposals:
   const proposalsJob = job('proposals & proposal discussion', [
@@ -74,29 +77,31 @@ scenario('Full', async ({ job, env }) => {
     proposalsDiscussion,
   ]).requires(councilFailuresJob)
 
-  // Working groups
-  const sudoHireLead = job('sudo lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    proposalsJob
-  )
-  job('openings and applications', openingsAndApplications).requires(sudoHireLead)
-  job('upcoming openings', upcomingOpenings).requires(sudoHireLead)
-  job('group status', groupStatus).requires(sudoHireLead)
-  job('worker actions', workerActions).requires(sudoHireLead)
-  job('group budget', groupBudget).requires(sudoHireLead)
+  const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
-  // Memberships (depending on hired lead)
-  job('updating member verification status', updatingVerificationStatus).after(sudoHireLead)
+  // Working groups
+  const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
+    channelPayoutsProposalJob
+  )
+  job('openings and applications', openingsAndApplications).requires(hireLeads)
+  job('upcoming openings', upcomingOpenings).requires(hireLeads)
+  job('group status', groupStatus).requires(hireLeads)
+  job('worker actions', workerActions).requires(hireLeads)
+  job('group budget', groupBudget).requires(hireLeads)
+
+  // Memberships (depending on hired leads)
+  job('updating member verification status', updatingVerificationStatus).after(hireLeads)
 
   // Forum:
-  job('forum categories', categories).requires(sudoHireLead)
-  job('forum threads', threads).requires(sudoHireLead)
-  job('forum thread tags', threadTags).requires(sudoHireLead)
-  job('forum posts', posts).requires(sudoHireLead)
-  job('forum moderation', moderation).requires(sudoHireLead)
+  job('forum categories', categories).requires(hireLeads)
+  job('forum threads', threads).requires(hireLeads)
+  job('forum thread tags', threadTags).requires(hireLeads)
+  job('forum posts', posts).requires(hireLeads)
+  job('forum moderation', moderation).requires(hireLeads)
 
   // Content directory
   // following jobs must be run sequentially due to some QN queries that could interfere
-  const videoCategoriesJob = job('video categories', testVideoCategories).requires(sudoHireLead)
+  const videoCategoriesJob = job('video categories', testVideoCategories).requires(hireLeads)
   const channelsAndVideosCliJob = job('manage channels and videos through CLI', channelsAndVideos).requires(
     videoCategoriesJob
   )
@@ -106,8 +111,16 @@ scenario('Full', async ({ job, env }) => {
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob
   )
+  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
+    commentsAndReactionsJob
+  )
 
-  const contentDirectoryJob = commentsAndReactionsJob // keep updated to last job above
+  // Apps
+  job('create app', createApp).after(hireLeads)
+  job('update app', updateApp).after(hireLeads)
+  job('create app actions', createAppActions).after(hireLeads)
+
+  const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
 
   // Storage & distribution CLIs
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(

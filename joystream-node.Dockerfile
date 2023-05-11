@@ -1,13 +1,16 @@
 FROM rust:1.61.0-buster AS rust
 WORKDIR /joystream
+RUN apt-get update && \
+  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev cmake
 RUN rustup self update
 RUN rustup install nightly-2022-05-11 --force
 RUN rustup default nightly-2022-05-11
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2022-05-11
 RUN rustup component add --toolchain nightly-2022-05-11 clippy
-RUN cargo install cargo-chef
-RUN apt-get update && \
-  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang llvm libc6-dev cmake
+RUN rustup install nightly
+# Temporary build fix by using older version of cargo-chef
+# https://github.com/Joystream/joystream/issues/4745
+RUN cargo +nightly install cargo-chef@0.1.57
 
 FROM rust AS planner
 LABEL description="Cargo chef prepare"

@@ -4,6 +4,6 @@ import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Forum post deletions bug', async ({ job }) => {
-  const sudoHireLead = job('hiring working group leads', leadOpening())
-  job('forum post deletions bug', multiplePostDeletionsBug).requires(sudoHireLead)
+  const hireLead = job('hiring working group leads', leadOpening())
+  job('forum post deletions bug', multiplePostDeletionsBug).requires(hireLead)
 })

@@ -732,6 +732,7 @@ fn invite_member_succeeds() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
             invitee_member_id,
             fixture.get_invite_membership_parameters(),
+            initial_invitation_balance,
         ));
     });
 }
@@ -795,6 +796,7 @@ fn invite_member_succeeds_with_additional_checks() {
         EventFixture::assert_last_crate_event(Event::<Test>::MemberInvited(
             invitee_member_id,
             fixture.get_invite_membership_parameters(),
+            initial_invitation_balance,
         ));
     });
 }
@@ -1339,8 +1341,12 @@ fn unsuccessful_member_remark_with_non_existent_member_profile() {
         set_alice_as_initial_member();
 
         let msg = b"test".to_vec();
-        let validation_result =
-            Membership::member_remark(RawOrigin::Signed(BOB_ACCOUNT_ID).into(), BOB_MEMBER_ID, msg);
+        let validation_result = Membership::member_remark(
+            RawOrigin::Signed(BOB_ACCOUNT_ID).into(),
+            BOB_MEMBER_ID,
+            msg,
+            None,
+        );
 
         assert_eq!(
             validation_result,
@@ -1359,6 +1365,7 @@ fn unsuccessful_member_remark_with_invalid_origin() {
             RawOrigin::Signed(BOB_ACCOUNT_ID).into(),
             ALICE_MEMBER_ID,
             msg,
+            None,
         );
 
         assert_eq!(
@@ -1369,7 +1376,7 @@ fn unsuccessful_member_remark_with_invalid_origin() {
 }
 
 #[test]
-fn successful_member_remark() {
+fn unsuccessful_member_remark_with_insufficient_payment() {
     build_test_externalities_with_lead_set().execute_with(|| {
         set_alice_as_initial_member();
 
@@ -1378,6 +1385,47 @@ fn successful_member_remark() {
             RawOrigin::Signed(ALICE_ACCOUNT_ID).into(),
             ALICE_MEMBER_ID,
             msg,
+            Some((BOB_ACCOUNT_ID, ed())),
+        );
+
+        assert_eq!(
+            validation_result,
+            Err(Error::<Test>::InsufficientBalanceToCoverPayment.into())
+        );
+    });
+}
+
+#[test]
+fn successful_member_remark_without_payment() {
+    build_test_externalities_with_lead_set().execute_with(|| {
+        set_alice_as_initial_member();
+
+        let msg = b"test".to_vec();
+        let validation_result = Membership::member_remark(
+            RawOrigin::Signed(ALICE_ACCOUNT_ID).into(),
+            ALICE_MEMBER_ID,
+            msg,
+            None,
+        );
+
+        assert_eq!(validation_result, Ok(()),);
+    });
+}
+
+#[test]
+fn successful_member_remark_with_payment() {
+    build_test_externalities_with_lead_set().execute_with(|| {
+        const ALICE_FREE_BALANCE: u64 = 100;
+
+        set_alice_as_initial_member();
+        set_alice_free_balance(ALICE_FREE_BALANCE);
+
+        let msg = b"test".to_vec();
+        let validation_result = Membership::member_remark(
+            RawOrigin::Signed(ALICE_ACCOUNT_ID).into(),
+            ALICE_MEMBER_ID,
+            msg,
+            Some((BOB_ACCOUNT_ID, ALICE_FREE_BALANCE)),
         );
 
         assert_eq!(validation_result, Ok(()),);

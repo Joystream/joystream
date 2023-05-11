@@ -53,7 +53,7 @@ export class DeleteCommentsFixture extends StandardizedFixture {
           commentId: params.msg.commentId,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg))
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg), null)
     })
   }
 

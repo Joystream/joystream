@@ -932,7 +932,6 @@ fn unsuccessfull_channel_payouts_update_with_insufficient_uploader_account_balan
                 size: 1,
                 ipfs_content_id: create_cid(1),
             },
-            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
 
         UpdateChannelPayoutsFixture::default()
@@ -956,7 +955,6 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_size_fee() {
                 size: 1,
                 ipfs_content_id: create_cid(1),
             },
-            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
 
         UpdateChannelPayoutsFixture::default()
@@ -979,7 +977,6 @@ fn unsuccessfull_channel_payouts_update_with_unexpected_data_object_state_bloat_
                 size: 1,
                 ipfs_content_id: create_cid(1),
             },
-            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
 
         UpdateChannelPayoutsFixture::default()
@@ -1056,7 +1053,6 @@ fn successful_channel_payouts_update() {
                 size: 1,
                 ipfs_content_id: create_cid(1),
             },
-            uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         };
 
         UpdateChannelPayoutsFixture::default()

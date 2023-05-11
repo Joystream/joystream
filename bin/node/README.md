@@ -47,7 +47,7 @@ this script will build and run a fresh new local development chain (purging exis
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
-./target/release/joystream-node --chain testnets/joy-testnet-7-carthage.json
+./target/release/joystream-node --chain joy-mainnet.json
 ```
 
 ### Tests and code quality
@@ -77,11 +77,12 @@ If you are building a tagged release from `master` branch and want to install th
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
-WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 install joystream-node --path node/ --locked
+# From the project root directory
+WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 install joystream-node --path bin/node/ --locked
 ```
 
 Now you can run and connect to the testnet:
 
 ```bash
-joystream-node --chain testnets/joy-testnet-7-carthage.json
+joystream-node --chain joy-mainnet.json
 ```

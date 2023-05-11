@@ -315,6 +315,23 @@ type VetoProposalDetails @variant {
   proposal: Proposal!
 }
 
+type UpdateChannelPayoutsProposalDetails @variant {
+  "Merkle root of the channel payouts"
+  commitment: String
+
+  "Minimum amount of channel reward cashout allowed at a time"
+  minCashoutAllowed: BigInt
+
+  "Maximum amount of channel reward cashout allowed at a time"
+  maxCashoutAllowed: BigInt
+
+  "Can channel cashout the rewards"
+  channelCashoutsEnabled: Boolean
+
+  "The hash of the channel payout payload file"
+  payloadHash: String
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -337,3 +354,4 @@ union ProposalDetails =
   | SetMembershipLeadInvitationQuotaProposalDetails
   | SetReferralCutProposalDetails
   | VetoProposalDetails
+  | UpdateChannelPayoutsProposalDetails

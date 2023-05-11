@@ -215,6 +215,13 @@ fragment ProposalDetailsFields on ProposalDetails {
       id
     }
   }
+
+  ... on UpdateChannelPayoutsProposalDetails {
+    commitment
+    minCashoutAllowed
+    maxCashoutAllowed
+    channelCashoutsEnabled
+  }
 }
 
 fragment ProposalFields on Proposal {

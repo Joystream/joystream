@@ -42,7 +42,10 @@ macro_rules! wrap_working_group_call {
 /// using Runtime Call and parity codec.
 pub struct ExtrinsicProposalEncoder;
 impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
-    fn encode_proposal(proposal_details: ProposalDetailsOf<Runtime>) -> Vec<u8> {
+    fn encode_proposal(
+        proposal_details: ProposalDetailsOf<Runtime>,
+        member_controller_account: <Runtime as frame_system::Config>::AccountId,
+    ) -> Vec<u8> {
         let call = match proposal_details {
             ProposalDetails::Signal(signal) => {
                 Call::JoystreamUtility(joystream_utility::Call::execute_signal_proposal { signal })
@@ -151,7 +154,10 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 })
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
-                Call::Content(content::Call::update_channel_payouts { params })
+                Call::Content(content::Call::update_channel_payouts {
+                    params,
+                    uploader_account: member_controller_account,
+                })
             }
         };
 

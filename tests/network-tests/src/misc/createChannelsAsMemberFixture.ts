@@ -1,18 +1,21 @@
 import { BaseQueryNodeFixture } from '../Fixture'
 import { Api } from '../Api'
 import { ChannelId, DistributionBucketFamilyId } from '@joystream/types/primitives'
-import { QueryNodeApi } from 'src/QueryNodeApi'
+import { Bytes } from '@polkadot/types'
+import { QueryNodeApi } from '../QueryNodeApi'
 
 export class CreateChannelsAsMemberFixture extends BaseQueryNodeFixture {
   // Member that will be channel owner
   private memberId: number
   private numChannels: number
+  private metadata: Bytes | undefined
   private createdChannels: ChannelId[] = []
 
-  constructor(api: Api, query: QueryNodeApi, memberId: number, numChannels: number) {
+  constructor(api: Api, query: QueryNodeApi, memberId: number, numChannels: number, metadata?: Bytes) {
     super(api, query)
     this.memberId = memberId
     this.numChannels = numChannels
+    this.metadata = metadata
   }
 
   public getCreatedChannels(): ChannelId[] {
@@ -69,7 +72,9 @@ export class CreateChannelsAsMemberFixture extends BaseQueryNodeFixture {
     for (let i = 0; i < this.numChannels; i++) {
       const storageBuckets = await this.selectStorageBucketsForNewChannel()
       const distributionBuckets = await this.selectDistributionBucketsForNewChannel()
-      channels.push(this.api.createMockChannel(this.memberId, storageBuckets, distributionBuckets, account))
+      channels.push(
+        this.api.createMockChannel(this.memberId, storageBuckets, distributionBuckets, account, this.metadata)
+      )
     }
 
     this.createdChannels = await Promise.all(channels)

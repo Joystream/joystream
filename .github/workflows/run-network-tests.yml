@@ -21,11 +21,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: checks
       run: |
-        yarn install --frozen-lockfile
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
-        yarn workspace @joystream/cli build
-        yarn workspace network-tests build
+        yarn build:packages
 
   tests_build_osx:
     name: MacOS Checks
@@ -41,11 +37,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: checks
       run: |
-        yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace @joystream/types build
-        yarn workspace @joystream/metadata-protobuf build
-        yarn workspace @joystream/cli build
-        yarn workspace network-tests build
+        yarn build:packages
 
   build_images:
     name: Build joystream/node
@@ -53,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+      runtime: ${{ steps.compute_shasum.outputs.shasum }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -62,7 +55,7 @@ jobs:
       - id: compute_shasum
         name: Compute runtime code shasum
         env:
-          RUNTIME_PROFILE: "TESTING"
+          RUNTIME_PROFILE: 'TESTING'
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
@@ -73,7 +66,7 @@ jobs:
       - name: Cache docker images
         uses: actions/cache@v3
         env:
-          cache-name: joystream-node-docker
+          cache-name: joystream-node-docker-1
         with:
           path: ~/docker-images
           key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
@@ -91,8 +84,7 @@ jobs:
         run: |
           if ! [ -f joystream-node-docker-image.tar.gz ]; then
             docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:latest
-            docker save --output joystream-node-docker-image.tar joystream/node:latest
+            docker save --output joystream-node-docker-image.tar joystream/node:${{ steps.compute_shasum.outputs.shasum }}
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
           fi
@@ -101,18 +93,18 @@ jobs:
         id: check_files
         uses: andstor/file-existence-action@v1
         with:
-          files: "joystream-node-docker-image.tar.gz"
+          files: 'joystream-node-docker-image.tar.gz'
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
         id: builder1
         if: steps.check_files.outputs.files_exists == 'false'
-  
+
       - name: Cache Docker layers
         uses: actions/cache@v3
         with:
-         path: /tmp/.buildx-cache
-         key: ${{ runner.os }}-buildx
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Build
@@ -125,7 +117,7 @@ jobs:
             CARGO_FEATURES=testing-runtime
             CODE_SHASUM=${{ steps.compute_shasum.outputs.shasum }}
           push: false
-          tags: joystream/node
+          tags: joystream/node:${{ steps.compute_shasum.outputs.shasum }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
           builder: ${{ steps.builder1.outputs.name }}
@@ -134,7 +126,7 @@ jobs:
 
       - name: Save joystream/node image to cache
         run: |
-          docker save --output joystream-node-docker-image.tar joystream/node
+          docker save --output joystream-node-docker-image.tar joystream/node:${{ steps.compute_shasum.outputs.shasum }}
           gzip joystream-node-docker-image.tar
           cp joystream-node-docker-image.tar.gz ~/docker-images/
         if: steps.check_files.outputs.files_exists == 'false'
@@ -151,8 +143,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'carthageNPoSSwitch']
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'storageSync']
         include:
+          - scenario: 'full'
+            no_storage: 'false'
           - scenario: 'setupNewChain'
             no_storage: 'true'
           - scenario: 'setupNewChainMultiStorage'
@@ -172,29 +166,40 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/cli build
+          yarn build:packages
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
         run: |
-          export RUNTIME=latest
+          export RUNTIME=${{ needs.build_images.outputs.runtime }}
           export NO_STORAGE=${{ matrix.no_storage }}
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
 
   runtime_upgrade:
-    # Re-Enable when we want to test carthage runtime updates
-    if: ${{ false }}
-    name: Runtime Upgrade From Carthage Spec 0
+    name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      # Checkout master branch
+      - name: check out master repo
+        uses: actions/checkout@v3
         with:
-          node-version: '14.x'
+          repository: Joystream/joystream
+          ref: master
+
+      - name: pull base runtime image
+        id: pull_base_image
+        env:
+          RUNTIME_PROFILE: 'TESTING'
+        run: |
+          export RUNTIME=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME}"
+          docker pull joystream/node:$RUNTIME
+          docker images
+
+      # Get new runtime built for this workflow (target runtime)
+      # tagged in local repo as joystream/node:latest
       - name: Get artifacts
         uses: actions/download-artifact@v3
         with:
@@ -203,20 +208,39 @@ jobs:
         run: |
           docker load --input joystream-node-docker-image.tar.gz
           docker images
+
+      # Checkout workflow's branch/tag/commit
+      - name: checkout workflow branch
+        uses: actions/checkout@v3
+      - name: Check for runtime code changes
+        uses: technote-space/get-diff-action@v3
+        with:
+          PREFIX_FILTER: |
+            runtime
+            runtime-modules
+          SUFFIX_FILTER: |
+            .rs
+          FILES: |
+            Cargo.lock
+            Cargo.toml
+      - name: setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '14.x'
       - name: Install packages and dependencies
+        if: env.GIT_DIFF
         run: |
-          yarn install --frozen-lockfile
-          yarn workspace @joystream/types build
-          yarn workspace @joystream/metadata-protobuf build
-          yarn workspace @joystream/cli build
+          yarn build:packages
       - name: Ensure tests are runnable
+        if: env.GIT_DIFF
         run: yarn workspace network-tests build
       - name: Execute network tests
+        if: env.GIT_DIFF
+        env:
+          TARGET_RUNTIME: ${{ needs.build_images.outputs.runtime }}
+          RUNTIME: ${{ steps.pull_base_image.outputs.shasum }}
         run: |
           export HOME=${PWD}
           mkdir -p ${HOME}/.local/share/joystream-cli
           yarn joystream-cli api:setUri ws://localhost:9944
-          # Rhodes release (spec 7) production runtime profile
-          export RUNTIME_TAG=e3f72ac0dbfc3d8dc69b63c2ab991f104411f205
-          export TARGET_RUNTIME_TAG=latest
-          tests/network-tests/run-migration-tests.sh
+          tests/network-tests/run-runtime-upgrade-tests.sh

@@ -1,4 +1,4 @@
-import { ReactVideo } from '@joystream/metadata-protobuf'
+import { BanOrUnbanMemberFromChannel, ReactVideo } from '@joystream/metadata-protobuf'
 import BN from 'bn.js'
 import Long from 'long'
 import { extendDebug } from '../../Debugger'
@@ -19,7 +19,11 @@ import {
   EditCommentsFixture,
   ModerateCommentParams,
   ModerateCommentsFixture,
+  DeleteChannelWithVideosFixture,
+  BanOrUnbanMemberParams,
+  BanOrUnbanMembersFixture,
 } from '../../fixtures/content'
+import { DeleteChannelAsModeratorFixture } from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 
@@ -34,7 +38,7 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   // settings
   const videoCount = 2
   const videoCategoryCount = 2
-  const channelCount = 1
+  const channelCount = 2
   const sufficientTopupAmount = new BN(10_000_000_000_000) // some very big number to cover fees of all transactions
 
   // flow itself
@@ -258,11 +262,37 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   const moderateCommentsFixture = new ModerateCommentsFixture(api, query, moderateComments)
   await new FixtureRunner(moderateCommentsFixture).runWithQueryNodeChecks()
 
-  // Delete videos
-  debug('Delete video[0]')
-  await joystreamCli.deleteVideo(videosData[0].videoId)
-  debug('Delete video[1]')
-  await joystreamCli.deleteVideo(videosData[1].videoId)
+  const banMembers: BanOrUnbanMemberParams[] = [
+    {
+      asMember: channelOwner.memberId,
+      channelId: channelIds[0],
+      msg: {
+        memberId: Long.fromString(participants[0].memberId.toString()), // ban participant[0] from channel[0]
+        option: BanOrUnbanMemberFromChannel.Option.BAN,
+      },
+    },
+    {
+      asMember: channelOwner.memberId,
+      channelId: channelIds[1],
+      msg: {
+        memberId: Long.fromString(participants[0].memberId.toString()), // ban participant[0] from channel[1]
+        option: BanOrUnbanMemberFromChannel.Option.BAN,
+      },
+    },
+  ]
+
+  const banMembersFixture = new BanOrUnbanMembersFixture(api, query, banMembers)
+  await new FixtureRunner(banMembersFixture).runWithQueryNodeChecks()
+
+  // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
+  const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, [channelIds[0]])
+  await new FixtureRunner(deleteChannelWithVideosFixture).run()
+
+  // Delete channel as moderator (to ensure all referencing relations are properly removed without causing QN processor crash)
+  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(api, query, [
+    { channelId: channelIds[1], rationale: 'Test', numOfObjectsToDelete: 2 },
+  ])
+  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

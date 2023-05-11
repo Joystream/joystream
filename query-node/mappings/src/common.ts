@@ -1,7 +1,7 @@
 import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
-import { Bytes } from '@polkadot/types'
+import { Bytes, Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { WorkerId } from '@joystream/types/primitives'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
 import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WGType } from '@polkadot/types/lookup'
 import {
   Worker,
@@ -11,6 +11,7 @@ import {
   MetaprotocolTransactionStatusEvent,
   MetaprotocolTransactionErrored,
   MetaprotocolTransactionSuccessful,
+  Membership,
 } from 'query-node/dist/model'
 import { BaseModel } from '@joystream/warthog'
 import { metaToObject } from '@joystream/metadata-protobuf/utils'
@@ -114,7 +115,10 @@ export function invalidMetadata(extraInfo: string, data?: unknown): void {
 
 export function deserializeMetadata<T>(
   metadataType: AnyMetadataClass<T>,
-  metadataBytes: Bytes
+  metadataBytes: Bytes,
+  opts = {
+    skipWarning: false,
+  }
 ): DecodedMetadataObject<T> | null {
   try {
     const message = metadataType.decode(metadataBytes.toU8a(true))
@@ -125,7 +129,9 @@ export function deserializeMetadata<T>(
     })
     return metaToObject(metadataType, message)
   } catch (e) {
-    invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
+    if (!opts.skipWarning) {
+      invalidMetadata(`Cannot deserialize ${metadataType.name}! Provided bytes: (${metadataBytes.toHex()})`)
+    }
     return null
   }
 }
@@ -150,6 +156,14 @@ export function asInt32(value: Codec): number {
 
 export function asBN(value: Codec): BN {
   return new BN(value.toString())
+}
+
+export function unwrap<T extends Codec, R>(value: Option<T>): T | undefined {
+  return value.isSome ? value.unwrap() : undefined
+}
+
+export function whenDef<T, R>(value: T | null | undefined, fn: (value: T) => R): R | undefined {
+  if (value !== null && typeof value !== 'undefined') return fn(value)
 }
 
 export function hasValuesForProperties<
@@ -210,6 +224,27 @@ export async function getWorkingGroupByName(
     return inconsistentState(`Working group ${name} not found!`)
   }
   return group
+}
+
+export async function getMemberById(
+  store: DatabaseManager,
+  id: MemberId,
+  relations: string[] = []
+): Promise<Membership> {
+  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
+  if (!member) {
+    throw new Error(`Member(${id}) not found`)
+  }
+  return member
+}
+
+export async function getWorkingGroupLead(store: DatabaseManager, groupName: WorkingGroupModuleName) {
+  const lead = await store.get(Worker, { where: { groupId: groupName, isLead: true, isActive: true } })
+  if (!lead) {
+    return inconsistentState(`Couldn't find an active lead for ${groupName}`)
+  }
+
+  return lead
 }
 
 export async function getWorker(

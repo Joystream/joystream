@@ -460,15 +460,14 @@ declare module '@polkadot/api-base/types/events' {
        **/
       ChannelOwnerRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       ChannelPausedFeaturesUpdatedByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>, Bytes]>;
-      ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>]>;
+      ChannelPayoutsUpdated: AugmentedEvent<ApiType, [PalletContentUpdateChannelPayoutsParametersRecord, Option<u64>, AccountId32]>;
       ChannelPrivilegeLevelUpdated: AugmentedEvent<ApiType, [u64, u8]>;
       ChannelRewardClaimedAndWithdrawn: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u128, PalletContentChannelFundsDestination]>;
-      ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u64]>;
+      ChannelRewardUpdated: AugmentedEvent<ApiType, [u128, u128, u64]>;
       ChannelStateBloatBondValueUpdated: AugmentedEvent<ApiType, [u128]>;
       ChannelTransferAccepted: AugmentedEvent<ApiType, [u64, PalletContentTransferCommitmentParametersBTreeMap]>;
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
-      CouncilRewardClaimed: AugmentedEvent<ApiType, [u64, u128]>;
       CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
       CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>]>;
       CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
@@ -1297,9 +1296,9 @@ declare module '@polkadot/api-base/types/events' {
       LeaderInvitationQuotaUpdated: AugmentedEvent<ApiType, [u32]>;
       MemberAccountsUpdated: AugmentedEvent<ApiType, [u64, Option<AccountId32>, Option<AccountId32>]>;
       MemberCreated: AugmentedEvent<ApiType, [u64, PalletMembershipCreateMemberParameters, u32]>;
-      MemberInvited: AugmentedEvent<ApiType, [u64, PalletMembershipInviteMembershipParameters]>;
+      MemberInvited: AugmentedEvent<ApiType, [u64, PalletMembershipInviteMembershipParameters, u128]>;
       MemberProfileUpdated: AugmentedEvent<ApiType, [u64, Option<Bytes>, Option<Bytes>]>;
-      MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
+      MemberRemarked: AugmentedEvent<ApiType, [u64, Bytes, Option<ITuple<[AccountId32, u128]>>]>;
       MembershipBought: AugmentedEvent<ApiType, [u64, PalletMembershipBuyMembershipParameters, u32]>;
       MembershipGifted: AugmentedEvent<ApiType, [u64, PalletMembershipGiftMembershipParameters]>;
       MembershipPriceUpdated: AugmentedEvent<ApiType, [u128]>;
@@ -2185,7 +2184,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokenSaleInitialized: AugmentedEvent<ApiType, [u64, u32, PalletProjectTokenTokenSale, Option<Bytes>]>;
       /**
-       * Token Bonded
+       * Tokens Bought on AMM
        * Params:
        * - token id
        * - member id
@@ -2211,7 +2210,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokensPurchasedOnSale: AugmentedEvent<ApiType, [u64, u32, u128, u64]>;
       /**
-       * Token Unbonded
+       * Tokens Sold on AMM
        * Params:
        * - token id
        * - member id
@@ -2325,6 +2324,10 @@ declare module '@polkadot/api-base/types/events' {
       Voted: AugmentedEvent<ApiType, [u64, u32, PalletProposalsEngineVoteKind, Bytes]>;
     };
     referendum: {
+      /**
+       * Account permanently opted out of voting in referendum.
+       **/
+      AccountOptedOutOfVoting: AugmentedEvent<ApiType, [AccountId32]>;
       /**
        * Referendum ended and winning option was selected
        **/
@@ -2906,20 +2909,6 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale
        **/
       WorkingGroupBudgetFunded: AugmentedEvent<ApiType, [u64, u128, Bytes]>;
-    };
-    sudo: {
-      /**
-       * The \[sudoer\] just switched identity; the old key is supplied if one existed.
-       **/
-      KeyChanged: AugmentedEvent<ApiType, [oldSudoer: Option<AccountId32>], { oldSudoer: Option<AccountId32> }>;
-      /**
-       * A sudo just took place. \[result\]
-       **/
-      Sudid: AugmentedEvent<ApiType, [sudoResult: Result<Null, SpRuntimeDispatchError>], { sudoResult: Result<Null, SpRuntimeDispatchError> }>;
-      /**
-       * A sudo just took place. \[result\]
-       **/
-      SudoAsDone: AugmentedEvent<ApiType, [sudoResult: Result<Null, SpRuntimeDispatchError>], { sudoResult: Result<Null, SpRuntimeDispatchError> }>;
     };
     system: {
       /**

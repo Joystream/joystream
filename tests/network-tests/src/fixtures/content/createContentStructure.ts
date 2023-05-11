@@ -56,7 +56,7 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     await this.api.treasuryTransferBalanceToAccounts([workerMemberControllerAccount!], sufficientTopupAmount)
 
     this.debug('Creating video categories')
-    this.createdItems.videoCategoryIds = await this.createVideoCategories(this.videoCategoryCount)
+    this.createdItems.videoCategoryIds = await this.createVideoCategories(this.videoCategoryCount, memberId.toString())
   }
 
   /**
@@ -80,7 +80,7 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
   /**
     Creates a new video category. Can only be executed as content group leader.
   */
-  private async createVideoCategories(count: number): Promise<string[]> {
+  private async createVideoCategories(count: number, asMember: string): Promise<string[]> {
     // remember initial video categories count
     const initialVideoCategories = await this.query.tryQueryWithTimeout(
       () => this.query.getVideoCategories(),
@@ -92,7 +92,7 @@ export class CreateContentStructureFixture extends BaseQueryNodeFixture {
     // create new categories and remember their ids
     const createdIds = await this.createCommonEntities(count, async (index) => {
       const categoryName = getVideoCategoryDefaults(index).name
-      await this.cli.createVideoCategory(categoryName)
+      await this.cli.createVideoCategory(categoryName, asMember)
 
       const qEvents = await this.query.tryQueryWithTimeout(
         () => this.query.getVideoCategories(),

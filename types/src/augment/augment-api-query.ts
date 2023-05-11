@@ -948,7 +948,7 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       accountInfoByTokenAndMember: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletProjectTokenAccountData>, [u64, u64]>;
       /**
-       * Bond Transaction fee percentage
+       * AMM buy transaction fee percentage
        **/
       ammBuyTxFees: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
@@ -956,7 +956,7 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       ammDeactivationThreshold: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
-       * Bond Transaction fee percentage
+       * AMM sell transaction fee percentage
        **/
       ammSellTxFees: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
@@ -1047,6 +1047,10 @@ declare module '@polkadot/api-base/types/storage' {
       randomMaterial: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []>;
     };
     referendum: {
+      /**
+       * Accounts that permanently opted out of voting in referendum.
+       **/
+      accountsOptedOut: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Null>, [AccountId32]>;
       /**
        * Current referendum stage.
        **/
@@ -1458,12 +1462,6 @@ declare module '@polkadot/api-base/types/storage' {
        * Maps identifier to corresponding worker.
        **/
       workerById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletWorkingGroupGroupWorker>>, [u64]>;
-    };
-    sudo: {
-      /**
-       * The `AccountId` of the sudo key.
-       **/
-      key: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []>;
     };
     system: {
       /**

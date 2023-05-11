@@ -71,10 +71,9 @@ services:
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
       JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
-    #   JOYSTREAM_DISTRIBUTOR__ENDPOINTS__ELASTIC_SEARCH: es-endpoint
     #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
     #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
+      # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
     command: ['yarn', 'joystream-distributor', 'start']
@@ -212,7 +211,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
 
   indexer:
-    image: joystream/hydra-indexer:v4.0.0-alpha.7
+    image: joystream/hydra-indexer:v5.0.0-alpha.1
     container_name: indexer
     restart: unless-stopped
     env_file:
@@ -233,7 +232,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:4.0.0-alpha.7
+    image: joystream/hydra-indexer-gateway:5.0.0-alpha.1
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
@@ -290,6 +289,7 @@ services:
       - ORION_FEATURED_CONTENT_SECRET=password123
       - ORION_ADMIN_SECRET=password123
       - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
+      - APP_PRIVATE_KEY=secret123
     ports:
       - "6116:6116"
     depends_on:

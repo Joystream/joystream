@@ -424,6 +424,51 @@ import {
   GetVideoByIdQuery,
   GetVideoByIdQueryVariables,
   GetVideoById,
+  GetMostRecentChannelPayoutsUpdatedEventQueryVariables,
+  GetMostRecentChannelPayoutsUpdatedEventQuery,
+  GetMostRecentChannelPayoutsUpdatedEvent,
+  ChannelPayoutsUpdatedEventFragment,
+  CouncilBudgetFundedEventFieldsFragment,
+  GetCouncilBudgetFundedEventsByEventIdsQuery,
+  GetCouncilBudgetFundedEventsByEventIdsQueryVariables,
+  GetCouncilBudgetFundedEventsByEventIds,
+  ChannelRewardClaimedEventFieldsFragment,
+  GetChannelRewardClaimedEventsByEventIdsQuery,
+  GetChannelRewardClaimedEventsByEventIdsQueryVariables,
+  ChannelFundsWithdrawnEventFieldsFragment,
+  GetChannelFundsWithdrawnEventsByEventIdsQuery,
+  GetChannelFundsWithdrawnEventsByEventIdsQueryVariables,
+  GetChannelFundsWithdrawnEventsByEventIds,
+  GetStorageNodesInfoByBagIdQuery,
+  GetStorageNodesInfoByBagIdQueryVariables,
+  GetStorageNodesInfoByBagId,
+  GetChannelRewardClaimedEventsByEventIds,
+  ChannelPaymentMadeEventFieldsFragment,
+  GetChannelPaymentMadeEventsByEventIdsQuery,
+  GetChannelPaymentMadeEventsByEventIdsQueryVariables,
+  GetChannelPaymentMadeEventsByEventIds,
+  MetaprotocolTransactionStatusEventFieldsFragment,
+  GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
+  GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables,
+  GetMetaprotocolTransactionalStatusEventsByEventIds,
+  ChannelRewardClaimedAndWithdrawnEventFieldsFragment,
+  GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery,
+  GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables,
+  GetChannelRewardClaimedAndWithdrawnEventsByEventIds,
+  GetAppByIdQuery,
+  GetAppByIdQueryVariables,
+  GetAppById,
+  AppFieldsFragment,
+  GetAppsByNameQuery,
+  GetAppsByNameQueryVariables,
+  GetAppsByName,
+  GetChannelsCount,
+  GetChannelsCountQuery,
+  GetChannelsCountQueryVariables,
+  BudgetFundedEventFieldsFragment,
+  GetBudgetFundedEventsByEventIdsQuery,
+  GetBudgetFundedEventsByEventIdsQueryVariables,
+  GetBudgetFundedEventsByEventIds,
 } from './graphql/generated/queries'
 import { Maybe } from './graphql/generated/schema'
 import { OperationDefinitionNode } from 'graphql'
@@ -610,6 +655,14 @@ export class QueryNodeApi {
       },
       'candidates'
     )
+  }
+
+  public async getCouncilBudgetFundedEvents(events: EventDetails[]): Promise<CouncilBudgetFundedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetCouncilBudgetFundedEventsByEventIdsQuery,
+      GetCouncilBudgetFundedEventsByEventIdsQueryVariables
+    >(GetCouncilBudgetFundedEventsByEventIds, { eventIds }, 'councilBudgetFundedEvents')
   }
 
   // TODO: Use event id
@@ -922,6 +975,14 @@ export class QueryNodeApi {
       { eventIds },
       'budgetSetEvents'
     )
+  }
+
+  public async getBudgetFundedEvents(events: EventDetails[]): Promise<BudgetFundedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetBudgetFundedEventsByEventIdsQuery,
+      GetBudgetFundedEventsByEventIdsQueryVariables
+    >(GetBudgetFundedEventsByEventIds, { eventIds }, 'budgetFundedEvents')
   }
 
   public async getBudgetSpendingEvents(events: EventDetails[]): Promise<BudgetSpendingEventFieldsFragment[]> {
@@ -1451,6 +1512,14 @@ export class QueryNodeApi {
     >(GetVideoAssetsDeletedByModeratorEventsByEventIds, { eventIds }, 'videoVisibilitySetByModeratorEvents')
   }
 
+  async storageNodesInfoByBagId(bagId: string): Promise<StorageNodeInfoFragment[]> {
+    return this.multipleEntitiesQuery<GetStorageNodesInfoByBagIdQuery, GetStorageNodesInfoByBagIdQueryVariables>(
+      GetStorageNodesInfoByBagId,
+      { bagId },
+      'storageBuckets'
+    )
+  }
+
   async storageBucketsForNewChannel(): Promise<StorageNodeInfoFragment[]> {
     return this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
       GetStorageBuckets,
@@ -1464,5 +1533,78 @@ export class QueryNodeApi {
       GetDistributionFamiliesAdndBucketsQuery,
       GetDistributionFamiliesAdndBucketsQueryVariables
     >(GetDistributionFamiliesAdndBuckets, {}, 'distributionBucketFamilies')
+  }
+
+  async mostRecentChannelPayoutsUpdatedEvent(): Promise<ChannelPayoutsUpdatedEventFragment[]> {
+    return this.multipleEntitiesQuery<
+      GetMostRecentChannelPayoutsUpdatedEventQuery,
+      GetMostRecentChannelPayoutsUpdatedEventQueryVariables
+    >(GetMostRecentChannelPayoutsUpdatedEvent, {}, 'channelPayoutsUpdatedEvents')
+  }
+
+  public async getChannelRewardClaimedEvents(
+    events: EventDetails[]
+  ): Promise<ChannelRewardClaimedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelRewardClaimedEventsByEventIdsQuery,
+      GetChannelRewardClaimedEventsByEventIdsQueryVariables
+    >(GetChannelRewardClaimedEventsByEventIds, { eventIds }, 'channelRewardClaimedEvents')
+  }
+
+  public async getChannelRewardClaimedAndWithdrawnEvents(
+    events: EventDetails[]
+  ): Promise<ChannelRewardClaimedAndWithdrawnEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQuery,
+      GetChannelRewardClaimedAndWithdrawnEventsByEventIdsQueryVariables
+    >(GetChannelRewardClaimedAndWithdrawnEventsByEventIds, { eventIds }, 'channelRewardClaimedAndWithdrawnEvents')
+  }
+
+  public async getChannelFundsWithdrawnEvents(
+    events: EventDetails[]
+  ): Promise<ChannelFundsWithdrawnEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelFundsWithdrawnEventsByEventIdsQuery,
+      GetChannelFundsWithdrawnEventsByEventIdsQueryVariables
+    >(GetChannelFundsWithdrawnEventsByEventIds, { eventIds }, 'channelFundsWithdrawnEvents')
+  }
+
+  public async getChannelPaymentMadeEvents(events: EventDetails[]): Promise<ChannelPaymentMadeEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetChannelPaymentMadeEventsByEventIdsQuery,
+      GetChannelPaymentMadeEventsByEventIdsQueryVariables
+    >(GetChannelPaymentMadeEventsByEventIds, { eventIds }, 'channelPaymentMadeEvents')
+  }
+
+  public async getMetaprotocolTransactionEvents(
+    events: EventDetails[]
+  ): Promise<MetaprotocolTransactionStatusEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetMetaprotocolTransactionalStatusEventsByEventIdsQuery,
+      GetMetaprotocolTransactionalStatusEventsByEventIdsQueryVariables
+    >(GetMetaprotocolTransactionalStatusEventsByEventIds, { eventIds }, 'metaprotocolTransactionStatusEvents')
+  }
+
+  public async getAppById(id: string): Promise<AppFieldsFragment | null> {
+    return this.uniqueEntityQuery<GetAppByIdQuery, GetAppByIdQueryVariables>(GetAppById, { id }, 'appByUniqueInput')
+  }
+
+  public async getAppsByName(name: string): Promise<AppFieldsFragment[] | null> {
+    return this.multipleEntitiesQuery<GetAppsByNameQuery, GetAppsByNameQueryVariables>(GetAppsByName, { name }, 'apps')
+  }
+
+  async getChannelsCount(): Promise<number> {
+    const result = await this.uniqueEntityQuery<GetChannelsCountQuery, GetChannelsCountQueryVariables>(
+      GetChannelsCount,
+      {},
+      'channelsConnection'
+    )
+    Utils.assert(result)
+    return result.totalCount
   }
 }

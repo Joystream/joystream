@@ -51,9 +51,6 @@ jobs:
       - name: Install python3 netaddr
         run: sudo apt-get install -y --no-install-recommends python3-netaddr
 
-      - name: Install python netaddr
-        run: sudo apt install -y --no-install-recommends python-netaddr
-
       - name: Install Ansible
         run: |
           pip3 install --upgrade --user ansible

@@ -46,7 +46,7 @@ export class ReactToCommentsFixture extends StandardizedFixture {
           reactionId: params.msg.reactionId,
         },
       }
-      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg))
+      return this.api.tx.members.memberRemark(params.asMember, Utils.metadataToBytes(MemberRemarked, msg), null)
     })
   }
 

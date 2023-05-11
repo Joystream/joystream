@@ -1,8 +1,7 @@
 import { flags } from '@oclif/command'
-import BN from 'bn.js'
-import AccountsCommandBase from '../../base/AccountsCommandBase'
 import ExitCodes from '../../ExitCodes'
-import { checkBalance, isValidBalance, validateAddress } from '../../helpers/validation'
+import AccountsCommandBase from '../../base/AccountsCommandBase'
+import { validateAddress } from '../../helpers/validation'
 
 export default class AccountTransferTokens extends AccountsCommandBase {
   static description = 'Transfer tokens from any of the available accounts'
@@ -25,10 +24,6 @@ export default class AccountTransferTokens extends AccountsCommandBase {
   async run(): Promise<void> {
     let { from, to, amount } = this.parse(AccountTransferTokens).flags
 
-    if (!isValidBalance(amount)) {
-      this.error('Invalid transfer amount', { exit: ExitCodes.InvalidInput })
-    }
-
     // Initial validation
     if (!from) {
       from = await this.promptForAccount('Select sender account')
@@ -42,8 +37,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
       this.error('Invalid recipient address', { exit: ExitCodes.InvalidInput })
     }
 
-    const accBalances = (await this.getApi().getAccountsBalancesInfo([from]))[0]
-    checkBalance(accBalances, new BN(amount))
+    await this.ensureJoyTransferIsPossible(from, to, amount)
 
     await this.sendAndFollowNamedTx(await this.getDecodedPair(from), 'balances', 'transferKeepAlive', [to, amount])
   }

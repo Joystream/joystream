@@ -43,7 +43,7 @@ export async function populateVideoCategories({ api }: FlowProps): Promise<void>
 
   // flow itself
   for (const videoCategory of videoCategories) {
-    await joystreamCli.createVideoCategory(videoCategory)
+    await joystreamCli.createVideoCategory(videoCategory, memberId.toString())
   }
 
   debug('Done')

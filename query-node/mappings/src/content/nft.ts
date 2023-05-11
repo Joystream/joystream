@@ -43,7 +43,25 @@ import {
   PalletContentNftTypesEnglishAuctionParamsRecord as EnglishAuctionParams,
   PalletContentNftTypesInitTransactionalStatusRecord as InitTransactionalStatus,
 } from '@polkadot/types/lookup'
-import { Content } from '../../generated/types'
+import {
+  Content_AuctionBidCanceledEvent_V1001 as AuctionBidCanceledEvent_V1001,
+  Content_AuctionBidMadeEvent_V1001 as AuctionBidMadeEvent_V1001,
+  Content_AuctionCanceledEvent_V1001 as AuctionCanceledEvent_V1001,
+  Content_BidMadeCompletingAuctionEvent_V1001 as BidMadeCompletingAuctionEvent_V1001,
+  Content_BuyNowCanceledEvent_V1001 as BuyNowCanceledEvent_V1001,
+  Content_BuyNowPriceUpdatedEvent_V1001 as BuyNowPriceUpdatedEvent_V1001,
+  Content_EnglishAuctionSettledEvent_V1001 as EnglishAuctionSettledEvent_V1001,
+  Content_EnglishAuctionStartedEvent_V1001 as EnglishAuctionStartedEvent_V1001,
+  Content_NftBoughtEvent_V1001 as NftBoughtEvent_V1001,
+  Content_NftIssuedEvent_V1001 as NftIssuedEvent_V1001,
+  Content_NftSellOrderMadeEvent_V1001 as NftSellOrderMadeEvent_V1001,
+  Content_NftSlingedBackToTheOriginalArtistEvent_V1001 as NftSlingedBackToTheOriginalArtistEvent_V1001,
+  Content_OfferAcceptedEvent_V1001 as OfferAcceptedEvent_V1001,
+  Content_OfferCanceledEvent_V1001 as OfferCanceledEvent_V1001,
+  Content_OfferStartedEvent_V1001 as OfferStartedEvent_V1001,
+  Content_OpenAuctionBidAcceptedEvent_V1001 as OpenAuctionBidAcceptedEvent_V1001,
+  Content_OpenAuctionStartedEvent_V1001 as OpenAuctionStartedEvent_V1001,
+} from '../../generated/types'
 import { In } from 'typeorm'
 import BN from 'bn.js'
 import { PERBILL_ONE_PERCENT } from '../temporaryConstants'
@@ -360,6 +378,9 @@ async function createBid(
 
     await store.save<Bid>(bid)
   }
+  auction.bids?.forEach((b) => {
+    if (cancelledBidsIds.includes(b.id)) b.isCanceled = true
+  })
 
   const amount = bidAmount ? new BN(bidAmount.toString()) : (auction.buyNowPrice as BN)
   const previousTopBid = auction.topBid
@@ -374,6 +395,7 @@ async function createBid(
     indexInBlock: event.indexInBlock,
     isCanceled: false,
   })
+  auction.bids ? auction.bids.push(newBid) : (auction.bids = [newBid])
 
   // check if the auction's top bid needs to be updated, this can happen in those cases:
   // 1. auction doesn't have the top bid at the moment, new bid should be new top bid
@@ -383,19 +405,19 @@ async function createBid(
   if (!auction.topBid || newBid.amount.gt(auction.topBid.amount)) {
     // handle cases 1 and 2
     newBid.auctionTopBid = auction
+    auction.topBid = newBid
   } else if (cancelledBidsIds.includes(auction.topBid.id)) {
     // handle case 3
-    const allAuctionBids = [...(auction.bids || []), newBid]
-    // filter canceled bids - auction.bids will be stale in memory
-    const notCanceledAuctionBids = allAuctionBids.filter((auctionBid) => !cancelledBidsIds.includes(auctionBid.id))
-    const newTopBid = findTopBid(notCanceledAuctionBids)
+    const newTopBid = findTopBid(auction.bids)
     if (newTopBid) {
       if (newTopBid.id !== newBid.id) {
         // only save newTopBid if it's not the newBid, otherwise store.save(newBid) below will overwrite it
         newTopBid.auctionTopBid = auction
+        auction.topBid = newTopBid
         await store.save<Bid>(newTopBid)
       } else {
         newBid.auctionTopBid = auction
+        auction.topBid = newBid
       }
     }
   }
@@ -563,7 +585,7 @@ export async function convertTransactionalStatus(
 export async function contentNft_OpenAuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId, auctionParams] = new Content.OpenAuctionStartedEvent(event).params
+  const [contentActor, videoId, auctionParams] = new OpenAuctionStartedEvent_V1001(event).params
 
   // specific event processing
 
@@ -607,7 +629,7 @@ export async function contentNft_OpenAuctionStarted({ event, store }: EventConte
 export async function contentNft_EnglishAuctionStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId, auctionParams] = new Content.EnglishAuctionStartedEvent(event).params
+  const [contentActor, videoId, auctionParams] = new EnglishAuctionStartedEvent_V1001(event).params
 
   // specific event processing
 
@@ -680,7 +702,7 @@ function createAuctionType(
 export async function contentNft_NftIssued({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [actor, videoId, nftIssuanceParameters] = new Content.NftIssuedEvent(event).params
+  const [actor, videoId, nftIssuanceParameters] = new NftIssuedEvent_V1001(event).params
 
   // specific event processing
 
@@ -713,7 +735,7 @@ export async function contentNft_NftIssued({ event, store }: EventContext & Stor
 export async function contentNft_AuctionBidMade({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId, bidAmount, previousTopBidderId] = new Content.AuctionBidMadeEvent(event).params
+  const [memberId, videoId, bidAmount, previousTopBidderId] = new AuctionBidMadeEvent_V1001(event).params
 
   const previousTopBidder = previousTopBidderId.isSome
     ? new Membership({ id: previousTopBidderId.unwrap().toString() })
@@ -731,12 +753,14 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
   )
 
   // extend auction duration when needed
-  if (
-    auction.auctionType instanceof AuctionTypeEnglish &&
-    auction.auctionType.plannedEndAtBlock - auction.auctionType.extensionPeriod < event.blockNumber
-  ) {
-    auction.auctionType.plannedEndAtBlock = auction.auctionType.extensionPeriod
-    await store.save<Auction>(auction)
+  if (auction.auctionType.isTypeOf === AuctionTypeEnglish.name) {
+    const auctionType = auction.auctionType as AuctionTypeEnglish
+    const { plannedEndAtBlock, extensionPeriod } = auctionType
+    // The condition has to be the same as in `runtime-modules/content/src/nft/types.rs`
+    if (plannedEndAtBlock - extensionPeriod <= event.blockNumber) {
+      auctionType.plannedEndAtBlock += extensionPeriod
+      await store.save<Auction>(auction)
+    }
   }
 
   // common event processing - second
@@ -759,7 +783,7 @@ export async function contentNft_AuctionBidMade({ event, store }: EventContext &
 export async function contentNft_AuctionBidCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId] = new Content.AuctionBidCanceledEvent(event).params
+  const [memberId, videoId] = new AuctionBidCanceledEvent_V1001(event).params
 
   // specific event processing
 
@@ -823,7 +847,7 @@ export async function contentNft_AuctionBidCanceled({ event, store }: EventConte
 export async function contentNft_AuctionCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId] = new Content.AuctionCanceledEvent(event).params
+  const [contentActor, videoId] = new AuctionCanceledEvent_V1001(event).params
 
   // specific event processing
 
@@ -868,7 +892,7 @@ export async function contentNft_EnglishAuctionSettled({ event, store }: EventCo
   // common event processing
 
   // memberId ignored here because it references member that called extrinsic - that can be anyone!
-  const [winnerId, , videoId] = new Content.EnglishAuctionSettledEvent(event).params
+  const [winnerId, , videoId] = new EnglishAuctionSettledEvent_V1001(event).params
 
   // specific event processing
 
@@ -913,7 +937,7 @@ export async function contentNft_BidMadeCompletingAuction({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, videoId, previousTopBidderId] = new Content.BidMadeCompletingAuctionEvent(event).params
+  const [memberId, videoId, previousTopBidderId] = new BidMadeCompletingAuctionEvent_V1001(event).params
 
   const previousTopBidder = previousTopBidderId.isSome
     ? new Membership({ id: previousTopBidderId.unwrap().toString() })
@@ -959,7 +983,7 @@ export async function contentNft_BidMadeCompletingAuction({
 export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [contentActor, videoId, winnerId, bidAmount] = new Content.OpenAuctionBidAcceptedEvent(event).params
+  const [contentActor, videoId, winnerId, bidAmount] = new OpenAuctionBidAcceptedEvent_V1001(event).params
 
   // specific event processing
 
@@ -996,7 +1020,7 @@ export async function contentNft_OpenAuctionBidAccepted({ event, store }: EventC
 export async function contentNft_OfferStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, contentActor, memberId, price] = new Content.OfferStartedEvent(event).params
+  const [videoId, contentActor, memberId, price] = new OfferStartedEvent_V1001(event).params
 
   // specific event processing
 
@@ -1034,7 +1058,7 @@ export async function contentNft_OfferStarted({ event, store }: EventContext & S
 export async function contentNft_OfferAccepted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId] = new Content.OfferAcceptedEvent(event).params
+  const [videoId] = new OfferAcceptedEvent_V1001(event).params
 
   // specific event processing
 
@@ -1088,7 +1112,7 @@ export async function contentNft_OfferAccepted({ event, store }: EventContext & 
 export async function contentNft_OfferCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, contentActor] = new Content.OfferCanceledEvent(event).params
+  const [videoId, contentActor] = new OfferCanceledEvent_V1001(event).params
 
   // specific event processing
 
@@ -1125,7 +1149,7 @@ export async function contentNft_OfferCanceled({ event, store }: EventContext & 
 export async function contentNft_NftSellOrderMade({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, contentActor, price] = new Content.NftSellOrderMadeEvent(event).params
+  const [videoId, contentActor, price] = new NftSellOrderMadeEvent_V1001(event).params
 
   // specific event processing
 
@@ -1161,7 +1185,7 @@ export async function contentNft_NftSellOrderMade({ event, store }: EventContext
 export async function contentNft_NftBought({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, memberId] = new Content.NftBoughtEvent(event).params
+  const [videoId, memberId] = new NftBoughtEvent_V1001(event).params
 
   // specific event processing
 
@@ -1213,7 +1237,7 @@ export async function contentNft_NftBought({ event, store }: EventContext & Stor
 export async function contentNft_BuyNowCanceled({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, contentActor] = new Content.BuyNowCanceledEvent(event).params
+  const [videoId, contentActor] = new BuyNowCanceledEvent_V1001(event).params
 
   // specific event processing
 
@@ -1249,7 +1273,7 @@ export async function contentNft_BuyNowCanceled({ event, store }: EventContext &
 export async function contentNft_BuyNowPriceUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, contentActor, newPrice] = new Content.BuyNowPriceUpdatedEvent(event).params
+  const [videoId, contentActor, newPrice] = new BuyNowPriceUpdatedEvent_V1001(event).params
 
   // specific event processing
 
@@ -1287,7 +1311,7 @@ export async function contentNft_NftSlingedBackToTheOriginalArtist({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [videoId, contentActor] = new Content.NftSlingedBackToTheOriginalArtistEvent(event).params
+  const [videoId, contentActor] = new NftSlingedBackToTheOriginalArtistEvent_V1001(event).params
 
   // load NFT
   const { video, nft } = await getNftFromVideo(

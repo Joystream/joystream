@@ -1616,6 +1616,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       HandleMustBeProvidedDuringRegistration: AugmentedError<ApiType>;
       /**
+       * Insufficient balance to cover payment.
+       **/
+      InsufficientBalanceToCoverPayment: AugmentedError<ApiType>;
+      /**
        * Insufficient balance to cover stake.
        **/
       InsufficientBalanceToCoverStake: AugmentedError<ApiType>;
@@ -2333,10 +2337,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidCurveParameters: AugmentedError<ApiType>;
       /**
-       * Deadline timestamp lower than now
-       **/
-      InvalidTimestampSpecified: AugmentedError<ApiType>;
-      /**
        * The amount of JOY to be transferred is not enough to keep the destination account alive
        **/
       JoyTransferSubjectToDusting: AugmentedError<ApiType>;
@@ -2371,9 +2371,9 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
       /**
-       * Outstanding amount of CRT bought from AMM too large
+       * Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
        **/
-      OutstandingBondedAmountTooLarge: AugmentedError<ApiType>;
+      OutstandingAmmProvidedSupplyTooLarge: AugmentedError<ApiType>;
       /**
        * Previous sale was still not finalized, finalize it first.
        **/
@@ -2469,7 +2469,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
       /**
-       * Transfer destination member id invalid
+       * At least one of the transfer destinations is not an existing member id
        **/
       TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
       /**
@@ -2725,6 +2725,10 @@ declare module '@polkadot/api-base/types/errors' {
       ZeroExactExecutionBlock: AugmentedError<ApiType>;
     };
     referendum: {
+      /**
+       * A vote cannot be cast from an account that already opted out of voting.
+       **/
+      AccountAlreadyOptedOutOfVoting: AugmentedError<ApiType>;
       /**
        * Trying to vote multiple time in the same cycle
        **/
@@ -3299,12 +3303,6 @@ declare module '@polkadot/api-base/types/errors' {
        * Trying to fund with zero tokens
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
-    };
-    sudo: {
-      /**
-       * Sender must be the Sudo account
-       **/
-      RequireSudo: AugmentedError<ApiType>;
     };
     system: {
       /**
