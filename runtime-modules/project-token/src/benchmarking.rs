@@ -10,7 +10,6 @@ use frame_system::EventRecord;
 use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::{BuyMembershipParameters, Module as Members};
-use pallet_timestamp::{self as timestamp};
 use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use sp_std::{vec, vec::Vec};
 use storage::BagId;
@@ -33,8 +32,8 @@ const DEFAULT_SPLIT_REVENUE: u32 = 8_000_000;
 const DEFAULT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 const DEFAULT_SPLIT_ALLOCATION: u32 = 4_000_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
 const DEFAULT_SPLIT_PAYOUT: u32 = 2_000_000;
-const DEFAULT_SPLIT_PARTICIPATION: u64 =
-    DEFAULT_SPLIT_PAYOUT * DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION;
+const DEFAULT_SPLIT_PARTICIPATION: u32 =
+    DEFAULT_SPLIT_PAYOUT * ((DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION) as u32);
 
 // Amm
 const DEFAULT_AMM_AMOUNT: u32 = 1000;
@@ -161,8 +160,8 @@ fn init_token_sale<T: Config>(token_id: T::TokenId) -> Result<TokenSaleId, Dispa
 
 fn activate_amm<T: Config>(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
     let params = AmmParams {
-        slope: Permill::from_percent(10),
-        intercept: Permill::from_percent(10),
+        slope: 10u32.into(),
+        intercept: 100u32.into(),
     };
     Token::<T>::activate_amm(token_id, member_id, params)
 }
@@ -178,7 +177,6 @@ fn call_buy_on_amm<T: Config>(
         token_id,
         member_id,
         amount,
-        None,
         None,
     )
 }
@@ -265,25 +263,24 @@ benchmarks! {
     // - destination accounts do not exist (need to be created)
     // - bloat_bond is non-zero
     transfer {
-        let o in 1 .. MAX_TX_OUTPUTS;
-        let m in 1 .. MAX_KILOBYTES_METADATA;
+        let o in 1 .. (MAX_TX_OUTPUTS as u32);
+        let m in 1 .. (MAX_KILOBYTES_METADATA as u32);
 
         let (owner_member_id, owner_account) = create_owner::<T>();
-        let outputs =
-            (0..o)
+        let _outputs =
+            (0..(o as u16))
             .map(|i| {
                 let member_id = create_member::<T>(
-                    &account::<T::AccountId>("dst", i, SEED),
-                    &uniq_handle("dst_member", i)
+                    &account::<T::AccountId>("dst", i as u32, SEED),
+                    &uniq_handle("dst_member", i as u32)
                 );
                 (
                     member_id,
-                    Payment::<<T as Config>::Balance> {
-                        amount: DEFAULT_TX_AMOUNT.into()
-                    }
+                    TokenBalanceOf::<T>::from(DEFAULT_TX_AMOUNT)
                 )
             })
-            .collect::<BoundedVec<_,u16>>();
+            .collect::<Vec<_>>();
+        let outputs: TransferOutputsOf<T> = _outputs.try_into().unwrap();
         let bloat_bond: JoyBalanceOf<T> = T::JoyExistentialDeposit::get();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         setup_account_with_max_number_of_locks::<T>(token_id, &owner_member_id, None);
@@ -301,9 +298,9 @@ benchmarks! {
         metadata.clone()
     )
     verify {
-        outputs.0.keys().for_each(|m| {
+        outputs.iter().for_each(|(member_id, _)| {
             assert_eq!(
-                AccountInfoByTokenAndMember::<T>::get(token_id, m).amount,
+                AccountInfoByTokenAndMember::<T>::get(token_id, member_id).amount,
                 DEFAULT_TX_AMOUNT.into()
             );
         });
@@ -313,7 +310,6 @@ benchmarks! {
                 owner_member_id,
                 Transfers(
                     outputs
-                        .0
                         .iter()
                         .map(|(m, p)| (Validated::NonExisting(*m), ValidatedPayment::from(PaymentWithVesting::from(p.clone()))))
                         .collect()
@@ -501,7 +497,7 @@ benchmarks! {
 
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
-        setup_account_with_max_number_of_locks::<T>(token_id, &participant_id, Some(DEFAULT_SPLIT_PARTICIPATION.into()));
+        setup_account_with_max_number_of_locks::<T>(token_id, &participant_id, Some(<T as Config>::Balance::from(DEFAULT_SPLIT_PARTICIPATION)));
 
         // Issue revenue split
         // Note: We need to force split_id==1, because
@@ -551,8 +547,8 @@ benchmarks! {
         let participant_id = create_member::<T>(&participant_acc, b"participant");
         setup_account_with_max_number_of_locks::<T>(token_id, &participant_id, Some(DEFAULT_SPLIT_PARTICIPATION.into()));
 
-        // Issue revenue split
         // Note: We need to force split_id==1, because
+// Issue revenue split
         // setup_account_with_max_number_of_locks will setup a staking_status with split_id == 0
         issue_revenue_split::<T>(token_id, Some(1))?;
         System::<T>::set_block_number(
@@ -578,7 +574,7 @@ benchmarks! {
             RawEvent::RevenueSplitLeft(
                 token_id,
                 participant_id,
-                DEFAULT_SPLIT_PARTICIPATION.into()
+                DEFAULT_SPLIT_PARTICIPATION.into(),
             ).into()
         );
     }
@@ -702,7 +698,6 @@ benchmarks! {
         token_id,
         participant_id,
         amount,
-        Some(deadline),
         Some(slippage_tolerance)
     )
     verify {
@@ -715,6 +710,18 @@ benchmarks! {
             Joy::<T>::usable_balance(&participant_acc),
             desired_price + T::JoyExistentialDeposit::get() - sell_tx_fee_amount,
         );
+    }
+
+    update_max_yearly_patronage_rate {
+        let _ = create_owner::<T>();
+        let token_id = Token::<T>::next_token_id();
+    }:_ (
+        RawOrigin::Root,
+        DEFAULT_PATRONAGE
+    )
+    verify {
+        let observed_rate = Token::<T>::token_info_by_id(token_id).patronage_info.rate;
+        assert_eq!(observed_rate, DEFAULT_PATRONAGE);
     }
 }
 
@@ -791,6 +798,13 @@ mod tests {
     fn test_sell_on_amm() {
         build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
             assert_ok!(Token::test_benchmark_sell_on_amm());
+        });
+    }
+
+    #[test]
+    fn test_update_yearly_max_patronage_rate() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(Token::test_benchmark_update_max_yearly_patronage_rate());
         });
     }
 }

@@ -892,11 +892,6 @@ impl<Balance, VestingScheduleParams>
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
 pub struct Transfers<MemberId, Payment>(pub BTreeMap<MemberId, Payment>);
 
-// #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo)]
-// pub struct TestTransfers<MemberId, Payment, MaxOutputs: Get<u32>>(
-//     pub BoundedBTreeMap<MemberId, Payment, MaxOutputs>,
-// );
-
 /// Default trait for Merkle Side
 impl Default for MerkleSide {
     fn default() -> Self {

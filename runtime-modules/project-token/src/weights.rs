@@ -54,6 +54,7 @@ pub trait WeightInfo {
 	fn buy_on_amm_with_account_creation() -> Weight;
 	fn buy_on_amm_with_existing_account() -> Weight;
 	fn sell_on_amm() -> Weight;
+	fn update_max_yearly_patronage_rate() -> Weight;
 }
 
 /// Weights for project_token using the Substrate node and recommended hardware.
@@ -197,6 +198,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(7 as Weight))
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
+
+	fn update_max_yearly_patronage_rate() -> Weight {
+	    0
+	}
 }
 
 // Default implementation for tests
@@ -230,5 +235,8 @@ impl WeightInfo for () {
 	}
 	fn sell_on_amm() -> Weight {
 		0
+	}
+	fn update_max_yearly_patronage_rate() -> Weight {
+	    0
 	}
 }

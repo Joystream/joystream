@@ -966,7 +966,7 @@ decl_module! {
             Ok(())
         }
 
-        #[weight = 100_000_000] // TODO: adjust weight
+        #[weight = WeightInfoToken::<T>::update_max_yearly_patronage_rate()]
         fn update_max_yearly_patronage_rate(origin, rate: YearlyRate) -> DispatchResult {
             ensure_root(origin)?;
 
