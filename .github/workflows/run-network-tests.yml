@@ -219,9 +219,13 @@ jobs:
       - name: Check for runtime version change
         uses: technote-space/get-diff-action@v3
         with:
+          PREFIX_FILTER: |
+            runtime
+            runtime-modules
+          SUFFIX_FILTER: |
+            .rs
           FILES: |
-            runtime/src/lib.rs
-            runtime/Cargo.toml
+            Cargo.toml
       - name: setup node
         uses: actions/setup-node@v3
         with:
