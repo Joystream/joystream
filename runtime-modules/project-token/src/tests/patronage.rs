@@ -227,7 +227,6 @@ fn claim_patronage_ok() {
     })
 }
 
-// TODO(mrbovo): allow for more than 100% claim over supply
 #[test]
 fn claim_patronage_ok_with_correct_credit_accounting_and_more_than_100_percent_supply() {
     // [(1 + 10%/100%)^{(10*BlocksPerYear + 10)/BlocksPerYear} - 1] * supply
