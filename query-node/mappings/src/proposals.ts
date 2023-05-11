@@ -2,7 +2,8 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails } from '@polkadot/types/lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } from '../generated/types/1001/types-lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -70,6 +71,7 @@ import {
 } from './common'
 import {
   ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsCodex_ProposalCreatedEvent_V2002 as ProposalCreatedEvent_V2002,
   ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
   ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
   ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
@@ -79,6 +81,8 @@ import {
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
+
+type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 
 async function getProposal(store: DatabaseManager, id: string) {
   const proposal = await store.get(Proposal, { where: { id } })
@@ -333,9 +337,12 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
   )
 }
 
-export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
+export async function proposalsCodex_ProposalCreated({ store, event, block }: EventContext & StoreContext): Promise<void> {
+  const specVersion = block.runtimeVersion.specVersion
+  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] = specVersion >= 2002 ? 
+    new ProposalCreatedEvent_V2002(event).params :
     new ProposalCreatedEvent_V1001(event).params
+
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
