@@ -311,7 +311,7 @@ fn claim_patronage_ok_with_event_deposit() {
 }
 
 #[test]
-fn claim_patronage_ok_with_credit_accounting() {
+fn claim_patronage_ok_with_correct_patronage_credit_accounting() {
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
             .with_supply(DEFAULT_INITIAL_ISSUANCE)
