@@ -337,11 +337,14 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
   )
 }
 
-export async function proposalsCodex_ProposalCreated({ store, event, block }: EventContext & StoreContext): Promise<void> {
+export async function proposalsCodex_ProposalCreated({
+  store,
+  event,
+  block,
+}: EventContext & StoreContext): Promise<void> {
   const specVersion = block.runtimeVersion.specVersion
-  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] = specVersion >= 2002 ? 
-    new ProposalCreatedEvent_V2002(event).params :
-    new ProposalCreatedEvent_V1001(event).params
+  const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
+    specVersion >= 2002 ? new ProposalCreatedEvent_V2002(event).params : new ProposalCreatedEvent_V1001(event).params
 
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
