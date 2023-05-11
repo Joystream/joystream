@@ -1368,22 +1368,21 @@ fn worst_case_scenario_token_sale_params<T: Config>(
 
 fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
     num: u32,
-) -> TransfersWithVestingOf<T>
+) -> TransferWithVestingOutputsOf<T>
 where
     T::AccountId: CreateAccountId,
 {
-    Transfers(
-        (0..num)
-            .map(|_| {
-                let (_, member_id) = member_funded_account::<T>();
-                let payment = PaymentWithVestingOf::<T> {
-                    amount: 100u32.into(),
-                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
-                };
-                (member_id, payment)
-            })
-            .collect(),
-    )
+    let _outputs = (0..num)
+        .map(|_| {
+            let (_, member_id) = member_funded_account::<T>();
+            let payment = PaymentWithVestingOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, payment)
+        })
+        .collect::<Vec<_>>();
+    _outputs.try_into().unwrap()
 }
 
 pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
@@ -1687,8 +1686,8 @@ fn call_activate_amm<T: Config>(
     channel_id: T::ChannelId,
 ) {
     let params = AmmParams {
-        slope: Permill::from_percent(10),
-        intercept: Permill::from_percent(10),
+        slope: 10u32.into(),
+        intercept: 100u32.into(),
     };
     Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params).unwrap()
 }

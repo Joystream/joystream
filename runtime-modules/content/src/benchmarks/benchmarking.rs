@@ -1474,7 +1474,7 @@ benchmarks! {
                 transfer_policy: params.transfer_policy.into(),
                 symbol: params.symbol,
                 patronage_info: PatronageData::<TokenBalanceOf<T>, T::BlockNumber> {
-                    rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
+                    rate: params.patronage_rate,
                     unclaimed_patronage_tally_amount: Zero::zero(),
                     last_unclaimed_patronage_tally_block: execution_block
                 },
@@ -1548,7 +1548,7 @@ benchmarks! {
                     project_token::Event::<T>::TokenAmountTransferredByIssuer(
                         token_id,
                         curator_member_id,
-                        Transfers(outputs.0
+                        Transfers(outputs
                                   .iter()
                                   .map(|(member_id, payment)|
                                        (Validated::NonExisting(*member_id), payment.clone().into())
@@ -1789,8 +1789,8 @@ benchmarks! {
                 channel_id,
                 curator_member_id
             )?;
-        let slope = Permill::from_percent(10);
-        let intercept = Permill::from_percent(10);
+        let slope = 10u32.into();
+        let intercept = 100u32.into();
         let params = AmmParams{ slope, intercept };
         // No pausable feature prevents this
         set_all_channel_paused_features::<T>(channel_id);
@@ -2044,7 +2044,7 @@ benchmarks! {
     }: _(origin, actor, channel_id, target_rate)
         verify {
             let current_block = frame_system::Pallet::<T>::block_number();
-            let new_block_rate = BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
+            let new_block_rate = target_rate;
             assert!(TokenInfoById::<T>::contains_key(token_id));
             let token = project_token::Pallet::<T>::token_info_by_id(token_id);
             assert_eq!(token.patronage_info.rate, new_block_rate);
@@ -2059,7 +2059,7 @@ benchmarks! {
                 <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::PatronageRateDecreasedTo(
                         token_id,
-                        new_block_rate.to_yearly_rate_representation(T::BlocksPerYear::get())
+                        new_block_rate
                     ),
                 ).into(),
             );
