@@ -1,3 +1,7 @@
+### 1.2.0
+
+- Add support for Elasticsearch authentication (`logs.elastic.auth` config section)
+
 ### 1.1.0 (Ephesus release)
 
 - `dev:batchUpload` command was removed as it relied on no longer available `sudo` extrinsic

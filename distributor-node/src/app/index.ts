@@ -1,4 +1,4 @@
-import { Config, DisplaySafeConfig } from '../types'
+import { Config } from '../types'
 import { NetworkingService } from '../services/networking'
 import { LoggingService } from '../services/logging'
 import { StateCacheService } from '../services/cache/StateCacheService'
@@ -90,13 +90,10 @@ export class App {
     }
   }
 
-  private hideSecrets(config: Config) {
-    const displaySafeConfig: DisplaySafeConfig = {
-      ...config,
-      keys: config.keys?.map((k) => _.mapValues(k, () => '###SECRET###' as const)),
-      operatorApi: _.mapValues(config.operatorApi, () => '###SECRET###' as const),
-    }
-
+  private hideSecrets(config: Config): Record<string, unknown> {
+    let displaySafeConfig = hidePath(config, 'keys')
+    displaySafeConfig = hidePath(displaySafeConfig, 'operatorApi.hmacSecret')
+    displaySafeConfig = hidePath(displaySafeConfig, 'logs.elastic.auth')
     return displaySafeConfig
   }
 
@@ -197,4 +194,30 @@ export class App {
       this.exitCritically()
     }
   }
+}
+
+function deepHide(object: unknown, replaceValue = '###SECRET###'): unknown {
+  if (Array.isArray(object)) {
+    return object.map((el) => deepHide(el))
+  }
+  if (typeof object === 'object' && object !== null) {
+    return _.mapValues(object, (value) => deepHide(value))
+  }
+  if (object === null || object === undefined) {
+    return object
+  }
+  return replaceValue
+}
+
+function hidePath(
+  object: Record<string, unknown>,
+  path: string,
+  replaceValue = '###SECRET###'
+): Record<string, unknown> {
+  const objectClone = { ...object }
+  const valueAtPath = _.get(objectClone, path)
+  if (valueAtPath) {
+    return _.set(objectClone, path, deepHide(valueAtPath, replaceValue))
+  }
+  return objectClone
 }
