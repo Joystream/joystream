@@ -33,7 +33,6 @@ use frame_support::{
     PalletId,
 };
 use frame_system::{ensure_root, ensure_signed};
-use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
@@ -41,6 +40,7 @@ use sp_runtime::{
     PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryInto;
 use sp_std::ops::Div;
 use sp_std::vec;
 use sp_std::vec::Vec;
@@ -72,7 +72,7 @@ type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
 /// Pallet Configuration
 pub trait Config:
-    frame_system::Config + balances::Config + storage::Config + membership::Config + timestamp::Config
+    frame_system::Config + balances::Config + storage::Config + membership::Config
 {
     /// Events
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
