@@ -150,7 +150,7 @@ macro_rules! hours {
 #[macro_export]
 macro_rules! days {
     ($a:expr) => {{
-        hours!(24) * $a
+        crate::hours!(24) * $a
     }};
 }
 
