@@ -1,6 +1,6 @@
 //! This module contains playground parameters for the runtime codex proposals.
 
-use crate::{currency, dollars, Balance, BlockNumber, ProposalParameters};
+use crate::{currency, days, dollars, Balance, BlockNumber, ProposalParameters};
 
 // Proposal parameters for the 'Set Max Validator Count' proposal
 pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
