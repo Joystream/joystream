@@ -613,7 +613,6 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount_to_buy = DEFAULT_AMM_AMOUNT.into();
-        let deadline = <T as timestamp::Config>::Moment::from(100u32);
         let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
@@ -621,7 +620,6 @@ benchmarks! {
         let participant_id = create_member::<T>(&participant_acc, b"participant");
         let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + tx_fee_amount);
         let slippage_tolerance = (Permill::from_percent(10), desired_price);
-        pallet_timestamp::Pallet::<T>::set_timestamp(deadline);
         activate_amm::<T>(token_id, owner_member_id)?;
     }: buy_on_amm(
         RawOrigin::Signed(participant_acc.clone()),
@@ -647,7 +645,6 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount_to_buy = DEFAULT_AMM_AMOUNT.into();
-        let deadline = <T as timestamp::Config>::Moment::from(100u32);
         let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
@@ -656,7 +653,6 @@ benchmarks! {
         activate_amm::<T>(token_id, owner_member_id)?;
         let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + tx_fee_amount);
         let slippage_tolerance = (Permill::from_percent(10), desired_price);
-        pallet_timestamp::Pallet::<T>::set_timestamp(deadline);
     }: buy_on_amm(
         RawOrigin::Signed(participant_acc.clone()),
         token_id,
@@ -681,7 +677,6 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount = DEFAULT_AMM_AMOUNT.into();
-        let deadline = <T as timestamp::Config>::Moment::from(100u32);
         let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let buy_tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
@@ -690,7 +685,6 @@ benchmarks! {
         let participant_id = create_member::<T>(&participant_acc, b"participant");
         let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + buy_tx_fee_amount);
         let slippage_tolerance = (Permill::from_percent(10), desired_price);
-        pallet_timestamp::Pallet::<T>::set_timestamp(deadline);
         activate_amm::<T>(token_id, owner_member_id)?;
         call_buy_on_amm::<T>(token_id, participant_acc.clone(), participant_id, amount)?;
     }:_ (
