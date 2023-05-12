@@ -1,7 +1,7 @@
 //! This module contains staging parameters configuration for the runtime codex proposals.
 
 use crate::{
-    currency, dollars, minutes, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,
+    currency, days, dollars, minutes, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,
     ProposalParameters,
 };
 use static_assertions::const_assert;
