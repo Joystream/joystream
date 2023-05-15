@@ -150,7 +150,7 @@ macro_rules! hours {
 #[macro_export]
 macro_rules! days {
     ($a:expr) => {{
-        hours!(24) * $a
+        ((24 * 60 * 60 * 1000) / ExpectedBlockTime::get()) as u32 * $a
     }};
 }
 
