@@ -1,6 +1,4 @@
-use node_runtime::{
-    days, hours, ExpectedBlockTime, ProjectTokenAccountBloatBond, ProjectTokenConfig,
-};
+use node_runtime::{days, ExpectedBlockTime, ProjectTokenAccountBloatBond, ProjectTokenConfig};
 use sp_runtime::Permill;
 
 pub fn production_config() -> ProjectTokenConfig {

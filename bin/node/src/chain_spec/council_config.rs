@@ -1,6 +1,6 @@
 use node_runtime::{
-    constants::currency, council::CouncilStageUpdate, days, dollars, hours,
-    monthly_dollars_to_per_block, Balance, CouncilConfig, ExpectedBlockTime,
+    constants::currency, council::CouncilStageUpdate, days, dollars, monthly_dollars_to_per_block,
+    Balance, CouncilConfig, ExpectedBlockTime,
 };
 
 pub fn create_council_config() -> CouncilConfig {
