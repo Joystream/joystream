@@ -1,6 +1,6 @@
 //! This module contains playground parameters for the runtime codex proposals.
 
-use crate::{currency, days, dollars, Balance, BlockNumber, ProposalParameters};
+use crate::{currency, dollars, Balance, BlockNumber, ProposalParameters};
 
 // Proposal parameters for the 'Set Max Validator Count' proposal
 pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
@@ -330,16 +330,17 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
         constitutionality: 1,
     }
 }
+
 // Proposal parameters for the 'Update Max Yearly Patronage Rate' proposal
 pub(crate) fn update_max_yearly_patronage_rate_proposal() -> ProposalParameters<BlockNumber, Balance>
 {
     ProposalParameters {
-        voting_period: days!(7),
-        grace_period: days!(1),
-        approval_quorum_percentage: TWO_OUT_OF_THREE,
-        approval_threshold_percentage: ALL,
-        slashing_quorum_percentage: ALL,
-        slashing_threshold_percentage: ALL,
+        voting_period: 200,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
         required_stake: Some(dollars!(100)),
         constitutionality: 1,
     }
