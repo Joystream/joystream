@@ -1,6 +1,7 @@
 ### 1.2.0
 
 - Add support for Elasticsearch authentication (`logs.elastic.auth` config section)
+- **FIX:** Objects belonging to group `0` of LRU-SP cache were never fully dropped from the state because of a bug in `StateCacheService.dropById`
 
 ### 1.1.0 (Ephesus release)
 
