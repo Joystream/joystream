@@ -29,7 +29,7 @@ fi
 ./query-node/start.sh
 
 ## Orion
-docker-compose up -d orion
+./start-orion.sh
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
