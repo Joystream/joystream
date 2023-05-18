@@ -38,8 +38,9 @@ const DEFAULT_SPLIT_PARTICIPATION: u32 =
 
 // Amm
 const DEFAULT_AMM_AMOUNT: u32 = 1000;
-// Patronage
-const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(1));
+const DEFAULT_AMM_JOY_AMOUNT: u32 = 5_100_000; // (a = 10) * amount^2 /2 + (b = 100) * amount, amount = 1000
+                                               // Patronage
+const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(15));
 // Metadata
 const MAX_KILOBYTES_METADATA: u32 = 100;
 
