@@ -9,6 +9,8 @@ use crate::tests::mock::*;
 use crate::types::YearlyRate;
 use crate::{balance, last_event_eq, Error, RawEvent};
 
+// compute correct patronage amount given rate%, blocks and supply: (1 + rate/100%)^{blocks/BlocksPerYear}
+
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
     build_default_test_externalities().execute_with(|| {
@@ -41,7 +43,11 @@ fn issue_token_ok_with_correct_non_zero_patronage_accounting() {
         assert_eq!(
             Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .unclaimed_patronage_at_block::<BlocksPerYear>(System::block_number()),
-            compute_correct_patronage_amount(DEFAULT_INITIAL_ISSUANCE)
+            compute_correct_patronage_amount(
+                DEFAULT_INITIAL_ISSUANCE,
+                DEFAULT_YEARLY_PATRONAGE_RATE,
+                DEFAULT_BLOCK_INTERVAL
+            )
         );
     })
 }
@@ -100,7 +106,11 @@ fn decrease_patronage_ok_with_tally_count_correctly_updated() {
             Token::token_info_by_id(DEFAULT_TOKEN_ID)
                 .patronage_info
                 .unclaimed_patronage_tally_amount,
-            compute_correct_patronage_amount(DEFAULT_INITIAL_ISSUANCE)
+            compute_correct_patronage_amount(
+                DEFAULT_INITIAL_ISSUANCE,
+                DEFAULT_YEARLY_PATRONAGE_RATE,
+                DEFAULT_BLOCK_INTERVAL
+            )
         );
     })
 }
@@ -264,8 +274,14 @@ fn claim_patronage_ok_with_correct_credit_accounting_and_more_than_100_percent_s
 }
 
 #[test]
-fn claim_patronage_ok_with_supply_greater_than_u64_max_and_sufficient_precision() {
-    let big_supply = 1_000_000_000_000_000_000_000_000_000_000u128;
+fn claim_patronage_ok_with_supply_greater_than_u64_max() {
+    let big_supply = 1_000_000_000_000_000_000_000_000_000_000u128; // 10^33 > u64::max
+    let expected_issuer_amount_post = compute_correct_patronage_amount(
+        big_supply,
+        DEFAULT_YEARLY_PATRONAGE_RATE,
+        DEFAULT_BLOCK_INTERVAL,
+    )
+    .saturating_add(big_supply);
     build_default_test_externalities().execute_with(|| {
         IssueTokenFixture::default()
             .with_supply(big_supply)
@@ -278,12 +294,11 @@ fn claim_patronage_ok_with_supply_greater_than_u64_max_and_sufficient_precision(
             .execute_call()
             .unwrap();
 
-        let approx =
+        assert_eq!(
             Token::account_info_by_token_and_member(DEFAULT_TOKEN_ID, DEFAULT_ISSUER_MEMBER_ID)
-                .transferrable::<Test>(System::block_number());
-        let target = 1000000181215750585898368181876;
-        let diff = approx.max(target) - approx.min(target);
-        assert!(diff <= 1_000_000_000_000); // approximation works up to 15 dec places -> OK
+                .transferrable::<Test>(System::block_number()),
+            expected_issuer_amount_post
+        );
     })
 }
 
@@ -303,7 +318,11 @@ fn claim_patronage_ok_with_event_deposit() {
 
         last_event_eq!(RawEvent::PatronageCreditClaimed(
             DEFAULT_TOKEN_ID,
-            compute_correct_patronage_amount(DEFAULT_INITIAL_ISSUANCE),
+            compute_correct_patronage_amount(
+                DEFAULT_INITIAL_ISSUANCE,
+                DEFAULT_YEARLY_PATRONAGE_RATE,
+                DEFAULT_BLOCK_INTERVAL
+            ),
             DEFAULT_ISSUER_MEMBER_ID,
         ));
     })
@@ -332,7 +351,11 @@ fn claim_patronage_ok_with_correct_patronage_credit_accounting() {
                 .transferrable::<Test>(System::block_number());
         assert_eq!(
             issuer_amount_post - issuer_amount_pre,
-            compute_correct_patronage_amount(issuer_amount_pre)
+            compute_correct_patronage_amount(
+                issuer_amount_pre,
+                DEFAULT_YEARLY_PATRONAGE_RATE,
+                DEFAULT_BLOCK_INTERVAL
+            )
         );
     })
 }

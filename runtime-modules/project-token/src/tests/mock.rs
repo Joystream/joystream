@@ -5,21 +5,21 @@ use frame_support::{
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
-use common::locks::{BoundStakingAccountLockId, InvitedMemberLockId};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
+use common::{
+    locks::{BoundStakingAccountLockId, InvitedMemberLockId},
+    numerical::one_plus_interest_pow_fixed,
+};
 use frame_support::{
     ensure,
     traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons},
     PalletId,
 };
 use frame_system::ensure_signed;
-use sp_arithmetic::Perbill;
+use sp_arithmetic::{FixedPointNumber, Perbill};
 use sp_io::TestExternalities;
+use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
-use sp_runtime::{
-    testing::{Header, H256},
-    Perquintill,
-};
 use sp_runtime::{DispatchError, DispatchResult, PerThing, Permill};
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::{LockComparator, StakingHandler};
@@ -762,7 +762,15 @@ pub(crate) fn amm_function_values(
     }
 }
 
-// computes  supply * [(1 + 10%/100%)^(10/BlocksPerYear::get()) - 1]
-pub(crate) fn compute_correct_patronage_amount(supply: Balance) -> Balance {
-    Perquintill::from_parts(181215751000).mul_floor(supply)
+pub fn compute_correct_patronage_amount(
+    supply: Balance,
+    patronage_rate: Permill,
+    blocks: BlockNumber,
+) -> Balance {
+    let supply_post_patronage = one_plus_interest_pow_fixed(
+        patronage_rate,
+        FixedPointNumber::saturating_from_rational(blocks, BlocksPerYear::get()),
+    )
+    .saturating_mul_int(supply);
+    supply_post_patronage.saturating_sub(supply)
 }
