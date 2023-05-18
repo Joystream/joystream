@@ -39,7 +39,8 @@ const DEFAULT_SPLIT_PARTICIPATION: u32 =
 // Amm
 const DEFAULT_AMM_AMOUNT: u32 = 1000;
 const DEFAULT_AMM_JOY_AMOUNT: u32 = 5_100_000; // (a = 10) * amount^2 /2 + (b = 100) * amount, amount = 1000
-                                               // Patronage
+
+// Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(15));
 // Metadata
 const MAX_KILOBYTES_METADATA: u32 = 100;
@@ -614,7 +615,7 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount_to_buy = DEFAULT_AMM_AMOUNT.into();
-        let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
+        let desired_price = DEFAULT_AMM_JOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
@@ -646,7 +647,7 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount_to_buy = DEFAULT_AMM_AMOUNT.into();
-        let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
+        let desired_price = DEFAULT_AMM_JOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
@@ -678,7 +679,7 @@ benchmarks! {
         let (owner_member_id, owner_account) = create_owner::<T>();
         let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
         let amount = DEFAULT_AMM_AMOUNT.into();
-        let desired_price = DEFAULT_AMM_jOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
+        let desired_price = DEFAULT_AMM_JOY_AMOUNT.into(); // computed using supply = 0  a = 10% and b = 10%
         let bloat_bond = BloatBond::<T>::get();
         let buy_tx_fee_amount = Token::<T>::amm_buy_tx_fees().mul_floor(desired_price);
         let sell_tx_fee_amount = Token::<T>::amm_sell_tx_fees().mul_floor(desired_price);
