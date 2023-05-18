@@ -259,7 +259,6 @@ decl_module! {
             )?;
 
             // Currency transfer preconditions
-            // let btree_outputs = Transfers(outputs.into_iter().map(|(member_id, amount)| (member_id, PaymentWithVesting::from(amount))).collect::<BTreeMap<_,_>>());
             let validated_transfers = Self::ensure_can_transfer(token_id, &sender, &src_member_id, outputs.into(), false)?;
 
             // == MUTATION SAFE ==

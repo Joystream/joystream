@@ -63,7 +63,9 @@ fn amm_buy_fails_with_member_and_origin_auth() {
 #[test]
 fn amm_buy_succeeds_with_new_user() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -104,7 +106,9 @@ fn amm_buy_fails_with_token_not_in_amm_state() {
 #[test]
 fn amm_buy_succeeds_with_existing_user() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -137,7 +141,8 @@ fn amm_buy_succeeds_with_existing_user() {
 #[test]
 fn amm_buy_failed_with_slippage_constraint_violated() {
     let slippage_tolerance = (Permill::zero(), Balance::zero());
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE);
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -154,7 +159,9 @@ fn amm_buy_failed_with_slippage_constraint_violated() {
 #[test]
 fn amm_buy_fails_with_pricing_function_overflow() {
     let amount = Balance::max_value();
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -169,7 +176,9 @@ fn amm_buy_fails_with_pricing_function_overflow() {
 #[test]
 fn amm_buy_ok_with_creator_token_issuance_increased() {
     let token_id = token!(1);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -189,7 +198,9 @@ fn amm_buy_ok_with_creator_token_issuance_increased() {
 #[test]
 fn amm_treasury_balance_correctly_increased_during_amm_buy() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -197,7 +208,7 @@ fn amm_treasury_balance_correctly_increased_during_amm_buy() {
             let amm_reserve_account = Token::amm_treasury_account(token_id);
             let amm_reserve_pre = Balances::usable_balance(amm_reserve_account);
             let correctly_computed_joy_amount =
-                amm_function_values(DEFAULT_AMM_BUY_AMOUNT, token_id, AmmOperation::Buy);
+                amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE);
 
             AmmBuyFixture::default()
                 .with_amount(DEFAULT_AMM_BUY_AMOUNT)
@@ -229,39 +240,40 @@ fn amm_buy_fails_with_user_not_having_sufficient_usable_joy_required() {
 
 #[test]
 fn user_joy_balance_correctly_decreased_during_amm_buy() {
-    let token_id = token!(1);
-    let (_, user_account) = member!(2);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
-            let correctly_computed_joy_amount =
-                amm_function_values(DEFAULT_AMM_BUY_AMOUNT, token_id, AmmOperation::Buy);
-            let user_reserve_pre = Balances::usable_balance(user_account);
+            let user_reserve_pre = Balances::usable_balance(user_account_id);
 
             AmmBuyFixture::default()
                 .with_amount(DEFAULT_AMM_BUY_AMOUNT)
                 .execute_call()
                 .unwrap();
 
-            let user_reserve_post = Balances::usable_balance(user_account);
-            assert_eq!(
-                user_reserve_pre - user_reserve_post,
-                correctly_computed_joy_amount
-            );
+            let user_reserve_post = Balances::usable_balance(user_account_id);
+            assert_eq!(user_reserve_pre - user_reserve_post, user_balance);
         })
 }
 
 #[test]
 fn amm_buy_ok_with_event_deposit() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
-            let price = amm_function_values(DEFAULT_AMM_BUY_AMOUNT, token_id, AmmOperation::Buy);
+            let price = amm_function_values(
+                DEFAULT_AMM_BUY_AMOUNT,
+                DEFAULT_INITIAL_ISSUANCE,
+                AmmOperation::Buy,
+            );
 
             AmmBuyFixture::default()
                 .with_amount(DEFAULT_AMM_BUY_AMOUNT)
@@ -406,7 +418,9 @@ fn amm_activation_ok_with_event_deposit() {
 
 #[test]
 fn amm_sell_noop_ok_with_zero_requested_amount() {
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -427,8 +441,11 @@ fn amm_sell_noop_ok_with_zero_requested_amount() {
 #[test]
 fn amm_sell_fails_with_user_not_having_leaking_funds_from_vesting_schedule() {
     const DURATION: u64 = 2 * DEFAULT_SALE_DURATION;
-    let ((alice_id, alice_account), alice_joys) = (member!(2), joy!(5_000_000_000));
-    let ((bob_id, bob_account), bob_joys) = (member!(3), joy!(5_000_000_000));
+    let alice_joys =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let bob_joys = alice_joys.clone();
+    let (alice_id, alice_account) = member!(2);
+    let (bob_id, bob_account) = member!(3);
     build_default_test_externalities_with_balances(vec![
         (alice_account, alice_joys),
         (bob_account, bob_joys),
@@ -503,7 +520,9 @@ fn amm_sell_fails_with_user_not_having_enough_token_balance() {
 #[test]
 fn amm_sell_fails_with_invalid_token_specified() {
     let token_id = token!(2);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -540,7 +559,9 @@ fn amm_sell_fails_with_invalid_account_info_specified() {
 #[test]
 fn amm_sell_fails_with_member_and_origin_auth() {
     let (_, sender) = member!(3);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -558,7 +579,9 @@ fn amm_sell_fails_with_member_and_origin_auth() {
 
 #[test]
 fn amm_sell_fails_with_token_not_in_amm_state() {
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -572,7 +595,9 @@ fn amm_sell_fails_with_token_not_in_amm_state() {
 #[test]
 fn amm_sell_failed_with_slippage_constraint_violated() {
     let slippage_tolerance = (Permill::zero(), joy!(1_000_000_000));
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -590,7 +615,9 @@ fn amm_sell_failed_with_slippage_constraint_violated() {
 #[test]
 fn amm_treasury_balance_correctly_decreased_during_amm_sell() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -602,8 +629,11 @@ fn amm_treasury_balance_correctly_decreased_during_amm_sell() {
                 .unwrap();
             let amm_reserve_account = Token::amm_treasury_account(token_id);
             let amm_reserve_pre = Balances::usable_balance(amm_reserve_account);
-            let correctly_computed_joy_amount =
-                amm_function_values(DEFAULT_AMM_SELL_AMOUNT, token_id, AmmOperation::Sell);
+            let correctly_computed_joy_amount = amm_function_values(
+                DEFAULT_AMM_SELL_AMOUNT,
+                DEFAULT_INITIAL_ISSUANCE,
+                AmmOperation::Sell,
+            );
 
             AmmSellFixture::default()
                 .with_amount(DEFAULT_AMM_SELL_AMOUNT)
@@ -623,7 +653,9 @@ fn amm_treasury_balance_correctly_decreased_during_amm_sell() {
 #[test]
 fn amm_sell_ok_with_crt_issuance_decreased() {
     let token_id = token!(1);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -644,7 +676,9 @@ fn amm_sell_ok_with_crt_issuance_decreased() {
 #[test]
 fn amm_sell_fails_with_amm_treasury_not_having_sufficient_usable_joy_required() {
     let token_id = token!(1);
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -667,35 +701,40 @@ fn amm_sell_fails_with_amm_treasury_not_having_sufficient_usable_joy_required() 
 
 #[test]
 fn amm_sell_ok_with_user_joy_balance_correctly_increased() {
-    let token_id = token!(1);
-    let (user_account, user_balance) = (member!(2).1, joy!(5_000_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
-        || {
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (_, user_account_id) = member!(2);
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
             IssueTokenFixture::default()
                 .with_empty_allocation()
                 .execute_call()
                 .unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             AmmBuyFixture::default().execute_call().unwrap();
-            let user_reserve_pre = Balances::usable_balance(user_account);
-            let correctly_computed_joy_amount =
-                amm_function_values(DEFAULT_AMM_SELL_AMOUNT, token_id, AmmOperation::Sell);
+            let user_reserve_pre = Balances::usable_balance(user_account_id);
+            let correctly_computed_joy_amount = amm_function_values(
+                DEFAULT_AMM_SELL_AMOUNT,
+                DEFAULT_INITIAL_ISSUANCE,
+                AmmOperation::Sell,
+            );
 
             AmmSellFixture::default().execute_call().unwrap();
 
-            let user_reserve_post = Balances::usable_balance(user_account);
+            let user_reserve_post = Balances::usable_balance(user_account_id);
             assert_eq!(
                 user_reserve_post - user_reserve_pre,
                 correctly_computed_joy_amount
             );
-        },
-    )
+        })
 }
 
 #[test]
 fn amm_sell_ok_with_user_crt_amount_correctly_decreased() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();
@@ -720,36 +759,41 @@ fn amm_sell_ok_with_user_crt_amount_correctly_decreased() {
 #[test]
 fn amm_sell_ok_with_event_deposited() {
     let token_id = token!(1);
-    let ((user_id, user_account), user_balance) = (member!(2), joy!(5_000_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account, user_balance)]).execute_with(
-        || {
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
+    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
+        .execute_with(|| {
             IssueTokenFixture::default()
                 .with_empty_allocation()
                 .execute_call()
                 .unwrap();
             ActivateAmmFixture::default().execute_call().unwrap();
             AmmBuyFixture::default()
-                .with_sender(user_account)
-                .with_member_id(user_id)
+                .with_sender(user_account_id)
+                .with_member_id(user_member_id)
                 .execute_call()
                 .unwrap();
-            let price = amm_function_values(DEFAULT_AMM_SELL_AMOUNT, token_id, AmmOperation::Sell);
+            let price = amm_function_values(
+                DEFAULT_AMM_SELL_AMOUNT,
+                DEFAULT_INITIAL_ISSUANCE,
+                AmmOperation::Sell,
+            );
 
             AmmSellFixture::default()
                 .with_amount(DEFAULT_AMM_SELL_AMOUNT)
-                .with_sender(user_account)
-                .with_member_id(user_id)
+                .with_sender(user_account_id)
+                .with_member_id(user_member_id)
                 .execute_call()
                 .unwrap();
 
             last_event_eq!(RawEvent::TokensSoldOnAmm(
                 token_id,
-                user_id,
+                user_member_id,
                 DEFAULT_AMM_SELL_AMOUNT,
                 price,
             ));
-        },
-    )
+        })
 }
 
 // ------------------- DEACTIVATE ---------------------------------------
@@ -786,8 +830,9 @@ fn deactivate_fails_with_invalid_token_id() {
 fn deactivate_fails_with_too_much_amm_provided_supply_outstanding() {
     let amount = Permill::from_percent(10).mul_floor(DEFAULT_INITIAL_ISSUANCE);
     // give enough balance to bond amount
-    let ((user_member_id, user_account_id), user_balance) =
-        (member!(2), joy!(10_000_000_000_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default()
@@ -841,7 +886,9 @@ fn deactivate_ok_with_amm_buy_curve_params_set_to_none() {
 #[test]
 fn deactivate_ok_with_full_cycle_from_activation() {
     let token_id = token!(1);
-    let ((user_member_id, user_account_id), user_balance) = (member!(2), joy!(5_000_000_000));
+    let user_balance =
+        amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, DEFAULT_INITIAL_ISSUANCE) + ed();
+    let (user_member_id, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
         .execute_with(|| {
             IssueTokenFixture::default().execute_call().unwrap();

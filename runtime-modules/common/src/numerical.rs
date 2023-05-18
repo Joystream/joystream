@@ -5,10 +5,11 @@ use sp_runtime::{
     FixedPointNumber, FixedU128, PerThing, Permill, Perquintill,
 };
 
-pub const ORDER: usize = 20;
+// order of the Tylor series expansion
+const ORDER: usize = 20;
 
 // does not work with 100% interest
-pub fn natural_log_1_plus_x(interest: Permill) -> Perquintill {
+fn natural_log_1_plus_x(interest: Permill) -> Perquintill {
     // ref: https://www.wolframalpha.com/input?i=taylor+series+for+ln%281%2Bx%29
     // ln(1 + x) is approx x - x^2/2 + x^3/3 - x^4/4 + x^5/5
     let mut terms = [Perquintill::zero(); ORDER];
@@ -34,7 +35,7 @@ pub fn natural_log_1_plus_x(interest: Permill) -> Perquintill {
     result
 }
 
-pub fn one_plus_interest_pow_frac(interest: Permill, exp: Perquintill) -> FixedU128 {
+fn one_plus_interest_pow_frac(interest: Permill, exp: Perquintill) -> FixedU128 {
     // ref: https://www.wolframalpha.com/input?i=taylor+series+%281+%2B+r%29%5Ex+with+r+in+%5B0%2C1%29+and+x+in+%5B0%2C1%5D+with+respect+to+x
     let log_term = natural_log_1_plus_x(interest);
     let x = exp;
@@ -52,6 +53,23 @@ pub fn one_plus_interest_pow_frac(interest: Permill, exp: Perquintill) -> FixedU
         .saturating_add(FixedU128::one())
 }
 
+/// The approximation is computed as follows:
+/// the `exponent` is decomposed into its `exponent = integer + fractional`
+/// from `integer` we compute `x = (1 + interest/100)^integer`
+/// from `fractional` we compute `y = (1 + interest/100)^fractional` using the following taylor series
+/// expansion up to order `ORDER`:
+/// `(1 + r)^f = 1 + f*log(1+r) + [f*log(1+r)]^2/2! + [f*log(1+r)]^3/3! + ... + [f*log(1+r)]^ORDER/ORDER!`
+/// the result is `x * y`
+///
+/// # Arguments
+///
+/// * `interest` - `Permill` for the interest rate
+/// * `exponent` - `FixedU128` for the exponent
+///
+/// # Returns
+///
+/// Approximation of (1+`interest`)^`exponent`
+///
 pub fn one_plus_interest_pow_fixed(interest: Permill, exp: FixedU128) -> FixedU128 {
     let one_plus_interest_base = FixedU128::saturating_from_rational(
         interest.deconstruct() as u128,

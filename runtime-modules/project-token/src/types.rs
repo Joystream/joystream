@@ -31,7 +31,6 @@ use storage::{BagId, DataObjectCreationParameters};
 use crate::{errors::Error, Config, RepayableBloatBondOf};
 
 // trait "aliases"
-// `BlockNumber` will be implemented as `u64` in the runtime configuration
 pub trait BlockNumberTrait: Copy + AtLeast32BitUnsigned + Saturating + Default {}
 impl<T: Copy + AtLeast32BitUnsigned + Saturating + Default> BlockNumberTrait for T {}
 
@@ -806,7 +805,7 @@ impl YearlyRate {
 impl Add for YearlyRate {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        Self(self.0.add(rhs.0))
+        Self(self.0.add(rhs.0).min(Permill::one()))
     }
 }
 

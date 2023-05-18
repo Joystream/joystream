@@ -734,15 +734,15 @@ pub fn set_staking_candidate_lock(
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
 
+pub(crate) fn amm_function_buy_values(amount: Balance, supply: Balance) -> JoyBalance {
+    amm_function_values(amount, supply, AmmOperation::Buy)
+}
+
 pub(crate) fn amm_function_values(
     amount: Balance,
-    token_id: TokenId,
+    supply: Balance,
     bond_operation: AmmOperation,
 ) -> JoyBalance {
-    let supply = Token::token_info_by_id(token_id)
-        .amm_curve
-        .unwrap()
-        .provided_supply;
     let supply2 = supply * supply;
     let sq_coeff = AMM_CURVE_SLOPE / 2;
     let res = match bond_operation {

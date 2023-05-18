@@ -337,12 +337,12 @@ pub(crate) fn update_max_yearly_patronage_rate_proposal() -> ProposalParameters<
 {
     ProposalParameters {
         voting_period: 30,
-        grace_period: 0,
+        grace_period: 20,
         approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
+        approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
-        required_stake: Some(currency::DOLLARS.saturating_mul(100)),
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }
