@@ -641,7 +641,7 @@ pub const DEFAULT_TOKEN_ID: u64 = 1;
 pub const DEFAULT_ISSUER_ACCOUNT_ID: u64 = 1001;
 pub const DEFAULT_ISSUER_MEMBER_ID: u64 = 1;
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
-pub const DEFAULT_INITIAL_ISSUANCE: u128 = 100_000_000;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000_000;
 pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
 pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
 
@@ -656,11 +656,10 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 
 // ------ Revenue Split constants ------------
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
-pub const DEFAULT_SPLIT_REVENUE: u128 = 1000;
+pub const DEFAULT_SPLIT_REVENUE: u128 = DEFAULT_INITIAL_ISSUANCE / 10;
 pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
-pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 10_000_000;
-pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
+pub const DEFAULT_SPLIT_PARTICIPATION: u128 = DEFAULT_SPLIT_REVENUE / 100;
 
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
@@ -764,6 +763,13 @@ pub(crate) fn amm_function_values(
         AmmOperation::Buy => res + DEFAULT_AMM_BUY_FEES.mul_floor(res),
         AmmOperation::Sell => DEFAULT_AMM_SELL_FEES.left_from_one().mul_floor(res),
     }
+}
+
+pub fn default_joy_dividend() -> Balance {
+    // (participation / issuance) * revenue * rate
+    let net_split_revenue = DEFAULT_SPLIT_RATE.mul_floor(DEFAULT_SPLIT_REVENUE);
+    Permill::from_rational(DEFAULT_SPLIT_PARTICIPATION, DEFAULT_INITIAL_ISSUANCE)
+        .mul_floor(net_split_revenue)
 }
 
 pub fn compute_correct_patronage_amount(

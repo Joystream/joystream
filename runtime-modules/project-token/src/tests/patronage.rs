@@ -1,3 +1,5 @@
+use core::assert_eq;
+
 #[cfg(test)]
 use frame_support::{assert_err, assert_ok};
 use sp_runtime::traits::Zero;
@@ -84,6 +86,12 @@ fn decrease_patronage_ok() {
             .execute_call();
 
         assert_ok!(result);
+        assert_eq!(
+            Token::token_info_by_id(DEFAULT_TOKEN_ID)
+                .patronage_info
+                .rate,
+            DEFAULT_YEARLY_PATRONAGE_RATE.into()
+        );
     })
 }
 
