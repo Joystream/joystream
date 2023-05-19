@@ -631,6 +631,35 @@ impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
     pub(crate) fn decrease_amm_bought_amount_by(&mut self, amount: Balance) {
         self.provided_supply = self.provided_supply.saturating_sub(amount);
     }
+
+    pub(crate) fn eval<T: crate::Config>(
+        &self,
+        amount: Balance,
+        bond_operation: AmmOperation,
+    ) -> Result<Balance, DispatchError> {
+        let amount_sq = amount
+            .checked_mul(&amount)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let first_term = self.slope.saturating_mul(amount_sq).div(2u32.into());
+        let second_term = self.intercept.saturating_mul(amount);
+        let mixed = amount
+            .checked_mul(&self.provided_supply)
+            .ok_or(Error::<T>::ArithmeticError)?;
+        let third_term = self.slope.saturating_mul(mixed);
+        let res = match bond_operation {
+            AmmOperation::Buy => first_term
+                .checked_add(&second_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+            AmmOperation::Sell => second_term
+                .checked_add(&third_term)
+                .ok_or(Error::<T>::ArithmeticError)?
+                .checked_sub(&first_term)
+                .ok_or(Error::<T>::ArithmeticError)?,
+        };
+        Ok(res.into())
+    }
 }
 
 /// Represents token's offering state

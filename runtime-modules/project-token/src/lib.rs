@@ -36,12 +36,11 @@ use frame_system::{ensure_root, ensure_signed};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, CheckedAdd, CheckedMul, CheckedSub},
+    traits::{AccountIdConversion, CheckedAdd},
     PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
-use sp_std::ops::Div;
 use sp_std::vec;
 use sp_std::vec::Vec;
 use storage::UploadParameters;
@@ -842,7 +841,7 @@ decl_module! {
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
             let amm_treasury_account = Self::amm_treasury_account(token_id);
-            let price = Self::eval(&curve, amount, curve.provided_supply, AmmOperation::Buy)?;
+            let price = curve.eval::<T>(amount, AmmOperation::Buy)?.into();
             let bloat_bond = Self::bloat_bond();
             let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
@@ -928,7 +927,7 @@ decl_module! {
 
             let amm_treasury_account = Self::amm_treasury_account(token_id);
 
-            let price = Self::eval(&curve, amount, curve.provided_supply, AmmOperation::Sell)?;
+            let price = curve.eval::<T>(amount, AmmOperation::Sell)?.into();
 
             // slippage tolerance ccurve.eval::<T>heck
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
@@ -2131,36 +2130,6 @@ impl<T: Config> Module<T> {
             )
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
-    }
-
-    pub(crate) fn eval(
-        curve: &AmmCurveOf<T>,
-        amount: TokenBalanceOf<T>,
-        supply_pre: TokenBalanceOf<T>,
-        bond_operation: AmmOperation,
-    ) -> Result<JoyBalanceOf<T>, DispatchError> {
-        let amount_sq = amount
-            .checked_mul(&amount)
-            .ok_or(Error::<T>::ArithmeticError)?;
-        let first_term = curve.slope.saturating_mul(amount_sq).div(2u32.into());
-        let second_term = curve.intercept.saturating_mul(amount);
-        let mixed = amount
-            .checked_mul(&supply_pre)
-            .ok_or(Error::<T>::ArithmeticError)?;
-        let third_term = curve.slope.saturating_mul(mixed);
-        let res = match bond_operation {
-            AmmOperation::Buy => first_term
-                .checked_add(&second_term)
-                .ok_or(Error::<T>::ArithmeticError)?
-                .checked_add(&third_term)
-                .ok_or(Error::<T>::ArithmeticError)?,
-            AmmOperation::Sell => second_term
-                .checked_add(&third_term)
-                .ok_or(Error::<T>::ArithmeticError)?
-                .checked_sub(&first_term)
-                .ok_or(Error::<T>::ArithmeticError)?,
-        };
-        Ok(res.into())
     }
 
     pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
