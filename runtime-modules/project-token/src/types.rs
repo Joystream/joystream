@@ -658,7 +658,7 @@ impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
                 .checked_sub(&first_term)
                 .ok_or(Error::<T>::ArithmeticError)?,
         };
-        Ok(res.into())
+        Ok(res)
     }
 }
 
