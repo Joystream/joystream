@@ -229,19 +229,6 @@ fn get_byte(num: u64, byte_number: u8) -> u8 {
 // for a membership. For each index.
 fn handle_from_id<T: membership::Config>(id: u64) -> Vec<u8> {
     id.to_be_bytes().to_vec()
-    // let min_handle_length = 1;
-
-    // let mut handle = vec![];
-
-    // for i in 0..16 {
-    //     handle.push(get_byte(id, i));
-    // }
-
-    // while handle.len() < (min_handle_length as usize) {
-    //     handle.push(0u8);
-    // }
-
-    // handle
 }
 
 fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(

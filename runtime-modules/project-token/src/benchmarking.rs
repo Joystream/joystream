@@ -18,9 +18,8 @@ use storage::BagId;
 // ----- DEFAULTS
 
 const SEED: u32 = 0;
-const DEFAULT_TOKEN_ISSUANCE: u32 = 1_000_000;
+const DEFAULT_TOKEN_ISSUANCE: u32 = 8_000_000;
 // Transfers
-const MAX_TX_OUTPUTS: u16 = 1024;
 const DEFAULT_TX_AMOUNT: u32 = 100;
 // Whitelist
 const MAX_MERKLE_PROOF_HASHES: u32 = 10;
@@ -265,7 +264,7 @@ benchmarks! {
     // - destination accounts do not exist (need to be created)
     // - bloat_bond is non-zero
     transfer {
-        let o in 1 .. (MAX_TX_OUTPUTS as u32);
+        let o in 1 .. (<T as Config>::MaxOutputs::get());
         let m in 1 .. (MAX_KILOBYTES_METADATA as u32);
 
         let (owner_member_id, owner_account) = create_owner::<T>();
@@ -710,7 +709,7 @@ benchmarks! {
 
     update_max_yearly_patronage_rate {
         let _ = create_owner::<T>();
-        let token_id = Token::<T>::next_token_id();
+        let token_id = issue_token::<T>(TransferPolicyParams::Permissionless)?;
     }:_ (
         RawOrigin::Root,
         DEFAULT_PATRONAGE
