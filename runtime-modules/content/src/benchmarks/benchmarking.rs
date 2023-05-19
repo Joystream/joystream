@@ -1496,7 +1496,7 @@ benchmarks! {
         }
 
     creator_token_issuer_transfer {
-        let a in 1 .. MAX_CRT_ISSUER_TRANSFER_OUTPUTS;
+        let a in 1 .. <T as project_token::Config>::MaxOutputs::get();
         let b in 1 .. MAX_KILOBYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =

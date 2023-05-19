@@ -79,7 +79,6 @@ const MAX_KILOBYTES_METADATA: u32 = 100;
 
 // Creator tokens
 const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
-const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
 const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
@@ -219,10 +218,6 @@ fn assert_past_event<T: Config>(
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1 - index_from_last as usize];
     assert_eq!(event, &expected_event);
-}
-
-fn get_byte(num: u64, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
 // Method to generate a distintic valid handle
