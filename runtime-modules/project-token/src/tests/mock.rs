@@ -715,6 +715,10 @@ pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
     let _ = Balances::deposit_creating(account_id, balance);
 }
 
+pub fn make_free_balance_be(account_id: &AccountId, balance: Balance) {
+    let _ = Balances::make_free_balance_be(account_id, balance);
+}
+
 pub fn ed() -> Balance {
     ExistentialDeposit::get()
 }
