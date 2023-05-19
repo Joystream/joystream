@@ -163,6 +163,23 @@ services:
       POSTGRES_DB: ${INDEXER_DB_NAME}
       PGPORT: ${DB_PORT}
 
+  orion-db:
+    image: postgres:14
+    container_name: orion-db
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${ORION_DB_PORT}:${ORION_DB_PORT}'
+    volumes:
+      - orion-db-data:/var/lib/postgresql/data
+    env_file:
+      # relative to working directory where docker-compose was run from
+      - .env
+    environment:
+      POSTGRES_USER: ${ORION_DB_USER}
+      POSTGRES_PASSWORD: ${ORION_DB_PASS}
+      POSTGRES_DB: ${ORION_DB_NAME}
+      PGPORT: ${ORION_DB_PORT}
+
   graphql-server:
     image: node:14
     container_name: graphql-server
@@ -281,28 +298,92 @@ services:
     ports:
       - "3002:3002"
 
-  orion:
-    container_name: orion
-    image: joystream/orion
-    environment:
-      - ORION_PORT=6116
-      - ORION_MONGO_HOSTNAME=mongo
-      - ORION_FEATURED_CONTENT_SECRET=password123
-      - ORION_ADMIN_SECRET=password123
-      - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
-      - APP_PRIVATE_KEY=secret123
-    ports:
-      - "6116:6116"
+  squid-archive:
+    container_name: squid-archive
+    image: subsquid/substrate-ingest:firesquid
     depends_on:
-      - mongo
-    restart: always
+      - orion-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${SUBSQUID_ARCHIVE_DB_NAME}
+      - DB_USER=${ORION_DB_USER}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_HOST=orion-db
+      - DB_PORT=${ORION_DB_PORT}
+    command: [
+        '-e',
+        '${JOYSTREAM_NODE_WS}',
+        '-c',
+        '20',
+        '--out',
+        'postgres://postgres:postgres@orion-db:${ORION_DB_PORT}/${SUBSQUID_ARCHIVE_DB_NAME}',
+      ]
 
-  mongo:
-    restart: always
-    container_name: mongo
-    image: library/mongo:4.4
-    volumes:
-      - orion-mongo-data:/data/db
+  squid-archive-gateway:
+    container_name: squid-archive-gateway
+    image: subsquid/substrate-gateway:firesquid
+    depends_on:
+      - orion-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${SUBSQUID_ARCHIVE_DB_NAME}
+      - DB_USER=${ORION_DB_USER}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_HOST=orion-db
+      - DB_PORT=${ORION_DB_PORT}
+      - DATABASE_MAX_CONNECTIONS=5
+      - RUST_LOG=actix_web=info,actix_server=info
+    command: [
+        '--database-url',
+        'postgres://postgres:postgres@orion-db:${ORION_DB_PORT}/${SUBSQUID_ARCHIVE_DB_NAME}',
+      ]
+    ports:
+      - '127.0.0.1:${SQUID_ARCHIVE_GATEWAY_PORT}:8000'
+
+  orion-processor:
+    container_name: orion-processor
+    image: joystream/orion:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - orion-db
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_USER=${ORION_DB_USER}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_HOST=orion-db
+      - DB_PORT=${ORION_DB_PORT}
+      - GQL_PORT=${ORION_API_PORT}
+      - ARCHIVE_GATEWAY_URL=http://squid-archive-gateway:8000/graphql
+    command: >
+      sh -c "npx squid-typeorm-migration apply && \
+             node lib/processor.js"
+    ports:
+      - '127.0.0.1:${PROCESSOR_PROMETHEUS_PORT}:${PROCESSOR_PROMETHEUS_PORT}'
+
+  orion-api:
+    container_name: orion-api
+    image: joystream/orion:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - orion-db
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_USER=${ORION_DB_USER}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_HOST=orion-db
+      - DB_PORT=${ORION_DB_PORT}
+      - GQL_PORT=${ORION_API_PORT}
+    command: ["npm", "run", "query-node-start"]
+    ports:
+      - '${ORION_API_PORT}:${ORION_API_PORT}'
 
 volumes:
   chain-data:
@@ -333,5 +414,5 @@ volumes:
     driver: local
   distributor-2-data:
     driver: local
-  orion-mongo-data:
+  orion-db-data:
     driver: local

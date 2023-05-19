@@ -1,0 +1,3 @@
+## password Type
+
+`string`

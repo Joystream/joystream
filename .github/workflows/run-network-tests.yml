@@ -212,7 +212,11 @@ jobs:
       # Checkout workflow's branch/tag/commit
       - name: checkout workflow branch
         uses: actions/checkout@v3
-      - name: Check for runtime code changes
+      
+      # Look only for changes that would indicate possible change in runtime version
+      # This is not the best way to check. Ideally the script "run-runtime-upgrade-tests.sh" should
+      # look for the change of `spec_version`, and exit gracefully.
+      - name: Check for runtime version change
         uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
@@ -220,9 +224,6 @@ jobs:
             runtime-modules
           SUFFIX_FILTER: |
             .rs
-          FILES: |
-            Cargo.lock
-            Cargo.toml
       - name: setup node
         uses: actions/setup-node@v3
         with:

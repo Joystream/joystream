@@ -182,7 +182,7 @@ export class StateCacheService {
     this.dropPendingDownload(objectId)
     const cacheGroupNumber = this.memoryState.groupNumberByObjectId.get(objectId)
     this.logger.debug('Cache group by object id established', { objectId, cacheGroupNumber })
-    if (cacheGroupNumber) {
+    if (cacheGroupNumber !== undefined) {
       this.memoryState.groupNumberByObjectId.delete(objectId)
       this.storedState.lruCacheGroups[cacheGroupNumber].delete(objectId)
     }

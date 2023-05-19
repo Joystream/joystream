@@ -88,6 +88,7 @@ export class LoggingService {
           node: {
             url: new URL(config.logs.elastic.endpoint),
           },
+          ...(config.logs.elastic.auth ? { auth: config.logs.elastic.auth } : {}),
         },
       })
       transports.push(esTransport)
