@@ -45,25 +45,29 @@ export class ContentService {
   }
 
   public async cacheCleanup(): Promise<void> {
-    const supportedObjects = await this.networking.fetchSupportedDataObjects()
-    const cachedObjectsIds = this.stateCache.getCachedObjectsIds()
-    let droppedObjects = 0
+    try {
+      const supportedObjects = await this.networking.fetchSupportedDataObjects()
+      const cachedObjectsIds = this.stateCache.getCachedObjectsIds()
+      let droppedObjects = 0
 
-    this.logger.verbose('Performing cache cleanup...', {
-      supportedObjects: supportedObjects.size,
-      objectsInCache: cachedObjectsIds.length,
-    })
+      this.logger.verbose('Performing cache cleanup...', {
+        supportedObjects: supportedObjects.size,
+        objectsInCache: cachedObjectsIds.length,
+      })
 
-    for (const objectId of cachedObjectsIds) {
-      if (!supportedObjects.has(objectId)) {
-        this.drop(objectId, 'No longer supported')
-        ++droppedObjects
+      for (const objectId of cachedObjectsIds) {
+        if (!supportedObjects.has(objectId)) {
+          this.drop(objectId, 'No longer supported')
+          ++droppedObjects
+        }
       }
-    }
 
-    this.logger.verbose('Cache cleanup finished', {
-      droppedObjects,
-    })
+      this.logger.verbose('Cache cleanup finished', {
+        droppedObjects,
+      })
+    } catch (err) {
+      this.logger.error('Failed to perform cache cleanup ', { err })
+    }
   }
 
   public async startupInit(): Promise<void> {
