@@ -3,7 +3,7 @@ import { ObjectStatus, ObjectStatusType, ReadonlyConfig } from '../../types'
 import { StateCacheService } from '../cache/StateCacheService'
 import { LoggingService } from '../logging'
 import { Logger } from 'winston'
-import { FileContinousReadStream, FileContinousReadStreamOptions } from './FileContinousReadStream'
+import { FileContinuousReadStream, FileContinuousReadStreamOptions } from './FileContinuousReadStream'
 import FileType from 'file-type'
 import { Readable, pipeline } from 'stream'
 import { NetworkingService } from '../networking'
@@ -164,8 +164,11 @@ export class ContentService {
     return fs.createWriteStream(this.path(objectId), { autoClose: true, emitClose: true })
   }
 
-  public createContinousReadStream(objectId: string, options: FileContinousReadStreamOptions): FileContinousReadStream {
-    return new FileContinousReadStream(this.path(objectId), options)
+  public createContinuousReadStream(
+    objectId: string,
+    options: FileContinuousReadStreamOptions
+  ): FileContinuousReadStream {
+    return new FileContinuousReadStream(this.path(objectId), options)
   }
 
   public async readFileChunk(path: string, bytes: number): Promise<Buffer> {
