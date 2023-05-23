@@ -31,7 +31,11 @@ fi
 
 # If OS is supported will install build tools for rust and substrate.
 # Skips installation of substrate and subkey
-curl https://getsubstrate.io -sSf | bash -s -- --fast
+# old script trying to install package 'protobuf' which does not exist
+# curl https://getsubstrate.io -sSf | bash -s -- --fast
+
+# Install Rust toolchain since we no longer use getsubstrate.io script
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 source ~/.cargo/env
 
