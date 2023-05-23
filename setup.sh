@@ -35,7 +35,7 @@ fi
 # curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 # Install Rust toolchain since we no longer use getsubstrate.io script
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 source ~/.cargo/env
 
