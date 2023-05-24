@@ -1,12 +1,11 @@
+import cors from 'cors'
 import express from 'express'
 import * as OpenApiValidator from 'express-openapi-validator'
 import { HttpError, OpenApiValidatorOpts } from 'express-openapi-validator/dist/framework/types'
-import { ReadonlyConfig } from '../../types/config'
 import expressWinston from 'express-winston'
-import { Logger } from 'winston'
 import { Server } from 'http'
-import cors from 'cors'
-
+import { Logger } from 'winston'
+import { ReadonlyConfig } from '../../types/config'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type HttpApiRoute = ['get' | 'head' | 'post', string, express.RequestHandler<any>]
 
@@ -27,7 +26,14 @@ export abstract class HttpApiBase {
         res.end()
       })
       try {
-        await handler(req, res, next)
+        /**
+         * Call the request handler only if the response has not been sent yet (e.g. because req or res was
+         * closed prematurely). Otherwise, the request handler would try to set header or send the response
+         * again, which would result in an error e.g., "Cannot set headers after they are sent to the client"
+         * */
+        if (!res.headersSent) {
+          await handler(req, res, next)
+        }
       } catch (err) {
         next(err)
       }
