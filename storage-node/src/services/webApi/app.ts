@@ -19,6 +19,7 @@ import {
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
 import { UploadFileQueryParams, UploadToken } from './types'
+import { diskStorage } from '../multer-storage/disk'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -65,7 +66,9 @@ export async function createApp(config: AppConfig): Promise<Express> {
         resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
       fileUploader: {
-        dest: config.tempFileUploadingDir,
+        storage: diskStorage({
+          destination: config.tempFileUploadingDir,
+        }),
         // Busboy library settings
         limits: {
           // For multipart forms, the max number of file fields (Default: Infinity)
