@@ -48,8 +48,6 @@ class DiskStorage implements StorageEngine {
     file: Express.Multer.File,
     cb: (error?: any, info?: Partial<Express.Multer.File>) => void
   ) {
-    console.error('_handleFile called')
-
     // eslint-disable-next-line
     const that = this
 
@@ -62,11 +60,14 @@ class DiskStorage implements StorageEngine {
 
         const finalPath = path.join(destination, filename)
         const outStream = fs.createWriteStream(finalPath)
-        let aborted = false
         file.stream.pipe(outStream)
-        outStream.on('error', cb)
+        outStream.on('error', (err) => {
+          // remove temp file on failure to write
+          fs.unlink(finalPath, () => cb(err))
+        })
+        let aborted = false
         outStream.on('finish', function () {
-          console.error('outStream.finish')
+          // avoid invoking callback multiple times, also the middleware
           if (aborted) return
           cb(null, {
             destination: destination,
@@ -75,27 +76,25 @@ class DiskStorage implements StorageEngine {
             size: outStream.bytesWritten,
           })
         })
-        // Make sure to remove incomplete file
+        // Remove temp file on request aborted - due to timeout or reverse-proxy
+        // terminating request because of its own policy such as max size of request
         req.on('aborted', function () {
-          console.error('request aborted')
           aborted = true
-          // will this not cause outstream 'finish' event to file
-          // and so multer will allow next request handler to process the file?
-          outStream.close()
-          // should we instead just call cb(new Error()) and have _removeFile handle cleanup?
+          outStream.close() // will trigger 'finish' event on outStream
           fs.unlink(finalPath, () => cb(new Error('Upload aborted')))
         })
       })
     })
   }
 
+  // removeFile is not called on latest handled file if _handleFile callback is passed
+  // and error. It will only apply to the previously uploaded files in the request
   // eslint-disable-next-line
   _removeFile (
     req: Request,
     file: Express.Multer.File,
     cb: (error: Error | null) => void
   ) {
-    console.error('_removeFile called')
     const path = file.path
 
     file.destination = ''
