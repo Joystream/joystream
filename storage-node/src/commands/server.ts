@@ -79,6 +79,18 @@ export default class Server extends ApiCommandBase {
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
+    elasticSearchIndex: flags.string({
+      required: false,
+      description: 'Elasticsearch index name.',
+    }),
+    elasticSearchUser: flags.string({
+      required: false,
+      description: 'Elasticsearch user for basic authentication.',
+    }),
+    elasticSearchPassword: flags.string({
+      required: false,
+      description: 'Elasticsearch password for basic authentication.',
+    }),
     logFilePath: flags.string({
       char: 'l',
       required: false,
@@ -121,6 +133,9 @@ Supported values: warn, error, debug, info. Default:debug`,
       initNewLogger({
         elasticSearchlogSource: logSource,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
+        elasticSearchIndex: flags.elasticSearchIndex,
+        elasticSearchUser: flags.elasticSearchUser,
+        elasticSearchPassword: flags.elasticSearchPassword,
         filePath: flags.logFilePath,
         maxFileNumber: flags.logMaxFileNumber,
         maxFileSize: flags.logMaxFileSize,
