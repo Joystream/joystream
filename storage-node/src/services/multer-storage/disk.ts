@@ -43,7 +43,7 @@ class DiskStorage implements StorageEngine {
   }
 
   // eslint-disable-next-line
-  public _handleFile (
+  public _handleFile(
     req: Request,
     file: Express.Multer.File,
     cb: (error?: any, info?: Partial<Express.Multer.File>) => void
@@ -96,11 +96,7 @@ class DiskStorage implements StorageEngine {
   // removeFile is not called on latest handled file if _handleFile callback is passed
   // and error. It will only apply to the previously uploaded files in the request
   // eslint-disable-next-line
-  _removeFile (
-    req: Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null) => void
-  ) {
+  _removeFile(req: Request, file: Express.Multer.File, cb: (error: Error | null) => void) {
     const path = file.path
 
     file.destination = ''
