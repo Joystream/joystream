@@ -48,6 +48,12 @@ class DiskStorage implements StorageEngine {
     file: Express.Multer.File,
     cb: (error?: any, info?: Partial<Express.Multer.File>) => void
   ) {
+    // handle edge case where the request has been aborted before
+    // _handleFile is invoked and we cannot catch it anymore.
+    if (req.aborted) {
+      return cb(new Error('Upload aborted early'))
+    }
+
     // eslint-disable-next-line
     const that = this
 

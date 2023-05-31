@@ -44,6 +44,16 @@ export async function createApp(config: AppConfig): Promise<Express> {
       next()
     },
 
+    // Catch aborted requests event early, before we get a chance to handle
+    // it in multer middleware. This is an edge case which happens when only
+    // a small amount of data is transferred, before multer starts parsing.
+    (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
+      if (req.path === '/api/v1/files') {
+        req.on('aborted', () => (req.aborted = true))
+      }
+      next()
+    },
+
     // Pre validate file upload params
     (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
       if (req.path === '/api/v1/files') {
