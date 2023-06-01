@@ -154,7 +154,6 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 <!-- commands -->
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:sync`](#storage-node-devsync)
-* [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
@@ -189,7 +188,7 @@ OPTIONS
   -h, --help       show CLI help
 ```
 
-_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/multihash.ts)_
+_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/dev/multihash.ts)_
 
 ## `storage-node dev:sync`
 
@@ -218,31 +217,7 @@ OPTIONS
   -w, --workerId=workerId                            (required) Storage node operator worker ID.
 ```
 
-_See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/sync.ts)_
-
-## `storage-node dev:upload`
-
-Upload data object (development mode only).
-
-```
-USAGE
-  $ storage-node dev:upload
-
-OPTIONS
-  -c, --cid=cid                (required) Data object IPFS content ID.
-  -h, --help                   show CLI help
-  -i, --bagId=bagId            (required) BagId for uploading the Data object.
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
-  -s, --size=size              (required) Data object size.
-  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
-```
-
-_See code: [src/commands/dev/upload.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/upload.ts)_
+_See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/dev/sync.ts)_
 
 ## `storage-node dev:verify-bag-id`
 
@@ -270,7 +245,7 @@ OPTIONS
       - dynamic:member:4
 ```
 
-_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/verify-bag-id.ts)_
+_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/dev/verify-bag-id.ts)_
 
 ## `storage-node help [COMMAND]`
 
@@ -309,7 +284,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/cancel-invite.ts)_
+_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/cancel-invite.ts)_
 
 ## `storage-node leader:create-bucket`
 
@@ -334,7 +309,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/create-bucket.ts)_
 
 ## `storage-node leader:delete-bucket`
 
@@ -356,7 +331,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/delete-bucket.ts)_
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/delete-bucket.ts)_
 
 ## `storage-node leader:invite-operator`
 
@@ -379,7 +354,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/invite-operator.ts)_
+_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/invite-operator.ts)_
 
 ## `storage-node leader:remove-operator`
 
@@ -401,7 +376,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/remove-operator.ts)_
+_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/remove-operator.ts)_
 
 ## `storage-node leader:set-bucket-limits`
 
@@ -425,7 +400,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/set-bucket-limits.ts)_
+_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/set-bucket-limits.ts)_
 
 ## `storage-node leader:set-global-uploading-status`
 
@@ -447,7 +422,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/set-global-uploading-status.ts)_
+_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/set-global-uploading-status.ts)_
 
 ## `storage-node leader:update-bag`
 
@@ -497,7 +472,7 @@ OPTIONS
       environment variable.
 ```
 
-_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-bag.ts)_
+_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-bag.ts)_
 
 ## `storage-node leader:update-bag-limit`
 
@@ -519,7 +494,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-bag-limit.ts)_
+_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-bag-limit.ts)_
 
 ## `storage-node leader:update-blacklist`
 
@@ -542,7 +517,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-blacklist.ts)_
+_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-blacklist.ts)_
 
 ## `storage-node leader:update-bucket-status`
 
@@ -565,7 +540,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-bucket-status.ts)_
+_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-bucket-status.ts)_
 
 ## `storage-node leader:update-data-fee`
 
@@ -587,7 +562,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-fee.ts)_
+_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-data-fee.ts)_
 
 ## `storage-node leader:update-data-object-bloat-bond`
 
@@ -609,7 +584,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-object-bloat-bond.ts)_
+_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-data-object-bloat-bond.ts)_
 
 ## `storage-node leader:update-dynamic-bag-policy`
 
@@ -632,7 +607,7 @@ OPTIONS
                                   overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-dynamic-bag-policy.ts)_
+_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-dynamic-bag-policy.ts)_
 
 ## `storage-node leader:update-voucher-limits`
 
@@ -655,7 +630,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-voucher-limits.ts)_
+_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/leader/update-voucher-limits.ts)_
 
 ## `storage-node operator:accept-invitation`
 
@@ -685,7 +660,7 @@ OPTIONS
                                                  flags. Could be overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/operator/accept-invitation.ts)_
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/operator/accept-invitation.ts)_
 
 ## `storage-node operator:set-metadata`
 
@@ -710,7 +685,7 @@ OPTIONS
                                overriden by ACCOUNT_URI environment variable.
 ```
 
-_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/operator/set-metadata.ts)_
+_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/operator/set-metadata.ts)_
 
 ## `storage-node server`
 
@@ -771,7 +746,13 @@ OPTIONS
                                                               environment variable.
 
   -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly)  [default: daily] Log files update frequency.
+
+  --elasticSearchIndex=elasticSearchIndex                     Elasticsearch index name.
+
+  --elasticSearchPassword=elasticSearchPassword               Elasticsearch password for basic authentication.
+
+  --elasticSearchUser=elasticSearchUser                       Elasticsearch user for basic authentication.
 ```
 
-_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
+_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v3.3.0/src/commands/server.ts)_
 <!-- commandsstop -->

@@ -1,3 +1,7 @@
+### 3.3.0
+
+- Added customization options for Elasticsearch logging. Users can now specify index name and auth options.
+
 ### 3.2.0
 
 - Updated `joystream/types` and `@joystream/metadata-protobuf` dependencies.
