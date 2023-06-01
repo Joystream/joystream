@@ -75,20 +75,24 @@ export default class Server extends ApiCommandBase {
     elasticSearchEndpoint: flags.string({
       char: 'e',
       required: false,
+      env: 'ELASTIC_ENDPOINT',
       description: `Elasticsearch endpoint (e.g.: http://some.com:8081).
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
     elasticSearchIndex: flags.string({
       required: false,
+      env: 'ELASTIC_INDEX',
       description: 'Elasticsearch index name.',
     }),
     elasticSearchUser: flags.string({
-      required: false,
+      dependsOn: ['elasticSearchEndpoint', 'elasticSearchPassword'],
+      env: 'ELASTIC_USER',
       description: 'Elasticsearch user for basic authentication.',
     }),
     elasticSearchPassword: flags.string({
-      required: false,
+      dependsOn: ['elasticSearchEndpoint', 'elasticSearchUser'],
+      env: 'ELASTIC_PASSWORD',
       description: 'Elasticsearch password for basic authentication.',
     }),
     logFilePath: flags.string({
