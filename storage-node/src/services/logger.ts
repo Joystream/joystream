@@ -145,7 +145,15 @@ function createCustomLogger(customOptions: LogConfig): winston.Logger {
   }
 
   if (customOptions.elasticSearchEndpoint) {
-    transports.push(createElasticTransport(customOptions.elasticSearchlogSource, customOptions.elasticSearchEndpoint))
+    transports.push(
+      createElasticTransport(
+        customOptions.elasticSearchlogSource,
+        customOptions.elasticSearchEndpoint,
+        customOptions.elasticSearchIndex,
+        customOptions.elasticSearchUser,
+        customOptions.elasticSearchPassword
+      )
+    )
   }
   if (customOptions.filePath) {
     transports.push(
@@ -187,7 +195,13 @@ export function initNewLogger(options: LogConfig): void {
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @returns elastic search winston transport
  */
-function createElasticTransport(logSource: string, elasticSearchEndpoint: string): winston.transport {
+function createElasticTransport(
+  logSource: string,
+  elasticSearchEndpoint: string,
+  elasticSearchIndex?: string,
+  elasticSearchUser?: string,
+  elasticSearchPassword?: string
+): winston.transport {
   const possibleLevels = ['warn', 'error', 'debug', 'info']
 
   let elasticLogLevel = process.env.ELASTIC_LOG_LEVEL ?? ''
@@ -197,15 +211,25 @@ function createElasticTransport(logSource: string, elasticSearchEndpoint: string
     elasticLogLevel = 'debug' // default
   }
 
-  const esTransportOpts = {
+  return new ElasticsearchTransport({
     level: elasticLogLevel,
-    clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
-    index: 'storage-node',
+    clientOpts: {
+      node: elasticSearchEndpoint,
+      maxRetries: 5,
+      ...(elasticSearchUser && elasticSearchPassword
+        ? {
+            auth: {
+              username: elasticSearchUser,
+              password: elasticSearchPassword,
+            },
+          }
+        : {}),
+    },
+    index: elasticSearchIndex || 'storage-node',
     format: ecsformat(),
     source: logSource,
     retryLimit: 10,
-  }
-  return new ElasticsearchTransport(esTransportOpts)
+  })
 }
 
 /**
@@ -266,4 +290,13 @@ export type LogConfig = {
 
   /** Elastic search engine endpoint */
   elasticSearchEndpoint?: string
+
+  /** Elastic search index name */
+  elasticSearchIndex?: string
+
+  /** Elastic search user */
+  elasticSearchUser?: string
+
+  /** Elastic search password */
+  elasticSearchPassword?: string
 }
