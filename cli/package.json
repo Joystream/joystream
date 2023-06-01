@@ -81,7 +81,7 @@
     "typescript": "^4.4.3"
   },
   "engines": {
-    "node": ">=14.0.0",
+    "node": ">=18.6.0",
     "yarn": "^1.22.0"
   },
   "publishConfig": {
@@ -170,7 +170,7 @@
   },
   "types": "lib/index.d.ts",
   "volta": {
-    "node": "14.16.1",
+    "node": "18.6.0",
     "yarn": "1.22.15"
   }
 }

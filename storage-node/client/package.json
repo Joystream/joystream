@@ -11,10 +11,10 @@
     "typescript": "^4.4.3"
   },
   "engines": {
-    "node": ">=14.16.1"
+    "node": ">=18.6.0"
   },
   "volta": {
-    "node": "14.16.1",
+    "node": "18.6.0",
     "yarn": "1.22.15"
   },
   "homepage": "https://github.com/Joystream/joystream",

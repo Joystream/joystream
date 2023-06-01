@@ -13,7 +13,7 @@ services:
       - 9933:9933
 
   colossus-1:
-    image: node:14
+    image: node:18
     container_name: colossus-1
     restart: on-failure
     volumes:
@@ -41,7 +41,7 @@ services:
     ]
 
   distributor-1:
-    image: node:14
+    image: node:18
     container_name: distributor-1
     restart: on-failure
     volumes:
@@ -79,7 +79,7 @@ services:
     command: ['yarn', 'joystream-distributor', 'start']
 
   colossus-2:
-    image: node:14
+    image: node:18
     container_name: colossus-2
     restart: on-failure
     volumes:
@@ -107,7 +107,7 @@ services:
     ]
 
   distributor-2:
-    image: node:14
+    image: node:18
     container_name: distributor-2
     restart: on-failure
     volumes:
@@ -180,7 +180,7 @@ services:
       PGPORT: ${ORION_DB_PORT}
 
   graphql-server:
-    image: node:14
+    image: node:18
     container_name: graphql-server
     restart: unless-stopped
     env_file:
@@ -205,7 +205,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
 
   processor:
-    image: node:14
+    image: node:18
     container_name: processor
     restart: unless-stopped
     env_file:
