@@ -22,7 +22,7 @@ services:
       - 127.0.0.1:3334:3334
     working_dir: /joystream/distributor-node
     init: true
-    command: [ 'yarn', 'start' ]
+    command: ['yarn', 'start']
 
 volumes:
   logs:
