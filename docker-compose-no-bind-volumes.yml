@@ -38,7 +38,7 @@ services:
     ]
 
   distributor-1:
-    image: joystream/distribution-node
+    image: joystream/distributor-node
     container_name: distributor-1
     restart: on-failure
     volumes:
@@ -98,7 +98,7 @@ services:
     ]
 
   distributor-2:
-    image: joystream/distribution-node
+    image: joystream/distributor-node
     container_name: distributor-2
     restart: on-failure
     volumes:
