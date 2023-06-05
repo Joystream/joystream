@@ -2,6 +2,8 @@ target/
 **node_modules*
 .tmp/
 .vscode/
+# the way the ** is parsed differs when using buildx and it was causing the whole path leading to 'dist' to be ignored
+!query-node/generated/graphql-server/generated/schema.graphql
 query-node/**/dist
 query-node/lib
 tests/
