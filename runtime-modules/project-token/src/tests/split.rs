@@ -202,6 +202,22 @@ fn issue_split_ok_with_allocation_transferred_to_treasury_account() {
 }
 
 #[test]
+fn issue_split_fails_with_active_amm() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let res = IssueRevenueSplitFixture::default().execute_call();
+
+        assert_err!(res, Error::<Test>::CannotIssueRevenueSplitWithActiveAmm)
+    })
+}
+
+#[test]
 fn issue_split_ok_with_revenue_split_correctly_activated() {
     pub const START: u64 = 1u64 + MIN_REVENUE_SPLIT_TIME_TO_START;
     build_default_test_externalities_with_balances(vec![(

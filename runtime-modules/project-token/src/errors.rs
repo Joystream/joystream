@@ -119,6 +119,9 @@ decl_error! {
         /// Specified revenue split starting block is in the past
         RevenueSplitTimeToStartTooShort,
 
+        /// Revenue Split and Amm cannot be active at the same time
+        CannotIssueRevenueSplitWithActiveAmm,
+
         /// Revenue Split duration is too short
         RevenueSplitDurationTooShort,
 

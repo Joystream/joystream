@@ -921,6 +921,32 @@ fn amm_deactivation_ok_with_event_deposit() {
 }
 
 #[test]
+fn amm_activation_fails_with_active_revenue_split() {
+    let token_id = token!(1);
+    let (creator_id, creator_address) = member!(1);
+    build_default_test_externalities_with_balances(vec![(
+        creator_address,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START);
+
+        let res = ActivateAmmFixture::default()
+            .with_token_id(token_id)
+            .with_member_id(creator_id)
+            .execute_call();
+
+        assert_err!(
+            res,
+            Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive
+        )
+    })
+}
+
+#[ignore]
+#[test]
 fn amm_interaction_with_revenue_split() {
     let token_id = token!(1);
     let amount = 100u32.into();
