@@ -91,7 +91,7 @@
 - name: Install rustup
   shell: 
     cmd: |
-      bash -ic "curl https://getsubstrate.io -sSf | bash -s -- --fast"
+      bash -ic "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y"
   args:
     executable: /bin/bash
 
