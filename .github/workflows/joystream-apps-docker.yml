@@ -79,3 +79,13 @@ jobs:
           file: distributor-node.Dockerfile
           push: true
           tags: joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+
+      # Only publish the apps image from master
+      - name: Push apps image
+        if: github.ref != 'refs/heads/master'
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: apps.Dockerfile
+          push: true
+          tags: joystream/apps:latest
