@@ -4,7 +4,6 @@ import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
 import 'winston-daily-rotate-file'
-import path from 'path'
 
 /**
  * Possible log levels.
@@ -248,12 +247,24 @@ function createFileTransport(
   maxSize: number
 ): winston.transport {
   const options = {
-    filename: path.join(filepath, 'colossus-%DATE%.log'),
+    filename: 'colossus-%DATE%.log',
+    dirname: filepath,
+    frequency: 'custom',
     datePattern: DatePatternByFrequency[fileFrequency || 'daily'],
     maxSize,
     maxFiles,
     level: 'debug',
     format: ecsformat(),
+    zippedArchive: true,
+    tailable: true,
+    createSymlink: true,
+    symlinkName: 'current.log',
+  }
+
+  // Rotation only occurs when maxSize of file is exceeded
+  if (fileFrequency === 'none') {
+    options.frequency = 'none'
+    options.filename = 'colossus.log'
   }
 
   return new winston.transports.DailyRotateFile(options)
@@ -264,6 +275,7 @@ export const DatePatternByFrequency = {
   monthly: 'YYYY-MM',
   daily: 'YYYY-MM-DD',
   hourly: 'YYYY-MM-DD-HH',
+  none: '',
 }
 
 /** File frequency for  */
