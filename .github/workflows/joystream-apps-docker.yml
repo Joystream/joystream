@@ -19,13 +19,13 @@ jobs:
       - name: Build Packages
         run: yarn build:packages
 
-      - name: Extract branch name
+      - name: Extract Package Versions
         id: extract_versions
         shell: bash
         run: |
-          echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
           echo "colossus_version=$(cat storage-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
           echo "argus_version=$(cat distributor-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Login to DockerHub
@@ -43,7 +43,7 @@ jobs:
       # since the context is based on the Git reference. However, you can use
       # the Path context using the context input alongside the actions/checkout action
       # to remove this restriction.
-      - name: storage-node
+      - name: Build storage-node
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -51,7 +51,7 @@ jobs:
           push: false
           load: true
           tags: joystream/storage-node:latest
-      - name: distributor-node
+      - name: Build distributor-node
         uses: docker/build-push-action@v3
         with:
           context: .
@@ -59,31 +59,23 @@ jobs:
           push: false
           load: true
           tags: joystream/distributor-node:latest
+
       - name: Test with latest images
         run: |
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
           ./tests/network-tests/run-tests.sh content-directory
-      - name: storage-node
-        id: build_colossus
+
+      - name: Push storage-node
         uses: docker/build-push-action@v3
         with:
           context: .
           file: colossus.Dockerfile
           push: true
           tags: joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
-      - name: distributor-node
-        id: build_argus
+      - name: Push distributor-node
         uses: docker/build-push-action@v3
         with:
           context: .
           file: distributor-node.Dockerfile
           push: true
           tags: joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
-      - name: apps
-        id: build_apps
-        uses: docker/build-push-action@v3
-        with:
-          context: .
-          file: apps.Dockerfile
-          push: true
-          tags: joystream/apps:${{ steps.extract_versions.outputs.branch }}
