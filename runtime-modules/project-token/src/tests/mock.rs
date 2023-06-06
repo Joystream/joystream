@@ -741,3 +741,33 @@ pub(crate) fn amm_function_values(
         AmmOperation::Sell => DEFAULT_AMM_SELL_FEES.left_from_one().mul_floor(res),
     }
 }
+
+pub fn compute_joy_dividend(
+    rate: Permill,
+    revenue: Balance,
+    participation: Balance,
+    supply: Balance,
+) -> Balance {
+    let net_split_revenue = rate.mul_floor(revenue);
+    Permill::from_rational(participation, supply).mul_floor(net_split_revenue)
+}
+
+pub fn default_joy_dividend() -> Balance {
+    // (participation / issuance) * revenue * rate
+    let net_split_revenue = DEFAULT_SPLIT_RATE.mul_floor(DEFAULT_SPLIT_REVENUE);
+    Permill::from_rational(DEFAULT_SPLIT_PARTICIPATION, DEFAULT_INITIAL_ISSUANCE)
+        .mul_floor(net_split_revenue)
+}
+
+pub fn compute_correct_patronage_amount(
+    supply: Balance,
+    patronage_rate: Permill,
+    blocks: BlockNumber,
+) -> Balance {
+    let supply_post_patronage = one_plus_interest_pow_fixed(
+        patronage_rate,
+        FixedPointNumber::saturating_from_rational(blocks, BlocksPerYear::get()),
+    )
+    .saturating_mul_int(supply);
+    supply_post_patronage.saturating_sub(supply)
+}

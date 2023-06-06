@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{AmmParams, Joy, Payment, Transfers, TransfersOf};
+use crate::tests::test_utils::new_transfers;
+use crate::types::{Joy, TokenAllocation, TransferOutputsOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -127,6 +128,28 @@ impl IssueTokenFixture {
         Self {
             params: IssuanceParams {
                 patronage_rate,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_allocation(self, allocation: Vec<(AccountId, Balance)>) -> Self {
+        let initial_allocation = allocation
+            .into_iter()
+            .map(|(account, amount)| {
+                (
+                    account,
+                    TokenAllocation {
+                        amount,
+                        vesting_schedule_params: None,
+                    },
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        Self {
+            params: IssuanceParams {
+                initial_allocation,
                 ..self.params
             },
             ..self

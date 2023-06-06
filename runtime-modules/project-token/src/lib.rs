@@ -1967,7 +1967,6 @@ impl<T: Config> Module<T> {
             has_sufficient_balance_for_payment::<T>(src, amount),
             Error::<T>::InsufficientJoyBalance
         );
-
         Ok(())
     }
 

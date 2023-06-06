@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use core::assert_eq;
+
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::types::{AmmCurve, AmmOperation, VestingScheduleParamsOf};
@@ -915,5 +917,74 @@ fn amm_deactivation_ok_with_event_deposit() {
             creator_id,
             amount_burned
         ));
+    })
+}
+
+#[test]
+fn amm_interaction_with_revenue_split() {
+    let token_id = token!(1);
+    let amount = 100u32.into();
+    let amm_joy_variation = amm_function_buy_values(amount, amount);
+    let (creator_id, creator_address) = member!(1);
+    let (first_holder_id, first_holder_address) = member!(2);
+    build_default_test_externalities_with_balances(vec![
+        (
+            creator_address,
+            DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+        ),
+        (
+            first_holder_address,
+            amm_joy_variation + ExistentialDeposit::get(),
+        ),
+    ])
+    .execute_with(|| {
+        IssueTokenFixture::default()
+            .with_allocation(vec![(creator_id, amount), (first_holder_id, 0u32.into())])
+            .execute_call()
+            .unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START);
+        ActivateAmmFixture::default()
+            .with_token_id(token_id)
+            .with_member_id(creator_id)
+            .execute_call()
+            .unwrap();
+        ParticipateInSplitFixture::default()
+            .with_sender(creator_address)
+            .with_member_id(creator_id)
+            .with_amount(amount)
+            .execute_call()
+            .unwrap();
+        AmmBuyFixture::default()
+            .with_sender(first_holder_address)
+            .with_member_id(first_holder_id)
+            .with_amount(amount)
+            .execute_call()
+            .unwrap();
+
+        ParticipateInSplitFixture::default()
+            .with_sender(first_holder_address)
+            .with_member_id(first_holder_id)
+            .with_amount(amount)
+            .execute_call()
+            .unwrap();
+
+        let supply_post = Token::token_info_by_id(token_id).total_supply;
+        let creator_balance_post = Balances::usable_balance(creator_address);
+        let holder_balance_post = Balances::usable_balance(first_holder_address);
+        assert_eq!(supply_post, 2 * amount);
+        assert_eq!(
+            creator_balance_post,
+            compute_joy_dividend(DEFAULT_SPLIT_RATE, DEFAULT_SPLIT_REVENUE, amount, amount)
+        );
+        assert_eq!(
+            holder_balance_post,
+            compute_joy_dividend(
+                DEFAULT_SPLIT_RATE,
+                DEFAULT_SPLIT_REVENUE.saturating_sub(creator_balance_post),
+                amount,
+                supply_post
+            )
+        );
     })
 }
