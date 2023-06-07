@@ -32,8 +32,9 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
+    entrypoint: ['yarn', 'storage-node']
     command: [
-      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -76,7 +77,8 @@ services:
       # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    command: ['yarn', 'joystream-distributor', 'start']
+    entrypoint: ['yarn', 'joystream-distributor']
+    command: ['start']
 
   colossus-2:
     image: node:14
@@ -98,8 +100,9 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
+    entrypoint: ['yarn', 'storage-node']
     command: [
-      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -143,7 +146,8 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    command: ['yarn', 'joystream-distributor', 'start']
+    entrypoint: ['yarn', 'joystream-distributor']
+    command: ['start']
 
   db:
     image: postgres:12

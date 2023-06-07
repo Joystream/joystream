@@ -80,9 +80,27 @@ jobs:
           push: true
           tags: joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
 
-      # Only publish the apps image from master
+      # Push latest tag if on master branch
+      - name: Push joystream/storage-node:latest
+        if: github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: colossus.Dockerfile
+          push: true
+          tags: joystream/storage-node:latest
+
+      - name: Push joystream/distributor-node:latest
+        if: github.ref == 'refs/heads/master'
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: distributor-node.Dockerfile
+          push: true
+          tags: joystream/distributor-node:latest
+
       - name: Push apps image
-        if: github.ref != 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v3
         with:
           context: .
