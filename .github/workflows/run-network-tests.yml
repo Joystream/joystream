@@ -2,6 +2,8 @@ name: run-network-tests
 on:
   pull_request:
     types: [opened, synchronize]
+  repository_dispatch:
+    types: [run-network-tests]
 
   workflow_dispatch:
   push:
@@ -137,7 +139,54 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
 
+  run_orion_tests:
+    if: >
+      github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.sha
+    name: Load orion docker image from artifact
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '14.x'
+    - name: Download Orion Docker image
+      uses: dawidd6/action-download-artifact@v2
+      with:
+        github_token: ${{ secrets.ORION_TESTS_TOKEN }}
+        commit: ${{ github.event.client_payload.sha }}
+        name: joystream-orion-docker
+        repo: Lezek123/orion
+    - name: Load Orion Docker image
+      run: gunzip -c orion-{{ github.event.client_payload.sha }}.tar.gz | docker load
+    - name: Install packages and dependencies
+      run: yarn build:packages
+    - name: Ensure tests are runnable
+      run: yarn workspace network-tests build
+    - name: Execute network tests
+      run: |
+        export RUNTIME=${{ needs.build_images.outputs.runtime }}
+        export SKIP_QUERY_NODE_CHECKS=true
+        if (tests/network-tests/run-tests.sh orion); then
+          echo "TESTS_STATUS=success" >> $GITHUB_ENV
+        else
+          echo "TESTS_STATUS=failure" >> $GITHUB_ENV
+        fi
+    - name: Set commit status
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/Lezek123/orion/statuses/${{ github.event.client_payload.sha }}
+        state: ${{ env.TESTS_STATUS }}
+        target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        description: Integration tests result
+        context: integration-tests
+      env:
+        GITHUB_TOKEN: ${{ secrets.ORION_TESTS_TOKEN }}
+
+
   run_test_scenarios:
+    if: github.event_name == 'pull_request'
     name: Tests
     needs: build_images
     runs-on: ubuntu-latest
@@ -179,7 +228,7 @@ jobs:
     name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
+    if: github.ref != 'refs/heads/master' && github.event_name == 'pull_request'
     steps:
       # Checkout master branch
       - name: check out master repo
