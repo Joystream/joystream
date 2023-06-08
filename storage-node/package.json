@@ -43,6 +43,7 @@
     "fast-safe-stringify": "^2.1.1",
     "file-type": "^16.5.0",
     "lodash": "^4.17.21",
+    "mkdirp": "^3.0.1",
     "multihashes": "^4.0.2",
     "node-cache": "^5.1.2",
     "openapi-editor": "^0.3.0",
