@@ -1,4 +1,5 @@
 import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import { SchemaKey, schemas, TypeBySchemaKey } from '../../schemas'
 
 export class ValidationError extends Error {
@@ -19,6 +20,7 @@ export class ValidationService {
 
   public constructor() {
     this.ajv = new Ajv({ allErrors: true, schemas })
+    addFormats(this.ajv)
   }
 
   validate<SK extends SchemaKey>(schemaKey: SK, input: unknown): TypeBySchemaKey<SK> {
