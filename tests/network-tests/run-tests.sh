@@ -29,6 +29,12 @@ then
   ../../query-node/start.sh
 fi
 
+# Start orion
+if [ "${NO_ORION}" != true ]
+then
+  ../../start-orion.sh
+fi
+
 # Execute tests
 
 if [ "${NO_STORAGE}" != true ]
