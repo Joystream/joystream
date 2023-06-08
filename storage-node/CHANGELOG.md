@@ -1,3 +1,6 @@
+### 3.4.0
+- Added option 'none' to 'logFileChangeFrequency' argument. The default is still 'daily'. 'none' prevents log rotaion on time basis and only rotates when max  size for logs files is reached.
+
 ### 3.3.0
 
 - Added customization options for Elasticsearch logging. Users can now specify index name and auth options.
