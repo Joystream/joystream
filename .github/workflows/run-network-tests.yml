@@ -2,10 +2,11 @@ name: run-network-tests
 on:
   pull_request:
     types: [opened, synchronize]
-  repository_dispatch:
-    types: [run-network-tests]
-
   workflow_dispatch:
+    inputs:
+      orion_sha:
+        description: 'SHA of Orion repositry commit to use for testing Orion'
+        required: false
   push:
 
 jobs:
@@ -140,9 +141,7 @@ jobs:
           path: joystream-node-docker-image.tar.gz
 
   run_orion_tests:
-    if: >
-      github.event_name == 'repository_dispatch' &&
-      github.event.client_payload.sha
+    if: github.event.inputs.orion_sha != ''
     name: Load orion docker image from artifact
     needs: build_images
     runs-on: ubuntu-latest
@@ -155,11 +154,11 @@ jobs:
       uses: dawidd6/action-download-artifact@v2
       with:
         github_token: ${{ secrets.ORION_TESTS_TOKEN }}
-        commit: ${{ github.event.client_payload.sha }}
+        commit: ${{ github.event.inputs.orion_sha }}
         name: joystream-orion-docker
         repo: Lezek123/orion
     - name: Load Orion Docker image
-      run: gunzip -c orion-{{ github.event.client_payload.sha }}.tar.gz | docker load
+      run: gunzip -c orion-{{ github.event.inputs.orion_sha }}.tar.gz | docker load
     - name: Install packages and dependencies
       run: yarn build:packages
     - name: Ensure tests are runnable
@@ -176,7 +175,7 @@ jobs:
     - name: Set commit status
       uses: octokit/request-action@v2.x
       with:
-        route: POST /repos/Lezek123/orion/statuses/${{ github.event.client_payload.sha }}
+        route: POST /repos/Lezek123/orion/statuses/${{ github.event.inputs.orion_sha }}
         state: ${{ env.TESTS_STATUS }}
         target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         description: Integration tests result
@@ -186,7 +185,7 @@ jobs:
 
 
   run_test_scenarios:
-    if: github.event_name == 'pull_request'
+    if: github.event.inputs.orion_sha == ''
     name: Tests
     needs: build_images
     runs-on: ubuntu-latest
@@ -228,7 +227,7 @@ jobs:
     name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master' && github.event_name == 'pull_request'
+    if: github.ref != 'refs/heads/master' && github.event.inputs.orion_sha == ''
     steps:
       # Checkout master branch
       - name: check out master repo
