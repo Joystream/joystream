@@ -159,7 +159,7 @@ jobs:
         repo: Lezek123/orion
         workflow: tests.yml
     - name: Load Orion Docker image
-      run: gunzip -c orion-{{ github.event.inputs.orion_sha }}.tar.gz | docker load
+      run: gunzip -c orion-${{ github.event.inputs.orion_sha }}.tar.gz | docker load
     - name: Install packages and dependencies
       run: yarn build:packages
     - name: Ensure tests are runnable
