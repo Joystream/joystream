@@ -158,6 +158,8 @@ jobs:
         target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         description: Integration tests result
         context: integration-tests
+      env:
+        GITHUB_TOKEN: ${{ secrets.ORION_TESTS_TOKEN }}
     - name: Download Orion Docker image
       uses: dawidd6/action-download-artifact@v2
       with:
