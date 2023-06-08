@@ -11,6 +11,7 @@ import { MembershipBoughtEventFieldsFragment, MembershipFieldsFragment } from '.
 import { Utils } from '../../utils'
 import { StandardizedFixture } from '../../Fixture'
 import { SubmittableResult } from '@polkadot/api'
+import axios from 'axios'
 
 type MembershipBoughtEventDetails = EventDetails<EventType<'members', 'MembershipBought'>>
 
@@ -123,5 +124,24 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
 
     const qMembers = await this.query.getMembersByIds(this.events.map((e) => e.event.data[0]))
     this.assertQueriedMembersAreValid(qMembers, qEvents)
+  }
+
+  public async runOrionChecks(): Promise<void> {
+    await super.runOrionChecks()
+    // Wait a minute, let Orion catch up
+    await Utils.wait(60_000)
+    const result = await axios.post('http://localhost:4350/graphql', {
+      query: `
+          query {
+            memberships(where: { id_in: $ids }) {
+              id
+            }
+          }
+        `,
+      variables: {
+        ids: this.getCreatedMembers().map((id) => id.toString()),
+      },
+    })
+    assert.equal(result.data.data.memberships.length, this.getCreatedMembers().length)
   }
 }

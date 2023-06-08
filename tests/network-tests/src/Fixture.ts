@@ -1,7 +1,6 @@
 import { Api } from './Api'
 import { assert } from 'chai'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { DispatchResult } from '@polkadot/types/interfaces/system'
 import { QueryNodeApi } from './QueryNodeApi'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { extendDebug, Debugger } from './Debugger'
@@ -90,6 +89,13 @@ export abstract class BaseQueryNodeFixture extends BaseFixture {
     // Implement in child class!
   }
 
+  public async runOrionChecks(): Promise<void> {
+    if (!this.executed) {
+      throw new Error('Cannot run orion checks before Fixture is executed')
+    }
+    // Implement in child class!
+  }
+
   protected findMatchingQueryNodeEvent<T extends AnyQueryNodeEvent>(
     eventToFind: EventDetails,
     queryNodeEvents: T[]
@@ -125,7 +131,7 @@ export abstract class StandardizedFixture extends BaseQueryNodeFixture {
     })
   }
 
-  public setErrorName(errName: string) {
+  public setErrorName(errName: string): void {
     this.expectedErrorName = errName
   }
 
@@ -154,6 +160,7 @@ export class FixtureRunner {
   private fixture: BaseFixture
   private ran = false
   private queryNodeChecksRan = false
+  private orionChecksRan = false
 
   constructor(fixture: BaseFixture) {
     this.fixture = fixture
@@ -190,8 +197,25 @@ export class FixtureRunner {
     await this.fixture.runQueryNodeChecks()
   }
 
+  public async runOrionChecks(): Promise<void> {
+    if (process.env.SKIP_ORION_CHECKS) {
+      return
+    }
+    if (!(this.fixture instanceof BaseQueryNodeFixture)) {
+      throw new Error('Tried to run orion checks for non-query-node fixture!')
+    }
+    if (this.orionChecksRan) {
+      throw new Error('Fixture orion checks already ran')
+    }
+
+    this.orionChecksRan = true
+
+    await this.fixture.runOrionChecks()
+  }
+
   public async runWithQueryNodeChecks(): Promise<void> {
     await this.run()
     await this.runQueryNodeChecks()
+    await this.runOrionChecks()
   }
 }
