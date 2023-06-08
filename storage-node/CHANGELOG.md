@@ -1,6 +1,7 @@
 ### 3.3.0
 
 - Added customization options for Elasticsearch logging. Users can now specify index name and auth options.
+- **FIX** [#4773](https://github.com/Joystream/joystream/issues/4773) Cleanup temporary files created when upload fails.
 
 ### 3.2.0
 

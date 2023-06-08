@@ -19,6 +19,7 @@ import {
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
 import { UploadFileQueryParams, UploadToken } from './types'
+import { diskStorage } from '../multer-storage/disk'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -40,6 +41,16 @@ export async function createApp(config: AppConfig): Promise<Express> {
     (req: express.Request, res: express.Response, next: NextFunction) => {
       res.locals = config
 
+      next()
+    },
+
+    // Catch aborted requests event early, before we get a chance to handle
+    // it in multer middleware. This is an edge case which happens when only
+    // a small amount of data is transferred, before multer starts parsing.
+    (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
+      if (req.path === '/api/v1/files') {
+        req.on('aborted', () => (req.aborted = true))
+      }
       next()
     },
 
@@ -65,7 +76,9 @@ export async function createApp(config: AppConfig): Promise<Express> {
         resolver: OpenApiValidator.resolvers.modulePathResolver,
       },
       fileUploader: {
-        dest: config.tempFileUploadingDir,
+        storage: diskStorage({
+          destination: config.tempFileUploadingDir,
+        }),
         // Busboy library settings
         limits: {
           // For multipart forms, the max number of file fields (Default: Infinity)
