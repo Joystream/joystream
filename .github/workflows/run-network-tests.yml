@@ -150,6 +150,14 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: '14.x'
+    - name: Set pending status in Orion repo
+      uses: octokit/request-action@v2.x
+      with:
+        route: POST /repos/Lezek123/orion/statuses/${{ github.event.inputs.orion_sha }}
+        state: pending
+        target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        description: Integration tests result
+        context: integration-tests
     - name: Download Orion Docker image
       uses: dawidd6/action-download-artifact@v2
       with:
@@ -173,7 +181,7 @@ jobs:
         else
           echo "TESTS_STATUS=failure" >> $GITHUB_ENV
         fi
-    - name: Set commit status
+    - name: Set final status in Orion repo
       uses: octokit/request-action@v2.x
       with:
         route: POST /repos/Lezek123/orion/statuses/${{ github.event.inputs.orion_sha }}
