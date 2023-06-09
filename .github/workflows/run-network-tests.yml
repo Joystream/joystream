@@ -193,6 +193,15 @@ jobs:
         context: integration-tests
       env:
         GITHUB_TOKEN: ${{ secrets.ORION_TESTS_TOKEN }}
+    - name: Test result
+      run: |
+        if [ "${{ env.TESTS_STATUS }}" == "success" ]; then
+          echo "Tests passed"
+          exit 0
+        else
+          echo "Tests failed"
+          exit 1
+        fi
 
 
   run_test_scenarios:
