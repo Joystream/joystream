@@ -167,7 +167,7 @@ jobs:
         commit: ${{ github.event.inputs.orion_sha }}
         name: joystream-orion-docker
         repo: ${{ vars.ORION_REPO }}
-        workflow: tests.yml
+        workflow: build-docker-image.yml
     - name: Load Orion Docker image
       run: gunzip -c orion-${{ github.event.inputs.orion_sha }}.tar.gz | docker load
     - name: Install packages and dependencies
