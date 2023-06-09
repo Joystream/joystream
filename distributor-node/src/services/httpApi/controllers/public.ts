@@ -296,6 +296,7 @@ export class PublicApiController {
     const data: StatusResponse = {
       id: this.config.id,
       version: this.config.version,
+      workerId: this.config.workerId,
       objectsInCache: this.stateCache.getCachedObjectsCount(),
       storageLimit: this.config.limits.storage,
       storageUsed: this.content.usedSpace,

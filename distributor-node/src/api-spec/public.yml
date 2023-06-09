@@ -172,6 +172,8 @@ components:
           type: string
         version:
           type: string
+        workerId:
+          type: integer
         objectsInCache:
           type: integer
           minimum: 0
