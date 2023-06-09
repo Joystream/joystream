@@ -142,7 +142,7 @@ jobs:
 
   run_orion_tests:
     if: github.event.inputs.orion_sha != ''
-    name: Load orion docker image from artifact
+    name: Orion integration tests
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -153,7 +153,7 @@ jobs:
     - name: Set pending status in Orion repo
       uses: octokit/request-action@v2.x
       with:
-        route: POST /repos/Lezek123/orion/statuses/${{ github.event.inputs.orion_sha }}
+        route: POST /repos/${{ vars.ORION_REPO }}/statuses/${{ github.event.inputs.orion_sha }}
         state: pending
         target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         description: Integration tests result
@@ -166,7 +166,7 @@ jobs:
         github_token: ${{ secrets.ORION_TESTS_TOKEN }}
         commit: ${{ github.event.inputs.orion_sha }}
         name: joystream-orion-docker
-        repo: Lezek123/orion
+        repo: ${{ vars.ORION_REPO }}
         workflow: tests.yml
     - name: Load Orion Docker image
       run: gunzip -c orion-${{ github.event.inputs.orion_sha }}.tar.gz | docker load
@@ -186,7 +186,7 @@ jobs:
     - name: Set final status in Orion repo
       uses: octokit/request-action@v2.x
       with:
-        route: POST /repos/Lezek123/orion/statuses/${{ github.event.inputs.orion_sha }}
+        route: POST /repos/${{ vars.ORION_REPO }}/statuses/${{ github.event.inputs.orion_sha }}
         state: ${{ env.TESTS_STATUS }}
         target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         description: Integration tests result
