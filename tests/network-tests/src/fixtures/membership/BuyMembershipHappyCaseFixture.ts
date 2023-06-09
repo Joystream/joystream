@@ -133,14 +133,13 @@ export class BuyMembershipHappyCaseFixture extends StandardizedFixture {
     const result = await axios.post('http://localhost:4350/graphql', {
       query: `
           query {
-            memberships(where: { id_in: $ids }) {
+            memberships(where: { id_in: [${this.getCreatedMembers()
+              .map((id) => `"${id}"`)
+              .join(', ')}] }) {
               id
             }
           }
         `,
-      variables: {
-        ids: this.getCreatedMembers().map((id) => id.toString()),
-      },
     })
     assert.equal(result.data.data.memberships.length, this.getCreatedMembers().length)
   }
