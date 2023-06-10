@@ -150,16 +150,6 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: '14.x'
-    - name: Set pending status in Orion repo
-      uses: octokit/request-action@v2.x
-      with:
-        route: POST /repos/${{ vars.ORION_REPO }}/statuses/${{ github.event.inputs.orion_sha }}
-        state: pending
-        target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        description: Integration tests result
-        context: integration-tests
-      env:
-        GITHUB_TOKEN: ${{ secrets.ORION_TESTS_TOKEN }}
     - name: Download Orion Docker image
       uses: dawidd6/action-download-artifact@v2
       with:
@@ -183,25 +173,20 @@ jobs:
         else
           echo "TESTS_STATUS=failure" >> $GITHUB_ENV
         fi
-    - name: Set final status in Orion repo
-      uses: octokit/request-action@v2.x
+  
+  upload_orion_tests_result_artifact:
+    name: Upload Orion tests result artifact
+    needs: run_orion_tests
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create result file
+      run: echo $TESTS_STATUS > result.txt
+    - name: Upload the result artifact
+      uses: actions/upload-artifact@v3
       with:
-        route: POST /repos/${{ vars.ORION_REPO }}/statuses/${{ github.event.inputs.orion_sha }}
-        state: ${{ env.TESTS_STATUS }}
-        target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        description: Integration tests result
-        context: integration-tests
-      env:
-        GITHUB_TOKEN: ${{ secrets.ORION_TESTS_TOKEN }}
-    - name: Test result
-      run: |
-        if [ "${{ env.TESTS_STATUS }}" == "success" ]; then
-          echo "Tests passed"
-          exit 0
-        else
-          echo "Tests failed"
-          exit 1
-        fi
+        name: orion-tests-${{ github.event.inputs.orion_sha }}-${{ github.event.inputs.attempt }}
+        path: result.txt
 
 
   run_test_scenarios:
