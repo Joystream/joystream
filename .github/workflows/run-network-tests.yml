@@ -177,6 +177,7 @@ jobs:
           echo "TESTS_STATUS=success" >> $GITHUB_ENV
         else
           echo "TESTS_STATUS=failure" >> $GITHUB_ENV
+          exit 1
         fi
   
   upload_orion_tests_result_artifact:
@@ -186,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Create result file
-      run: echo $TESTS_STATUS > result.txt
+      run: echo "${{ env.TESTS_STATUS }}" > result.txt
     - name: Upload the result artifact
       uses: actions/upload-artifact@v3
       with:
