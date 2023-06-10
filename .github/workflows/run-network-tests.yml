@@ -7,6 +7,11 @@ on:
       orion_sha:
         description: 'SHA of Orion repositry commit to use for testing Orion'
         required: false
+      attempt:
+        description: |
+          Orion integration tests attempt number
+          (to identify individual testing attempts for the same commit)
+        required: false
   push:
 
 jobs:
