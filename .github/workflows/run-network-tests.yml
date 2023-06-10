@@ -160,11 +160,11 @@ jobs:
       with:
         github_token: ${{ secrets.ORION_TESTS_TOKEN }}
         commit: ${{ github.event.inputs.orion_sha }}
-        name: joystream-orion-docker
+        name: joystream-orion-docker-${{ github.event.inputs.orion_sha }}
         repo: ${{ vars.ORION_REPO }}
         workflow: build-docker-image.yml
     - name: Load Orion Docker image
-      run: gunzip -c orion-${{ github.event.inputs.orion_sha }}.tar.gz | docker load
+      run: gunzip -c orion.tar.gz | docker load
     - name: Install packages and dependencies
       run: yarn build:packages
     - name: Ensure tests are runnable
