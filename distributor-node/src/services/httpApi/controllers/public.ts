@@ -194,7 +194,7 @@ export class PublicApiController {
     range?: { start: number; end: number }
   ) {
     this.logger.verbose(`Serving pending download asset from file`, { objectId, objectSize, range })
-    const stream = this.content.createContinousReadStream(objectId, {
+    const stream = this.content.createContinuousReadStream(objectId, {
       start: range?.start,
       end: range !== undefined ? range.end : objectSize - 1,
     })
