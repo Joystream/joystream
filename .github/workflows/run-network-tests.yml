@@ -170,15 +170,18 @@ jobs:
     - name: Ensure tests are runnable
       run: yarn workspace network-tests build
     - name: Execute network tests
+      id: execute_network_tests
       run: |
         export RUNTIME=${{ needs.build_images.outputs.runtime }}
         export SKIP_QUERY_NODE_CHECKS=true
         if (tests/network-tests/run-tests.sh orion); then
-          echo "TESTS_STATUS=success" >> $GITHUB_ENV
+          echo "tests_status=success" >> $GITHUB_OUTPUT
         else
-          echo "TESTS_STATUS=failure" >> $GITHUB_ENV
+          echo "tests_status=failure" >> $GITHUB_OUTPUT
           exit 1
         fi
+    outputs:
+      tests_status: ${{ steps.execute_network_tests.outputs.tests_status }}
   
   upload_orion_tests_result_artifact:
     name: Upload Orion tests result artifact
@@ -187,7 +190,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Create result file
-      run: echo "${{ env.TESTS_STATUS }}" > result.txt
+      run: echo "${{ needs.run_orion_tests.outputs.tests_status }}" > result.txt
     - name: Upload the result artifact
       uses: actions/upload-artifact@v3
       with:
