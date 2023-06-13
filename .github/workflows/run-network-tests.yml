@@ -2,16 +2,8 @@ name: run-network-tests
 on:
   pull_request:
     types: [opened, synchronize]
+
   workflow_dispatch:
-    inputs:
-      orion_sha:
-        description: 'SHA of Orion repositry commit to use for testing Orion'
-        required: false
-      attempt:
-        description: |
-          Orion integration tests attempt number
-          (to identify individual testing attempts for the same commit)
-        required: false
   push:
 
 jobs:
@@ -145,61 +137,7 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
 
-  run_orion_tests:
-    if: github.event.inputs.orion_sha != ''
-    name: Orion integration tests
-    needs: build_images
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '14.x'
-    - name: Download Orion Docker image
-      uses: dawidd6/action-download-artifact@v2
-      with:
-        github_token: ${{ secrets.ORION_TESTS_TOKEN }}
-        commit: ${{ github.event.inputs.orion_sha }}
-        name: joystream-orion-docker-${{ github.event.inputs.orion_sha }}
-        repo: ${{ vars.ORION_REPO }}
-        workflow: build-docker-image.yml
-    - name: Load Orion Docker image
-      run: gunzip -c orion.tar.gz | docker load
-    - name: Install packages and dependencies
-      run: yarn build:packages
-    - name: Ensure tests are runnable
-      run: yarn workspace network-tests build
-    - name: Execute network tests
-      id: execute_network_tests
-      run: |
-        export RUNTIME=${{ needs.build_images.outputs.runtime }}
-        export SKIP_QUERY_NODE_CHECKS=true
-        if (tests/network-tests/run-tests.sh orion); then
-          echo "tests_status=success" >> $GITHUB_OUTPUT
-        else
-          echo "tests_status=failure" >> $GITHUB_OUTPUT
-          exit 1
-        fi
-    outputs:
-      tests_status: ${{ steps.execute_network_tests.outputs.tests_status }}
-  
-  upload_orion_tests_result_artifact:
-    name: Upload Orion tests result artifact
-    needs: run_orion_tests
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-    - name: Create result file
-      run: echo "${{ needs.run_orion_tests.outputs.tests_status }}" > result.txt
-    - name: Upload the result artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: orion-tests-${{ github.event.inputs.orion_sha }}-${{ github.event.inputs.attempt }}
-        path: result.txt
-
-
   run_test_scenarios:
-    if: github.event.inputs.orion_sha == ''
     name: Tests
     needs: build_images
     runs-on: ubuntu-latest
@@ -241,7 +179,7 @@ jobs:
     name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master' && github.event.inputs.orion_sha == ''
+    if: github.ref != 'refs/heads/master'
     steps:
       # Checkout master branch
       - name: check out master repo
