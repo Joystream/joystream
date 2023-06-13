@@ -10,6 +10,7 @@
 | [endpoints](#endpoints)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints.md "https://joystream.org/schemas/argus/config#/properties/endpoints")             |
 | [directories](#directories) | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-directories.md "https://joystream.org/schemas/argus/config#/properties/directories")         |
 | [logs](#logs)               | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-logs.md "https://joystream.org/schemas/argus/config#/properties/logs")                       |
+| [otlp](#otlp)               | `object`  | Optional | cannot be null | [Distributor node configuration](definition-properties-otlp.md "https://joystream.org/schemas/argus/config#/properties/otlp")                       |
 | [limits](#limits)           | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-limits.md "https://joystream.org/schemas/argus/config#/properties/limits")                   |
 | [intervals](#intervals)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-intervals.md "https://joystream.org/schemas/argus/config#/properties/intervals")             |
 | [publicApi](#publicapi)     | `object`  | Required | cannot be null | [Distributor node configuration](definition-properties-publicapi.md "https://joystream.org/schemas/argus/config#/properties/publicApi")             |
@@ -93,6 +94,24 @@ Specifies the logging configuration
 ### logs Type
 
 `object` ([Details](definition-properties-logs.md))
+
+## otlp
+
+Specifies OpenTelemetry (<https://opentelemetry.io>) configuration options (Optional)
+
+`otlp`
+
+*   is optional
+
+*   Type: `object` ([Details](definition-properties-otlp.md))
+
+*   cannot be null
+
+*   defined in: [Distributor node configuration](definition-properties-otlp.md "https://joystream.org/schemas/argus/config#/properties/otlp")
+
+### otlp Type
+
+`object` ([Details](definition-properties-otlp.md))
 
 ## limits
 
