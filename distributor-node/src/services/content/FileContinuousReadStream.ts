@@ -1,7 +1,7 @@
-import { Readable } from 'stream'
 import fs from 'fs'
+import { Readable } from 'stream'
 
-export interface FileContinousReadStreamOptions {
+export interface FileContinuousReadStreamOptions {
   end: number
   start?: number
   chunkSize?: number
@@ -9,7 +9,7 @@ export interface FileContinousReadStreamOptions {
   maxRetries?: number
 }
 
-export class FileContinousReadStream extends Readable {
+export class FileContinuousReadStream extends Readable {
   private fd: number
   private position: number
   private lastByte: number
@@ -18,7 +18,7 @@ export class FileContinousReadStream extends Readable {
   private finished: boolean
   private interval: NodeJS.Timeout | undefined
 
-  public constructor(path: string, options: FileContinousReadStreamOptions) {
+  public constructor(path: string, options: FileContinuousReadStreamOptions) {
     super({
       highWaterMark: options.chunkSize || 1 * 1024 * 1024, // default: 1 MB
     })
