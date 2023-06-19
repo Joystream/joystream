@@ -2,3 +2,4 @@
 .tmp/
 data/
 output.json
+src/graphql/schema.graphql

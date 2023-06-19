@@ -4,9 +4,6 @@ WORKDIR /joystream
 COPY ./chain-metadata.json chain-metadata.json
 COPY ./types types
 COPY ./metadata-protobuf metadata-protobuf
-# codegen.yml references:
-# so we expect query-node was built on host to generate that schema file
-COPY ./query-node/generated/graphql-server/generated/schema.graphql ./query-node/generated/graphql-server/generated/schema.graphql
 COPY ./devops/eslint-config ./devops/eslint-config
 COPY ./devops/prettier-config ./devops/prettier-config
 COPY ./storage-node storage-node
