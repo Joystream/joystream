@@ -16,7 +16,7 @@ export class JsonSchemaPrompter<JsonResult> {
   schema: JSONSchema
   schemaPath: string
   customPropmpts?: JsonSchemaCustomPrompts
-  ajv: Ajv.Ajv
+  ajv: Ajv
   filledObject: Partial<JsonResult>
 
   constructor(
@@ -184,8 +184,10 @@ export class JsonSchemaPrompter<JsonResult> {
     this.ajv.validate(this.schema, this.filledObject) as boolean
     return this.ajv.errors
       ? this.ajv.errors
-          .filter((e) => (nestedErrors ? e.dataPath.startsWith(`.${propertyPath}`) : e.dataPath === `.${propertyPath}`))
-          .map((e) => (e.dataPath.replace(`.${propertyPath}`, '') || 'This value') + ` ${e.message}`)
+          .filter((e) =>
+            nestedErrors ? e.instancePath.startsWith(`.${propertyPath}`) : e.instancePath === `.${propertyPath}`
+          )
+          .map((e) => (e.instancePath.replace(`.${propertyPath}`, '') || 'This value') + ` ${e.message}`)
           .join(', ')
       : null
   }

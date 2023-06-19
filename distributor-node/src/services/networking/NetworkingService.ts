@@ -410,7 +410,7 @@ export class NetworkingService {
         })
       )
     } catch (err) {
-      this.logger.error("Couldn't check active storage node endpooints", { err })
+      this.logger.error("Couldn't check active storage node endpoints", { err })
     }
   }
 

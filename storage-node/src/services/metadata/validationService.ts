@@ -29,7 +29,7 @@ export class ValidationService {
     if (!valid) {
       throw new ValidationError(
         `${schemaKey} is not valid`,
-        this.ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${stringify(e.params)})`) || []
+        this.ajv.errors?.map((e) => `${e.instancePath}: ${e.message} (${stringify(e.params)})`) || []
       )
     }
     return input as TypeBySchemaKey<SK>
