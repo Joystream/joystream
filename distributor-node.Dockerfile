@@ -4,7 +4,7 @@ WORKDIR /joystream
 COPY ./chain-metadata.json chain-metadata.json
 COPY ./types types
 COPY ./metadata-protobuf metadata-protobuf
-COPY ./storage-node/client ./storage-node/client
+COPY ./storage-node ./storage-node
 COPY ./devops/eslint-config ./devops/eslint-config
 COPY ./devops/prettier-config ./devops/prettier-config
 COPY ./distributor-node distributor-node
@@ -18,6 +18,7 @@ RUN \
   yarn --frozen-lockfile &&\
   yarn workspace @joystream/types build &&\
   yarn workspace @joystream/metadata-protobuf build &&\
+  yarn workspace @joystream/storage-node-client build &&\
   yarn workspace @joystream/distributor-cli build &&\
   find . -name "node_modules" -type d -prune &&\
   yarn cache clean

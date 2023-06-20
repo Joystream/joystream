@@ -31,7 +31,7 @@
     "directory": "storage-node/client"
   },
   "scripts": {
-    "build": "tsc --build tsconfig.json"
+    "build": "tsc --build ./tsconfig.json"
   },
   "types": "lib/index.d.ts"
 }
