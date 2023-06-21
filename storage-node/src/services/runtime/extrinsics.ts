@@ -1,10 +1,15 @@
-import { sendAndFollowNamedTx, getEvent } from './api'
-import { KeyringPair } from '@polkadot/keyring/types'
+import {
+  INodeOperationalStatusMetadata,
+  ISetNodeOperationalStatus,
+  SetNodeOperationalStatus,
+} from '@joystream/metadata-protobuf'
 import { ApiPromise } from '@polkadot/api'
+import { KeyringPair } from '@polkadot/keyring/types'
 import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
-import logger from '../../services/logger'
-import { timeout } from 'promise-timeout'
 import BN from 'bn.js'
+import { timeout } from 'promise-timeout'
+import logger from '../../services/logger'
+import { getEvent, sendAndFollowNamedTx } from './api'
 
 /**
  * Creates storage bucket.
@@ -490,6 +495,40 @@ export async function updateBlacklist(
     const addHashes = api.createType('BTreeSet<Bytes>', add)
 
     const tx = api.tx.storage.updateBlacklist(removeHashes, addHashes)
+
+    return sendAndFollowNamedTx(api, account, tx)
+  })
+}
+
+/**
+ * Set/update storage nodes operational status by Lead
+ *
+ * @remarks
+ * It sends an lead remark extrinsic to the runtime.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @param workerId - Worker ID
+ * @param buckerId - Bucket ID
+ * @param operationalStatus - Operational Status to set for the node
+ * @returns promise with a success flag.
+ */
+export async function setStorageNodeOperationalStatus(
+  api: ApiPromise,
+  account: KeyringPair,
+  workerId: number,
+  bucketId: number,
+  operationalStatus: INodeOperationalStatusMetadata
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
+    const metadata: ISetNodeOperationalStatus = {
+      workerId: workerId.toString(),
+      bucketId: bucketId.toString(),
+      operationalStatus,
+    }
+    const tx = api.tx.storageWorkingGroup.leadRemark(
+      '0x' + Buffer.from(SetNodeOperationalStatus.encode(metadata).finish()).toString('hex')
+    )
 
     return sendAndFollowNamedTx(api, account, tx)
   })

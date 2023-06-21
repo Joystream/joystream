@@ -1,14 +1,16 @@
 import { Command, flags } from '@oclif/command'
-import { createApi } from '../services/runtime/api'
-import { getAccountFromJsonFile, getAlicePair, getAccountFromUri } from '../services/runtime/accounts'
-import { parseBagId } from '../services/helpers/bagTypes'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiPromise } from '@polkadot/api'
-import logger from '../services/logger'
-import ExitCodes from './ExitCodes'
 import { CLIError } from '@oclif/errors'
 import { Input } from '@oclif/parser'
+import { ApiPromise } from '@polkadot/api'
+import { KeyringPair } from '@polkadot/keyring/types'
+import inquirer, { DistinctQuestion } from 'inquirer'
+import inquirerDatepicker from 'inquirer-datepicker'
 import _ from 'lodash'
+import { parseBagId } from '../services/helpers/bagTypes'
+import logger from '../services/logger'
+import { getAccountFromJsonFile, getAccountFromUri, getAlicePair } from '../services/runtime/accounts'
+import { createApi } from '../services/runtime/api'
+import ExitCodes from './ExitCodes'
 
 /**
  * Parent class for all runtime-based commands. Defines common functions.
@@ -103,6 +105,8 @@ export default abstract class ApiCommandBase extends Command {
     }
 
     await this.getApi()
+
+    inquirer.registerPrompt('datepicker', inquirerDatepicker)
   }
 
   /**
@@ -176,6 +180,21 @@ export default abstract class ApiCommandBase extends Command {
     else {
       this.error('Keyfile or account URI must be set.')
     }
+  }
+
+  async datePrompt(question: DistinctQuestion): Promise<Date> {
+    const { result } = await inquirer.prompt([
+      {
+        ...question,
+        type: 'datepicker',
+        name: 'result',
+        clearable: true,
+        default: new Date('2017-09-28 17:36:05').toISOString(),
+      },
+    ])
+
+    const date = new Date(result)
+    return date
   }
 
   /**

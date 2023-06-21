@@ -1,4 +1,5 @@
 import { JSONSchema4 } from 'json-schema'
+import { NODE_OPERATIONAL_STATUS_OPTIONS } from './types'
 
 // Storage node operator metadata JSON schema.
 export const operatorMetadataSchema: JSONSchema4 = {
@@ -20,6 +21,15 @@ export const operatorMetadataSchema: JSONSchema4 = {
             longitude: { type: 'number', minimum: -180, maximum: 180 },
           },
         },
+      },
+    },
+    operationalStatus: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: [...NODE_OPERATIONAL_STATUS_OPTIONS] },
+        noServiceFrom: { type: 'string', format: 'date-time' },
+        noServiceTo: { type: 'string', format: 'date-time' },
+        rationale: { type: 'string' },
       },
     },
     extra: { type: 'string' },
