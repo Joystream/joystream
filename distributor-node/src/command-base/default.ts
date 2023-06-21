@@ -1,12 +1,13 @@
 import Command, { flags as oclifFlags } from '@oclif/command'
-import inquirer from 'inquirer'
-import ExitCodes from './ExitCodes'
-import { ReadonlyConfig } from '../types/config'
-import { ConfigParserService } from '../services/parsers/ConfigParserService'
-import { LoggingService } from '../services/logging'
+import inquirer, { DistinctQuestion } from 'inquirer'
+import inquirerDatepicker from 'inquirer-datepicker'
 import { Logger } from 'winston'
+import { LoggingService } from '../services/logging'
 import { BagIdParserService } from '../services/parsers/BagIdParserService'
 import { BucketIdParserService } from '../services/parsers/BucketIdParserService'
+import { ConfigParserService } from '../services/parsers/ConfigParserService'
+import { ReadonlyConfig } from '../types/config'
+import ExitCodes from './ExitCodes'
 
 export const flags = {
   ...oclifFlags,
@@ -75,6 +76,7 @@ export default abstract class DefaultCommandBase extends Command {
     this.logging = LoggingService.withCLIConfig()
     this.logger = this.logging.createLogger('CLI')
     this.autoConfirm = !!(process.env.AUTO_CONFIRM === 'true' || parseInt(process.env.AUTO_CONFIRM || '') || yes)
+    inquirer.registerPrompt('datepicker', inquirerDatepicker)
   }
 
   public log(message: string, ...meta: unknown[]): void {
@@ -96,6 +98,21 @@ export default abstract class DefaultCommandBase extends Command {
     if (!confirmed) {
       this.exit(ExitCodes.OK)
     }
+  }
+
+  async datePrompt(question: DistinctQuestion): Promise<Date> {
+    const { result } = await inquirer.prompt([
+      {
+        ...question,
+        type: 'datepicker',
+        name: 'result',
+        clearable: true,
+        default: new Date('2017-09-28 17:36:05').toISOString(),
+      },
+    ])
+
+    const date = new Date(result)
+    return date
   }
 
   async finally(err: unknown): Promise<void> {

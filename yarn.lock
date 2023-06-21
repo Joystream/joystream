@@ -11794,6 +11794,17 @@ inquirer-datepicker-prompt@^0.4.2:
     lodash "^4.17.4"
     util "^0.10.3"
 
+inquirer-datepicker@2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/inquirer-datepicker/-/inquirer-datepicker-2.0.2.tgz#eaf331a9489585b336c5bd42598c25eda32ba377"
+  integrity sha512-Jyb8nc383c/q2hwhTXhUyjAWV2GXHahlET/Fn/WtJWX4+05z8i4YUnNHj50f6W/5oTPy4G2/NlYNlEcZmcJC/Q==
+  dependencies:
+    chalk "^4.1.2"
+    cli-cursor "^3.1.0"
+    lodash "^4.17.21"
+    moment "^2.29.3"
+    rxjs "^7.5.5"
+
 inquirer@8.2.2:
   version "8.2.2"
   resolved "https://registry.yarnpkg.com/inquirer/-/inquirer-8.2.2.tgz#1310517a87a0814d25336c78a20b44c3d9b7629d"

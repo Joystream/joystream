@@ -1,18 +1,15 @@
 import {
-  DistributionBucketOperatorMetadata,
-  IDistributionBucketOperatorMetadata,
   INodeOperationalStatusMetadata,
+  ISetNodeOperationalStatus,
   NodeOperationalStatusMetadata,
+  SetNodeOperationalStatus,
 } from '@joystream/metadata-protobuf'
-import fs from 'fs'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
-import { ValidationService } from '../../services/validation/ValidationService'
 import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../types/metadata'
 
-export default class OperatorSetMetadata extends AccountsCommandBase {
-  static description = `Set/update distribution bucket operator metadata.
-  Requires active distribution bucket operator worker role key.`
+export default class LeadSetNodeOperationalStatus extends AccountsCommandBase {
+  static description = `Set/update distribution node operational status. Requires distribution working group leader permissions.`
 
   static flags = {
     bucketId: flags.bucketId({
@@ -23,28 +20,18 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
       description: 'ID of the operator (distribution group worker)',
       required: true,
     }),
-    endpoint: flags.string({
-      char: 'e',
-      description: 'Root distribution node endpoint',
-      exclusive: ['input'],
-    }),
     operationalStatus: flags.enum<NodeOperationalStatus>({
       char: 'o',
       options: [...NODE_OPERATIONAL_STATUS_OPTIONS],
       required: false,
       description: 'Operational status of the operator',
     }),
-    input: flags.string({
-      char: 'i',
-      description: 'Path to JSON metadata file',
-      exclusive: ['endpoint'],
-    }),
     ...DefaultCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { bucketId, workerId, input, endpoint, operationalStatus: statusType } = this.parse(OperatorSetMetadata).flags
-    const workerKey = await this.getDistributorWorkerRoleKey(workerId)
+    const { bucketId, workerId, operationalStatus: statusType } = this.parse(LeadSetNodeOperationalStatus).flags
+    const leadKey = await this.getDistributorLeadKey()
 
     let operationalStatus: INodeOperationalStatusMetadata = {}
     switch (statusType) {
@@ -72,36 +59,21 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
       }
     }
 
-    const validation = new ValidationService()
-    let metadata: IDistributionBucketOperatorMetadata
-    if (input) {
-      const params = validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(input).toString()))
-      metadata = {
-        ...params,
-        operationalStatus: {
-          ...params.operationalStatus,
-          status:
-            params.operationalStatus?.status === 'Normal'
-              ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
-              : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-        },
-      }
-    } else {
-      metadata = { endpoint, operationalStatus }
-    }
-
-    this.log(`Setting bucket operator metadata...`, {
+    this.log(`Setting node operational status...`, {
       bucketId: bucketId.toHuman(),
       workerId,
-      metadata,
       operationalStatus,
     })
+
+    const metadata: ISetNodeOperationalStatus = {
+      workerId: workerId.toString(),
+      bucketId: `${bucketId.distributionBucketFamilyId}:${bucketId.distributionBucketIndex}`,
+      operationalStatus,
+    }
     await this.sendAndFollowTx(
-      await this.getDecodedPair(workerKey),
-      this.api.tx.storage.setDistributionOperatorMetadata(
-        workerId,
-        bucketId,
-        '0x' + Buffer.from(DistributionBucketOperatorMetadata.encode(metadata).finish()).toString('hex')
+      await this.getDecodedPair(leadKey),
+      this.api.tx.distributionWorkingGroup.leadRemark(
+        '0x' + Buffer.from(SetNodeOperationalStatus.encode(metadata).finish()).toString('hex')
       )
     )
     this.log('Bucket operator metadata successfully set/updated!')
