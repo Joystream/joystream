@@ -1,11 +1,84 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, FindOneOptions, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 
 import {
+  ApplicationMetadata,
+  IAddUpcomingOpening,
+  IOpeningMetadata,
+  IRemoveUpcomingOpening,
+  ISetGroupMetadata,
+  IWorkingGroupMetadata,
+  IWorkingGroupMetadataAction,
+  LeadRemarked,
+  OpeningMetadata,
+  RemarkMetadataAction,
+  WorkingGroupMetadataAction,
+} from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { isSet } from '@joystream/metadata-protobuf/utils'
+import { createType } from '@joystream/types'
+import { Bytes } from '@polkadot/types'
+import BN from 'bn.js'
+import {
+  ApplicationFormQuestion,
+  ApplicationFormQuestionAnswer,
+  ApplicationFormQuestionType,
+  ApplicationStatusAccepted,
+  ApplicationStatusCancelled,
+  ApplicationStatusPending,
+  ApplicationStatusRejected,
+  ApplicationStatusWithdrawn,
+  ApplicationWithdrawnEvent,
+  AppliedOnOpeningEvent,
+  BudgetFundedEvent,
+  BudgetSetEvent,
+  BudgetSpendingEvent,
+  InvalidActionMetadata,
+  LeaderSetEvent,
+  LeaderUnsetEvent,
+  Membership,
+  NewMissedRewardLevelReachedEvent,
+  OpeningAddedEvent,
+  // LeaderSetEvent,
+  OpeningCanceledEvent,
+  OpeningFilledEvent,
+  OpeningStatusCancelled,
+  OpeningStatusFilled,
+  OpeningStatusOpen,
+  RewardPaidEvent,
+  RewardPaymentType,
+  StakeDecreasedEvent,
+  StakeIncreasedEvent,
+  StakeSlashedEvent,
+  StatusTextChangedEvent,
+  TerminatedLeaderEvent,
+  TerminatedWorkerEvent,
+  UpcomingOpeningAdded,
+  UpcomingOpeningRemoved,
+  UpcomingWorkingGroupOpening,
+  Worker,
+  WorkerExitedEvent,
+  WorkerRewardAccountUpdatedEvent,
+  WorkerRewardAmountUpdatedEvent,
+  WorkerRoleAccountUpdatedEvent,
+  WorkerStartedLeavingEvent,
+  WorkerStatusActive,
+  WorkerStatusLeaving,
+  WorkerStatusLeft,
+  WorkerStatusTerminated,
+  WorkingGroup,
+  WorkingGroupApplication,
+  WorkingGroupMetadata,
+  WorkingGroupMetadataActionResult,
+  WorkingGroupMetadataSet,
+  WorkingGroupOpening,
+  WorkingGroupOpeningMetadata,
+  WorkingGroupOpeningType,
+} from 'query-node/dist/model'
+import {
   StorageWorkingGroup_BudgetSetEvent_V1001,
-  StorageWorkingGroup_WorkerRewardAmountUpdatedEvent_V1001 as WorkingGroup_WorkerRewardAmountUpdatedEvent_V1001,
   StorageWorkingGroup_ApplicationWithdrawnEvent_V1001 as WorkingGroup_ApplicationWithdrawnEvent_V1001,
   StorageWorkingGroup_AppliedOnOpeningEvent_V1001 as WorkingGroup_AppliedOnOpeningEvent_V1001,
   StorageWorkingGroup_BudgetSpendingEvent_V1001 as WorkingGroup_BudgetSpendingEvent_V1001,
@@ -23,97 +96,26 @@ import {
   StorageWorkingGroup_WorkerExitedEvent_V1001 as WorkingGroup_WorkerExitedEvent_V1001,
   StorageWorkingGroup_WorkerRemarkedEvent_V1001 as WorkingGroup_WorkerRemarkedEvent_V1001,
   StorageWorkingGroup_WorkerRewardAccountUpdatedEvent_V1001 as WorkingGroup_WorkerRewardAccountUpdatedEvent_V1001,
+  StorageWorkingGroup_WorkerRewardAmountUpdatedEvent_V1001 as WorkingGroup_WorkerRewardAmountUpdatedEvent_V1001,
   StorageWorkingGroup_WorkerRoleAccountUpdatedEvent_V1001 as WorkingGroup_WorkerRoleAccountUpdatedEvent_V1001,
   StorageWorkingGroup_WorkerStartedLeavingEvent_V1001 as WorkingGroup_WorkerStartedLeavingEvent_V1001,
   StorageWorkingGroup_WorkingGroupBudgetFundedEvent_V1001 as WorkingGroup_WorkingGroupBudgetFundedEvent_V1001,
 } from '../generated/types'
 import {
-  ApplicationMetadata,
-  IAddUpcomingOpening,
-  IOpeningMetadata,
-  IRemoveUpcomingOpening,
-  ISetGroupMetadata,
-  IWorkingGroupMetadata,
-  IWorkingGroupMetadataAction,
-  OpeningMetadata,
-  RemarkMetadataAction,
-  WorkingGroupMetadataAction,
-} from '@joystream/metadata-protobuf'
-import { Bytes } from '@polkadot/types'
-import {
-  deserializeMetadata,
+  INT32MAX,
+  WorkingGroupModuleName,
   bytesToString,
+  deserializeMetadata,
   genericEventFields,
   getWorker,
-  WorkingGroupModuleName,
-  toNumber,
-  INT32MAX,
-  inconsistentState,
   getWorkingGroupByName,
   getWorkingGroupLead,
+  inconsistentState,
   invalidMetadata,
+  toNumber,
 } from './common'
-import BN from 'bn.js'
-import {
-  WorkingGroupOpening,
-  OpeningAddedEvent,
-  WorkingGroup,
-  WorkingGroupOpeningMetadata,
-  ApplicationFormQuestion,
-  ApplicationFormQuestionType,
-  OpeningStatusOpen,
-  WorkingGroupOpeningType,
-  WorkingGroupApplication,
-  ApplicationFormQuestionAnswer,
-  AppliedOnOpeningEvent,
-  Membership,
-  ApplicationStatusPending,
-  ApplicationStatusAccepted,
-  ApplicationStatusRejected,
-  Worker,
-  WorkerStatusActive,
-  OpeningFilledEvent,
-  OpeningStatusFilled,
-  // LeaderSetEvent,
-  OpeningCanceledEvent,
-  OpeningStatusCancelled,
-  ApplicationStatusCancelled,
-  ApplicationWithdrawnEvent,
-  ApplicationStatusWithdrawn,
-  UpcomingWorkingGroupOpening,
-  StatusTextChangedEvent,
-  WorkingGroupMetadata,
-  WorkingGroupMetadataSet,
-  UpcomingOpeningRemoved,
-  InvalidActionMetadata,
-  WorkingGroupMetadataActionResult,
-  UpcomingOpeningAdded,
-  WorkerRoleAccountUpdatedEvent,
-  WorkerRewardAccountUpdatedEvent,
-  StakeIncreasedEvent,
-  RewardPaidEvent,
-  RewardPaymentType,
-  NewMissedRewardLevelReachedEvent,
-  WorkerExitedEvent,
-  WorkerStatusLeft,
-  WorkerStatusTerminated,
-  TerminatedWorkerEvent,
-  LeaderUnsetEvent,
-  TerminatedLeaderEvent,
-  WorkerRewardAmountUpdatedEvent,
-  StakeSlashedEvent,
-  StakeDecreasedEvent,
-  WorkerStartedLeavingEvent,
-  BudgetSetEvent,
-  BudgetSpendingEvent,
-  LeaderSetEvent,
-  WorkerStatusLeaving,
-  BudgetFundedEvent,
-} from 'query-node/dist/model'
-import { createType } from '@joystream/types'
-import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import { isSet } from '@joystream/metadata-protobuf/utils'
 import { moderatePost } from './forum'
+import { processSetNodeOperationalStatusMessage } from './storage'
 
 // Reusable functions
 async function getWorkingGroup(
@@ -714,10 +716,10 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
 }
 
 export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
+  const [metadataBytes] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
 
-  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  const metadata = deserializeMetadata(LeadRemarked, metadataBytes)
   if (metadata?.moderatePost) {
     if (group.name !== 'forumWorkingGroup') {
       return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
@@ -726,6 +728,8 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     const actor = await getWorkingGroupLead(store, group.name)
 
     await moderatePost(store, event, 'leadRemark', postId, actor, rationale)
+  } else if (metadata?.setNodeOperationalStatus) {
+    await processSetNodeOperationalStatusMessage(store, event, group, metadata.setNodeOperationalStatus)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

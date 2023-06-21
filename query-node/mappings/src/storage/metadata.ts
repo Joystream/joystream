@@ -1,27 +1,34 @@
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import {
+  DistributionBucketFamilyMetadata as DistributionBucketFamilyMetadataProto,
+  DistributionBucketOperatorMetadata as DistributionBucketOperatorMetadataProto,
+  GeographicalArea as GeographicalAreaProto,
+  INodeLocationMetadata,
+  INodeOperationalStatusMetadata,
+  NodeOperationalStatusMetadata,
+  StorageBucketOperatorMetadata as StorageBucketOperatorMetadataProto,
+} from '@joystream/metadata-protobuf'
+import { isEmptyObject, isSet, isValidCountryCode, isValidSubdivisionCode } from '@joystream/metadata-protobuf/utils'
+import { Bytes } from '@polkadot/types'
+import _ from 'lodash'
+import {
+  Continent,
+  DistributionBucketFamilyGeographicArea,
   DistributionBucketFamilyMetadata,
   DistributionBucketOperatorMetadata,
-  StorageBucketOperatorMetadata,
   GeoCoordinates,
-  NodeLocationMetadata,
-  Continent,
   GeographicalAreaContinent,
   GeographicalAreaCountry,
   GeographicalAreaSubdivistion,
-  DistributionBucketFamilyGeographicArea,
+  NodeLocationMetadata,
+  NodeOperationalStatus,
+  NodeOperationalStatusNoService,
+  NodeOperationalStatusNoServiceDuring,
+  NodeOperationalStatusNoServiceFrom,
+  NodeOperationalStatusNormal,
+  StorageBucketOperatorMetadata,
 } from 'query-node/dist/model'
 import { deserializeMetadata, deterministicEntityId, invalidMetadata } from '../common'
-import { Bytes } from '@polkadot/types'
-import {
-  DistributionBucketOperatorMetadata as DistributionBucketOperatorMetadataProto,
-  StorageBucketOperatorMetadata as StorageBucketOperatorMetadataProto,
-  DistributionBucketFamilyMetadata as DistributionBucketFamilyMetadataProto,
-  INodeLocationMetadata,
-  GeographicalArea as GeographicalAreaProto,
-} from '@joystream/metadata-protobuf'
-import { isSet, isEmptyObject, isValidCountryCode, isValidSubdivisionCode } from '@joystream/metadata-protobuf/utils'
-import _ from 'lodash'
 
 const protobufContinentToGraphlContinent: { [key in GeographicalAreaProto.Continent]: Continent } = {
   [GeographicalAreaProto.Continent.AF]: Continent.AF,
@@ -66,6 +73,52 @@ async function processNodeLocationMetadata(
   return nodeLocation
 }
 
+export function processNodeOperationalStatusMetadata(
+  actorContext: 'lead' | 'worker',
+  current: typeof NodeOperationalStatus | undefined,
+  meta: INodeOperationalStatusMetadata
+): typeof NodeOperationalStatus {
+  const isCurrentForced =
+    current &&
+    (current instanceof NodeOperationalStatusNoService ||
+      current instanceof NodeOperationalStatusNoServiceFrom ||
+      current instanceof NodeOperationalStatusNoServiceDuring) &&
+    current.forced
+
+  // if current state is forced by lead, then prevent worker from unilaterally reversing.
+  if (isCurrentForced && actorContext === 'worker') {
+    return current
+  }
+
+  // set node state to NoService
+  if (meta.status === NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE) {
+    if (meta.noServiceFrom && meta.noServiceTo) {
+      const status = new NodeOperationalStatusNoServiceDuring()
+      status.from = new Date(meta.noServiceFrom)
+      status.to = new Date(meta.noServiceTo)
+      status.rationale = meta.rationale || (null as any)
+      status.forced = actorContext === 'lead'
+      return status
+    } else if (meta.noServiceFrom && !meta.noServiceTo) {
+      const status = new NodeOperationalStatusNoServiceFrom()
+      status.from = new Date(meta.noServiceFrom)
+      status.rationale = meta.rationale || (null as any)
+      status.forced = actorContext === 'lead'
+      return status
+    } else if (!meta.noServiceFrom && !meta.noServiceTo) {
+      const status = new NodeOperationalStatusNoService()
+      status.rationale = meta.rationale || (null as any)
+      status.forced = actorContext === 'lead'
+      return status
+    }
+  }
+
+  // Default operational status of the node
+  const status = new NodeOperationalStatusNormal()
+  status.rationale = meta.rationale || (null as any)
+  return status
+}
+
 export async function processDistributionOperatorMetadata(
   event: SubstrateEvent,
   store: DatabaseManager,
@@ -87,6 +140,13 @@ export async function processDistributionOperatorMetadata(
   }
   if (isSet(meta.extra)) {
     metadataEntity.extra = meta.extra
+  }
+  if (isSet(meta.operationalStatus)) {
+    metadataEntity.nodeOperationalStatus = processNodeOperationalStatusMetadata(
+      'worker',
+      metadataEntity.nodeOperationalStatus,
+      meta.operationalStatus
+    )
   }
 
   await store.save<DistributionBucketOperatorMetadata>(metadataEntity)
@@ -115,6 +175,13 @@ export async function processStorageOperatorMetadata(
   }
   if (isSet(meta.extra)) {
     metadataEntity.extra = meta.extra || (null as any)
+  }
+  if (isSet(meta.operationalStatus)) {
+    metadataEntity.nodeOperationalStatus = processNodeOperationalStatusMetadata(
+      'worker',
+      metadataEntity.nodeOperationalStatus,
+      meta.operationalStatus
+    )
   }
 
   await store.save<StorageBucketOperatorMetadata>(metadataEntity)
