@@ -1,7 +1,7 @@
 {
   "name": "storage-node",
   "description": "Joystream storage subsystem.",
-  "version": "3.2.0",
+  "version": "3.4.0",
   "author": "Joystream contributors",
   "bin": {
     "storage-node": "./bin/run"
@@ -30,7 +30,7 @@
     "@types/url-join": "^4.0.1",
     "@types/uuid": "^8.3.1",
     "@types/winston": "^2.4.4",
-    "ajv": "^7",
+    "ajv": "^8.0.0",
     "await-lock": "^2.1.0",
     "base64url": "^3.0.1",
     "blake3-wasm": "^2.1.5",
@@ -56,8 +56,8 @@
     "url-join": "^4.0.1",
     "uuid": "^8.3.2",
     "winston": "^3.3.3",
-    "winston-elasticsearch": "^0.15.8",
-    "winston-daily-rotate-file": "^4.5.5"
+    "winston-daily-rotate-file": "^4.5.5",
+    "winston-elasticsearch": "^0.15.8"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",

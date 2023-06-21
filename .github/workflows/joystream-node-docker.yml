@@ -36,6 +36,13 @@ jobs:
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
+     # docker manifest inspect command requires authentication
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
       - name: Check if we already have the main image on Dockerhub
         id: compute_main_image_exists
         # Will output 0 if image exists and 1 if does not exists
@@ -73,6 +80,12 @@ jobs:
         with:
           node-version: '18.x'
 
+      # docker manifest inspect requires authentication
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Check if we have pre-built image on Dockerhub
         id: compute_image_exists
         # Will output 0 if image exists and 1 if does not exists
