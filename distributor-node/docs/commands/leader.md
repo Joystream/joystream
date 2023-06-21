@@ -12,6 +12,7 @@ Commands for performing Distribution Working Group leader on-chain duties (like 
 * [`joystream-distributor leader:remove-bucket-operator`](#joystream-distributor-leaderremove-bucket-operator)
 * [`joystream-distributor leader:set-bucket-family-metadata`](#joystream-distributor-leaderset-bucket-family-metadata)
 * [`joystream-distributor leader:set-buckets-per-bag-limit`](#joystream-distributor-leaderset-buckets-per-bag-limit)
+* [`joystream-distributor leader:set-node-operational-status`](#joystream-distributor-leaderset-node-operational-status)
 * [`joystream-distributor leader:update-bag`](#joystream-distributor-leaderupdate-bag)
 * [`joystream-distributor leader:update-bucket-mode`](#joystream-distributor-leaderupdate-bucket-mode)
 * [`joystream-distributor leader:update-bucket-status`](#joystream-distributor-leaderupdate-bucket-status)
@@ -209,6 +210,33 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/set-buckets-per-bag-limit.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-buckets-per-bag-limit.ts)_
+
+## `joystream-distributor leader:set-node-operational-status`
+
+Set/update distribution node operational status. Requires distribution working group leader permissions.
+
+```
+USAGE
+  $ joystream-distributor leader:set-node-operational-status
+
+OPTIONS
+  -B, --bucketId=bucketId                                                   (required) Distribution bucket ID in
+                                                                            {familyId}:{bucketIndex} format.
+
+  -c, --configPath=configPath                                               [default: ./config.yml] Path to config
+                                                                            JSON/YAML file (relative to current working
+                                                                            directory)
+
+  -o, --operationalStatus=(Normal|NoService|NoServiceFrom|NoServiceDuring)  Operational status of the operator
+
+  -w, --workerId=workerId                                                   (required) ID of the operator (distribution
+                                                                            group worker)
+
+  -y, --yes                                                                 Answer "yes" to any prompt, skipping any
+                                                                            manual confirmations
+```
+
+_See code: [src/commands/leader/set-node-operational-status.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-node-operational-status.ts)_
 
 ## `joystream-distributor leader:update-bag`
 

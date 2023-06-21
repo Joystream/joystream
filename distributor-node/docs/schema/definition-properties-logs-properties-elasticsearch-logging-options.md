@@ -61,6 +61,10 @@ Elastichsearch endpoint to push the logs to (for example: <http://localhost:9200
 
 `string`
 
+### endpoint Constraints
+
+**URI**: the string must be a URI, according to [RFC 3986](https://tools.ietf.org/html/rfc3986 "check the specification")
+
 ## index
 
 Elasticsearch index to push the logs to. If not provided, will fallback to "distributor-node"
