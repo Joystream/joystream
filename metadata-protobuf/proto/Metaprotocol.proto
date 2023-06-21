@@ -188,3 +188,15 @@ message ChannelOwnerRemarked {
         ModerateComment moderate_comment = 5;
     }
 }
+
+
+message LeadRemarked {
+    // lead_remark extrinsic would emit event containing
+    // any one of the following serialized messages
+    oneof lead_remarked {
+      ModeratePost moderate_post = 1;
+      SetNodeOperationalStatus set_node_operational_status = 2;
+      // Other lead remark messages 
+      // ...
+    }
+  }

@@ -15,12 +15,15 @@ message StorageBucketOperatorMetadata {
   optional string endpoint = 1; // Root storage node endpoint (ie. https://example.com/storage)
   optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
   optional string extra = 3; // Additional information about the node / node operator
+  optional NodeOperationalStatusMetadata operational_status = 4; // Node's operational status to set
+
 }
 
 message DistributionBucketOperatorMetadata {
   optional string endpoint = 1; // Root distribution node endpoint (ie. https://example.com/distribution)
   optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
   optional string extra = 3; // Additional information about the node / node operator
+  optional NodeOperationalStatusMetadata operational_status = 4; // Node's operational status to set
 }
 
 message GeographicalArea {
@@ -45,4 +48,32 @@ message DistributionBucketFamilyMetadata {
   optional string description = 2; // Additional, more specific description of the region
   repeated GeographicalArea areas = 3; // Standarized geographical areas covered by the family (providing [{}] will unset the current value)
   repeated string latency_test_targets = 4; // List of targets (hosts/ips) best suited latency measurements for this family
+}
+
+message NodeOperationalStatusMetadata {
+  enum OperationalStatus {
+    // Node is operating normally
+    NORMAL = 0;
+
+    // Node is not operational 
+    NO_SERVICE = 1;
+  }
+
+  // Node's Operational status to set
+  optional OperationalStatus status = 1; 
+
+  // Date (ISO format) from which the node won't be operational (Should be set if status is NoServiceFrom or NoServiceDuring)
+  optional string no_service_from = 2; 
+
+  // Date (ISO format) until which the node won't be operational (Should be set if status is NoServiceDuring)
+  optional string no_service_to = 3; 
+
+  // Rationale for setting the current status
+  optional string rationale = 4; 
+}
+
+message SetNodeOperationalStatus {
+  optional NodeOperationalStatusMetadata operational_status = 1; // Node's operational status to set
+  optional string worker_id = 2; // Storage/Distribution Worker ID
+  optional string bucket_id = 3; // Storage/Distribution Bucket ID 
 }
