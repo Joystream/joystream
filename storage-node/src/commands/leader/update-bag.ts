@@ -1,6 +1,6 @@
 import { flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import _ from 'lodash'
@@ -31,7 +31,7 @@ const integerArrFlags = {
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-bag"
  */
-export default class LeaderUpdateBag extends ApiCommandBase {
+export default class LeaderUpdateBag extends LeaderCommandBase {
   static description = 'Add/remove a storage bucket from a bag (adds by default).'
 
   static flags = {
@@ -45,11 +45,11 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       description: 'ID/s of a bucket/s to remove from bag',
       default: [],
     }),
-    bagId: ApiCommandBase.extraFlags.bagId({
+    bagId: LeaderCommandBase.extraFlags.bagId({
       char: 'i',
       required: true,
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -65,7 +65,7 @@ export default class LeaderUpdateBag extends ApiCommandBase {
       this.exit(ExitCodes.InvalidParameters)
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     const success = await updateStorageBucketsForBag(api, flags.bagId, account, flags.add, flags.remove)

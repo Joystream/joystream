@@ -1,20 +1,24 @@
 import { Command, flags } from '@oclif/command'
 import { createApi } from '../services/runtime/api'
-import { getAccountFromJsonFile, getAlicePair, getAccountFromUri } from '../services/runtime/accounts'
+import { addAccountFromJsonFile, addAlicePair, addAccountFromUri } from '../services/runtime/accounts'
 import { parseBagId } from '../services/helpers/bagTypes'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiPromise } from '@polkadot/api'
+import { ApiPromise, Keyring } from '@polkadot/api'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 import logger from '../services/logger'
 import ExitCodes from './ExitCodes'
 import { CLIError } from '@oclif/errors'
 import { Input } from '@oclif/parser'
-import _ from 'lodash'
+import path from 'path'
+import fs from 'fs'
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
 /**
  * Parent class for all runtime-based commands. Defines common functions.
  */
 export default abstract class ApiCommandBase extends Command {
   private api: ApiPromise | null = null
+  private keyring: Keyring | null = null
 
   static flags = {
     help: flags.help({ char: 'h' }),
@@ -26,16 +30,27 @@ export default abstract class ApiCommandBase extends Command {
     }),
     keyFile: flags.string({
       char: 'k',
-      description: 'Key file for the account. Mandatory in non-dev environment.',
+      description: 'Path to key file to add to the keyring.',
     }),
     password: flags.string({
       char: 'p',
-      description: 'Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.',
+      description:
+        'Password to unlock keyfiles. Multiple passwords can be passed, to try against all files. If not specified a single password can be set in ACCOUNT_PWD environment variable.',
+      multiple: true,
+      // only fits one password and flag will be a string, otherwise the flag will be an array of strings
+      env: 'ACCOUNT_PWD',
     }),
     accountUri: flags.string({
       char: 'y',
       description:
-        'Account URI (optional). Has a priority over the keyFile and password flags. Could be overriden by ACCOUNT_URI environment variable.',
+        'Account URI (optional). If not specified a single key can be set in ACCOUNT_URI environment variable.',
+      // only fits one key and flag will be a string, otherwise the flag will be an array of strings
+      env: 'ACCOUNT_URI',
+      multiple: true,
+    }),
+    // Path to a single keyfile or a folder
+    keyStore: flags.string({
+      description: 'Path to a folder with multiple key files to load into keystore.',
     }),
   }
 
@@ -88,14 +103,20 @@ export default abstract class ApiCommandBase extends Command {
    * default value (ws://localhost:9944)
    */
   async init(): Promise<void> {
+    await cryptoWaitReady()
+    this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
+
     // Oclif hack: https://github.com/oclif/oclif/issues/225#issuecomment-490555119
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const { flags } = this.parse(<Input<any>>this.constructor)
 
+    // Add all keys to the keystore
+    await this.loadKeys(flags)
+
     // Some dev commands doesn't contain flags variables.
     const apiUrl = flags.apiUrl ?? 'ws://localhost:9944'
 
-    logger.info(`Initialized runtime connection: ${apiUrl}`)
+    logger.info(`Initializing runtime connection to: ${apiUrl}`)
     try {
       this.api = await createApi(apiUrl)
     } catch (err) {
@@ -123,59 +144,136 @@ export default abstract class ApiCommandBase extends Command {
     logger.info('Development mode is ON.')
   }
 
+  tryAddKeyFile(file: string, passwords: string[]): void {
+    if (path.parse(file).ext.toLowerCase() !== '.json') return
+    logger.info(`Adding key from ${file}`)
+    const keyring = this.getKeyring()
+    const pair = addAccountFromJsonFile(file, keyring)
+    if (pair.isLocked) {
+      // Try passwords until one of them works
+      passwords.forEach((passw) => {
+        if (!pair.isLocked) return
+        try {
+          pair.unlock(passw)
+        } catch {
+          //
+        }
+      })
+    }
+
+    // If pair is still locked, then none of the passwords worked.
+    if (pair.isLocked) {
+      keyring.removePair(pair.address)
+      logger.warn(`Unable to unlock keyfile ${file}`)
+    }
+  }
+
   /**
-   * Returns the intialized account KeyringPair instance. Loads the account
-   * JSON-file or loads 'Alice' Keypair when in the development mode.
+   * Loads all supplied keys into the keyring.
+   * Accounts passed as SURI, and any JSON-files passed with keyFile and
+   * files found in the keyStore directory.
+   * Since there could be multiple files using the same password, and some may not be locked, its is hard
+   * to distringuish which password argument corresponds to which keyfile. So we try all provided passwords
+   * to unlock keyfiles.
+   */
+  async loadKeys(flags: {
+    dev: boolean
+    keyFile?: string
+    password?: string | string[]
+    accountUri?: string | string[]
+    keyStore?: string
+  }): Promise<void> {
+    const keyring = this.getKeyring()
+    const { dev, password, keyFile, accountUri, keyStore } = flags
+    // Create the Alice account for development mode.
+
+    // in dev mode do not add anything other than the dev account
+    if (dev) {
+      addAlicePair(keyring)
+      return
+    }
+
+    // Multiple passwords, or single password passed as env variable
+    let passwords: string[] = []
+    if (Array.isArray(password)) {
+      passwords = passwords.concat(password)
+    } else if (password) {
+      passwords.push(password)
+    }
+
+    // Single keyfile
+    if (keyFile) {
+      this.tryAddKeyFile(keyFile, passwords)
+    }
+
+    // Multiple Account SURIs, or single SURI passed as env variable
+    let accountSuris: string[] = []
+    if (Array.isArray(accountUri)) {
+      accountSuris = accountSuris.concat(accountUri)
+    } else if (accountUri) {
+      accountSuris.push(accountUri)
+    }
+    accountSuris.forEach((suri) => addAccountFromUri(suri, keyring))
+
+    if (keyStore) {
+      const stat = await fs.promises.stat(keyStore)
+      if (!stat.isDirectory) {
+        return this.error(`keyStore path is not a directory: ${keyStore}`)
+      }
+      const files = await fs.promises.readdir(keyStore)
+      files.forEach((file) => this.tryAddKeyFile(path.join(keyStore, file), passwords))
+    }
+
+    if (keyring.pairs.length === 0) {
+      // No keys!
+      logger.warn('Keyring is empty')
+      this.error('Cannot proceed without at least one key in the keyring')
+    }
+  }
+
+  private getKeyring(): Keyring {
+    if (!this.keyring) {
+      throw new CLIError('Keyring is not ready!', {
+        exit: ExitCodes.KeyringNotReady,
+      })
+    }
+    return this.keyring
+  }
+
+  /**
+   * Returns the intialized account KeyringPair instance by the address.
    *
-   * @param dev - indicates the development mode (optional).
-   * @param keyFile - key file path (optional).
-   * @param password - password for the key file (optional).
-   * @param accountURI - accountURI (optional). Overrides keyFile and password flags.
+   * @param address - address to fetch keypair for from the keyring.
    * @returns KeyringPair instance.
    */
-  getAccount(flags: { dev: boolean; keyFile?: string; password?: string; accountUri?: string }): KeyringPair {
-    // Select account URI variable from flags key and environment variable.
-    let accountUri = flags.accountUri ?? ''
-    if (!_.isEmpty(process.env.ACCOUNT_URI)) {
-      if (!_.isEmpty(flags.accountUri)) {
-        logger.warn(
-          `Both enviroment variable and command line argument were provided for the account URI. Environment variable has a priority.`
-        )
-      }
-      accountUri = process.env.ACCOUNT_URI ?? ''
-    }
+  getKeyringPair(address: string): KeyringPair {
+    const keyring = this.getKeyring()
+    return keyring.getPair(address)
+  }
 
-    // Select password variable from flags key and environment variable.
-    let password = flags.password
-    if (!_.isEmpty(process.env.ACCOUNT_PWD)) {
-      if (!_.isEmpty(flags.password)) {
-        logger.warn(
-          `Both enviroment variable and command line argument were provided for the password. Environment variable has a priority.`
-        )
-      }
-      password = process.env.ACCOUNT_PWD ?? ''
+  /**
+   * Returns true if keypair contains corresponding address.
+   *
+   * @param address - address to fetch keypair for from the keyring.
+   * @returns boolean
+   */
+  hasKeyringPair(address: string): boolean {
+    const keyring = this.getKeyring()
+    try {
+      keyring.getPair(address)
+      return true
+    } catch (err) {
+      return false
     }
+  }
 
-    const keyFile = flags.keyFile ?? ''
-    // Create the Alice account for development mode.
-    if (flags.dev) {
-      return getAlicePair()
-    }
-    // Create an account using account URI
-    else if (!_.isEmpty(accountUri)) {
-      return getAccountFromUri(accountUri)
-    }
-    // Create an account using the keyFile and password.
-    else if (!_.isEmpty(keyFile)) {
-      const account = getAccountFromJsonFile(keyFile)
-      account.unlock(password)
-
-      return account
-    }
-    // Cannot create any account for these parameters.
-    else {
-      this.error('Keyfile or account URI must be set.')
-    }
+  /**
+   * Returns addresses of all keypairs stored in the keyring.
+   * @returns string[]
+   */
+  getAllAddresses(): string[] {
+    const keyring = this.getKeyring()
+    return keyring.pairs.map((pair) => pair.address)
   }
 
   /**

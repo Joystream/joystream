@@ -87,7 +87,8 @@ export async function createApp(config: AppConfig): Promise<Express> {
           fileSize: config.maxFileSize,
         },
       },
-      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.storageProviderAccount),
+      // authentication is disabled. Should be tested before en-enabling
+      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.operatorRoleKey),
     })
   ) // Required signature.
 
@@ -135,7 +136,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
 function setupUploadingValidation(
   enableUploadingAuth: boolean,
   api: ApiPromise,
-  account: KeyringPair
+  account: KeyringPair | undefined
 ): boolean | ValidateSecurityOpts {
   if (enableUploadingAuth) {
     const opts = {
@@ -164,7 +165,7 @@ type ValidateUploadFunction = (
  * @param account - KeyringPair instance
  * @returns ValidateUploadFunction.
  */
-function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFunction {
+function validateUpload(api: ApiPromise, account: KeyringPair | undefined): ValidateUploadFunction {
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
   return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
@@ -177,7 +178,9 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
       bagId: req.query.bagId?.toString() || '',
     }
 
-    verifyUploadTokenData(account.address, token, sourceTokenRequest)
+    if (account) {
+      verifyUploadTokenData(account.address, token, sourceTokenRequest)
+    }
 
     return true
   }

@@ -16,6 +16,8 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import { Option } from '@polkadot/types-codec'
 import { QueryNodeApi } from '../services/queryNode/api'
+import { KeyringPair } from '@polkadot/keyring/types'
+
 const fsPromises = fs.promises
 
 /**
@@ -125,13 +127,7 @@ Supported values: warn, error, debug, info. Default:debug`,
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    await recreateTempDirectory(flags.uploads, TempDirName)
-
     const logSource = `StorageProvider_${flags.worker}`
-
-    if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName)
-    }
 
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
       initNewLogger({
@@ -149,12 +145,43 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
 
+    const api = await this.getApi()
+
+    const workerId = flags.worker
+
+    if (!(await verifyWorkerId(api, workerId))) {
+      logger.error('Provided workerId does not belong to an existing worker')
+      this.exit(ExitCodes.InvalidWorkerId)
+    }
+
+    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+
+    const bucketTransactorAccounts = await constructBucketToAddressMapping(api, qnApi, workerId)
+
+    const keystoreAddresses = this.getAllAddresses()
+    bucketTransactorAccounts.forEach(([bucketId, address]) => {
+      if (!keystoreAddresses.includes(address)) {
+        this.error(`Transactor Account for bucket ${bucketId} missing from keystore`)
+      }
+    })
+
+    const bucketKeyPairs = new Map<string, KeyringPair>(
+      bucketTransactorAccounts.map(([bucketId, address]) => [bucketId, this.getKeyringPair(address)])
+    )
+
+    // when enabling upload auth ensure the keyring has the operator role key and set it here.
+    const enableUploadingAuth = false
+    const operatorRoleKey = undefined
+
+    await recreateTempDirectory(flags.uploads, TempDirName)
+
+    if (fs.existsSync(flags.uploads)) {
+      await loadDataObjectIdCache(flags.uploads, TempDirName)
+    }
+
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
-
-    const api = await this.getApi()
-    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
 
     if (flags.sync) {
       logger.info(`Synchronization enabled.`)
@@ -175,12 +202,6 @@ Supported values: warn, error, debug, info. Default:debug`,
       )
     }
 
-    const storageProviderAccount = this.getAccount(flags)
-    const workerId = flags.worker
-    if (!(await verifyWorkerId(api, qnApi, workerId, storageProviderAccount.address))) {
-      this.exit(ExitCodes.InvalidWorkerId)
-    }
-
     try {
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
@@ -190,13 +211,14 @@ Supported values: warn, error, debug, info. Default:debug`,
       const app = await createApp({
         api,
         qnApi,
-        storageProviderAccount,
+        bucketKeyPairs,
+        operatorRoleKey,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir,
         process: this.config,
-        enableUploadingAuth: false,
+        enableUploadingAuth,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -278,18 +300,22 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
   }
 }
 
-async function verifyWorkerId(
+// 1. Verify worker id is valid
+// 2. construct transactorAccounts: string[]
+// 3. Verify transactor accounts are all loaded in keystore.
+// 4. construct a Map<bucketId, keyringPair> passed in AppConfig to app, used by upload verification
+//    to pick the right keypair to send accept-pending-upload extrinsic
+
+async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
+  const worker = await api.query.storageWorkingGroup.workerById(workerId)
+  return worker.isSome
+}
+
+async function constructBucketToAddressMapping(
   api: ApiPromise,
   qnApi: QueryNodeApi,
-  workerId: number,
-  transactorAccount: string
-): Promise<boolean> {
-  const worker = await api.query.storageWorkingGroup.workerById(workerId)
-  if (!worker.isSome) {
-    logger.error('Provided workerId does not belong to an existing worker')
-    return false
-  }
-
+  workerId: number
+): Promise<[string, string][]> {
   const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
     await Promise.all(
@@ -309,12 +335,5 @@ async function verifyWorkerId(
     logger.warn(`Warning: No active buckets found by worker id ${workerId}!`)
   }
 
-  for (const [bucketId, bucket] of buckets) {
-    if (!bucket.operatorStatus.asStorageWorker[1].eq(transactorAccount)) {
-      logger.error(`${transactorAccount} is not a valid transactor key for bucket ${bucketId} of worker ${workerId}`)
-      return false
-    }
-  }
-
-  return true
+  return buckets.map(([bucketId, bucket]) => [bucketId, bucket.operatorStatus.asStorageWorker[1].toString()])
 }

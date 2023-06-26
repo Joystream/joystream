@@ -102,9 +102,15 @@ export type AppConfig = {
   qnApi: QueryNodeApi
 
   /**
-   * KeyringPair instance
+   * KeyringPair instances for each bucket
+   * Map<bucketId, KeyringPair>
    */
-  storageProviderAccount: KeyringPair
+  bucketKeyPairs: Map<string, KeyringPair>
+
+  /**
+   * KeyringPair instances of the role key, used for upload authentication
+   */
+  operatorRoleKey: KeyringPair | undefined
 
   /**
    * Storage provider ID (worker ID)
