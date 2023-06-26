@@ -143,8 +143,7 @@ export default abstract class ApiCommandBase extends Command {
 
     // If pair is still locked, then none of the passwords worked.
     if (pair.isLocked) {
-      keyring.removePair(pair.address)
-      logger.warn(`Unable to unlock keyfile ${file}`)
+      this.error(`Unable to unlock keyfile ${file}`)
     }
   }
 
