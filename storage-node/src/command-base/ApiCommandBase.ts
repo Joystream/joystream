@@ -1,7 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import { createApi } from '../services/runtime/api'
 import { addAccountFromJsonFile, addAlicePair, addAccountFromUri } from '../services/runtime/accounts'
-import { parseBagId } from '../services/helpers/bagTypes'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise, Keyring } from '@polkadot/api'
 import { cryptoWaitReady } from '@polkadot/util-crypto'
@@ -51,25 +50,6 @@ export default abstract class ApiCommandBase extends Command {
     // Path to a single keyfile or a folder
     keyStore: flags.string({
       description: 'Path to a folder with multiple key files to load into keystore.',
-    }),
-  }
-
-  static extraFlags = {
-    bagId: flags.build({
-      parse: (value: string) => {
-        return parseBagId(value)
-      },
-      description: `Bag ID. Format: {bag_type}:{sub_type}:{id}.
-    - Bag types: 'static', 'dynamic'
-    - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-    - Id:
-      - absent for 'static:council'
-      - working group name for 'static:wg'
-      - integer for 'dynamic:member' and 'dynamic:channel'
-    Examples:
-    - static:council
-    - static:wg:storage
-    - dynamic:member:4`,
     }),
   }
 

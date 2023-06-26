@@ -1,27 +1,9 @@
-import { flags } from '@oclif/command'
 import { updateStorageBucketsForBag } from '../../services/runtime/extrinsics'
 import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 import ExitCodes from '../../command-base/ExitCodes'
 import _ from 'lodash'
-import { CLIError } from '@oclif/errors'
-
-// Custom 'integer array' oclif flag.
-const integerArrFlags = {
-  integerArr: flags.build({
-    parse: (value: string) => {
-      const arr: number[] = value.split(',').map((v) => {
-        if (!/^-?\d+$/.test(v)) {
-          throw new CLIError(`Expected comma-separated integers, but received: ${value}`, {
-            exit: ExitCodes.InvalidIntegerArray,
-          })
-        }
-        return parseInt(v)
-      })
-      return arr
-    },
-  }),
-}
+import { customFlags } from '../../command-base/CustomFlags'
 
 /**
  * CLI command:
@@ -35,17 +17,17 @@ export default class LeaderUpdateBag extends LeaderCommandBase {
   static description = 'Add/remove a storage bucket from a bag (adds by default).'
 
   static flags = {
-    add: integerArrFlags.integerArr({
+    add: customFlags.integerArr({
       char: 'a',
       description: 'ID/s of a bucket/s to add to bag',
       default: [],
     }),
-    remove: integerArrFlags.integerArr({
+    remove: customFlags.integerArr({
       char: 'r',
       description: 'ID/s of a bucket/s to remove from bag',
       default: [],
     }),
-    bagId: LeaderCommandBase.extraFlags.bagId({
+    bagId: customFlags.bagId({
       char: 'i',
       required: true,
     }),

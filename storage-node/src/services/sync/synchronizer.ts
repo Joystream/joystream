@@ -30,6 +30,7 @@ export const TempDirName = 'temp'
 export async function performSync(
   api: ApiPromise | undefined,
   workerId: number,
+  buckets: string[],
   asyncWorkersNumber: number,
   asyncWorkersTimeout: number,
   queryNodeUrl: string,
@@ -39,7 +40,7 @@ export async function performSync(
 ): Promise<void> {
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
-    getStorageObligationsFromRuntime(queryNodeUrl, workerId),
+    getStorageObligationsFromRuntime(queryNodeUrl, workerId, buckets),
     getDataObjectIDs(),
   ])
 

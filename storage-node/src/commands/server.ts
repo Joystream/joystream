@@ -17,7 +17,7 @@ import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import { Option } from '@polkadot/types-codec'
 import { QueryNodeApi } from '../services/queryNode/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-
+import { customFlags } from '../command-base/CustomFlags'
 const fsPromises = fs.promises
 
 /**
@@ -35,6 +35,12 @@ export default class Server extends ApiCommandBase {
       char: 'w',
       required: true,
       description: 'Storage provider worker ID',
+    }),
+    buckets: customFlags.integerArr({
+      char: 'b',
+      description:
+        'ID/s of a bucket/s to operate on. Buckets that are not assigned to worker are ignored. If not specified all buckets will be operational.',
+      default: [],
     }),
     uploads: flags.string({
       char: 'd',
@@ -156,7 +162,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
 
-    const bucketTransactorAccounts = await constructBucketToAddressMapping(api, qnApi, workerId)
+    const bucketTransactorAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
 
     const keystoreAddresses = this.getAllAddresses()
     bucketTransactorAccounts.forEach(([bucketId, address]) => {
@@ -168,6 +174,10 @@ Supported values: warn, error, debug, info. Default:debug`,
     const bucketKeyPairs = new Map<string, KeyringPair>(
       bucketTransactorAccounts.map(([bucketId, address]) => [bucketId, this.getKeyringPair(address)])
     )
+
+    const bucketsServed = bucketTransactorAccounts.map(([bucketId]) => bucketId)
+
+    logger.info(`buckets served ${bucketsServed}`)
 
     // when enabling upload auth ensure the keyring has the operator role key and set it here.
     const enableUploadingAuth = false
@@ -191,6 +201,7 @@ Supported values: warn, error, debug, info. Default:debug`,
           runSyncWithInterval(
             api,
             flags.worker,
+            bucketsServed,
             flags.queryNodeEndpoint,
             flags.uploads,
             TempDirName,
@@ -219,6 +230,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         tempFileUploadingDir,
         process: this.config,
         enableUploadingAuth,
+        buckets: bucketsServed,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -249,6 +261,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 async function runSyncWithInterval(
   api: ApiPromise,
   workerId: number,
+  buckets: string[],
   queryNodeUrl: string,
   uploadsDirectory: string,
   tempDirectory: string,
@@ -265,6 +278,7 @@ async function runSyncWithInterval(
       await performSync(
         api,
         workerId,
+        buckets,
         syncWorkersNumber,
         syncWorkersTimeout,
         queryNodeUrl,
@@ -314,7 +328,8 @@ async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolea
 async function constructBucketToAddressMapping(
   api: ApiPromise,
   qnApi: QueryNodeApi,
-  workerId: number
+  workerId: number,
+  bucketsToServe: number[]
 ): Promise<[string, string][]> {
   const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
@@ -328,6 +343,7 @@ async function constructBucketToAddressMapping(
       )
     )
   )
+    .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))
     .filter(([, optBucket]) => optBucket.isSome && optBucket.unwrap().operatorStatus.isStorageWorker)
     .map(([bucketId, optBucket]) => [bucketId, optBucket.unwrap()])
 

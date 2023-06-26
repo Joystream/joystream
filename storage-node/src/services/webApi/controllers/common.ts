@@ -143,4 +143,9 @@ export type AppConfig = {
    * Max file size for uploading limit.
    */
   maxFileSize: number
+
+  /**
+   * List of buckets to operate on.
+   */
+  buckets: string[]
 }
