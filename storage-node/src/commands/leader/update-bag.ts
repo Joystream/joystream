@@ -19,12 +19,12 @@ export default class LeaderUpdateBag extends LeaderCommandBase {
   static flags = {
     add: customFlags.integerArr({
       char: 'a',
-      description: 'ID/s of a bucket/s to add to bag',
+      description: 'Comma separated list of bucket IDs to add to bag',
       default: [],
     }),
     remove: customFlags.integerArr({
       char: 'r',
-      description: 'ID/s of a bucket/s to remove from bag',
+      description: 'Comma separated list of bucket IDs to remove from bag',
       default: [],
     }),
     bagId: customFlags.bagId({

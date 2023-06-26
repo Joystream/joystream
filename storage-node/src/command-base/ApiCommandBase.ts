@@ -143,7 +143,7 @@ export default abstract class ApiCommandBase extends Command {
 
     // If pair is still locked, then none of the passwords worked.
     if (pair.isLocked) {
-      this.error(`Unable to unlock keyfile ${file}`)
+      this.warn(`Could not unlock keyfile ${file}`)
     }
   }
 
@@ -202,12 +202,6 @@ export default abstract class ApiCommandBase extends Command {
       const files = await fs.promises.readdir(keyStore)
       files.forEach((file) => this.tryAddKeyFile(path.join(keyStore, file), passwords))
     }
-
-    if (keyring.pairs.length === 0) {
-      // No keys!
-      logger.warn('Keyring is empty')
-      this.error('Cannot proceed without at least one key in the keyring')
-    }
   }
 
   private getKeyring(): Keyring {
@@ -231,7 +225,7 @@ export default abstract class ApiCommandBase extends Command {
   }
 
   /**
-   * Returns true if keypair contains corresponding address.
+   * Returns true if keypair contains corresponding address and is unlocked.
    *
    * @param address - address to fetch keypair for from the keyring.
    * @returns boolean
@@ -239,20 +233,21 @@ export default abstract class ApiCommandBase extends Command {
   hasKeyringPair(address: string): boolean {
     const keyring = this.getKeyring()
     try {
-      keyring.getPair(address)
-      return true
+      const pair = keyring.getPair(address)
+      return !pair.isLocked
     } catch (err) {
+      logger.warn(err)
       return false
     }
   }
 
   /**
-   * Returns addresses of all keypairs stored in the keyring.
+   * Returns addresses of all unlocked KeyPairs stored in the keyring.
    * @returns string[]
    */
-  getAllAddresses(): string[] {
+  getUnlockedAccounts(): string[] {
     const keyring = this.getKeyring()
-    return keyring.pairs.map((pair) => pair.address)
+    return keyring.pairs.filter((pair) => !pair.isLocked).map((pair) => pair.address)
   }
 
   /**

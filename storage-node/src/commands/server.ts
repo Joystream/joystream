@@ -39,7 +39,7 @@ export default class Server extends ApiCommandBase {
     buckets: customFlags.integerArr({
       char: 'b',
       description:
-        'ID/s of a bucket/s to operate on. Buckets that are not assigned to worker are ignored. If not specified all buckets will be operational.',
+        'Comma separated list of bucket IDs to service. Buckets that are not assigned to worker are ignored. If not specified all buckets will be serviced.',
       default: [],
     }),
     uploads: flags.string({
@@ -164,7 +164,12 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     const bucketTransactorAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
 
-    const keystoreAddresses = this.getAllAddresses()
+    if (!bucketTransactorAccounts.length) {
+      this.error('No buckets to serve! Cannot proceed')
+    }
+
+    // Ensure we have
+    const keystoreAddresses = this.getUnlockedAccounts()
     bucketTransactorAccounts.forEach(([bucketId, address]) => {
       if (!keystoreAddresses.includes(address)) {
         this.error(`Transactor Account for bucket ${bucketId} missing from keystore`)
@@ -177,7 +182,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     const bucketsServed = bucketTransactorAccounts.map(([bucketId]) => bucketId)
 
-    logger.info(`buckets served ${bucketsServed}`)
+    logger.info(`Servicing Buckets: ${bucketsServed}`)
 
     // when enabling upload auth ensure the keyring has the operator role key and set it here.
     const enableUploadingAuth = false
@@ -346,10 +351,6 @@ async function constructBucketToAddressMapping(
     .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))
     .filter(([, optBucket]) => optBucket.isSome && optBucket.unwrap().operatorStatus.isStorageWorker)
     .map(([bucketId, optBucket]) => [bucketId, optBucket.unwrap()])
-
-  if (buckets.length === 0) {
-    logger.warn(`Warning: No active buckets found by worker id ${workerId}!`)
-  }
 
   return buckets.map(([bucketId, bucket]) => [bucketId, bucket.operatorStatus.asStorageWorker[1].toString()])
 }

@@ -194,7 +194,7 @@ USAGE
   $ storage-node dev:sync
 
 OPTIONS
-  -b, --bucketId=bucketId                            (required) The buckedId to sync
+  -b, --bucketId=bucketId                            (required) The buckerId to sync
   -d, --uploads=uploads                              (required) Data uploading directory (absolute path).
   -h, --help                                         show CLI help
 
@@ -469,7 +469,7 @@ USAGE
 
 OPTIONS
   -a, --add=add
-      [default: ] ID/s of a bucket/s to add to bag
+      [default: ] Comma separated list of bucket IDs to add to bag
 
   -h, --help
       show CLI help
@@ -498,7 +498,7 @@ OPTIONS
       password can be set in ACCOUNT_PWD environment variable.
 
   -r, --remove=remove
-      [default: ] ID/s of a bucket/s to remove from bag
+      [default: ] Comma separated list of bucket IDs to remove from bag
 
   -u, --apiUrl=apiUrl
       [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
@@ -784,9 +784,10 @@ USAGE
   $ storage-node server
 
 OPTIONS
-  -b, --buckets=buckets                                            [default: ] ID/s of a bucket/s to operate on. Buckets
-                                                                   that are not assigned to worker are ignored. If not
-                                                                   specified all buckets will be operational.
+  -b, --buckets=buckets                                            [default: ] Comma separated list of bucket IDs to
+                                                                   service. Buckets that are not assigned to worker are
+                                                                   ignored. If not specified all buckets will be
+                                                                   serviced.
 
   -d, --uploads=uploads                                            (required) Data uploading directory (absolute path).
 
