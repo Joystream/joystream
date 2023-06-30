@@ -1,4 +1,4 @@
-name: Publish Colossus/Argus/Apps Docker images
+name: Publish Colossus/Argus/QueryNode Docker images
 
 on:
   workflow_dispatch:
@@ -21,6 +21,7 @@ jobs:
         run: |
           echo "colossus_version=$(cat storage-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
           echo "argus_version=$(cat distributor-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
+          echo "qn_version=$(cat query-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -72,6 +73,7 @@ jobs:
           file: colossus.Dockerfile
           push: true
           tags: joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
+
       - name: Push distributor-node
         uses: docker/build-push-action@v3
         with:
@@ -80,6 +82,15 @@ jobs:
           file: distributor-node.Dockerfile
           push: true
           tags: joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+
+      - name: Push query-node
+        uses: docker/build-push-action@v3
+        with:
+          # Do not use local dir context to ensure we can build from a commit directly
+          # context: .
+          file: query-node.Dockerfile
+          push: true
+          tags: joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
 
       # Push latest tag if on master branch
       - name: Push joystream/storage-node:latest
@@ -102,12 +113,12 @@ jobs:
           push: true
           tags: joystream/distributor-node:latest
 
-      - name: Push apps image
+      - name: Push query-node image
         if: github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v3
         with:
           # Do not use local dir context to ensure we can build from a commit directly
           # context: .
-          file: apps.Dockerfile
+          file: query-node.Dockerfile
           push: true
-          tags: joystream/apps:latest
+          tags: joystream/query-node:latest
