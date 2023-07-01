@@ -256,7 +256,6 @@ services:
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
       - WARTHOG_APP_PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
-      - DEBUG=*
     ports:
       - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
     depends_on:

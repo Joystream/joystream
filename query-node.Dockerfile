@@ -9,6 +9,7 @@ RUN yarn --frozen-lockfile
 
 RUN yarn workspace @joystream/types build
 RUN yarn workspace @joystream/metadata-protobuf build
+RUN yarn workspace @joystream/js build
 RUN yarn workspace query-node-root build
 
 ENTRYPOINT [ "yarn" ]
