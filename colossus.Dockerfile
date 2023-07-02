@@ -6,7 +6,10 @@ COPY ./chain-metadata.json chain-metadata.json
 COPY ./yarn.lock yarn.lock
 COPY ./types/package.json types/package.json
 COPY ./metadata-protobuf/package.json metadata-protobuf/package.json
+COPY ./devops/eslint-config/package.json ./devops/eslint-config/package.json
+COPY ./devops/prettier-config/package.json ./devops/prettier-config/package.json
 COPY ./storage-node/package.json storage-node/package.json
+COPY ./storage-node/client/package.json storage-node/client/package.json
 COPY ./package.json package.json
 
 RUN yarn --frozen-lockfile
