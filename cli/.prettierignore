@@ -1,4 +1,3 @@
 /lib/
 .nyc_output
 /examples
-src/graphql/schema.graphql

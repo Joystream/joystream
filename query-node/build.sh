@@ -32,7 +32,5 @@ yarn workspace query-node build
 
 yarn workspace query-node-mappings build
 
-cp ./generated/graphql-server/generated/schema.graphql ../cli/src/graphql/schema.graphql
 cp ./generated/graphql-server/generated/schema.graphql ../storage-node/src/services/queryNode/schema.graphql
 cp ./generated/graphql-server/generated/schema.graphql ../distributor-node/src/services/networking/query-node/schema.graphql
-cp ./generated/graphql-server/generated/schema.graphql ../tests/network-tests/src/graphql/schema.graphql

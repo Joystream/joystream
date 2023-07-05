@@ -1,6 +1,6 @@
 overwrite: true
 
-schema: './src/graphql/schema.graphql'
+schema: '../query-node/generated/graphql-server/generated/schema.graphql'
 
 documents:
   - './src/graphql/queries/*.graphql'
