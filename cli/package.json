@@ -171,6 +171,6 @@
   "types": "lib/index.d.ts",
   "volta": {
     "node": "18.6.0",
-    "yarn": "1.22.15"
+    "yarn": "1.22.19"
   }
 }

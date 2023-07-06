@@ -12,7 +12,7 @@ functionality to support the [various roles](https://joystream.gitbook.io/testne
 The following tools are required for building, testing and contributing to this repo:
 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
-- [nodejs](https://nodejs.org/) v14.x - _required_
+- [nodejs](https://nodejs.org/) >= v18.6 - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
 - [docker](https://www.docker.com/get-started) and docker-compose v.1.29 or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
@@ -28,11 +28,11 @@ After cloning the repo run the following initialization scripts:
 # build local npm packages
 yarn build:packages
 
-# Build joystream/node docker image
-yarn build:node:docker
+# Build joystream/node docker testing image
+RUNTIME_PROFILE=TESTING yarn build:node:docker
 
 # start a local development network
-yarn start
+RUNTIME_PROFILE=TESTING yarn start
 ```
 
 ## Software
