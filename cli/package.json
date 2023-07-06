@@ -81,7 +81,7 @@
     "typescript": "^4.4.3"
   },
   "engines": {
-    "node": ">=18.6.0",
+    "node": ">=14.6.1",
     "yarn": "^1.22.0"
   },
   "publishConfig": {
