@@ -152,7 +152,7 @@
     "generate:docs:all": "yarn generate:docs:cli && yarn generate:docs:config && yarn generate:docs:api && yarn generate:docs:toc",
     "generate:all": "yarn generate:types:all && yarn generate:client && yarn generate:docs:all",
     "build:client": "tsc --build ./client/tsconfig.json",
-    "build:node": "tsc --build tsconfig.json",
+    "build:node": "tsc --build tsconfig.json && mkdir -p lib/api-spec/ && cp src/api-spec/*.yml lib/api-spec/",
     "build": "yarn generate:types:all && yarn build:client && yarn build:node",
     "lint": "eslint ./src --ext .ts",
     "format": "prettier ./ --write",
