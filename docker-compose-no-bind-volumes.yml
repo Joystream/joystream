@@ -172,7 +172,7 @@ services:
       PGPORT: ${ORION_DB_PORT}
 
   graphql-server:
-    image: node:14
+    image: node:18
     container_name: graphql-server
     restart: unless-stopped
     env_file:
@@ -197,7 +197,7 @@ services:
     command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
 
   processor:
-    image: node:14
+    image: node:18
     container_name: processor
     restart: unless-stopped
     env_file:
