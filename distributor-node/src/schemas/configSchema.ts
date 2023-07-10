@@ -124,21 +124,6 @@ export const configSchema: JSONSchema4 = objectSchema({
       },
       required: [],
     }),
-    otlp: objectSchema({
-      description: 'Specifies OpenTelemetry (https://opentelemetry.io) configuration options (Optional)',
-      properties: {
-        endpoint: {
-          type: 'string',
-          description: 'OTLP Agent (APM Server) URL. The host and port that APM Server listens on',
-          format: 'uri',
-        },
-        attributes: {
-          type: 'string',
-          description: 'Comma separated list of (key=value) paris describing the service and the environment',
-        },
-      },
-      required: ['endpoint', 'attributes'],
-    }),
     limits: objectSchema({
       description: 'Specifies node limits w.r.t. storage, outbound connections etc.',
       properties: {

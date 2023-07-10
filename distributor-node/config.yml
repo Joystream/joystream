@@ -19,9 +19,6 @@ logs:
   #   auth:
   #     username: username
   #     password: password
-# otlp:
-#   endpoint: http://localhost:8200
-#   attributes: 'service.name=test-node,deployment.environment=production'
 limits:
   storage: 100G
   maxConcurrentStorageNodeDownloads: 100
