@@ -1,0 +1,26 @@
+{
+  "name": "@joystream/opentelemetry",
+  "version": "1.0.0",
+  "description": "Opentelemetry Instrumentation for Joystream Nodejs Packages",
+  "main": "lib/index.js",
+  "repository": "https://github.com/Joystream/joystream",
+  "author": "Zeeshan Akram",
+  "license": "MIT",
+  "bugs": "https://github.com/Joystream/joystream/issues",
+  "devDependencies": {
+    "typescript": "^4.4.3"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.4.1",
+    "@opentelemetry/auto-instrumentations-node": "0.37.0",
+    "@opentelemetry/core": "1.13.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.39.1",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.39.1",
+    "@opentelemetry/exporter-trace-otlp-http": "0.39.1",
+    "@opentelemetry/sdk-metrics": "1.13.0",
+    "@opentelemetry/sdk-node": "^0.39.1"
+  },
+  "scripts": {
+    "build": "tsc --build tsconfig.json"
+  }
+}
