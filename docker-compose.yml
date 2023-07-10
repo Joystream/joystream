@@ -33,7 +33,7 @@ services:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://apm-server:8200
-      - OTEL_RESOURCE_ATTRIBUTES='service.name=colossus-1,deployment.environment=development'
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
     entrypoint: ['yarn']
     command: [
       'start:with-instrumentation', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
@@ -201,7 +201,7 @@ services:
       - GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT=${GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT}
       - GRAPHQL_PLAYGROUND_CDN_URL=${GRAPHQL_PLAYGROUND_CDN_URL}
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://apm-server:8200
-      - OTEL_RESOURCE_ATTRIBUTES='service.name=graphql-server,deployment.environment=development'
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=graphql-server,deployment.environment=production
     ports:
       - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"

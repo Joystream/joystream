@@ -1,6 +1,8 @@
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import axios from 'axios'
+import { config } from 'dotenv'
+import path from 'path'
 import { DefaultInstrumentation, DistributorNodeInstrumentation, StorageNodeInstrumentation } from './instrumentations'
 
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
@@ -37,6 +39,9 @@ async function checkApmServer(apmServerUrl: string, retryInterval = 6000, retryA
 }
 
 async function addInstrumentation() {
+  // Load env variables
+  config({ path: path.join(__dirname, '../.env') })
+
   const applicationName = process.env.OTEL_APPLICATION
   const apmServerUrl = 'http://localhost:8200'
   await checkApmServer(process.env.OTEL_EXPORTER_OTLP_ENDPOINT || apmServerUrl)
