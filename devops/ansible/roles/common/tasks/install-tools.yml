@@ -107,7 +107,7 @@
   shell: 
     cmd: |
       bash -ic "
-        volta install node@14 && volta install yarn
+        volta install node@18 && volta install yarn
       "
   args:
     executable: /bin/bash
