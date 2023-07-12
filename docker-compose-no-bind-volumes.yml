@@ -29,9 +29,10 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
-    entrypoint: ['yarn', 'storage-node']
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://apm-server:8200
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
     command: [
-      'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'start:with-instrumentation', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -66,13 +67,14 @@ services:
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
       JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://apm-server:8200
+      OTEL_RESOURCE_ATTRIBUTES: service.name=distributor-1,deployment.environment=production
     #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
     #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
       # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    entrypoint: ['yarn', 'joystream-distributor']
-    command: ['start']
+    command: ['start:with-instrumentation']
 
   colossus-2:
     image: joystream/storage-node
@@ -172,7 +174,10 @@ services:
       PGPORT: ${ORION_DB_PORT}
 
   graphql-server:
-    image: node:14
+    image: joystream/query-node
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: graphql-server
     restart: unless-stopped
     env_file:
@@ -184,6 +189,8 @@ services:
       - GRAPHQL_PLAYGROUND_ENDPOINT=${GRAPHQL_PLAYGROUND_ENDPOINT}
       - GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT=${GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT}
       - GRAPHQL_PLAYGROUND_CDN_URL=${GRAPHQL_PLAYGROUND_CDN_URL}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://apm-server:8200
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=query-node,deployment.environment=production
     ports:
       - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
@@ -194,7 +201,7 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
+    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod:with-instrumentation']
 
   processor:
     image: node:14
