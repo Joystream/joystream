@@ -23,17 +23,9 @@ export abstract class HttpApiBase {
       // Fix for express-winston in order to also log prematurely closed requests
       res.on('close', () => {
         res.locals.prematurelyClosed = !res.writableFinished
-        res.end()
       })
       try {
-        /**
-         * Call the request handler only if the response has not been sent yet (e.g. because req or res was
-         * closed prematurely). Otherwise, the request handler would try to set header or send the response
-         * again, which would result in an error e.g., "Cannot set headers after they are sent to the client"
-         * */
-        if (!res.headersSent) {
-          await handler(req, res, next)
-        }
+        await handler(req, res, next)
       } catch (err) {
         next(err)
       }
