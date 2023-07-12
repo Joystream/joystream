@@ -23,16 +23,6 @@ export const DistributorNodeInstrumentation = new NodeSDK({
       applyCustomAttributesOnSpan: (span, req, res) => {
         const reqPath = (req as ClientRequest).path
 
-        // Set span name for QueryNode requests
-        if (reqPath === '/graphql') {
-          span.updateName('QueryNode')
-        }
-
-        // Set span name for Colossus requests
-        if (reqPath.includes('api/v1/version') || reqPath.includes('api/v1/files')) {
-          span.updateName('Colossus')
-        }
-
         // Set headers as span attributes for assets requests
         if (reqPath.includes('api/v1/assets')) {
           span.setAttributes((res as ServerResponse).getHeaders())

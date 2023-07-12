@@ -23,16 +23,6 @@ export const StorageNodeInstrumentation = new NodeSDK({
       applyCustomAttributesOnSpan: (span, req, res) => {
         const reqPath = (req as ClientRequest).path
 
-        // Set span name for QueryNode requests
-        if (reqPath === '/graphql') {
-          span.updateName('QueryNode')
-        }
-
-        // Set span name for Argus requests
-        if (reqPath.includes('api/v1/version') || reqPath.includes('api/v1/assets')) {
-          span.updateName('Argus')
-        }
-
         // Set headers as span attributes for assets requests
         if (reqPath.includes('api/v1/files')) {
           span.setAttributes((res as ServerResponse).getHeaders())
