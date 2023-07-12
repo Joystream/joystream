@@ -1,12 +1,11 @@
+import cors from 'cors'
 import express from 'express'
 import * as OpenApiValidator from 'express-openapi-validator'
 import { HttpError, OpenApiValidatorOpts } from 'express-openapi-validator/dist/framework/types'
-import { ReadonlyConfig } from '../../types/config'
 import expressWinston from 'express-winston'
-import { Logger } from 'winston'
 import { Server } from 'http'
-import cors from 'cors'
-
+import { Logger } from 'winston'
+import { ReadonlyConfig } from '../../types/config'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type HttpApiRoute = ['get' | 'head' | 'post', string, express.RequestHandler<any>]
 
@@ -24,7 +23,6 @@ export abstract class HttpApiBase {
       // Fix for express-winston in order to also log prematurely closed requests
       res.on('close', () => {
         res.locals.prematurelyClosed = !res.writableFinished
-        res.end()
       })
       try {
         await handler(req, res, next)
