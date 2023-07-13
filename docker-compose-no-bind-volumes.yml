@@ -204,12 +204,9 @@ services:
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
     depends_on:
       - db
-    volumes:
-      - type: bind
-        source: .
-        target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod:with-instrumentation']
+    entrypoint: ['yarn']
+    command: ['workspace', 'query-node-root', 'query-node:start:prod:with-instrumentation']
 
   processor:
     image: joystream/query-node
@@ -226,16 +223,12 @@ services:
       - QUEUE_FACTOR=1
       - QUEUE_MAX_CAP_FACTOR=4
       - WARTHOG_DB_HOST=db
-      - WARTHOG_DB_DATABASE=${PROCESSOR_DB_NAME}
+      - WARTHOG_DB_DATABASE=${DB_NAME}
       - WARTHOG_DB_USERNAME=${DB_USER}
       - WARTHOG_DB_PASSWORD=${DB_PASS}
       - WARTHOG_APP_PORT=4002
     depends_on:
       - db
-    volumes:
-      - type: bind
-        source: .
-        target: /joystream
     working_dir: /joystream
     entrypoint: sh
     command: >
