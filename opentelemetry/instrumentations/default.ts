@@ -15,5 +15,10 @@ export const DefaultInstrumentation = new NodeSDK({
   metricReader: new PeriodicExportingMetricReader({
     exporter: new OTLPMetricExporter(),
   }),
-  instrumentations: [getNodeAutoInstrumentations()],
+  instrumentations: [
+    // Disable DNS instrumentation, because the instrumentation does not correctly patches `dns.lookup` function
+    // if the function is converted to a promise-based method using `utils.promisify(dns.lookup)`
+    // See: https://github.com/Joystream/joystream/pull/4779#discussion_r1262515887
+    getNodeAutoInstrumentations({ '@opentelemetry/instrumentation-dns': { enabled: false } }),
+  ],
 })
