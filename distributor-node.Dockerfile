@@ -43,5 +43,5 @@ RUN yarn --frozen-lockfile --production
 
 EXPOSE 3334
 
-ENTRYPOINT ["yarn"]
+ENTRYPOINT ["yarn", "joystream-distributor"]
 CMD ["start"]

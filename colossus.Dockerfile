@@ -40,5 +40,5 @@ VOLUME ["/data", "/keystore", "/logs"]
 # Colossus node port
 EXPOSE 3333
 
-ENTRYPOINT ["yarn"]
-CMD ["start"]
+ENTRYPOINT ["yarn", "storage-node"]
+CMD ["server"]

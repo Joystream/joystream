@@ -1,4 +1,4 @@
-### 1.2.0
+### 1.2.1
 
 - Integrates OpenTelemetry API/SDK with Argus for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.
 - Add support for Elasticsearch authentication (`logs.elastic.auth` config section)
