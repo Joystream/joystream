@@ -2,6 +2,7 @@ name: Publish Colossus/Argus/QueryNode Docker images
 
 on:
   workflow_dispatch:
+  pull_request:
 
 jobs:
   build_and_publish:
@@ -58,67 +59,38 @@ jobs:
           push: false
           load: true
           tags: joystream/distributor-node:latest
+      - name: Build query-node
+        uses: docker/build-push-action@v3
+        with:
+          # Do not use local dir context to ensure we can build from a commit directly
+          # context: .
+          file: query-node.Dockerfile
+          push: false
+          load: true
+          tags: joystream/query-node:latest
 
       - name: Test with latest images
         run: |
           yarn build:packages
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
-          ./tests/network-tests/run-tests.sh content-directory
+          docker compose up -d db processor indexer hydra-indexer-gateway graphql-server
+          sleep 30
+          NO_QN=true ./tests/network-tests/run-tests.sh content-directory
 
-      - name: Push storage-node
-        uses: docker/build-push-action@v3
-        with:
-          # Do not use local dir context to ensure we can build from a commit directly
-          # context: .
-          file: colossus.Dockerfile
-          push: true
-          tags: joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
+      - name: Push new versions
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          docker image tag joystream/storage-node:latest joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
+          docker image tag joystream/distributor:latest joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+          docker image tag joystream/query-node:latest joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
+          docker push joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
+          docker push joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+          docker push joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
 
-      - name: Push distributor-node
-        uses: docker/build-push-action@v3
-        with:
-          # Do not use local dir context to ensure we can build from a commit directly
-          # context: .
-          file: distributor-node.Dockerfile
-          push: true
-          tags: joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+      - name: Push latest tag
+        if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch'
+        run: |
+          docker push joystream/storage-node:latest
+          docker push joystream/distributor:latest
+          docker push joystream/query-node:latest
 
-      - name: Push query-node
-        uses: docker/build-push-action@v3
-        with:
-          # Do not use local dir context to ensure we can build from a commit directly
-          # context: .
-          file: query-node.Dockerfile
-          push: true
-          tags: joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
-
-      # Push latest tag if on master branch
-      - name: Push joystream/storage-node:latest
-        if: github.ref == 'refs/heads/master'
-        uses: docker/build-push-action@v3
-        with:
-          # Do not use local dir context to ensure we can build from a commit directly
-          # context: .
-          file: colossus.Dockerfile
-          push: true
-          tags: joystream/storage-node:latest
-
-      - name: Push joystream/distributor-node:latest
-        if: github.ref == 'refs/heads/master'
-        uses: docker/build-push-action@v3
-        with:
-          # Do not use local dir context to ensure we can build from a commit directly
-          # context: .
-          file: distributor-node.Dockerfile
-          push: true
-          tags: joystream/distributor-node:latest
-
-      - name: Push query-node image
-        if: github.ref == 'refs/heads/master'
-        uses: docker/build-push-action@v3
-        with:
-          # Do not use local dir context to ensure we can build from a commit directly
-          # context: .
-          file: query-node.Dockerfile
-          push: true
-          tags: joystream/query-node:latest
