@@ -87,7 +87,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: |
           docker image tag joystream/storage-node:latest joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
-          docker image tag joystream/distributor:latest joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+          docker image tag joystream/distributor-node:latest joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
           docker image tag joystream/query-node:latest joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
           docker push joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
           docker push joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
