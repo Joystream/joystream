@@ -97,6 +97,6 @@ jobs:
         if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch'
         run: |
           docker push joystream/storage-node:latest
-          docker push joystream/distributor:latest
+          docker push joystream/distributor-node:latest
           docker push joystream/query-node:latest
 
