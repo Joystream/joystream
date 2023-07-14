@@ -12,6 +12,7 @@ COPY ./storage-node/package.json storage-node/package.json
 COPY ./storage-node/client/package.json storage-node/client/package.json
 COPY ./distributor-node/package.json distributor-node/package.json
 COPY ./distributor-node/client/package.json distributor-node/client/package.json
+COPY ./opentelemetry/package.json opentelemetry/package.json
 COPY ./package.json package.json
 
 RUN yarn --frozen-lockfile
@@ -22,6 +23,7 @@ COPY ./storage-node ./storage-node
 COPY ./devops/eslint-config ./devops/eslint-config
 COPY ./devops/prettier-config ./devops/prettier-config
 COPY ./distributor-node distributor-node
+COPY ./opentelemetry opentelemetry
 COPY ./tsconfig.json ./tsconfig.json
 
 # Build & cleanup
@@ -30,6 +32,7 @@ RUN \
   yarn workspace @joystream/types build &&\
   yarn workspace @joystream/metadata-protobuf build &&\
   yarn workspace @joystream/storage-node-client build &&\
+  yarn workspace @joystream/opentelemetry build &&\
   yarn workspace @joystream/distributor-cli build &&\
   yarn cache clean
 
