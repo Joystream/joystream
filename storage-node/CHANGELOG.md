@@ -1,9 +1,9 @@
 ### 3.6.0
 - Collosus can now store multiple keys in it's keyring.
-- The `--accountUri` and `--password` args can be used multiple times to add multiple keys. This adds support for worker to use different transactor accounts per bucket if necessary.
-- Added `--keyStore` argument for all commands to configure a directory containing multiple key files to
+- The `--accountUri` and `--password` args can be used multiple times to add multiple keys. This adds support for worker to use different transactor accounts for each bucket.
+- Added `--keyStore` argument for all commands to configure a directory containing multiple key files to the keyring.
 - Server can run and to serve specific buckets, by passing a comma separated list of bucket ids with the `--buckets` argument.
-- Renamed `--operatorId` operator command argument to `--workerId` for consistency.
+- Renamed `--operatorId` argument to `--workerId` in operator commands for consistency.
 
 ### 3.5.0
 
