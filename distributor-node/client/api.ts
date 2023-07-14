@@ -95,6 +95,12 @@ export interface StatusResponse {
      * @type {number}
      * @memberof StatusResponse
      */
+    'workerId'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponse
+     */
     'objectsInCache': number;
     /**
      * 

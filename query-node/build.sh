@@ -34,3 +34,14 @@ yarn workspace query-node-mappings build
 
 cp ./generated/graphql-server/generated/schema.graphql ../storage-node/src/services/queryNode/schema.graphql
 cp ./generated/graphql-server/generated/schema.graphql ../distributor-node/src/services/networking/query-node/schema.graphql
+
+################################################
+# temporary patche TODO: create proper solution
+
+# Add command to run Query Node's Graphql server with Opentelemetry instrumentation
+sed -i -e '/"start:prod": "WARTHOG_ENV=production yarn dotenv:generate && node dist\/src\/index.js"/a \
+   "start:prod:with-instrumentation": "export OTEL_APPLICATION=query-node; WARTHOG_ENV=production yarn dotenv:generate && node --require @joystream/opentelemetry dist/src/index.js",' ./generated/graphql-server/package.json
+
+# Add @joystream/opentelemetry dependency symlink, as it is not specified in generated/graphql-server/package.json dependencies
+mkdir -p ./generated/graphql-server/node_modules/@joystream
+ln -s ../../../../../node_modules/@joystream/opentelemetry ./generated/graphql-server/node_modules/@joystream/opentelemetry
