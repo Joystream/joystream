@@ -56,7 +56,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
 
     // Pre validate file upload params
     (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
-      if (req.path === '/api/v1/files') {
+      if (req.path === '/api/v1/files' && req.method === 'POST') {
         validateUploadFileParams(req, res)
           .then(next)
           .catch((error) => sendResponseWithError(res, next, error, 'upload'))
@@ -225,6 +225,10 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
   const storageBucketId = new BN(req.query.storageBucketId?.toString() || '')
   const dataObjectId = new BN(req.query.dataObjectId?.toString() || '')
   const bagId = req.query.bagId?.toString() || ''
+
+  if (!res.locals.uploadBuckets.includes(req.query.storageBucketId?.toString() || '')) {
+    throw new WebApiError(`Server is not accepting uploads into this bucket`, 503)
+  }
 
   const parsedBagId = parseBagId(bagId)
 

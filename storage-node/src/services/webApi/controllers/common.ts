@@ -145,7 +145,12 @@ export type AppConfig = {
   maxFileSize: number
 
   /**
-   * List of buckets to operate on.
+   * List of buckets that node should allow downloads from.
    */
-  buckets: string[]
+  downloadBuckets: string[]
+
+  /**
+   * List of buckets that node should accept uploads into.
+   */
+  uploadBuckets: string[]
 }

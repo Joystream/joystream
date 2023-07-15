@@ -156,33 +156,40 @@ Supported values: warn, error, debug, info. Default:debug`,
     const workerId = flags.worker
 
     if (!(await verifyWorkerId(api, workerId))) {
-      logger.error('Provided workerId does not belong to an existing worker')
+      logger.error(`workerId ${workerId} does not exist in the storage working group`)
       this.exit(ExitCodes.InvalidWorkerId)
     }
 
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
 
-    const bucketTransactorAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
+    const selectedBucketsAndAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
 
-    if (!bucketTransactorAccounts.length) {
+    if (!selectedBucketsAndAccounts.length) {
       this.error('No buckets to serve! Cannot proceed')
     }
 
-    // Ensure we have
     const keystoreAddresses = this.getUnlockedAccounts()
-    bucketTransactorAccounts.forEach(([bucketId, address]) => {
+    const bucketsWithKeysInKeyring = selectedBucketsAndAccounts.filter(([bucketId, address]) => {
       if (!keystoreAddresses.includes(address)) {
-        this.error(`Transactor Account for bucket ${bucketId} missing from keystore`)
+        this.warn(`Missing transactor key for bucket ${bucketId}`)
+        return false
       }
+      return true
     })
 
     const bucketKeyPairs = new Map<string, KeyringPair>(
-      bucketTransactorAccounts.map(([bucketId, address]) => [bucketId, this.getKeyringPair(address)])
+      bucketsWithKeysInKeyring.map(([bucketId, address]) => [bucketId, this.getKeyringPair(address)])
     )
 
-    const bucketsServed = bucketTransactorAccounts.map(([bucketId]) => bucketId)
+    const writableBuckets = bucketsWithKeysInKeyring.map(([bucketId]) => bucketId)
+    const selectedBuckets = selectedBucketsAndAccounts.map(([bucketId]) => bucketId)
 
-    logger.info(`Servicing Buckets: ${bucketsServed}`)
+    if (writableBuckets.length !== selectedBuckets.length) {
+      logger.warn(`Only subset of buckets will process uploads!`)
+    }
+
+    logger.info(`Buckets synced and served: ${selectedBuckets}`)
+    logger.info(`Buckets accepting uploads: ${writableBuckets}`)
 
     // when enabling upload auth ensure the keyring has the operator role key and set it here.
     const enableUploadingAuth = false
@@ -206,7 +213,7 @@ Supported values: warn, error, debug, info. Default:debug`,
           runSyncWithInterval(
             api,
             flags.worker,
-            bucketsServed,
+            selectedBuckets,
             flags.queryNodeEndpoint,
             flags.uploads,
             TempDirName,
@@ -235,7 +242,8 @@ Supported values: warn, error, debug, info. Default:debug`,
         tempFileUploadingDir,
         process: this.config,
         enableUploadingAuth,
-        buckets: bucketsServed,
+        downloadBuckets: selectedBuckets,
+        uploadBuckets: writableBuckets,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -318,12 +326,6 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
     logger.error(`Temp directory IO error: ${err}`)
   }
 }
-
-// 1. Verify worker id is valid
-// 2. construct transactorAccounts: string[]
-// 3. Verify transactor accounts are all loaded in keystore.
-// 4. construct a Map<bucketId, keyringPair> passed in AppConfig to app, used by upload verification
-//    to pick the right keypair to send accept-pending-upload extrinsic
 
 async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
   const worker = await api.query.storageWorkingGroup.workerById(workerId)
