@@ -13,16 +13,16 @@ services:
       - 9933:9933
 
   colossus-1:
-    image: node:14
+    image: joystream/storage-node
+    build:
+      context: .
+      dockerfile: colossus.Dockerfile
     container_name: colossus-1
     restart: on-failure
     volumes:
       - colossus-1-data:/data
       - colossus-1-keystore:/keystore
       - colossus-1-logs:/logs
-      - type: bind
-        source: .
-        target: /joystream
     working_dir: /joystream/storage-node
     ports:
       - 3333:3333
@@ -44,16 +44,16 @@ services:
     ]
 
   distributor-1:
-    image: node:14
+    image: joystream/distributor-node
+    build:
+      context: .
+      dockerfile: distributor-node.Dockerfile
     container_name: distributor-1
     restart: on-failure
     volumes:
       - distributor-1-data:/data
       - distributor-1-cache:/cache
       - distributor-1-logs:/logs
-      - type: bind
-        source: .
-        target: /joystream
     # let the working_dir be the distributor node to pickup the config.yml file
     working_dir: /joystream/distributor-node
     ports:
@@ -76,8 +76,8 @@ services:
       JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
       # OTEL_EXPORTER_OTLP_ENDPOINT: http://apm-server:8200
       # OTEL_RESOURCE_ATTRIBUTES: service.name=distributor-1,deployment.environment=production
-      #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
-      #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
       # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
@@ -85,16 +85,13 @@ services:
     command: ['start']
 
   colossus-2:
-    image: node:14
+    image: joystream/storage-node
     container_name: colossus-2
     restart: on-failure
     volumes:
       - colossus-2-data:/data
       - colossus-2-keystore:/keystore
       - colossus-2-logs:/logs
-      - type: bind
-        source: .
-        target: /joystream
     working_dir: /joystream/storage-node
     ports:
       - 3335:3333
@@ -114,16 +111,13 @@ services:
     ]
 
   distributor-2:
-    image: node:14
+    image: joystream/distributor-node
     container_name: distributor-2
     restart: on-failure
     volumes:
       - distributor-2-data:/data
       - distributor-2-cache:/cache
       - distributor-2-logs:/logs
-      - type: bind
-        source: .
-        target: /joystream
     # let the working_dir be the distributor node to pickup the config.yml file
     working_dir: /joystream/distributor-node
     ports:
@@ -188,7 +182,10 @@ services:
       PGPORT: ${ORION_DB_PORT}
 
   graphql-server:
-    image: node:14
+    image: joystream/query-node
+    build:
+      context: .
+      dockerfile: query-node.Dockerfile
     container_name: graphql-server
     restart: unless-stopped
     env_file:
@@ -207,15 +204,12 @@ services:
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
     depends_on:
       - db
-    volumes:
-      - type: bind
-        source: .
-        target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
+    entrypoint: ['yarn']
+    command: ['workspace', 'query-node-root', 'query-node:start:prod']
 
   processor:
-    image: node:14
+    image: joystream/query-node
     container_name: processor
     restart: unless-stopped
     env_file:
@@ -228,14 +222,21 @@ services:
       - BATCH_SIZE=100
       - QUEUE_FACTOR=1
       - QUEUE_MAX_CAP_FACTOR=4
+      - WARTHOG_DB_HOST=db
+      - WARTHOG_DB_DATABASE=${DB_NAME}
+      - WARTHOG_DB_USERNAME=${DB_USER}
+      - WARTHOG_DB_PASSWORD=${DB_PASS}
+      - WARTHOG_APP_PORT=4002
     depends_on:
       - db
-    volumes:
-      - type: bind
-        source: .
-        target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
+    entrypoint: sh
+    command: >
+      -c "
+        yarn workspace query-node-root db:prepare ;
+        yarn workspace query-node-root db:migrate ;
+        yarn workspace query-node-root processor:start
+      "
 
   indexer:
     image: joystream/hydra-indexer:v5.0.0-alpha.1
