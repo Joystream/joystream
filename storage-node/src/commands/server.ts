@@ -156,8 +156,8 @@ Supported values: warn, error, debug, info. Default:debug`,
     const workerId = flags.worker
 
     if (!(await verifyWorkerId(api, workerId))) {
-      logger.error(`workerId ${workerId} does not exist in the storage working group`)
-      this.exit(ExitCodes.InvalidWorkerId)
+      logger.warn(`workerId ${workerId} does not exist in the storage working group`)
+      // this.exit(ExitCodes.InvalidWorkerId)
     }
 
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
@@ -165,7 +165,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     const selectedBucketsAndAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
 
     if (!selectedBucketsAndAccounts.length) {
-      this.error('No buckets to serve! Cannot proceed')
+      logger.warn('No buckets to serve. Server will be idle!')
     }
 
     const keystoreAddresses = this.getUnlockedAccounts()
@@ -205,8 +205,10 @@ Supported values: warn, error, debug, info. Default:debug`,
       await this.ensureDevelopmentChain()
     }
 
-    if (flags.sync) {
-      logger.info(`Synchronization enabled.`)
+    // Don't run sync job if no buckets selected, to prevent purging
+    // any assets.
+    if (flags.sync && selectedBuckets.length) {
+      logger.info(`Synchronization is Enabled.`)
       setTimeout(
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
@@ -223,6 +225,8 @@ Supported values: warn, error, debug, info. Default:debug`,
           ),
         0
       )
+    } else {
+      logger.warn(`Synchronization is Disabled.`)
     }
 
     try {
