@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -11,6 +11,7 @@
     "@apollo/client": "^3.2.5",
     "@elastic/ecs-winston-format": "^1.1.0",
     "@joystream/metadata-protobuf": "^2.8.0",
+    "@joystream/opentelemetry": "1.0.0",
     "@joystream/storage-node-client": "^3.0.0",
     "@joystream/types": "^2.0.0",
     "@oclif/command": "^1",
@@ -157,7 +158,9 @@
     "lint": "eslint ./src --ext .ts",
     "format": "prettier ./ --write",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
-    "cli": "./bin/run"
+    "cli": "./bin/run",
+    "start": "./bin/run start",
+    "start:with-instrumentation": "export OTEL_APPLICATION=distributor-node; node --require @joystream/opentelemetry ./bin/run start"
   },
   "types": "lib/index.d.ts"
 }

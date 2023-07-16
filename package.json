@@ -30,7 +30,8 @@
     "query-node/mappings",
     "query-node/generated/graphql-server",
     "metadata-protobuf",
-    "joystreamjs"
+    "joystreamjs",
+    "opentelemetry"
   ],
   "resolutions": {
     "@polkadot/api": "8.9.1",
