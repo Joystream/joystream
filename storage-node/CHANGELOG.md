@@ -1,5 +1,10 @@
+### 3.5.0
+
+- Integrates OpenTelemetry API/SDK with Colossus for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.
+
 ### 3.4.0
-- Added option 'none' to 'logFileChangeFrequency' argument. The default is still 'daily'. 'none' prevents log rotaion on time basis and only rotates when max  size for logs files is reached.
+
+- Added option 'none' to 'logFileChangeFrequency' argument. The default is still 'daily'. 'none' prevents log rotaion on time basis and only rotates when max size for logs files is reached.
 
 ### 3.3.0
 
