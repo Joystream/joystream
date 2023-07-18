@@ -89,6 +89,7 @@ enum EventTypeOptions {
   CommentTextUpdatedEvent
   CouncilBudgetFundedEvent
   CouncilorRewardUpdatedEvent
+  DistributionNodeOperationalStatusSetEvent
   EnglishAuctionSettledEvent
   EnglishAuctionStartedEvent
   InitialInvitationBalanceUpdatedEvent
@@ -154,6 +155,7 @@ enum EventTypeOptions {
   StakingAccountConfirmedEvent
   StakingAccountRemovedEvent
   StatusTextChangedEvent
+  StorageNodeOperationalStatusSetEvent
   TerminatedLeaderEvent
   TerminatedWorkerEvent
   ThreadCreatedEvent
@@ -916,6 +918,8 @@ type DistributionBucket implements BaseGraphQLObject {
   bags: [StorageBag!]!
 }
 
+union NodeOperationalStatus = NodeOperationalStatusNormal | NodeOperationalStatusNoService | NodeOperationalStatusNoServiceFrom | NodeOperationalStatusNoServiceDuring
+
 type DistributionBucketOperator implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -935,6 +939,7 @@ type DistributionBucketOperator implements BaseGraphQLObject {
   status: DistributionBucketOperatorStatus!
   metadata: DistributionBucketOperatorMetadata
   metadataId: String
+  distributionnodeoperationalstatusseteventbucketOperator: [DistributionNodeOperationalStatusSetEvent!]
 }
 
 enum DistributionBucketOperatorStatus {
@@ -956,6 +961,9 @@ type DistributionBucketOperatorMetadata implements BaseGraphQLObject {
   nodeEndpoint: String
   nodeLocation: NodeLocationMetadata
   nodeLocationId: String
+
+  """Optional node operational status"""
+  nodeOperationalStatus: NodeOperationalStatus
 
   """Additional information about the node/operator"""
   extra: String
@@ -998,6 +1006,9 @@ type StorageBucketOperatorMetadata implements BaseGraphQLObject {
   nodeLocation: NodeLocationMetadata
   nodeLocationId: String
 
+  """Optional node operational status"""
+  nodeOperationalStatus: NodeOperationalStatus
+
   """Additional information about the node/operator"""
   extra: String
   storagebucketoperatorMetadata: [StorageBucket!]
@@ -1033,6 +1044,7 @@ type StorageBucket implements BaseGraphQLObject {
 
   """Total size of assigned data objects"""
   dataObjectsSize: BigInt!
+  storagenodeoperationalstatusseteventstorageBucket: [StorageNodeOperationalStatusSetEvent!]
 }
 
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
@@ -2504,6 +2516,50 @@ type MetaprotocolTransactionSuccessful {
   Payment made to channel by the member sending the remark action (if any)
   """
   channelPaid: Channel
+}
+
+type NodeOperationalStatusNoService {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNoServiceDuring {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """The time from which the bucket would have to no service"""
+  from: DateTime!
+
+  """The time until which the bucket would have to no service"""
+  to: DateTime!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNoServiceFrom {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """The time from which the bucket would have to no service"""
+  from: DateTime!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNormal {
+  """Reason why node was set to this state"""
+  rationale: String
 }
 
 type OpeningStatusCancelled {
@@ -4439,6 +4495,17 @@ type DistributionBucketConnection {
   pageInfo: PageInfo!
 }
 
+type DistributionNodeOperationalStatusSetEventEdge {
+  node: DistributionNodeOperationalStatusSetEvent!
+  cursor: String!
+}
+
+type DistributionNodeOperationalStatusSetEventConnection {
+  totalCount: Int!
+  edges: [DistributionNodeOperationalStatusSetEventEdge!]!
+  pageInfo: PageInfo!
+}
+
 type ElectedCouncilEdge {
   node: ElectedCouncil!
   cursor: String!
@@ -5522,6 +5589,17 @@ type StorageDataObjectEdge {
 type StorageDataObjectConnection {
   totalCount: Int!
   edges: [StorageDataObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+type StorageNodeOperationalStatusSetEventEdge {
+  node: StorageNodeOperationalStatusSetEvent!
+  cursor: String!
+}
+
+type StorageNodeOperationalStatusSetEventConnection {
+  totalCount: Int!
+  edges: [StorageNodeOperationalStatusSetEventEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -12123,6 +12201,79 @@ input DistributionBucketUpdateInput {
   distributing: Boolean
 }
 
+input DistributionNodeOperationalStatusSetEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  operationalStatus_json: JSONObject
+  bucketOperator: DistributionBucketOperatorWhereInput
+  AND: [DistributionNodeOperationalStatusSetEventWhereInput!]
+  OR: [DistributionNodeOperationalStatusSetEventWhereInput!]
+  NOT: [DistributionNodeOperationalStatusSetEventWhereInput!]
+}
+
+input DistributionNodeOperationalStatusSetEventWhereUniqueInput {
+  id: ID!
+}
+
+input DistributionNodeOperationalStatusSetEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  bucketOperator: ID
+  operationalStatus: JSONObject!
+}
+
+input DistributionNodeOperationalStatusSetEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  bucketOperator: ID
+  operationalStatus: JSONObject
+}
+
 input DistributionBucketOperatorWhereInput {
   id_eq: ID
   id_in: [ID!]
@@ -12158,6 +12309,9 @@ input DistributionBucketOperatorWhereInput {
   status_in: [DistributionBucketOperatorStatus!]
   distributionBucket: DistributionBucketWhereInput
   metadata: DistributionBucketOperatorMetadataWhereInput
+  distributionnodeoperationalstatusseteventbucketOperator_none: DistributionNodeOperationalStatusSetEventWhereInput
+  distributionnodeoperationalstatusseteventbucketOperator_some: DistributionNodeOperationalStatusSetEventWhereInput
+  distributionnodeoperationalstatusseteventbucketOperator_every: DistributionNodeOperationalStatusSetEventWhereInput
   AND: [DistributionBucketOperatorWhereInput!]
   OR: [DistributionBucketOperatorWhereInput!]
   NOT: [DistributionBucketOperatorWhereInput!]
@@ -12211,6 +12365,7 @@ input DistributionBucketOperatorMetadataWhereInput {
   nodeEndpoint_startsWith: String
   nodeEndpoint_endsWith: String
   nodeEndpoint_in: [String!]
+  nodeOperationalStatus_json: JSONObject
   extra_eq: String
   extra_contains: String
   extra_startsWith: String
@@ -12232,12 +12387,14 @@ input DistributionBucketOperatorMetadataWhereUniqueInput {
 input DistributionBucketOperatorMetadataCreateInput {
   nodeEndpoint: String
   nodeLocation: ID
+  nodeOperationalStatus: JSONObject!
   extra: String
 }
 
 input DistributionBucketOperatorMetadataUpdateInput {
   nodeEndpoint: String
   nodeLocation: ID
+  nodeOperationalStatus: JSONObject
   extra: String
 }
 
@@ -12334,6 +12491,7 @@ input StorageBucketOperatorMetadataWhereInput {
   nodeEndpoint_startsWith: String
   nodeEndpoint_endsWith: String
   nodeEndpoint_in: [String!]
+  nodeOperationalStatus_json: JSONObject
   extra_eq: String
   extra_contains: String
   extra_startsWith: String
@@ -12355,13 +12513,88 @@ input StorageBucketOperatorMetadataWhereUniqueInput {
 input StorageBucketOperatorMetadataCreateInput {
   nodeEndpoint: String
   nodeLocation: ID
+  nodeOperationalStatus: JSONObject!
   extra: String
 }
 
 input StorageBucketOperatorMetadataUpdateInput {
   nodeEndpoint: String
   nodeLocation: ID
+  nodeOperationalStatus: JSONObject
   extra: String
+}
+
+input StorageNodeOperationalStatusSetEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  operationalStatus_json: JSONObject
+  storageBucket: StorageBucketWhereInput
+  AND: [StorageNodeOperationalStatusSetEventWhereInput!]
+  OR: [StorageNodeOperationalStatusSetEventWhereInput!]
+  NOT: [StorageNodeOperationalStatusSetEventWhereInput!]
+}
+
+input StorageNodeOperationalStatusSetEventWhereUniqueInput {
+  id: ID!
+}
+
+input StorageNodeOperationalStatusSetEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  storageBucket: ID
+  operationalStatus: JSONObject!
+}
+
+input StorageNodeOperationalStatusSetEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  storageBucket: ID
+  operationalStatus: JSONObject
 }
 
 input StorageBucketWhereInput {
@@ -12420,6 +12653,9 @@ input StorageBucketWhereInput {
   bags_none: StorageBagWhereInput
   bags_some: StorageBagWhereInput
   bags_every: StorageBagWhereInput
+  storagenodeoperationalstatusseteventstorageBucket_none: StorageNodeOperationalStatusSetEventWhereInput
+  storagenodeoperationalstatusseteventstorageBucket_some: StorageNodeOperationalStatusSetEventWhereInput
+  storagenodeoperationalstatusseteventstorageBucket_every: StorageNodeOperationalStatusSetEventWhereInput
   AND: [StorageBucketWhereInput!]
   OR: [StorageBucketWhereInput!]
   NOT: [StorageBucketWhereInput!]
@@ -25102,6 +25338,68 @@ type OpeningFilledEvent implements Event & BaseGraphQLObject {
   workersHired: [Worker!]!
 }
 
+type DistributionNodeOperationalStatusSetEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  bucketOperator: DistributionBucketOperator
+  bucketOperatorId: String
+
+  """Operational status that was set"""
+  operationalStatus: NodeOperationalStatus!
+}
+
+type StorageNodeOperationalStatusSetEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  storageBucket: StorageBucket
+  storageBucketId: String
+
+  """Operational status that was set"""
+  operationalStatus: NodeOperationalStatus!
+}
+
 type AuctionBidCanceledEvent implements Event & BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -27892,6 +28190,9 @@ type Query {
   distributionBuckets(offset: Int, limit: Int = 50, where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!]): [DistributionBucket!]!
   distributionBucketByUniqueInput(where: DistributionBucketWhereUniqueInput!): DistributionBucket
   distributionBucketsConnection(first: Int, after: String, last: Int, before: String, where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!]): DistributionBucketConnection!
+  distributionNodeOperationalStatusSetEvents(offset: Int, limit: Int = 50, where: DistributionNodeOperationalStatusSetEventWhereInput, orderBy: [DistributionNodeOperationalStatusSetEventOrderByInput!]): [DistributionNodeOperationalStatusSetEvent!]!
+  distributionNodeOperationalStatusSetEventByUniqueInput(where: DistributionNodeOperationalStatusSetEventWhereUniqueInput!): DistributionNodeOperationalStatusSetEvent
+  distributionNodeOperationalStatusSetEventsConnection(first: Int, after: String, last: Int, before: String, where: DistributionNodeOperationalStatusSetEventWhereInput, orderBy: [DistributionNodeOperationalStatusSetEventOrderByInput!]): DistributionNodeOperationalStatusSetEventConnection!
   electedCouncils(offset: Int, limit: Int = 50, where: ElectedCouncilWhereInput, orderBy: [ElectedCouncilOrderByInput!]): [ElectedCouncil!]!
   electedCouncilByUniqueInput(where: ElectedCouncilWhereUniqueInput!): ElectedCouncil
   electedCouncilsConnection(first: Int, after: String, last: Int, before: String, where: ElectedCouncilWhereInput, orderBy: [ElectedCouncilOrderByInput!]): ElectedCouncilConnection!
@@ -28179,6 +28480,9 @@ type Query {
   storageDataObjects(offset: Int, limit: Int = 50, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): [StorageDataObject!]!
   storageDataObjectByUniqueInput(where: StorageDataObjectWhereUniqueInput!): StorageDataObject
   storageDataObjectsConnection(first: Int, after: String, last: Int, before: String, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): StorageDataObjectConnection!
+  storageNodeOperationalStatusSetEvents(offset: Int, limit: Int = 50, where: StorageNodeOperationalStatusSetEventWhereInput, orderBy: [StorageNodeOperationalStatusSetEventOrderByInput!]): [StorageNodeOperationalStatusSetEvent!]!
+  storageNodeOperationalStatusSetEventByUniqueInput(where: StorageNodeOperationalStatusSetEventWhereUniqueInput!): StorageNodeOperationalStatusSetEvent
+  storageNodeOperationalStatusSetEventsConnection(first: Int, after: String, last: Int, before: String, where: StorageNodeOperationalStatusSetEventWhereInput, orderBy: [StorageNodeOperationalStatusSetEventOrderByInput!]): StorageNodeOperationalStatusSetEventConnection!
   terminatedLeaderEvents(offset: Int, limit: Int = 50, where: TerminatedLeaderEventWhereInput, orderBy: [TerminatedLeaderEventOrderByInput!]): [TerminatedLeaderEvent!]!
   terminatedLeaderEventByUniqueInput(where: TerminatedLeaderEventWhereUniqueInput!): TerminatedLeaderEvent
   terminatedLeaderEventsConnection(first: Int, after: String, last: Int, before: String, where: TerminatedLeaderEventWhereInput, orderBy: [TerminatedLeaderEventOrderByInput!]): TerminatedLeaderEventConnection!
@@ -29956,6 +30260,25 @@ enum DistributionBucketOrderByInput {
   acceptingNewBags_DESC
   distributing_ASC
   distributing_DESC
+}
+
+enum DistributionNodeOperationalStatusSetEventOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  inExtrinsic_ASC
+  inExtrinsic_DESC
+  inBlock_ASC
+  inBlock_DESC
+  network_ASC
+  network_DESC
+  indexInBlock_ASC
+  indexInBlock_DESC
+  bucketOperator_ASC
+  bucketOperator_DESC
 }
 
 enum ElectedCouncilOrderByInput {
@@ -31912,6 +32235,25 @@ enum StorageDataObjectOrderByInput {
   stateBloatBond_DESC
   unsetAt_ASC
   unsetAt_DESC
+}
+
+enum StorageNodeOperationalStatusSetEventOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  inExtrinsic_ASC
+  inExtrinsic_DESC
+  inBlock_ASC
+  inBlock_DESC
+  network_ASC
+  network_DESC
+  indexInBlock_ASC
+  indexInBlock_DESC
+  storageBucket_ASC
+  storageBucket_DESC
 }
 
 enum TerminatedLeaderEventOrderByInput {
