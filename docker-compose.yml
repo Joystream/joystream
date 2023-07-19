@@ -228,6 +228,11 @@ services:
       - BATCH_SIZE=100
       - QUEUE_FACTOR=1
       - QUEUE_MAX_CAP_FACTOR=4
+      - WARTHOG_DB_HOST=db
+      - WARTHOG_DB_DATABASE=${DB_NAME}
+      - WARTHOG_DB_USERNAME=${DB_USER}
+      - WARTHOG_DB_PASSWORD=${DB_PASS}
+      - WARTHOG_APP_PORT=4002
     depends_on:
       - db
     volumes:
@@ -235,7 +240,14 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
+    entrypoint: sh
+    command: >
+      -c "
+        yarn workspace query-node config:dev ;
+        yarn workspace query-node-root db:prepare ;
+        yarn workspace query-node-root db:migrate ;
+        yarn workspace query-node-root processor:start
+      "
 
   indexer:
     image: joystream/hydra-indexer:v5.0.0-alpha.1
