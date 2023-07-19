@@ -1,4 +1,4 @@
-FROM --platform=linux/x86-64 node:18 as builder
+FROM node:18 as builder
 
 WORKDIR /joystream
 
@@ -29,7 +29,7 @@ RUN yarn workspace @joystream/opentelemetry build
 RUN yarn workspace storage-node build
 RUN yarn cache clean
 
-FROM --platform=linux/x86-64 node:18 as final
+FROM node:18 as final
 WORKDIR /joystream
 COPY --from=builder /joystream /joystream
 RUN yarn --frozen-lockfile --production
