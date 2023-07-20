@@ -8,12 +8,17 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # code build tools
     sudo apt-get update -y
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config \
-      unzip libc6-dev make libssl-dev python3 cmake
-    # docker from linux distro maintaners
-    # Better to install official docker https://docs.docker.com/engine/install/ubuntu/
-    sudo apt-get install -y docker.io containerd runc
-    # docker-compose
-    sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      unzip libc6-dev make libssl-dev python3 cmake protobuf-compiler libprotobuf-dev
+
+    # Docker: do not replace existing installation to avoid distrupting running containers
+    if ! command -v docker &> /dev/null
+    then
+      # Install Docker from linux distro maintaners
+      sudo apt-get install -y docker.io containerd runc
+    fi
+    # Install latest version of docker-compose
+    COMPOSE_VERSION=$(curl -sL https://api.github.com/repos/docker/compose/releases/latest | jq -r ".tag_name")
+    sudo curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 elif [[ "$OSTYPE" == "darwin"* ]]; then
