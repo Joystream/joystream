@@ -14,7 +14,7 @@ For best results use GNU/Linux with minimum GLIBC_2.28 for nodejs v18+, eg. Ubun
 The following tools are required for building, testing and contributing to this repo:
 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
-- [nodejs](https://nodejs.org/) >= v14.x.x - _required_
+- [nodejs](https://nodejs.org/) >= v14.18.x - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
 - [docker](https://www.docker.com/get-started) and docker-compose v.1.29 or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
