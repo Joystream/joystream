@@ -85,7 +85,7 @@
     "widdershins": "^4.0.1"
   },
   "engines": {
-    "node": ">=14.6.1"
+    "node": ">=14.18.0"
   },
   "volta": {
     "node": "18.6.0",
