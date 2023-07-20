@@ -9,12 +9,15 @@ functionality to support the [various roles](https://joystream.gitbook.io/testne
 
 ## Development
 
-For best results use GNU/Linux with minimum GLIBC_2.28 for nodejs v18+, eg. Ubuntu 22.04 or newer.
+For best results use GNU/Linux with minimum glibc version 2.28 for nodejs v18 to work.
+So Ubuntu 20.04 or newer.
+
+You can check your version of glibc with `ldd --version`
 
 The following tools are required for building, testing and contributing to this repo:
 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
-- [nodejs](https://nodejs.org/) >= v14.18.x - _required_
+- [nodejs](https://nodejs.org/) >= v14.18.x - _required_ (However volta will try to use v18.6)
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
 - [docker](https://www.docker.com/get-started) and docker-compose v.1.29 or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
