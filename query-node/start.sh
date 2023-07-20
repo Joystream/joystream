@@ -18,13 +18,8 @@ docker-compose -f ../docker-compose.yml up -d hydra-indexer-gateway
 
 # Start processor
 docker-compose -f ../docker-compose.yml up -d processor
-sleep 30
-
-# Wait for processor db bootstrapping to complete, can take a bit longer on docker desktop
-DOCKER_PLATFORM=$(docker version | grep "Desktop"); ! [[ -z $DOCKER_PLATFORM ]] && \
-    echo "Waiting for processor to be ready..." && sleep 30
+echo "Waiting for processor to be ready..." && sleep 30
 
 # Start graphql-server
 docker-compose -f ../docker-compose.yml up -d graphql-server
-echo "Waiting for graphql-server to be ready..."
-sleep 30
+echo "Waiting for graphql-server to be ready..." && sleep 30
