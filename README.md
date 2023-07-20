@@ -9,6 +9,8 @@ functionality to support the [various roles](https://joystream.gitbook.io/testne
 
 ## Development
 
+For best results use GNU/Linux with minimum GLIBC_2.28 for nodejs v18+, eg. Ubuntu 22.04 or newer.
+
 The following tools are required for building, testing and contributing to this repo:
 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
@@ -19,19 +21,39 @@ The following tools are required for building, testing and contributing to this 
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
 
-After cloning the repo run the following initialization scripts:
+After cloning the repo run the following to get started:
+
+### Install development tools
+```sh
+./setup.sh
+```
+
+### If you prefer your own node version manager
+Install development tools without Volta version manager.
 
 ```sh
-# Install development tools
-./setup.sh
+./setup.sh --no-volta
+```
 
-# build local npm packages
+### For older operating systems which don't support node 18
+Modify the root `package.json` and change volta section to use node version 16.20.1 instead of 18.6.0
+```json
+"volta": {
+    "node": "16.20.1",
+    "yarn": "1.22.19"
+}
+```
+
+### Run local development network
+
+```sh
+# Build local npm packages
 yarn build:packages
 
 # Build joystream/node docker testing image
 RUNTIME_PROFILE=TESTING yarn build:node:docker
 
-# start a local development network
+# Start a local development network
 RUNTIME_PROFILE=TESTING yarn start
 ```
 
