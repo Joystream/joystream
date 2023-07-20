@@ -156,8 +156,8 @@ Supported values: warn, error, debug, info. Default:debug`,
     const workerId = flags.worker
 
     if (!(await verifyWorkerId(api, workerId))) {
-      logger.warn(`workerId ${workerId} does not exist in the storage working group`)
-      // this.exit(ExitCodes.InvalidWorkerId)
+      logger.error(`workerId ${workerId} does not exist in the storage working group`)
+      this.exit(ExitCodes.InvalidWorkerId)
     }
 
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)

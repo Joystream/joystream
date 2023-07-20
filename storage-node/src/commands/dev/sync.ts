@@ -61,7 +61,7 @@ export default class DevSync extends Command {
 
   async run(): Promise<void> {
     const { flags } = this.parse(DevSync)
-    const bucketId = '' + flags.bucketId
+    const bucketId = flags.bucketId.toString()
     logger.info('Syncing...')
 
     try {

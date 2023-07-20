@@ -87,7 +87,6 @@ type DataObject = {
  */
 export async function getStorageObligationsFromRuntime(
   queryNodeUrl: string,
-  workerId: number,
   bucketIds: string[]
 ): Promise<DataObligations> {
   const api = new QueryNodeApi(queryNodeUrl)

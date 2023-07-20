@@ -40,7 +40,7 @@ export async function performSync(
 ): Promise<void> {
   logger.info('Started syncing...')
   const [model, files] = await Promise.all([
-    getStorageObligationsFromRuntime(queryNodeUrl, workerId, buckets),
+    getStorageObligationsFromRuntime(queryNodeUrl, buckets),
     getDataObjectIDs(),
   ])
 

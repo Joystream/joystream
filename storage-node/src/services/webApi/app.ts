@@ -221,12 +221,12 @@ function verifyUploadTokenData(accountAddress: string, token: UploadToken, reque
 
 async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
   const { api, qnApi, workerId } = res.locals
-
-  const storageBucketId = new BN(req.query.storageBucketId?.toString() || '')
+  const storageBucketIdStr = req.query.storageBucketId?.toString() || ''
+  const storageBucketId = new BN(storageBucketIdStr)
   const dataObjectId = new BN(req.query.dataObjectId?.toString() || '')
   const bagId = req.query.bagId?.toString() || ''
 
-  if (!res.locals.uploadBuckets.includes(req.query.storageBucketId?.toString() || '')) {
+  if (!res.locals.uploadBuckets.includes(storageBucketIdStr)) {
     throw new WebApiError(`Server is not accepting uploads into this bucket`, 503)
   }
 
