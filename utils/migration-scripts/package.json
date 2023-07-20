@@ -48,7 +48,7 @@
     "typescript": "^3.3"
   },
   "engines": {
-    "node": ">=14.6.1",
+    "node": ">=14.0.0",
     "yarn": "^1.22.0"
   },
   "volta": {
