@@ -166,6 +166,7 @@ components:
         - storageUsed
         - uptime
         - downloadsInProgress
+        - nodeEnv
         - queryNodeStatus
       properties:
         id:
@@ -189,6 +190,8 @@ components:
         downloadsInProgress:
           type: integer
           minimum: 0
+        nodeEnv:
+          type: string
         queryNodeStatus:
           type: object
           required:

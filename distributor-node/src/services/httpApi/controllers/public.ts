@@ -303,6 +303,7 @@ export class PublicApiController {
       uptime: Math.floor(process.uptime()),
       downloadsInProgress: this.stateCache.getPendingDownloadsCount(),
       queryNodeStatus: await this.networking.getQueryNodeStatus(),
+      nodeEnv: process.env.NODE_ENV || '',
     }
     res.status(200).json(data)
   }

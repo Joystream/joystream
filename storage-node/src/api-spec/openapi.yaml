@@ -295,8 +295,12 @@ components:
       required:
         - version
         - queryNodeStatus
+      optional:
+        - nodeEnv
       properties:
         version:
+          type: string
+        nodeEnv:
           type: string
         queryNodeStatus:
           type: object

@@ -1,3 +1,8 @@
+### 3.5.2
+
+- Disable open-api express response validation if NODE_ENV == 'production'. This should dramatically improve response times when serving assets.
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+
 ### 3.5.1
 
 - **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.
