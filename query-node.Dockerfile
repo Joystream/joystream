@@ -1,4 +1,4 @@
-FROM --platform=linux/x86-64 node:18 as builder
+FROM node:18 as builder
 
 WORKDIR /joystream
 COPY . /joystream
