@@ -1,7 +1,7 @@
 # Joystream Monorepo ChangeLog
 
 This is a top-level view of changes in the repo, linking to detailed changelogs of individual packages changed.
-If no packages or cargo crates are changed then the changes are usually "devops" realted.
+If no packages or cargo crates are changed then the changes are usually "devops" related.
 
 ### 2023-7-20 - Node.js update
 
