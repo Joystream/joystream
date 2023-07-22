@@ -20,7 +20,7 @@ docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-2
 
 # allow a few seconds for nodes to startup and display first few log entries
 # to help debug tests
-sleep 15
+sleep 30
 
 echo "## colossus-1"
 docker logs colossus-1 --tail 300
