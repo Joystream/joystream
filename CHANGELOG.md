@@ -16,7 +16,7 @@ If your version is older than v2.28 you should really consider updating your OS 
 
 The minimum required node engine for all monorepo packages is updated to v14.18.0
 
-No npm packages have not been published with new engine version yet, so you are not impacted if your application depedns on them, until the next package version release. To be ready do one of:
+No npm packages have not been published with new engine version yet, so you are not impacted if your application depends on them, until the next package version release. To be ready do one of:
 
 1. Update to latest version of nodejs if possible, or
 1. If you have to stick with v14 update to the latest v14 release
