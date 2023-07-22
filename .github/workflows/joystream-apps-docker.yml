@@ -24,6 +24,14 @@ jobs:
           echo "argus_version=$(cat distributor-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
           echo "qn_version=$(cat query-node/package.json | jq -r '.version')" >> $GITHUB_OUTPUT
 
+      - name: Make some space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Login to DockerHub
@@ -74,14 +82,7 @@ jobs:
         run: |
           yarn build:packages
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
-          ./tests/network-tests/run-test-node-docker.sh
-          sleep 15
-          docker compose up -d db indexer hydra-indexer-gateway processor graphql-server
-          sleep 30
-          ./tests/network-tests/start-storage.sh
-          export REUSE_KEYS=true
-          export SKIP_STORAGE_AND_DISTRIBUTION=true
-          IGNORE_HIRED_LEADS=true ./tests/network-tests/run-test-scenario.sh content-directory
+          ./tests/network-tests/run-tests.sh content-directory
 
       - name: Push new versions
         if: github.event_name == 'workflow_dispatch'
