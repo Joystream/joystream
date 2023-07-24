@@ -7,13 +7,13 @@ cd $SCRIPT_PATH
 CONTAINER_ID=$(./run-test-node-docker.sh)
 
 function cleanup() {
+    echo "# Colossus-1 Logs"
+    docker logs colossus-1 --tail 100 || :
+    echo "# Colossus-2 Logs"
+    docker logs colossus-2 --tail 100 || :
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
-    echo "# Colossus-1 Logs"
-    docker logs colossus-1 --tail 100
-    echo "# Colossus-2 Logs"
-    docker logs colossus-2 --tail 100
     docker-compose -f ../../docker-compose.yml down -v
 }
 
