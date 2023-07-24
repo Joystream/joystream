@@ -42,7 +42,7 @@ WS_URI=wss://rpc.joystream.org yarn ts-node src/get-wasm-from-chain.ts ./runtime
 # compute the blake2-256 hash of the runtime
 b2sum -l 256 ./runtime.wasm
 # Inspect the runtime version
-node --experimental-wasm-bigint src/inspect-wasm-runtime-version.js ./runtime.wasm
+node src/inspect-wasm-runtime-version.js ./runtime.wasm
 ```
 
 ### Using [subwasm](https://github.com/chevdor/subwasm)
@@ -105,7 +105,7 @@ docker rm test
 # compute the blake2-256 hash of the runtime
 b2sum -l 256 ./master.wasm
 # Inspect the runtime version information
-node --experimental-wasm-bigint utils/api-scripts/src/inspect-wasm-runtime-version.js ./master.wasm
+node utils/api-scripts/src/inspect-wasm-runtime-version.js ./master.wasm
 ```
 
 Compare results with the runtime you fetched from the chain in previous section.
@@ -131,7 +131,7 @@ WS_URI=wss://rpc.joystream.org yarn ts-node src/get-wasm-from-proposal.ts 123 ./
 # compute the blake2-256 hash of the runtime
 b2sum -l 256 ./proposed.wasm
 # Inspect the runtime version information
-node --experimental-wasm-bigint src/inspect-wasm-runtime-version.js ./runtime.wasm
+node src/inspect-wasm-runtime-version.js ./runtime.wasm
 ```
 
 Checkout the proposed runtime from the proposer's fork of joystream repository, and build it.
@@ -331,9 +331,9 @@ Specific test scenario should be written to test for any state migration code pe
 There are some scripts in `tests/network-tests/run-migration-tests.sh` that are executed by github workflow to perform such tests,
 but they should also be executed locally.
 
-The tool is being updated for Ephesus network: https://github.com/Joystream/joystream/pull/4569
-
 ### Additional Resources
 Some tooling that would be useful to add to our node and runtime to improve testing capabilities:
 - https://docs.substrate.io/reference/how-to-guides/tools/use-try-runtime/
 - https://docs.substrate.io/reference/command-line-tools/try-runtime/
+
+This is coming in nara release https://github.com/Joystream/joystream/pull/4705

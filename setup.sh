@@ -58,13 +58,15 @@ rustup component add rustfmt
 # cargo install --force subkey --git https://github.com/paritytech/substrate --version ^2.0.2 --locked
 
 # Volta nodejs, npm, yarn tools manager
-curl https://get.volta.sh | bash
+if ! [[ $1 == "--no-volta" ]]; then
+  curl https://get.volta.sh | bash
 
-# source env variables added by Volta
-source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
+  # source env variables added by Volta
+  source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
 
-volta install node@14
-volta install yarn
-volta install npx
+  volta install node
+  volta install yarn
+  volta install npx
+fi
 
 echo "You may need to open a new terminal/shell session to make newly installed tools available."
