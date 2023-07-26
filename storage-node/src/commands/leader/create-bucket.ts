@@ -1,6 +1,6 @@
 import { createStorageBucket } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 import { print } from '../../services/helpers/stdout'
 
@@ -12,7 +12,7 @@ import { print } from '../../services/helpers/stdout'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:create-bucket"
  */
-export default class LeaderCreateBucket extends ApiCommandBase {
+export default class LeaderCreateBucket extends LeaderCommandBase {
   static description = `Create new storage bucket. Requires storage working group leader permissions.`
 
   static flags = {
@@ -29,7 +29,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       description: 'Invited storage operator ID (storage WG worker ID)',
     }),
     allow: flags.boolean({ char: 'a', description: 'Accepts new bags' }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -45,7 +45,7 @@ export default class LeaderCreateBucket extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     const [success, bucketId] = await createStorageBucket(

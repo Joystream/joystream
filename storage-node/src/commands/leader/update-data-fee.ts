@@ -1,6 +1,6 @@
 import { updateDataSizeFee } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 import { formatBalance } from '@polkadot/util'
 
@@ -12,7 +12,7 @@ import { formatBalance } from '@polkadot/util'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-data-fee"
  */
-export default class LeaderUpdateDataFee extends ApiCommandBase {
+export default class LeaderUpdateDataFee extends LeaderCommandBase {
   static description = `Update data size fee. Requires storage working group leader permissions.`
 
   static flags = {
@@ -21,7 +21,7 @@ export default class LeaderUpdateDataFee extends ApiCommandBase {
       required: true,
       description: 'New data size fee',
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -34,7 +34,7 @@ export default class LeaderUpdateDataFee extends ApiCommandBase {
     }
     logger.info(`Updating data size fee to ${formatBalance(fee)}...`)
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     const success = await updateDataSizeFee(api, account, fee)
