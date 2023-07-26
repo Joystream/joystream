@@ -1,3 +1,11 @@
+### 3.6.0
+
+- Collosus can now store multiple keys in it's keyring.
+- The `--accountUri` and `--password` args can be used multiple times to add multiple keys. This adds support for worker to use different transactor accounts for each bucket.
+- Added `--keyStore` argument for all commands to configure a directory containing multiple key files to the keyring.
+- Server can run and to serve specific buckets, by passing a comma separated list of bucket ids with the `--buckets` argument.
+- Renamed `--operatorId` argument to `--workerId` in operator commands for consistency.
+
 ### 3.5.1
 
 - **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.

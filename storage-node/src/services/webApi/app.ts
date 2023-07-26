@@ -56,7 +56,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
 
     // Pre validate file upload params
     (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
-      if (req.path === '/api/v1/files') {
+      if (req.path === '/api/v1/files' && req.method === 'POST') {
         validateUploadFileParams(req, res)
           .then(next)
           .catch((error) => sendResponseWithError(res, next, error, 'upload'))
@@ -87,7 +87,8 @@ export async function createApp(config: AppConfig): Promise<Express> {
           fileSize: config.maxFileSize,
         },
       },
-      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.storageProviderAccount),
+      // authentication is disabled. Should be tested before en-enabling
+      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.operatorRoleKey),
     })
   ) // Required signature.
 
@@ -135,7 +136,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
 function setupUploadingValidation(
   enableUploadingAuth: boolean,
   api: ApiPromise,
-  account: KeyringPair
+  account: KeyringPair | undefined
 ): boolean | ValidateSecurityOpts {
   if (enableUploadingAuth) {
     const opts = {
@@ -164,7 +165,7 @@ type ValidateUploadFunction = (
  * @param account - KeyringPair instance
  * @returns ValidateUploadFunction.
  */
-function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFunction {
+function validateUpload(api: ApiPromise, account: KeyringPair | undefined): ValidateUploadFunction {
   // We don't use these variables yet.
   /* eslint-disable @typescript-eslint/no-unused-vars */
   return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
@@ -177,7 +178,9 @@ function validateUpload(api: ApiPromise, account: KeyringPair): ValidateUploadFu
       bagId: req.query.bagId?.toString() || '',
     }
 
-    verifyUploadTokenData(account.address, token, sourceTokenRequest)
+    if (account) {
+      verifyUploadTokenData(account.address, token, sourceTokenRequest)
+    }
 
     return true
   }
@@ -218,10 +221,14 @@ function verifyUploadTokenData(accountAddress: string, token: UploadToken, reque
 
 async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
   const { api, qnApi, workerId } = res.locals
-
-  const storageBucketId = new BN(req.query.storageBucketId?.toString() || '')
+  const storageBucketIdStr = req.query.storageBucketId?.toString() || ''
+  const storageBucketId = new BN(storageBucketIdStr)
   const dataObjectId = new BN(req.query.dataObjectId?.toString() || '')
   const bagId = req.query.bagId?.toString() || ''
+
+  if (!res.locals.uploadBuckets.includes(storageBucketIdStr)) {
+    throw new WebApiError(`Server is not accepting uploads into this bucket`, 503)
+  }
 
   const parsedBagId = parseBagId(bagId)
 
