@@ -158,8 +158,8 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
 * [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
-* [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+* [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
 * [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
 * [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
@@ -459,59 +459,6 @@ OPTIONS
 
 _See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-global-uploading-status.ts)_
 
-## `storage-node leader:update-bag`
-
-Add/remove a storage bucket from a bag (adds by default).
-
-```
-USAGE
-  $ storage-node leader:update-bag
-
-OPTIONS
-  -a, --add=add
-      [default: ] Comma separated list of bucket IDs to add to bag
-
-  -h, --help
-      show CLI help
-
-  -i, --bagId=bagId
-      (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
-      - Bag types: 'static', 'dynamic'
-      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
-      - Id:
-      - absent for 'static:council'
-      - working group name for 'static:wg'
-      - integer for 'dynamic:member' and 'dynamic:channel'
-      Examples:
-      - static:council
-      - static:wg:storage
-      - dynamic:member:4
-
-  -k, --keyFile=keyFile
-      Path to key file to add to the keyring.
-
-  -m, --dev
-      Use development mode
-
-  -p, --password=password
-      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files. If not specified a single
-      password can be set in ACCOUNT_PWD environment variable.
-
-  -r, --remove=remove
-      [default: ] Comma separated list of bucket IDs to remove from bag
-
-  -u, --apiUrl=apiUrl
-      [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-
-  -y, --accountUri=accountUri
-      Account URI (optional). If not specified a single key can be set in ACCOUNT_URI environment variable.
-
-  --keyStore=keyStore
-      Path to a folder with multiple key files to load into keystore.
-```
-
-_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bag.ts)_
-
 ## `storage-node leader:update-bag-limit`
 
 Update StorageBucketsPerBagLimit variable in the Joystream node storage.
@@ -538,6 +485,62 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bag-limit.ts)_
+
+## `storage-node leader:update-bags`
+
+Add/remove a storage bucket/s from a bag/s. If multiple bags are provided, then the same input bucket ID/s would be added/removed from all bags.
+
+```
+USAGE
+  $ storage-node leader:update-bags
+
+OPTIONS
+  -a, --add=add
+      [default: ] Comma separated list of bucket IDs to add to all bag/s
+
+  -h, --help
+      show CLI help
+
+  -i, --bagIds=bagIds
+      (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
+      - Bag types: 'static', 'dynamic'
+      - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
+      - Id:
+      - absent for 'static:council'
+      - working group name for 'static:wg'
+      - integer for 'dynamic:member' and 'dynamic:channel'
+      Examples:
+      - static:council
+      - static:wg:storage
+      - dynamic:member:4
+
+  -k, --keyFile=keyFile
+      Path to key file to add to the keyring.
+
+  -m, --dev
+      Use development mode
+
+  -p, --password=password
+      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files. If not specified a single
+      password can be set in ACCOUNT_PWD environment variable.
+
+  -r, --remove=remove
+      [default: ] Comma separated list of bucket IDs to remove from all bag/s
+
+  -s, --updateStrategy=(atomic|force)
+      [default: atomic] Update strategy to use. Either "atomic" or "force".
+
+  -u, --apiUrl=apiUrl
+      [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri
+      Account URI (optional). If not specified a single key can be set in ACCOUNT_URI environment variable.
+
+  --keyStore=keyStore
+      Path to a folder with multiple key files to load into keystore.
+```
+
+_See code: [src/commands/leader/update-bags.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bags.ts)_
 
 ## `storage-node leader:update-blacklist`
 
