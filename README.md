@@ -97,7 +97,15 @@ WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
 
 Learn more about [joystream-node](bin/node/README.md).
 
-A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://joystream.gitbook.io/testnet-workspace/system/validation#validator).
+A step by step guide to setup a full node and validator on the Joystream main network, can be found [here](https://handbook.joystream.org/system/validation).
+
+### Pre-built joystream-node binaries
+Look under the 'Assets' section:
+
+- Ephesus release [v8.3.0](https://github.com/Joystream/joystream/releases/tag/v12.2001.0)
+
+### Mainnet chainspec file
+- [joy-mainnet.json](https://github.com/Joystream/joystream/releases/download/v12.1000.0/joy-mainnet.json)
 
 ### Integration tests
 

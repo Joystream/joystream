@@ -7,7 +7,7 @@ The joystream-node is the main server application that connects to the network, 
 ### Pre-built binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
-Generally these will be built from `master` branch and will pertain to the currently active testnet.
+Generally these will be built from `master` branch and will pertain to the currently active network.
 
 ### Building from source
 
@@ -42,9 +42,10 @@ this script will build and run a fresh new local development chain (purging exis
 ./scripts/run-dev-chain.sh
 ```
 
-### Joystream Public Testnets
+### Joystream Public Networks
 
-Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
+Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network.
+Here is the JSON "chain spec" file for the Joystream mainnet [joy-mainnet.json](../../joy-mainnet.json).
 
 ```bash
 ./target/release/joystream-node --chain joy-mainnet.json
@@ -81,7 +82,7 @@ This will install the executable `joystream-node` to your `~/.cargo/bin` folder,
 WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo +nightly-2022-05-11 install joystream-node --path bin/node/ --locked
 ```
 
-Now you can run and connect to the testnet:
+Now you can run and connect to the network:
 
 ```bash
 joystream-node --chain joy-mainnet.json
