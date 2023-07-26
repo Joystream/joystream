@@ -1,4 +1,4 @@
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import { updateNumberOfStorageBucketsInDynamicBagCreationPolicy } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
@@ -14,7 +14,7 @@ import { PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/l
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-dynamic-bag-policy"
  */
-export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
+export default class LeaderUpdateDynamicBagPolicy extends LeaderCommandBase {
   static description = 'Update number of storage buckets used in the dynamic bag creation policy.'
 
   static flags = {
@@ -29,7 +29,7 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
       options: ['Channel', 'Member'],
       required: true,
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -40,7 +40,7 @@ export default class LeaderUpdateDynamicBagPolicy extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const newNumber = flags.number
 
     const api = await this.getApi()

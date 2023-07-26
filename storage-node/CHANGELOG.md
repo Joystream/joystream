@@ -1,7 +1,15 @@
-### 3.5.2
+### 3.7.0
 
 - Disable open-api express response validation if NODE_ENV == 'production'. This should dramatically improve response times when serving assets.
 - Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+
+### 3.6.0
+
+- Collosus can now store multiple keys in it's keyring.
+- The `--accountUri` and `--password` args can be used multiple times to add multiple keys. This adds support for worker to use different transactor accounts for each bucket.
+- Added `--keyStore` argument for all commands to configure a directory containing multiple key files to the keyring.
+- Server can run and to serve specific buckets, by passing a comma separated list of bucket ids with the `--buckets` argument.
+- Renamed `--operatorId` argument to `--workerId` in operator commands for consistency.
 
 ### 3.5.1
 

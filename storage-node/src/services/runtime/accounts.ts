@@ -11,7 +11,7 @@ import ExitCodes from '../../command-base/ExitCodes'
  * @param jsonBackupFilePath - JSON-file path
  * @returns KeyPair instance.
  */
-export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair {
+export function addAccountFromJsonFile(jsonBackupFilePath: string, keyring: Keyring): KeyringPair {
   if (!fs.existsSync(jsonBackupFilePath)) {
     throw new CLIError('Input file does not exist!', {
       exit: ExitCodes.FileError,
@@ -35,7 +35,6 @@ export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair 
     })
   }
 
-  const keyring = configureKeyring()
   let account: KeyringPair
   try {
     // Try adding and retrieving the keys in order to validate that the backup file is correct
@@ -58,8 +57,8 @@ export function getAccountFromJsonFile(jsonBackupFilePath: string): KeyringPair 
  *
  * @returns 'Alice' KeyPair instance.
  */
-export function getAlicePair(): KeyringPair {
-  return getAccountFromUri('//Alice')
+export function addAlicePair(keyring: Keyring): KeyringPair {
+  return addAccountFromUri('//Alice', keyring)
 }
 
 /**
@@ -68,16 +67,6 @@ export function getAlicePair(): KeyringPair {
  * @param accountURI - account URI (//Alice)
  * @returns KeyPair instance.
  */
-export function getAccountFromUri(accountURI: string): KeyringPair {
-  const keyring = configureKeyring()
+export function addAccountFromUri(accountURI: string, keyring: Keyring): KeyringPair {
   return keyring.addFromUri(accountURI)
-}
-
-/**
- * Configures the Keyring with the proper account type.
- *
- * @returns configured Keyring.
- */
-function configureKeyring(): Keyring {
-  return new Keyring({ type: 'sr25519' })
 }
