@@ -23,6 +23,11 @@ export default class DevSync extends Command {
       required: true,
       description: 'Storage node operator worker ID.',
     }),
+    bucketId: flags.integer({
+      char: 'b',
+      required: true,
+      description: 'The buckerId to sync',
+    }),
     syncWorkersNumber: flags.integer({
       char: 'p',
       required: false,
@@ -56,13 +61,14 @@ export default class DevSync extends Command {
 
   async run(): Promise<void> {
     const { flags } = this.parse(DevSync)
-
+    const bucketId = flags.bucketId.toString()
     logger.info('Syncing...')
 
     try {
       await performSync(
         undefined,
         flags.workerId,
+        [bucketId],
         flags.syncWorkersNumber,
         flags.syncWorkersTimeout,
         flags.queryNodeEndpoint,

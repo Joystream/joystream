@@ -1,7 +1,7 @@
 {
   "name": "storage-node",
   "description": "Joystream storage subsystem.",
-  "version": "3.5.1",
+  "version": "3.6.0",
   "author": "Joystream contributors",
   "bin": {
     "storage-node": "./bin/run"
@@ -101,11 +101,11 @@
     "typescript": "^4.4.3"
   },
   "engines": {
-    "node": ">=14.16.1"
+    "node": ">=14.18.0"
   },
   "volta": {
-    "node": "14.16.1",
-    "yarn": "1.22.15"
+    "node": "18.6.0",
+    "yarn": "1.22.19"
   },
   "files": [
     "/bin",

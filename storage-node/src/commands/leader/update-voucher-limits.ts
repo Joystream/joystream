@@ -1,4 +1,4 @@
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import { updateStorageBucketsVoucherMaxLimits } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
@@ -11,7 +11,7 @@ import logger from '../../services/logger'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-voucher-limits"
  */
-export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
+export default class LeaderUpdateVoucherLimits extends LeaderCommandBase {
   static description =
     'Update VoucherMaxObjectsSizeLimit and VoucherMaxObjectsNumberLimit for the Joystream node storage.'
 
@@ -26,7 +26,7 @@ export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
       required: true,
       description: `New 'max voucher object size limit' value`,
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -37,7 +37,7 @@ export default class LeaderUpdateVoucherLimits extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const objectsLimit = flags.objects
     const sizeLimit = flags.size
 
