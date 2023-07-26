@@ -1,4 +1,5 @@
-### 1.2.3
+### 1.3.0
+
 Pickup correct NODE_ENV setting.
 
 - Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should dramatically improve response times when serving assets.
