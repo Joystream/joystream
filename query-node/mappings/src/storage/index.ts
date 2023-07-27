@@ -2,44 +2,14 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import {
-  Storage_DataObjectsDeletedEvent_V1001 as DataObjectsDeletedEvent_V1001,
-  Storage_DataObjectsMovedEvent_V1001 as DataObjectsMovedEvent_V1001,
-  Storage_DataObjectsUpdatedEvent_V1001 as DataObjectsUpdatedEvent_V1001,
-  Storage_DataObjectsUploadedEvent_V1001 as DataObjectsUploadedEvent_V1001,
-  Storage_DistributionBucketCreatedEvent_V1001 as DistributionBucketCreatedEvent_V1001,
-  Storage_DistributionBucketDeletedEvent_V1001 as DistributionBucketDeletedEvent_V1001,
-  Storage_DistributionBucketsUpdatedForBagEvent_V1001 as DistributionBucketsUpdatedForBagEvent_V1001,
-  Storage_DistributionBucketFamilyCreatedEvent_V1001 as DistributionBucketFamilyCreatedEvent_V1001,
-  Storage_DistributionBucketFamilyDeletedEvent_V1001 as DistributionBucketFamilyDeletedEvent_V1001,
-  Storage_DistributionBucketFamilyMetadataSetEvent_V1001 as DistributionBucketFamilyMetadataSetEvent_V1001,
-  Storage_DistributionBucketMetadataSetEvent_V1001 as DistributionBucketMetadataSetEvent_V1001,
-  Storage_DistributionBucketInvitationAcceptedEvent_V1001 as DistributionBucketInvitationAcceptedEvent_V1001,
-  Storage_DistributionBucketInvitationCancelledEvent_V1001 as DistributionBucketInvitationCancelledEvent_V1001,
-  Storage_StorageOperatorMetadataSetEvent_V1001 as StorageOperatorMetadataSetEvent_V1001,
-  Storage_StorageBucketCreatedEvent_V1001 as StorageBucketCreatedEvent_V1001,
-  Storage_StorageBucketDeletedEvent_V1001 as StorageBucketDeletedEvent_V1001,
-  Storage_StorageBucketInvitationAcceptedEvent_V1001 as StorageBucketInvitationAcceptedEvent_V1001,
-  Storage_StorageBucketInvitationCancelledEvent_V1001 as StorageBucketInvitationCancelledEvent_V1001,
-  Storage_DistributionBucketModeUpdatedEvent_V1001 as DistributionBucketModeUpdatedEvent_V1001,
-  Storage_DynamicBagCreatedEvent_V1001 as DynamicBagCreatedEvent_V1001,
-  Storage_DynamicBagDeletedEvent_V1001 as DynamicBagDeletedEvent_V1001,
-  Storage_VoucherChangedEvent_V1001 as VoucherChangedEvent_V1001,
-  Storage_DistributionBucketOperatorInvitedEvent_V1001 as DistributionBucketOperatorInvitedEvent_V1001,
-  Storage_DistributionBucketOperatorRemovedEvent_V1001 as DistributionBucketOperatorRemovedEvent_V1001,
-  Storage_DistributionBucketStatusUpdatedEvent_V1001 as DistributionBucketStatusUpdatedEvent_V1001,
-  Storage_PendingDataObjectsAcceptedEvent_V1001 as PendingDataObjectsAcceptedEvent_V1001,
-  Storage_StorageBucketOperatorInvitedEvent_V1001 as StorageBucketOperatorInvitedEvent_V1001,
-  Storage_StorageBucketStatusUpdatedEvent_V1001 as StorageBucketStatusUpdatedEvent_V1001,
-  Storage_StorageBucketVoucherLimitsSetEvent_V1001 as StorageBucketVoucherLimitsSetEvent_V1001,
-  Storage_StorageBucketsUpdatedForBagEvent_V1001 as StorageBucketsUpdatedForBagEvent_V1001,
-} from '../../generated/types'
+import BN from 'bn.js'
 import {
   DistributionBucket,
   DistributionBucketFamily,
   DistributionBucketOperator,
   DistributionBucketOperatorMetadata,
   DistributionBucketOperatorStatus,
+  GeoCoordinates,
   NodeLocationMetadata,
   StorageBag,
   StorageBucket,
@@ -47,11 +17,42 @@ import {
   StorageBucketOperatorStatusInvited,
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
-  GeoCoordinates,
 } from 'query-node/dist/model'
-import BN from 'bn.js'
+import {
+  Storage_DataObjectsDeletedEvent_V1001 as DataObjectsDeletedEvent_V1001,
+  Storage_DataObjectsMovedEvent_V1001 as DataObjectsMovedEvent_V1001,
+  Storage_DataObjectsUpdatedEvent_V1001 as DataObjectsUpdatedEvent_V1001,
+  Storage_DataObjectsUploadedEvent_V1001 as DataObjectsUploadedEvent_V1001,
+  Storage_DistributionBucketCreatedEvent_V1001 as DistributionBucketCreatedEvent_V1001,
+  Storage_DistributionBucketDeletedEvent_V1001 as DistributionBucketDeletedEvent_V1001,
+  Storage_DistributionBucketFamilyCreatedEvent_V1001 as DistributionBucketFamilyCreatedEvent_V1001,
+  Storage_DistributionBucketFamilyDeletedEvent_V1001 as DistributionBucketFamilyDeletedEvent_V1001,
+  Storage_DistributionBucketFamilyMetadataSetEvent_V1001 as DistributionBucketFamilyMetadataSetEvent_V1001,
+  Storage_DistributionBucketInvitationAcceptedEvent_V1001 as DistributionBucketInvitationAcceptedEvent_V1001,
+  Storage_DistributionBucketInvitationCancelledEvent_V1001 as DistributionBucketInvitationCancelledEvent_V1001,
+  Storage_DistributionBucketMetadataSetEvent_V1001 as DistributionBucketMetadataSetEvent_V1001,
+  Storage_DistributionBucketModeUpdatedEvent_V1001 as DistributionBucketModeUpdatedEvent_V1001,
+  Storage_DistributionBucketOperatorInvitedEvent_V1001 as DistributionBucketOperatorInvitedEvent_V1001,
+  Storage_DistributionBucketOperatorRemovedEvent_V1001 as DistributionBucketOperatorRemovedEvent_V1001,
+  Storage_DistributionBucketStatusUpdatedEvent_V1001 as DistributionBucketStatusUpdatedEvent_V1001,
+  Storage_DistributionBucketsUpdatedForBagEvent_V1001 as DistributionBucketsUpdatedForBagEvent_V1001,
+  Storage_DynamicBagCreatedEvent_V1001 as DynamicBagCreatedEvent_V1001,
+  Storage_DynamicBagDeletedEvent_V1001 as DynamicBagDeletedEvent_V1001,
+  Storage_PendingDataObjectsAcceptedEvent_V1001 as PendingDataObjectsAcceptedEvent_V1001,
+  Storage_StorageBucketCreatedEvent_V1001 as StorageBucketCreatedEvent_V1001,
+  Storage_StorageBucketDeletedEvent_V1001 as StorageBucketDeletedEvent_V1001,
+  Storage_StorageBucketInvitationAcceptedEvent_V1001 as StorageBucketInvitationAcceptedEvent_V1001,
+  Storage_StorageBucketInvitationCancelledEvent_V1001 as StorageBucketInvitationCancelledEvent_V1001,
+  Storage_StorageBucketOperatorInvitedEvent_V1001 as StorageBucketOperatorInvitedEvent_V1001,
+  Storage_StorageBucketStatusUpdatedEvent_V1001 as StorageBucketStatusUpdatedEvent_V1001,
+  Storage_StorageBucketVoucherLimitsSetEvent_V1001 as StorageBucketVoucherLimitsSetEvent_V1001,
+  Storage_StorageBucketsUpdatedForBagEvent_V1001 as StorageBucketsUpdatedForBagEvent_V1001,
+  Storage_StorageOperatorMetadataSetEvent_V1001 as StorageOperatorMetadataSetEvent_V1001,
+  Storage_VoucherChangedEvent_V1001 as VoucherChangedEvent_V1001,
+} from '../../generated/types'
 import { getById, inconsistentState } from '../common'
-import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
+import { unsetAssetRelations, videoRelationsForCounters } from '../content/utils'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
@@ -59,20 +60,19 @@ import {
 } from './metadata'
 import {
   createDataObjects,
-  getStorageBucketWithOperatorMetadata,
+  deleteDataObjects,
+  distributionBucketId,
+  distributionBucketIdByFamilyAndIndex,
+  distributionOperatorId,
   getBag,
-  getDynamicBagId,
-  getDynamicBagOwner,
   getDataObjectsInBag,
-  getDynamicBag,
   getDistributionBucketFamilyWithMetadata,
   getDistributionBucketOperatorWithMetadata,
-  distributionBucketId,
-  distributionOperatorId,
-  distributionBucketIdByFamilyAndIndex,
-  deleteDataObjects,
+  getDynamicBag,
+  getDynamicBagId,
+  getDynamicBagOwner,
+  getStorageBucketWithOperatorMetadata,
 } from './utils'
-import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 // STORAGE BUCKETS
 
@@ -233,6 +233,7 @@ export async function storage_DynamicBagCreated({ event, store }: EventContext &
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
+    objectsSize: new BN(0),
     storageBuckets: Array.from(storageBuckets).map((id) => new StorageBucket({ id: id.toString() })),
     distributionBuckets: Array.from(distributionBuckets).map(
       (id) => new DistributionBucket({ id: distributionBucketId(id) })
@@ -364,6 +365,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
   const [srcBagId, destBagId, dataObjectIds] = new DataObjectsMovedEvent_V1001(event).params
   const dataObjects = await getDataObjectsInBag(store, srcBagId, dataObjectIds)
+  const srcBag = await getBag(store, srcBagId)
   const destBag = await getBag(store, destBagId)
   await Promise.all(
     dataObjects.map(async (dataObject) => {
@@ -371,6 +373,13 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
       await store.save<StorageDataObject>(dataObject)
     })
   )
+
+  // Update source & destination bags size
+  const movedDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  srcBag.objectsSize = srcBag.objectsSize.sub(movedDataObjectsSize)
+  destBag.objectsSize = destBag.objectsSize.add(movedDataObjectsSize)
+  await store.save<StorageBag>(srcBag)
+  await store.save<StorageBag>(destBag)
 }
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {

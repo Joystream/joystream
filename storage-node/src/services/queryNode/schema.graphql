@@ -1047,6 +1047,9 @@ type StorageBag implements BaseGraphQLObject {
   deletedById: ID
   version: Int!
   objects: [StorageDataObject!]!
+
+  """Total size of data objects in Bag"""
+  objectsSize: BigInt!
   storageBuckets: [StorageBucket!]!
   distributionBuckets: [DistributionBucket!]!
 
@@ -12474,6 +12477,12 @@ input StorageBagWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  objectsSize_eq: BigInt
+  objectsSize_gt: BigInt
+  objectsSize_gte: BigInt
+  objectsSize_lt: BigInt
+  objectsSize_lte: BigInt
+  objectsSize_in: [BigInt!]
   owner_json: JSONObject
   objects_none: StorageDataObjectWhereInput
   objects_some: StorageDataObjectWhereInput
@@ -12494,10 +12503,12 @@ input StorageBagWhereUniqueInput {
 }
 
 input StorageBagCreateInput {
+  objectsSize: String!
   owner: JSONObject!
 }
 
 input StorageBagUpdateInput {
+  objectsSize: String
   owner: JSONObject
 }
 
@@ -31855,6 +31866,8 @@ enum StorageBagOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  objectsSize_ASC
+  objectsSize_DESC
 }
 
 enum StorageBucketOperatorMetadataOrderByInput {

@@ -1,3 +1,7 @@
+### 1.3.0
+
+- Adds `StorageBag.objectsSize` field to `StorageBag` entity schema. This enables to query the total size of all objects in a storage bag.
+
 ### 1.2.2
 
 - Integrates OpenTelemetry API/SDK with Query Node's Graphql Server for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.
