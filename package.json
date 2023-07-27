@@ -6,8 +6,10 @@
   "scripts": {
     "build:node:docker": "./build-node-docker.sh",
     "build:packages": "./build-packages.sh",
+    "build": "yarn build:packages",
     "setup": "./setup.sh",
     "start": "./start.sh",
+    "test": "./tests/network-tests/run-tests.sh",
     "cargo-checks": "./scripts/cargo-checks.sh",
     "cargo-build": "./scripts/cargo-build.sh",
     "lint": "./scripts/lint-typescript.sh",

@@ -4,6 +4,8 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
+rm ./keys.json || :
+
 # Log only to stderr
 # Only output from this script should be the container id of the node at the very end
 
@@ -187,8 +189,6 @@ function main {
     # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
     if [ "${NO_STORAGE}" != true ]; then
         ./start-storage.sh
-        export REUSE_KEYS=true
-        export SKIP_STORAGE_AND_DISTRIBUTION=true
     fi
 
     ./run-test-scenario.sh runtimeUpgrade

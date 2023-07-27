@@ -70,13 +70,13 @@ GRAPHQL_PLAYGROUND_CDN="query/server" yarn workspace query-node-root query-node:
 Run integration tests
 
 ```
-./query-node/run-tests.sh
+./tests/network-tests/run-tests.sh
 ```
 
-To run tests and keep services alive for further inspection, set `DEBUG` shell variable to any true-ish value.
+To run tests and keep services alive for further inspection, set `PERSIST` shell variable to any true-ish value.
 
 ```
-DEBUG=true ./query-node/run-tests.sh
+PERSIST=true ./tests/network-tests/run-tests.sh
 ```
 
 You can then use queries manually in GraphQL Playground (http://localhost:8081/graphql),
@@ -87,8 +87,9 @@ This assumes the scenario is repeatable and any previous test errors didn't brea
 the blockchain or processor state in a critical way.
 
 ```
-DEBUG=true ./query-node/run-tests.sh # run tests first and make sure services stay alive
-REUSE_KEYS=true yarn workspace network-tests run-test-scenario content-directory
+# run tests first and make sure services stay alive
+PERSIST=true ./tests/network-tests/run-tests.sh
+yarn workspace network-tests run-test-scenario content-directory
 ```
 
 Commenting out some of the scenario's flow calls in `network-tests/src/scenarios/content-directory.ts` is not relevant to the current

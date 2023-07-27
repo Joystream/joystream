@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+rm tests/network-tests/keys.json || :
+
 # Run a complete joystream development network on your machine using docker
+export RUNTIME_PROFILE=${RUNTIME_PROFILE:=TESTING}
 export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(./scripts/runtime-code-shasum.sh)}
 
 INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setupNewChain}
@@ -29,7 +35,7 @@ fi
 ./query-node/start.sh
 
 ## Orion
-./start-orion.sh
+# ./start-orion.sh
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then

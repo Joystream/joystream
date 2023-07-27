@@ -64,16 +64,12 @@ export async function scenario(label: string, scene: (props: ScenarioProps) => P
 
   const api = apiFactory.getApi('Key Generation')
 
-  // Generate all key ids based on REUSE_KEYS or START_KEY_ID (if provided)
-  const reuseKeys = Boolean(env.REUSE_KEYS)
-  let startKeyId: number
+  let startKeyId = 0
   let customKeys: string[] = []
-  if (reuseKeys && existsSync(OUTPUT_FILE_PATH)) {
+  if (existsSync(OUTPUT_FILE_PATH)) {
     const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
     startKeyId = output.keyIds.final
     customKeys = output.keyIds.custom
-  } else {
-    startKeyId = parseInt(env.START_KEY_ID || '0')
   }
 
   await api.createKeyPairs(startKeyId, false)

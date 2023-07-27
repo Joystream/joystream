@@ -15,8 +15,6 @@ scenario('Setup new chain', async ({ job }) => {
   const leads = job('Set WorkingGroup Leads', leaderSetup(true)).requires(councilJob)
   job('Create video categories', populateVideoCategories).after(leads)
 
-  if (!process.env.SKIP_STORAGE_AND_DISTRIBUTION) {
-    job('initialize storage system', initStorage(doubleStorageConfig)).requires(leads)
-    job('initialize distribution system', initDistribution(doubleDistributionConfig)).requires(leads)
-  }
+  job('initialize storage system', initStorage(doubleStorageConfig)).requires(leads)
+  job('initialize distribution system', initDistribution(doubleDistributionConfig)).requires(leads)
 })
