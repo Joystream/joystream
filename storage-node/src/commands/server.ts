@@ -16,6 +16,8 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import { Option } from '@polkadot/types-codec'
 import { QueryNodeApi } from '../services/queryNode/api'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { customFlags } from '../command-base/CustomFlags'
 const fsPromises = fs.promises
 
 /**
@@ -33,6 +35,12 @@ export default class Server extends ApiCommandBase {
       char: 'w',
       required: true,
       description: 'Storage provider worker ID',
+    }),
+    buckets: customFlags.integerArr({
+      char: 'b',
+      description:
+        'Comma separated list of bucket IDs to service. Buckets that are not assigned to worker are ignored. If not specified all buckets will be serviced.',
+      default: [],
     }),
     uploads: flags.string({
       char: 'd',
@@ -75,9 +83,25 @@ export default class Server extends ApiCommandBase {
     elasticSearchEndpoint: flags.string({
       char: 'e',
       required: false,
+      env: 'ELASTIC_ENDPOINT',
       description: `Elasticsearch endpoint (e.g.: http://some.com:8081).
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
+    }),
+    elasticSearchIndex: flags.string({
+      required: false,
+      env: 'ELASTIC_INDEX',
+      description: 'Elasticsearch index name.',
+    }),
+    elasticSearchUser: flags.string({
+      dependsOn: ['elasticSearchEndpoint', 'elasticSearchPassword'],
+      env: 'ELASTIC_USER',
+      description: 'Elasticsearch user for basic authentication.',
+    }),
+    elasticSearchPassword: flags.string({
+      dependsOn: ['elasticSearchEndpoint', 'elasticSearchUser'],
+      env: 'ELASTIC_PASSWORD',
+      description: 'Elasticsearch password for basic authentication.',
     }),
     logFilePath: flags.string({
       char: 'l',
@@ -109,18 +133,15 @@ Supported values: warn, error, debug, info. Default:debug`,
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    await recreateTempDirectory(flags.uploads, TempDirName)
-
     const logSource = `StorageProvider_${flags.worker}`
-
-    if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName)
-    }
 
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
       initNewLogger({
         elasticSearchlogSource: logSource,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
+        elasticSearchIndex: flags.elasticSearchIndex,
+        elasticSearchUser: flags.elasticSearchUser,
+        elasticSearchPassword: flags.elasticSearchPassword,
         filePath: flags.logFilePath,
         maxFileNumber: flags.logMaxFileNumber,
         maxFileSize: flags.logMaxFileSize,
@@ -130,21 +151,71 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
 
+    const api = await this.getApi()
+
+    const workerId = flags.worker
+
+    if (!(await verifyWorkerId(api, workerId))) {
+      logger.error(`workerId ${workerId} does not exist in the storage working group`)
+      this.exit(ExitCodes.InvalidWorkerId)
+    }
+
+    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+
+    const selectedBucketsAndAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
+
+    if (!selectedBucketsAndAccounts.length) {
+      logger.warn('No buckets to serve. Server will be idle!')
+    }
+
+    const keystoreAddresses = this.getUnlockedAccounts()
+    const bucketsWithKeysInKeyring = selectedBucketsAndAccounts.filter(([bucketId, address]) => {
+      if (!keystoreAddresses.includes(address)) {
+        this.warn(`Missing transactor key for bucket ${bucketId}`)
+        return false
+      }
+      return true
+    })
+
+    const bucketKeyPairs = new Map<string, KeyringPair>(
+      bucketsWithKeysInKeyring.map(([bucketId, address]) => [bucketId, this.getKeyringPair(address)])
+    )
+
+    const writableBuckets = bucketsWithKeysInKeyring.map(([bucketId]) => bucketId)
+    const selectedBuckets = selectedBucketsAndAccounts.map(([bucketId]) => bucketId)
+
+    if (writableBuckets.length !== selectedBuckets.length) {
+      logger.warn(`Only subset of buckets will process uploads!`)
+    }
+
+    logger.info(`Buckets synced and served: ${selectedBuckets}`)
+    logger.info(`Buckets accepting uploads: ${writableBuckets}`)
+
+    // when enabling upload auth ensure the keyring has the operator role key and set it here.
+    const enableUploadingAuth = false
+    const operatorRoleKey = undefined
+
+    await recreateTempDirectory(flags.uploads, TempDirName)
+
+    if (fs.existsSync(flags.uploads)) {
+      await loadDataObjectIdCache(flags.uploads, TempDirName)
+    }
+
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
 
-    const api = await this.getApi()
-    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
-
-    if (flags.sync) {
-      logger.info(`Synchronization enabled.`)
+    // Don't run sync job if no buckets selected, to prevent purging
+    // any assets.
+    if (flags.sync && selectedBuckets.length) {
+      logger.info(`Synchronization is Enabled.`)
       setTimeout(
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
           runSyncWithInterval(
             api,
             flags.worker,
+            selectedBuckets,
             flags.queryNodeEndpoint,
             flags.uploads,
             TempDirName,
@@ -154,12 +225,8 @@ Supported values: warn, error, debug, info. Default:debug`,
           ),
         0
       )
-    }
-
-    const storageProviderAccount = this.getAccount(flags)
-    const workerId = flags.worker
-    if (!(await verifyWorkerId(api, qnApi, workerId, storageProviderAccount.address))) {
-      this.exit(ExitCodes.InvalidWorkerId)
+    } else {
+      logger.warn(`Synchronization is Disabled.`)
     }
 
     try {
@@ -171,13 +238,16 @@ Supported values: warn, error, debug, info. Default:debug`,
       const app = await createApp({
         api,
         qnApi,
-        storageProviderAccount,
+        bucketKeyPairs,
+        operatorRoleKey,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir,
         process: this.config,
-        enableUploadingAuth: false,
+        enableUploadingAuth,
+        downloadBuckets: selectedBuckets,
+        uploadBuckets: writableBuckets,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -208,6 +278,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 async function runSyncWithInterval(
   api: ApiPromise,
   workerId: number,
+  buckets: string[],
   queryNodeUrl: string,
   uploadsDirectory: string,
   tempDirectory: string,
@@ -224,6 +295,7 @@ async function runSyncWithInterval(
       await performSync(
         api,
         workerId,
+        buckets,
         syncWorkersNumber,
         syncWorkersTimeout,
         queryNodeUrl,
@@ -259,18 +331,17 @@ async function recreateTempDirectory(uploadsDirectory: string, tempDirName: stri
   }
 }
 
-async function verifyWorkerId(
+async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
+  const worker = await api.query.storageWorkingGroup.workerById(workerId)
+  return worker.isSome
+}
+
+async function constructBucketToAddressMapping(
   api: ApiPromise,
   qnApi: QueryNodeApi,
   workerId: number,
-  transactorAccount: string
-): Promise<boolean> {
-  const worker = await api.query.storageWorkingGroup.workerById(workerId)
-  if (!worker.isSome) {
-    logger.error('Provided workerId does not belong to an existing worker')
-    return false
-  }
-
+  bucketsToServe: number[]
+): Promise<[string, string][]> {
   const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
     await Promise.all(
@@ -283,19 +354,9 @@ async function verifyWorkerId(
       )
     )
   )
+    .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))
     .filter(([, optBucket]) => optBucket.isSome && optBucket.unwrap().operatorStatus.isStorageWorker)
     .map(([bucketId, optBucket]) => [bucketId, optBucket.unwrap()])
 
-  if (buckets.length === 0) {
-    logger.warn(`Warning: No active buckets found by worker id ${workerId}!`)
-  }
-
-  for (const [bucketId, bucket] of buckets) {
-    if (!bucket.operatorStatus.asStorageWorker[1].eq(transactorAccount)) {
-      logger.error(`${transactorAccount} is not a valid transactor key for bucket ${bucketId} of worker ${workerId}`)
-      return false
-    }
-  }
-
-  return true
+  return buckets.map(([bucketId, bucket]) => [bucketId, bucket.operatorStatus.asStorageWorker[1].toString()])
 }

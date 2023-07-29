@@ -1,4 +1,4 @@
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import { updateStorageBucketsPerBagLimit } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
@@ -11,7 +11,7 @@ import logger from '../../services/logger'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-bag-limit"
  */
-export default class LeaderUpdateBagLimit extends ApiCommandBase {
+export default class LeaderUpdateBagLimit extends LeaderCommandBase {
   static description = 'Update StorageBucketsPerBagLimit variable in the Joystream node storage.'
 
   static flags = {
@@ -20,7 +20,7 @@ export default class LeaderUpdateBagLimit extends ApiCommandBase {
       required: true,
       description: 'New StorageBucketsPerBagLimit value',
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -31,7 +31,7 @@ export default class LeaderUpdateBagLimit extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const limit = flags.limit
 
     const api = await this.getApi()

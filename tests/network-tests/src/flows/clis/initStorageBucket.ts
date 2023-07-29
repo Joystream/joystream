@@ -43,7 +43,7 @@ export default async function initStorageBucket({ api }: FlowProps): Promise<voi
   await cli.run('operator:set-metadata', [
     '--bucketId',
     bucketId,
-    '--operatorId',
+    '--workerId',
     operatorId,
     '--endpoint',
     'http://localhost:3333',

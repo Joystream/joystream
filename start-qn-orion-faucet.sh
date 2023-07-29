@@ -5,7 +5,7 @@ set -e
 ./query-node/start.sh
 
 ## Orion
-docker-compose up -d orion
+./start-orion.sh
 
 ## Faucet
 export SKIP_QUERY_NODE_CHECKS=true
