@@ -35,6 +35,20 @@
       - libprotobuf-dev
     state: latest
 
+# ref: https://docs.docker.com/engine/install/ubuntu/#uninstall-old-versions
+- name: Remove old docker version
+  become: true
+  apt:
+    name:
+      - docker-compose
+      - docker.io
+      - docker-doc
+      - docker-compose
+      - podman-docker
+      - containerd
+      - runc
+    state: absent
+
 - name: Add Docker GPG Key and repo
   become: true
   shell:
@@ -49,7 +63,7 @@
       "
     creates: /etc/apt/sources.list.d/docker.list
 
-- name: Update apt and install docker
+- name: Install Docker
   become: true
   apt:
     name:
@@ -60,30 +74,24 @@
     state: latest
     update_cache: true
 
-- name: Remove old docker-compose
-  become: true
-  apt:
-    name:
-      - docker-compose
-    state: absent
-
-- name: Install newer version of docker-compose
+- name: Install docker-compose
   become: true
   shell:
     cmd: |
       bash -c "
-        curl -L 'https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose
+        curl -L 'https://github.com/docker/compose/releases/download/v2.20.1/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose
         chmod +x /usr/local/bin/docker-compose
         ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
       "
     creates: /usr/local/bin/docker-compose
 
-- name: Install Docker Module for Python
+- name: Install Docker module for Python
   pip:
     name: docker
 
 # usermod -aG docker username
-- name: Add {{ ansible_user }} to docker group
+# To allow non root user to run docker
+- name: Add user to docker group
   become: true
   ansible.builtin.user:
     name: "{{ ansible_user }}"
@@ -93,7 +101,7 @@
 - name: Install rustup
   shell: 
     cmd: |
-      bash -ic "curl https://getsubstrate.io -sSf | bash -s -- --fast"
+      bash -ic "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y"
   args:
     executable: /bin/bash
 
@@ -109,7 +117,7 @@
   shell: 
     cmd: |
       bash -ic "
-        volta install node@14 && volta install yarn
+        volta install node@18 && volta install yarn
       "
   args:
     executable: /bin/bash

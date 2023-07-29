@@ -14,7 +14,7 @@ services:
       - 9933:9933
 
   colossus-1:
-    image: node:14
+    image: node:18
     container_name: colossus-1
     restart: on-failure
     volumes:
@@ -33,8 +33,11 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
+    entrypoint: ['/joystream/entrypoints/storage.sh']
     command: [
-      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -42,7 +45,7 @@ services:
     ]
 
   distributor-1:
-    image: node:14
+    image: node:18
     container_name: distributor-1
     restart: on-failure
     volumes:
@@ -72,15 +75,18 @@ services:
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
       JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
-    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${TELEMETRY_ENDPOINT}
+      OTEL_RESOURCE_ATTRIBUTES: service.name=distributor-1,deployment.environment=production
+      #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+      #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
       # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    command: ['yarn', 'joystream-distributor', 'start']
+    entrypoint: ['/joystream/entrypoints/distributor.sh']
+    command: ['start']
 
   colossus-2:
-    image: node:14
+    image: node:18
     container_name: colossus-2
     restart: on-failure
     volumes:
@@ -99,8 +105,9 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
+    entrypoint: ['yarn', 'storage-node']
     command: [
-      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -108,7 +115,7 @@ services:
     ]
 
   distributor-2:
-    image: node:14
+    image: node:18
     container_name: distributor-2
     restart: on-failure
     volumes:
@@ -144,7 +151,8 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    command: ['yarn', 'joystream-distributor', 'start']
+    entrypoint: ['yarn', 'joystream-distributor']
+    command: ['start']
 
   db:
     image: postgres:12
@@ -181,7 +189,7 @@ services:
       PGPORT: ${ORION_DB_PORT}
 
   graphql-server:
-    image: node:14
+    image: node:18
     container_name: graphql-server
     restart: unless-stopped
     env_file:
@@ -193,6 +201,8 @@ services:
       - GRAPHQL_PLAYGROUND_ENDPOINT=${GRAPHQL_PLAYGROUND_ENDPOINT}
       - GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT=${GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT}
       - GRAPHQL_PLAYGROUND_CDN_URL=${GRAPHQL_PLAYGROUND_CDN_URL}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=query-node,deployment.environment=production
     ports:
       - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
@@ -203,10 +213,10 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
+    entrypoint: ['/joystream/entrypoints/graphql-server.sh']
 
   processor:
-    image: node:14
+    image: node:18
     container_name: processor
     restart: unless-stopped
     env_file:
@@ -219,6 +229,11 @@ services:
       - BATCH_SIZE=100
       - QUEUE_FACTOR=1
       - QUEUE_MAX_CAP_FACTOR=4
+      - WARTHOG_DB_HOST=db
+      - WARTHOG_DB_DATABASE=${DB_NAME}
+      - WARTHOG_DB_USERNAME=${DB_USER}
+      - WARTHOG_DB_PASSWORD=${DB_PASS}
+      - WARTHOG_APP_PORT=4002
     depends_on:
       - db
     volumes:
@@ -226,7 +241,14 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
+    entrypoint: sh
+    command: >
+      -c "
+        yarn workspace query-node config:dev ;
+        yarn workspace query-node-root db:prepare ;
+        yarn workspace query-node-root db:migrate ;
+        yarn workspace query-node-root processor:start
+      "
 
   indexer:
     image: joystream/hydra-indexer:v5.0.0-alpha.1
@@ -265,7 +287,6 @@ services:
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
       - WARTHOG_APP_PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
-      - DEBUG=*
     ports:
       - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
     depends_on:

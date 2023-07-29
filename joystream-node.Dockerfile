@@ -68,6 +68,7 @@ COPY --from=builder /joystream/target/release/wbuild/joystream-node-runtime/joys
 COPY --from=builder /joystream/target/release/chain-spec-builder /joystream/chain-spec-builder
 COPY --from=builder /joystream/target/release/session-keys /joystream/session-keys
 COPY --from=builder /joystream/target/release/call-sizes /joystream/call-sizes
+COPY joy-mainnet.json .
 
 # confirm it works
 RUN /joystream/call-sizes
@@ -91,3 +92,4 @@ EXPOSE 30333 9933 9944
 VOLUME ["/data", "/keystore"]
 
 ENTRYPOINT ["/joystream/node"]
+CMD ["--base-path", "/data", "--keystore-path", "/keystore", "--chain", "/joystream/joy-mainnet.json"]

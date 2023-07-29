@@ -1,7 +1,7 @@
 # Paths are relative to root package directory
 overwrite: true
 
-schema: '../query-node/generated/graphql-server/generated/schema.graphql'
+schema: 'src/services/queryNode/schema.graphql'
 
 documents:
   - 'src/services/queryNode/queries/*.graphql'

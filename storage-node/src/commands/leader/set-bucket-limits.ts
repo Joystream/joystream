@@ -1,4 +1,4 @@
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import { setStorageBucketVoucherLimits } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
 import logger from '../../services/logger'
@@ -11,7 +11,7 @@ import logger from '../../services/logger'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:set-bucket-limits"
  */
-export default class LeaderSetBucketLimits extends ApiCommandBase {
+export default class LeaderSetBucketLimits extends LeaderCommandBase {
   static description = 'Set VoucherObjectsSizeLimit and VoucherObjectsNumberLimit for the storage bucket.'
 
   static flags = {
@@ -30,7 +30,7 @@ export default class LeaderSetBucketLimits extends ApiCommandBase {
       required: true,
       description: `New 'voucher object size limit' value`,
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -41,7 +41,7 @@ export default class LeaderSetBucketLimits extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const bucket = flags.bucketId
     const objectsLimit = flags.objects
     const sizeLimit = flags.size

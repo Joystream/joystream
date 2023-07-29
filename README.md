@@ -9,30 +9,55 @@ functionality to support the [various roles](https://joystream.gitbook.io/testne
 
 ## Development
 
+For best results use GNU/Linux with minimum glibc version 2.28 for nodejs v18 to work.
+So Ubuntu 20.04 or newer.
+
+You can check your version of glibc with `ldd --version`
+
 The following tools are required for building, testing and contributing to this repo:
 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
-- [nodejs](https://nodejs.org/) v14.x - _required_
+- [nodejs](https://nodejs.org/) >= v14.18.x - _required_ (However volta will try to use v18.6)
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) and docker-compose v.1.29 or higher - _required_
+- [docker](https://www.docker.com/get-started) and docker-compose v2.20.x or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
 
-After cloning the repo run the following initialization scripts:
+After cloning the repo run the following to get started:
+
+### Install development tools
+```sh
+./setup.sh
+```
+
+### If you prefer your own node version manager
+Install development tools without Volta version manager.
 
 ```sh
-# Install development tools
-./setup.sh
+./setup.sh --no-volta
+```
 
-# build local npm packages
+### For older operating systems which don't support node 18
+Modify the root `package.json` and change volta section to use node version 16.20.1 instead of 18.6.0
+```json
+"volta": {
+    "node": "16.20.1",
+    "yarn": "1.22.19"
+}
+```
+
+### Run local development network
+
+```sh
+# Build local npm packages
 yarn build:packages
 
-# Build joystream/node docker image
-yarn build:node:docker
+# Build joystream/node docker testing image
+RUNTIME_PROFILE=TESTING yarn build:node:docker
 
-# start a local development network
-yarn start
+# Start a local development network
+RUNTIME_PROFILE=TESTING yarn start
 ```
 
 ## Software
@@ -72,7 +97,15 @@ WASM_BUILD_TOOLCHAIN=nightly-2022-11-15 cargo build --release
 
 Learn more about [joystream-node](bin/node/README.md).
 
-A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://joystream.gitbook.io/testnet-workspace/system/validation#validator).
+A step by step guide to setup a full node and validator on the Joystream main network, can be found [here](https://handbook.joystream.org/system/validation).
+
+### Pre-built joystream-node binaries
+Look under the 'Assets' section:
+
+- Ephesus release [v8.3.0](https://github.com/Joystream/joystream/releases/tag/v12.2001.0)
+
+### Mainnet chainspec file
+- [joy-mainnet.json](https://github.com/Joystream/joystream/releases/download/v12.1000.0/joy-mainnet.json)
 
 ### Integration tests
 

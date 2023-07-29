@@ -86,6 +86,10 @@ jobs:
             EC2InstanceType=${{ steps.network_config.outputs.instanceType }},
             VolumeSize=${{ steps.network_config.outputs.volumeSize }}
 
+      - name: Wait for docker build server to be ready
+        run: |
+          sleep 30
+
       - name: Prepare inventory for Ansible
         run: |
           VAL1="${{ steps.deploy_stack.outputs.Val1PublicIp }}"

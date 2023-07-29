@@ -79,6 +79,7 @@ Returns json object describing current node status.
 {
   "id": "string",
   "version": "string",
+  "workerId": 0,
   "objectsInCache": 0,
   "storageLimit": 0,
   "storageUsed": 0,
@@ -333,6 +334,7 @@ This operation does not require authentication
 {
   "id": "string",
   "version": "string",
+  "workerId": 0,
   "objectsInCache": 0,
   "storageLimit": 0,
   "storageUsed": 0,
@@ -353,6 +355,7 @@ This operation does not require authentication
 |---|---|---|---|---|
 |id|string|true|none|none|
 |version|string|true|none|none|
+|workerId|integer|false|none|none|
 |objectsInCache|integer|true|none|none|
 |storageLimit|integer|true|none|none|
 |storageUsed|integer|true|none|none|

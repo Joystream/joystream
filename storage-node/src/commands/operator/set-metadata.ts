@@ -5,6 +5,8 @@ import logger from '../../services/logger'
 import { ValidationService } from '../../services/metadata/validationService'
 import { StorageBucketOperatorMetadata, IStorageBucketOperatorMetadata } from '@joystream/metadata-protobuf'
 import fs from 'fs'
+import { getWorkerRoleAccount } from '../../services/runtime/queries'
+
 /**
  * CLI command:
  * Sets metadata for the storage bucket.
@@ -23,10 +25,10 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       required: true,
       description: 'Storage bucket ID',
     }),
-    operatorId: flags.integer({
+    workerId: flags.integer({
       char: 'w',
       required: true,
-      description: 'Storage bucket operator ID (storage group worker ID)',
+      description: 'Storage operator worker ID',
     }),
     endpoint: flags.string({
       char: 'e',
@@ -43,7 +45,7 @@ export default class OperatorSetMetadata extends ApiCommandBase {
 
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorSetMetadata)
-    const { operatorId, bucketId, jsonFile, endpoint } = flags
+    const { workerId, bucketId, jsonFile, endpoint } = flags
 
     const validation = new ValidationService()
     const metadata: IStorageBucketOperatorMetadata = jsonFile
@@ -57,11 +59,18 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
-
     const api = await this.getApi()
-    const success = await setStorageOperatorMetadata(api, account, operatorId, bucketId, encodedMetadata)
-
-    this.exitAfterRuntimeCall(success)
+    const account = await getWorkerRoleAccount(api, workerId)
+    if (account) {
+      if (this.hasKeyringPair(account)) {
+        const keypair = this.getKeyringPair(account)
+        const success = await setStorageOperatorMetadata(api, keypair, workerId, bucketId, encodedMetadata)
+        this.exitAfterRuntimeCall(success)
+      } else {
+        this.error(`Keyring does not contain role key ${account} for operator ${workerId}`)
+      }
+    } else {
+      this.error(`workerId ${workerId} is not valid`)
+    }
   }
 }
