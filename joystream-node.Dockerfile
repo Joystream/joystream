@@ -11,7 +11,7 @@ RUN rustup default nightly-2022-11-15
 RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2022-11-15
 RUN rustup component add --toolchain nightly-2022-11-15 clippy
 RUN rustup install nightly
-RUN cargo +nightly install cargo-chef@0.1.59 --locked
+RUN cargo +nightly install cargo-chef@0.1.62 --locked
 
 FROM rust AS planner
 LABEL description="Cargo chef prepare"
