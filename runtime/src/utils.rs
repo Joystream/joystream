@@ -28,7 +28,7 @@ pub fn compute_fee(call: RuntimeCall) -> Balance {
         &dispatch_info.weight,
     );
     let len_fee = <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
-        &Weight::from_ref_time(length),
+        &Weight::from_parts(length, 0),
     );
     let base_fee = <Runtime as pallet_transaction_payment::Config>::WeightToFee::weight_to_fee(
         &<Runtime as frame_system::Config>::BlockWeights::get()

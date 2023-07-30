@@ -237,7 +237,7 @@ mod tests {
 
         let full_block_cost: Balance =
             <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
-                &Weight::from_ref_time(max_normal_dispatch_block_length),
+                &Weight::from_parts(max_normal_dispatch_block_length, 0),
             );
         let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
 

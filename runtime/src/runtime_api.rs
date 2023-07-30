@@ -71,7 +71,7 @@ impl OnRuntimeUpgrade for CancelActiveAndPendingProposals {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
-        Weight::from_ref_time(10_000_000) // TODO: adjust weight
+        Weight::from_parts(10_000_000, 0) // TODO: adjust weight
     }
 }
 
