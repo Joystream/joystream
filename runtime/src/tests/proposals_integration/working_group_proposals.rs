@@ -545,7 +545,7 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
                 StakePolicy {
                     stake_amount: <Runtime as working_group::Config<
                         MembershipWorkingGroupInstance,
-                    >>::MinimumApplicationStake::get() as u128,
+                    >>::MinimumApplicationStake::get(),
                     leaving_unstaking_period:
                         <T as working_group::Config<I>>::MinUnstakingPeriodLimit::get().into(),
                 },

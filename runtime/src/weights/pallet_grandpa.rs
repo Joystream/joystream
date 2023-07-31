@@ -21,7 +21,7 @@
 use frame_support::{
     traits::Get,
     weights::{
-        constants::{WEIGHT_PER_MICROS, WEIGHT_PER_NANOS},
+        constants::{WEIGHT_REF_TIME_PER_MICROS, WEIGHT_REF_TIME_PER_NANOS},
         Weight,
     },
 };
@@ -38,18 +38,23 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
         let validator_count = validator_count.max(100) as u64;
 
         // worst case we are considering is that the given offender
-        // is backed by 1000 nominators
+        // is backed by 200 nominators
         const MAX_NOMINATORS: u64 = 1000;
 
         // checking membership proof
-        (35 * WEIGHT_PER_MICROS)
-            .saturating_add((175 * WEIGHT_PER_NANOS).saturating_mul(validator_count))
+        Weight::from_ref_time(35u64 * WEIGHT_REF_TIME_PER_MICROS)
+            .saturating_add(
+                Weight::from_ref_time(175u64 * WEIGHT_REF_TIME_PER_NANOS)
+                    .saturating_mul(validator_count),
+            )
             .saturating_add(T::DbWeight::get().reads(5))
             // check equivocation proof
-            .saturating_add(95 * WEIGHT_PER_MICROS)
+            .saturating_add(Weight::from_ref_time(95u64 * WEIGHT_REF_TIME_PER_MICROS))
             // report offence
-            .saturating_add(110 * WEIGHT_PER_MICROS)
-            .saturating_add(25 * WEIGHT_PER_MICROS * MAX_NOMINATORS)
+            .saturating_add(Weight::from_ref_time(110u64 * WEIGHT_REF_TIME_PER_MICROS))
+            .saturating_add(Weight::from_ref_time(
+                25u64 * WEIGHT_REF_TIME_PER_MICROS * MAX_NOMINATORS,
+            ))
             .saturating_add(T::DbWeight::get().reads(14 + 3 * MAX_NOMINATORS))
             .saturating_add(T::DbWeight::get().writes(10 + 3 * MAX_NOMINATORS))
             // fetching set id -> session index mappings
@@ -57,6 +62,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
     }
 
     fn note_stalled() -> Weight {
-        (3 * WEIGHT_PER_MICROS).saturating_add(T::DbWeight::get().writes(1))
+        Weight::from_ref_time(3u64 * WEIGHT_REF_TIME_PER_MICROS)
+            .saturating_add(T::DbWeight::get().writes(1))
     }
 }

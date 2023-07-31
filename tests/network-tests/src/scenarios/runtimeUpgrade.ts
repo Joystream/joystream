@@ -1,7 +1,7 @@
 import electCouncil from '../flows/council/elect'
 import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import { scenario } from '../Scenario'
-import postRuntimeUpdateChecks from '../misc/postRuntimUpdateChecks'
+import postRuntimeUpdateChecks from '../misc/postRuntimeUpdateChecks'
 import forkOffChecks from '../misc/forkOffChecks'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises

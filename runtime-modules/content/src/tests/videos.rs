@@ -429,7 +429,7 @@ fn unsuccessful_video_creation_due_to_bucket_having_insufficient_objects_number_
         // Set storage bucket number in the dynamic bag creation policy.
         assert_eq!(
             Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
-                Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+                RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
                 DynamicBagType::Channel,
                 1,
             ),
@@ -720,8 +720,8 @@ fn successful_video_update_by_member_with_assets_removal() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_assets_to_remove(video_assets)
@@ -737,8 +737,8 @@ fn unsuccessful_video_update_with_pending_channel_transfer() {
         create_initial_storage_buckets_helper();
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_member_owned_channel_with_video();
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         InitializeChannelTransferFixture::default()
             .with_new_member_channel_owner(DEFAULT_MEMBER_ID)
@@ -778,8 +778,8 @@ fn successful_video_update_by_collaborator_with_assets_removal() {
         create_default_member_owned_channel_with_video_with_collaborator_permissions(&[
             ChannelActionPermission::ManageVideoAssets,
         ]);
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_sender(COLLABORATOR_MEMBER_ACCOUNT_ID)
@@ -798,8 +798,8 @@ fn successful_video_update_by_lead_with_assets_removal() {
         increase_account_balance_helper(DEFAULT_CURATOR_ACCOUNT_ID, INITIAL_BALANCE);
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
         create_default_curator_owned_channel_with_video(DEFAULT_DATA_OBJECT_STATE_BLOAT_BOND, &[]);
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_sender(LEAD_ACCOUNT_ID)
@@ -817,8 +817,8 @@ fn successful_video_update_by_curator_with_assets_removal() {
             .with_agent_permissions(&[ChannelActionPermission::ManageVideoAssets])
             .setup();
 
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
@@ -1152,8 +1152,8 @@ fn unsuccessful_video_update_with_assets_to_remove_and_invalid_storage_buckets_n
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().with_video().setup();
 
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_assets_to_remove(video_assets)
@@ -1169,8 +1169,8 @@ fn unsuccessful_video_update_with_assets_to_remove_and_missing_storage_buckets_n
     with_default_mock_builder(|| {
         ContentTest::with_member_channel().with_video().setup();
 
-        let video_assets = ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64 - 1))
-            .collect::<BTreeSet<_>>();
+        let video_assets =
+            (DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER - 1)).collect::<BTreeSet<_>>();
 
         UpdateVideoFixture::default()
             .with_assets_to_remove(video_assets)

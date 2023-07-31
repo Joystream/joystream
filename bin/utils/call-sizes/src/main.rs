@@ -65,7 +65,7 @@ fn main() -> Result<(), String> {
         core::mem::size_of::<council::Call<Runtime>>()
     );
 
-    println!("----\nRuntime: {}", core::mem::size_of::<Call>());
+    println!("----\nRuntime: {}", core::mem::size_of::<RuntimeCall>());
 
     Ok(())
 }

@@ -70,6 +70,7 @@ pub mod fees {
     };
     use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
     use smallvec::smallvec;
+    use sp_runtime::traits::Bounded;
     use sp_runtime::FixedPointNumber;
     pub use sp_runtime::Perbill;
     use sp_runtime::Perquintill;
@@ -85,12 +86,19 @@ pub mod fees {
         /// that combined with `AdjustmentVariable`, we can recover from the minimum.
         /// See `multiplier_can_grow_from_zero`.
         pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+        /// The maximum amount of the multiplier.
+        pub MaximumMultiplier: Multiplier = Bounded::max_value();
     }
 
     /// Parameterized slow adjusting fee updated based on
     /// https://w3f-research.readthedocs.io/en/latest/polkadot/economics/1-token-economics.html#-2.-slow-adjusting-mechanism
-    pub type SlowAdjustingFeeUpdate<R> =
-        TargetedFeeAdjustment<R, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+    pub type SlowAdjustingFeeUpdate<R> = TargetedFeeAdjustment<
+        R,
+        TargetBlockFullness,
+        AdjustmentVariable,
+        MinimumMultiplier,
+        MaximumMultiplier,
+    >;
 
     /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
     /// node's balance type.
@@ -107,7 +115,7 @@ pub mod fees {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
             let p = super::currency::CENTS;
-            let q = 50 * Balance::from(ExtrinsicBaseWeight::get());
+            let q = 50 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
             smallvec![WeightToFeeCoefficient {
                 degree: 1,
                 negative: false,
@@ -229,7 +237,7 @@ mod tests {
 
         let full_block_cost: Balance =
             <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
-                &max_normal_dispatch_block_length,
+                &Weight::from_parts(max_normal_dispatch_block_length, 0),
             );
         let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
 

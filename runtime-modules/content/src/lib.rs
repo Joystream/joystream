@@ -104,7 +104,7 @@ pub trait Config:
     type WeightInfo: WeightInfo;
 
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
@@ -310,7 +310,7 @@ decl_storage! { generate_storage_info
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -333,15 +333,15 @@ decl_module! {
 
         /// Exports const - default global weekly NFT limit.
         const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultGlobalWeeklyNftLimit::get();
 
         /// Exports const - default channel daily NFT limit.
         const DefaultChannelDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultChannelDailyNftLimit::get();
 
         /// Exports const - default channel weekly NFT limit.
         const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultChannelWeeklyNftLimit::get();
 
         /// Export const - min cashout allowed limits
         const MinimumCashoutAllowedLimit: BalanceOf<T> = T::MinimumCashoutAllowedLimit::get();
@@ -1303,7 +1303,7 @@ decl_module! {
                 ChannelById::<T>::mutate(channel_id, |channel| {
                     Self::increment_nft_counters(channel);
                 });
-                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
+                VideoById::<T>::mutate(video_id, |video| video.nft_status = nft_status);
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_objects_ids));
@@ -2539,7 +2539,7 @@ decl_module! {
             Self::withdraw_bid_payment(&participant_account_id, old_bid.amount)?;
 
             // remove
-            OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
+            OpenAuctionBidByVideoAndMember::<T>::remove(video_id, participant_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
@@ -3083,7 +3083,7 @@ decl_module! {
             //
 
             ChannelById::<T>::mutate(
-                &channel_id,
+                channel_id,
                 |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
             );
 
@@ -3118,7 +3118,7 @@ decl_module! {
 
             if channel.transfer_status.is_pending() {
                 ChannelById::<T>::mutate(
-                    &channel_id,
+                    channel_id,
                     |channel| {
                         channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                     });
@@ -3170,7 +3170,7 @@ decl_module! {
                 Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
             }
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                 channel.owner = new_owner;
                 channel.collaborators = new_collaborators;
@@ -3295,7 +3295,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = Some(token_id);
             });
 
@@ -3753,7 +3753,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = None;
             });
         }
@@ -4321,7 +4321,7 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_can_claim_channel_reward(
-        origin: &T::Origin,
+        origin: &T::RuntimeOrigin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         item: &PullPayment<T>,
         proof: &[ProofElement<T>],
@@ -4385,7 +4385,7 @@ impl<T: Config> Module<T> {
         amount: BalanceOf<T>,
     ) {
         T::CouncilBudgetManager::withdraw(reward_account, amount);
-        ChannelById::<T>::mutate(&channel_id, |channel| {
+        ChannelById::<T>::mutate(channel_id, |channel| {
             channel.cumulative_reward_claimed =
                 channel.cumulative_reward_claimed.saturating_add(amount)
         });
@@ -4552,10 +4552,10 @@ impl<T: Config> Module<T> {
         let a = (*num_objects_to_delete) as u32;
 
         //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
+        let b = channel_bag_witness.storage_buckets_num;
 
         //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+        let c = channel_bag_witness.distribution_buckets_num;
 
         WeightInfoContent::<T>::delete_channel(a, b, c)
     }
@@ -4731,10 +4731,10 @@ impl<T: Config> Module<T> {
         let a = (*num_objects_to_delete) as u32;
 
         //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
+        let b = channel_bag_witness.storage_buckets_num;
 
         //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+        let c = channel_bag_witness.distribution_buckets_num;
 
         //rationale
         let d = to_kb((*rationale).len() as u32);
@@ -4958,3 +4958,10 @@ decl_event!(
         CreatorTokenIssued(ContentActor, ChannelId, TokenId),
     }
 );
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
+    }
+}

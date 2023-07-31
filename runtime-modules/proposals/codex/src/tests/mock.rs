@@ -7,7 +7,7 @@ use frame_support::{
     dispatch::DispatchError,
     parameter_types,
     traits::{
-        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnUnbalanced,
+        ConstU32, ConstU64, Currency, EitherOfDiverse, Imbalance, LockIdentifier, OnUnbalanced,
         OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
@@ -111,7 +111,7 @@ frame_support::construct_runtime!(
 parameter_types! {
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::simple_max(
-            frame_support::weights::constants::WEIGHT_PER_SECOND * 2
+            frame_support::weights::Weight::from_parts(frame_support::weights::constants::WEIGHT_REF_TIME_PER_SECOND * 2, 0u64)
         );
     pub static SessionsPerEra: SessionIndex = 3;
     pub static ExistentialDeposit: Balance = 1;
@@ -125,16 +125,16 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = RocksDbWeight;
-    type Origin = Origin;
+    type RuntimeOrigin = RuntimeOrigin;
     type Index = AccountIndex;
     type BlockNumber = BlockNumber;
-    type Call = Call;
+    type RuntimeCall = RuntimeCall;
     type Hash = H256;
     type Hashing = ::sp_runtime::traits::BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = frame_support::traits::ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -151,7 +151,7 @@ impl balances::Config for Test {
     type MaxReserves = ();
     type ReserveIdentifier = [u8; 8];
     type Balance = Balance;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
@@ -207,7 +207,7 @@ parameter_types! {
 }
 
 impl pallet_bags_list::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
     type ScoreProvider = Staking;
     type BagThresholds = BagThresholds;
@@ -220,6 +220,9 @@ impl onchain::Config for OnChainSeqPhragmen {
     type Solver = SequentialPhragmen<AccountId, Perbill>;
     type DataProvider = Staking;
     type WeightInfo = ();
+    type MaxWinners = ConstU32<2_000>;
+    type VotersBound = ConstU32<5_000>;
+    type TargetsBound = ConstU32<2_000>;
 }
 
 pub struct MockReward {}
@@ -253,38 +256,40 @@ impl staking::Config for Test {
     type UnixTime = Timestamp;
     type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote;
     type RewardRemainder = RewardRemainderMock;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Slash = ();
     type Reward = MockReward;
     type SessionsPerEra = SessionsPerEra;
     type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
     type BondingDuration = BondingDuration;
     type SessionInterface = ();
     type EraPayout = staking::ConvertCurve<RewardCurve>;
     type NextNewSession = ();
     type MaxNominatorRewardedPerValidator = ConstU32<64>;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
-    type ElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
+    type ElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type GenesisElectionProvider = Self::ElectionProvider;
     // NOTE: consider a macro and use `UseNominatorsAndValidatorsMap<Self>` as well.
     type VoterList = BagsList;
+    type TargetList = staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type OnStakerSlash = OnStakerSlashMock<Test>;
     type BenchmarkingConfig = TestBenchmarkingConfig;
     type WeightInfo = ();
     type BondingRestriction = ();
+    type HistoryDepth = ConstU32<120>;
+    type AdminOrigin = EnsureRoot<AccountId>;
 }
 
 impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
 where
-    Call: From<LocalCall>,
+    RuntimeCall: From<LocalCall>,
 {
-    type OverarchingCall = Call;
+    type OverarchingCall = RuntimeCall;
     type Extrinsic = Extrinsic;
 }
 
-pub type Extrinsic = TestXt<Call, ()>;
+pub type Extrinsic = TestXt<RuntimeCall, ()>;
 
 parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
@@ -300,7 +305,7 @@ impl common::membership::MembershipTypes for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();
@@ -333,13 +338,15 @@ pub const LEADER_ACCOUNT_ID: u64 = 100;
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -391,7 +398,7 @@ parameter_types! {
 }
 
 impl proposals_engine::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ProposerOriginValidator = ();
     type CouncilOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
@@ -423,9 +430,9 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         _: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -444,8 +451,8 @@ impl common::membership::MembershipInfoProvider<Test> for () {
     }
 }
 
-impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+impl common::council::CouncilOriginValidator<RuntimeOrigin, u64, u64> for () {
+    fn ensure_member_consulate(origin: RuntimeOrigin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 
         Ok(())
@@ -462,7 +469,7 @@ parameter_types! {
 }
 
 impl proposals_discussion::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type AuthorOriginValidator = ();
     type MembershipInfoProvider = ();
     type CouncilOriginValidator = ();
@@ -498,7 +505,7 @@ parameter_types! {
 }
 
 impl working_group::Config<ForumWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
     type StakingAccountValidator = ();
@@ -511,7 +518,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = ();
@@ -524,7 +531,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId3>;
     type StakingAccountValidator = ();
@@ -537,7 +544,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId4>;
     type StakingAccountValidator = ();
@@ -550,7 +557,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId5>;
     type StakingAccountValidator = ();
@@ -563,7 +570,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId6>;
     type StakingAccountValidator = ();
@@ -576,7 +583,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId7>;
     type StakingAccountValidator = ();
@@ -589,7 +596,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId8>;
     type StakingAccountValidator = ();
@@ -602,7 +609,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId9>;
     type StakingAccountValidator = ();
@@ -632,7 +639,7 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
 }
 
 impl crate::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type WeightInfo = ();
@@ -684,7 +691,7 @@ parameter_types! {
 pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 
@@ -719,12 +726,13 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
