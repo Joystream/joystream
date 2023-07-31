@@ -1,21 +1,21 @@
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2023-04-27 (Y/M/D)
-//! HOSTNAME: `ip-172-31-3-111`, CPU: `Intel(R) Xeon(R) Platinum 8124M CPU @ 3.00GHz`
+//! DATE: 2023-07-31 (Y/M/D)
+//! HOSTNAME: `Mokhtars-MacBook-Pro.local`, CPU: `<UNKNOWN>`
 //!
 //! SHORT-NAME: `extrinsic`, LONG-NAME: `ExtrinsicBase`, RUNTIME: `Development`
 //! WARMUPS: `10`, REPEAT: `100`
-//! WEIGHT-PATH: `./scripts/../runtime/src/weights`
+//! WEIGHT-PATH: `./../runtime/src/weights`
 //! WEIGHT-METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./scripts/../target/release/joystream-node
+//   ./../target/release/joystream-node
 //   benchmark
 //   overhead
 //   --chain=prod-test
 //   --execution=wasm
 //   --warmup=10
 //   --repeat=100
-//   --weight-path=./scripts/../runtime/src/weights
+//   --weight-path=./../runtime/src/weights
 
 use sp_core::parameter_types;
 use sp_weights::{constants::WEIGHT_REF_TIME_PER_NANOS, Weight};
@@ -25,17 +25,17 @@ parameter_types! {
     /// Calculated by multiplying the *Average* with `1.0` and adding `0`.
     ///
     /// Stats nanoseconds:
-    ///   Min, Max: 131_166, 134_219
-    ///   Average:  132_220
-    ///   Median:   132_065
-    ///   Std-Dev:  591.09
+    ///   Min, Max: 83_110, 84_409
+    ///   Average:  83_409
+    ///   Median:   83_357
+    ///   Std-Dev:  228.56
     ///
     /// Percentiles nanoseconds:
-    ///   99th: 133_738
-    ///   95th: 133_375
-    ///   75th: 132_459
+    ///   99th: 84_281
+    ///   95th: 83_808
+    ///   75th: 83_474
     pub const ExtrinsicBaseWeight: Weight =
-        Weight::from_ref_time(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(132_220));
+        Weight::from_ref_time(WEIGHT_REF_TIME_PER_NANOS.saturating_mul(83_409));
 }
 
 #[cfg(test)]
