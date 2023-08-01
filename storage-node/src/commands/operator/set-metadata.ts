@@ -11,6 +11,8 @@ import logger from '../../services/logger'
 import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../services/metadata/schemas'
 import { ValidationService } from '../../services/metadata/validationService'
 import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
+import { getWorkerRoleAccount } from '../../services/runtime/queries'
+
 /**
  * CLI command:
  * Sets metadata for the storage bucket.
@@ -29,10 +31,10 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       required: true,
       description: 'Storage bucket ID',
     }),
-    operatorId: flags.integer({
+    workerId: flags.integer({
       char: 'w',
       required: true,
-      description: 'Storage bucket operator ID (storage group worker ID)',
+      description: 'Storage operator worker ID',
     }),
     endpoint: flags.string({
       char: 'e',
@@ -55,7 +57,7 @@ export default class OperatorSetMetadata extends ApiCommandBase {
 
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorSetMetadata)
-    const { operatorId, bucketId, jsonFile, endpoint, operationalStatus: statusType } = flags
+    const { workerId, bucketId, jsonFile, endpoint, operationalStatus: statusType } = flags
 
     let operationalStatus: INodeOperationalStatusMetadata = {}
     switch (statusType) {
@@ -108,11 +110,18 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
-
     const api = await this.getApi()
-    const success = await setStorageOperatorMetadata(api, account, operatorId, bucketId, encodedMetadata)
-
-    this.exitAfterRuntimeCall(success)
+    const account = await getWorkerRoleAccount(api, workerId)
+    if (account) {
+      if (this.hasKeyringPair(account)) {
+        const keypair = this.getKeyringPair(account)
+        const success = await setStorageOperatorMetadata(api, keypair, workerId, bucketId, encodedMetadata)
+        this.exitAfterRuntimeCall(success)
+      } else {
+        this.error(`Keyring does not contain role key ${account} for operator ${workerId}`)
+      }
+    } else {
+      this.error(`workerId ${workerId} is not valid`)
+    }
   }
 }

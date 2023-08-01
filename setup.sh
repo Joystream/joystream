@@ -8,11 +8,17 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     # code build tools
     sudo apt-get update -y
     sudo apt-get install -y coreutils clang llvm jq curl gcc xz-utils sudo pkg-config \
-      unzip libc6-dev make libssl-dev python3 cmake
-    # docker
-    sudo apt-get install -y docker.io containerd runc
-    # docker-compose
-    sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      unzip libc6-dev make libssl-dev python3 cmake protobuf-compiler libprotobuf-dev
+
+    # Docker: do not replace existing installation to avoid distrupting running containers
+    if ! command -v docker &> /dev/null
+    then
+      # Install Docker from linux distro maintaners
+      sudo apt-get install -y docker.io containerd runc
+    fi
+    # Install latest version of docker-compose
+    COMPOSE_VERSION=$(curl -sL https://api.github.com/repos/docker/compose/releases/latest | jq -r ".tag_name")
+    sudo curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -52,13 +58,15 @@ rustup component add rustfmt
 # cargo install --force subkey --git https://github.com/paritytech/substrate --version ^2.0.2 --locked
 
 # Volta nodejs, npm, yarn tools manager
-curl https://get.volta.sh | bash
+if ! [[ $1 == "--no-volta" ]]; then
+  curl https://get.volta.sh | bash
 
-# source env variables added by Volta
-source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
+  # source env variables added by Volta
+  source ~/.bash_profile || source ~/.profile || source ~/.bashrc || :
 
-volta install node@14
-volta install yarn
-volta install npx
+  volta install node
+  volta install yarn
+  volta install npx
+fi
 
 echo "You may need to open a new terminal/shell session to make newly installed tools available."

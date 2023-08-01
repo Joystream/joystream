@@ -102,9 +102,15 @@ export type AppConfig = {
   qnApi: QueryNodeApi
 
   /**
-   * KeyringPair instance
+   * KeyringPair instances for each bucket
+   * Map<bucketId, KeyringPair>
    */
-  storageProviderAccount: KeyringPair
+  bucketKeyPairs: Map<string, KeyringPair>
+
+  /**
+   * KeyringPair instances of the role key, used for upload authentication
+   */
+  operatorRoleKey: KeyringPair | undefined
 
   /**
    * Storage provider ID (worker ID)
@@ -137,4 +143,14 @@ export type AppConfig = {
    * Max file size for uploading limit.
    */
   maxFileSize: number
+
+  /**
+   * List of buckets that node should allow downloads from.
+   */
+  downloadBuckets: string[]
+
+  /**
+   * List of buckets that node should accept uploads into.
+   */
+  uploadBuckets: string[]
 }

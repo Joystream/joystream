@@ -1,6 +1,6 @@
 import { updateUploadingBlockedStatus } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 
 /**
@@ -11,7 +11,7 @@ import logger from '../../services/logger'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:set-global-uploading-status"
  */
-export default class LeaderSetGlobalUploadingStatus extends ApiCommandBase {
+export default class LeaderSetGlobalUploadingStatus extends LeaderCommandBase {
   static description = `Set global uploading block. Requires storage working group leader permissions.`
 
   static flags = {
@@ -21,7 +21,7 @@ export default class LeaderSetGlobalUploadingStatus extends ApiCommandBase {
       options: ['on', 'off'],
       required: true,
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -35,7 +35,7 @@ export default class LeaderSetGlobalUploadingStatus extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     const success = await updateUploadingBlockedStatus(api, account, newStatus)

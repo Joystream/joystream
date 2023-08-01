@@ -1,6 +1,6 @@
 import { INodeOperationalStatusMetadata, NodeOperationalStatusMetadata } from '@joystream/metadata-protobuf'
 import { flags } from '@oclif/command'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../services/metadata/schemas'
 import { setStorageNodeOperationalStatus } from '../../services/runtime/extrinsics'
 
@@ -12,7 +12,7 @@ import { setStorageNodeOperationalStatus } from '../../services/runtime/extrinsi
  * Storage working group leader command. Requires storage WG leader privileges.
  * Shell command: "leader:set-node-operational-status"
  */
-export default class LeadSetNodeOperationalStatus extends ApiCommandBase {
+export default class LeadSetNodeOperationalStatus extends LeaderCommandBase {
   static description = `Set/update storage node operational status. Requires storage working group leader permissions.`
 
   static flags = {
@@ -32,13 +32,13 @@ export default class LeadSetNodeOperationalStatus extends ApiCommandBase {
       required: false,
       description: 'Operational status of the operator',
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(LeadSetNodeOperationalStatus)
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     let operationalStatus: INodeOperationalStatusMetadata = {}

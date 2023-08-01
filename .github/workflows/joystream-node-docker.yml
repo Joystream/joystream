@@ -28,7 +28,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -78,7 +78,7 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
 
       # docker manifest inspect requires authentication
       - name: Login to DockerHub
@@ -117,6 +117,10 @@ jobs:
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=${{ matrix.ec2ami }},EC2InstanceType=${{ matrix.ec2type }}'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+      - name: Wait for docker build server to be ready
+        run: |
+          sleep 30
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2

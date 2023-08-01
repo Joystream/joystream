@@ -5,11 +5,12 @@ import {
 } from '@joystream/metadata-protobuf'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { DispatchError } from '@polkadot/types/interfaces/system'
 import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import { timeout } from 'promise-timeout'
 import logger from '../../services/logger'
-import { getEvent, sendAndFollowNamedTx } from './api'
+import { formatDispatchError, getEvent, getEvents, sendAndFollowNamedTx } from './api'
 
 /**
  * Creates storage bucket.
@@ -77,33 +78,60 @@ export async function acceptStorageBucketInvitation(
 }
 
 /**
- * Updates storage bucket to bags relationships.
+ * Updates storage buckets to bags relationships.
  *
  * @remarks
  * It sends an extrinsic to the runtime.
  *
  * @param api - runtime API promise
- * @param bagId - BagId instance
+ * @param bagId - List of BagIds instance
  * @param account - KeyringPair instance
  * @param add - runtime storage bucket IDs to add
  * @param remove - runtime storage bucket IDs to remove
  * @returns promise with a success flag.
  */
-export async function updateStorageBucketsForBag(
+export async function updateStorageBucketsForBags(
   api: ApiPromise,
-  bagId: BagId,
+  bagIds: BagId[],
   account: KeyringPair,
   add: number[],
-  remove: number[]
-): Promise<boolean> {
-  return await extrinsicWrapper(() => {
+  remove: number[],
+  txStrategy: 'atomic' | 'force'
+): Promise<[boolean, { args: string; error: string }[] | void]> {
+  // List of failed batch calls
+  let failedCalls
+
+  const success = await extrinsicWrapper(async () => {
     const removeBuckets = api.createType('BTreeSet<u64>', remove)
     const addBuckets = api.createType('BTreeSet<u64>', add)
 
-    const tx = api.tx.storage.updateStorageBucketsForBag(bagId, addBuckets, removeBuckets)
+    const batchFn = txStrategy === 'atomic' ? api.tx.utility.batchAll : api.tx.utility.forceBatch
 
-    return sendAndFollowNamedTx(api, account, tx)
+    const txs = bagIds.map((bagId) => api.tx.storage.updateStorageBucketsForBag(bagId, addBuckets, removeBuckets))
+    const txBatch = batchFn(txs)
+
+    failedCalls = await sendAndFollowNamedTx(api, account, txBatch, (result) => {
+      const [batchCompletedEvent] = getEvents(result, 'utility', ['BatchCompleted'])
+      if (batchCompletedEvent) {
+        return []
+      }
+
+      // find all the failed calls based on their index
+      const events = getEvents(result, 'utility', ['ItemCompleted', 'ItemFailed'])
+      return events
+        .map((e, i) => {
+          if (e.method === 'ItemFailed') {
+            return {
+              args: txs[i].args.toString(),
+              error: formatDispatchError(api, e.data[0] as DispatchError),
+            }
+          }
+        })
+        .filter(Boolean)
+    })
   })
+
+  return [success, failedCalls]
 }
 
 /**
