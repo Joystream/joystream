@@ -1,3 +1,7 @@
+### 1.3.0
+
+- Updates mappings to process `NodeOperationalStatusMetadata` protobuf message. This metaprotocol message enables both storage/distribution workers & leads to set the operational status of the nodes.
+
 ### 1.2.2
 
 - Integrates OpenTelemetry API/SDK with Query Node's Graphql Server for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.

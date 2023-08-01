@@ -16,7 +16,6 @@ message StorageBucketOperatorMetadata {
   optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
   optional string extra = 3; // Additional information about the node / node operator
   optional NodeOperationalStatusMetadata operational_status = 4; // Node's operational status to set
-
 }
 
 message DistributionBucketOperatorMetadata {

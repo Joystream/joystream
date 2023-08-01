@@ -41,7 +41,7 @@
     "generate:all": "yarn generate:schema-typings"
   },
   "dependencies": {
-    "@joystream/metadata-protobuf": "^2.8.1",
+    "@joystream/metadata-protobuf": "^2.9.0",
     "@joystream/types": "^2.0.0",
     "@polkadot/util-crypto": "9.5.1",
     "axios": "^1.2.1",

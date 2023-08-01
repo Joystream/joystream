@@ -1,3 +1,8 @@
+### 1.3.0
+
+- Updates `operator:set-metadata` CLI command to set distributor-node's operational status along with other metadata.
+- Adds `leader:set-node-operational-status` CLI command to set operational status of any distributor-node by Lead.
+
 ### 1.2.2
 
 - **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.

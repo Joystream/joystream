@@ -1,3 +1,8 @@
+### 3.8.0
+
+- Updates `operator:set-metadata` CLI command to set storage-node's operational status along with other metadata.
+- Adds `leader:set-node-operational-status` CLI command to set operational status of any storage-node by Lead.
+
 ### 3.7.0
 
 - Updates `leader:update-bag` CLI command to `leader:update-bags` to accept multiple bag ids as input. This allows the command to be used to update storage buckets of multiple bags in a single batched transaction.
