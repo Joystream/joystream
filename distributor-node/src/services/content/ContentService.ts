@@ -10,6 +10,7 @@ import { NetworkingService } from '../networking'
 import { ContentHash } from '../crypto/ContentHash'
 import { PendingDownloadStatusType } from '../networking/PendingDownload'
 import { FSP } from './FSPromise'
+import { QueryFetchPolicy } from '../networking/query-node/api'
 
 export const DEFAULT_CONTENT_TYPE = 'application/octet-stream'
 export const MIME_TYPE_DETECTION_CHUNK_SIZE = 4100
@@ -313,7 +314,7 @@ export class ContentService {
     })
   }
 
-  public async objectStatus(objectId: string): Promise<ObjectStatus> {
+  public async objectStatus(objectId: string, qnFetchPolicy: QueryFetchPolicy = 'no-cache'): Promise<ObjectStatus> {
     const pendingDownload = this.stateCache.getPendingDownload(objectId)
 
     if (!pendingDownload && this.exists(objectId)) {
@@ -324,7 +325,7 @@ export class ContentService {
       return { type: ObjectStatusType.PendingDownload, pendingDownload }
     }
 
-    const objectInfo = await this.networking.dataObjectInfo(objectId)
+    const objectInfo = await this.networking.dataObjectInfo(objectId, qnFetchPolicy)
     if (!objectInfo.exists) {
       return { type: ObjectStatusType.NotFound }
     }
