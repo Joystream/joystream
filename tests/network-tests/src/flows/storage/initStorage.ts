@@ -9,13 +9,13 @@ import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { FlowProps } from '../../Flow'
 import {
+  AcceptStorageBucketInvitationFixture,
   CreateStorageBucketFixture,
+  SetStorageOperatorMetadataFixture,
   UpdateDynamicBagCreationPolicyFixture,
+  UpdateStorageBucketsPerBagLimitFixture,
   UpdateStorageBucketsVoucherLimitsFixture,
 } from '../../fixtures/storage'
-import { AcceptStorageBucketInvitationFixture } from '../../fixtures/storage/AcceptStorageBucketInvitationFixture'
-import { SetStorageOperatorMetadataFixture } from '../../fixtures/storage/SetStorageOperatorMetadataFixture'
-import { UpdateBucketsPerBagLimitFixture } from '../../fixtures/storage/UpdateBucketsPerBagLimit'
 import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
 
 type StorageBucketConfig = {
@@ -59,8 +59,7 @@ export default function initStorage({ buckets, dynamicBagPolicy }: InitStorageCo
     })
     await new FixtureRunner(updateStorageBucketsVoucherFixture).run()
 
-    const updateStorageBucketsPerBagLimitFixture = new UpdateBucketsPerBagLimitFixture(
-      'storage',
+    const updateStorageBucketsPerBagLimitFixture = new UpdateStorageBucketsPerBagLimitFixture(
       api,
       query,
       Math.max(5, buckets.length)
