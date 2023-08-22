@@ -114,7 +114,7 @@ export class ApiFactory {
 
         return new ApiFactory(api, treasuryAccountUri, miniSecret)
       } catch (err) {
-        if (connectAttempts === 3) {
+        if (connectAttempts === 10) {
           throw new Error('Unable to connect to chain')
         }
       }

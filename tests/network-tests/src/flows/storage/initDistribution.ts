@@ -13,10 +13,10 @@ import {
 } from '@polkadot/types/lookup'
 import _ from 'lodash'
 import { extendDebug } from '../../Debugger'
-import { FlowProps } from '../../Flow'
-import { Utils } from '../../utils'
 import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
+import { Utils } from '../../utils'
 
 type DistributionBucketConfig = {
   metadata: IDistributionBucketOperatorMetadata
@@ -31,68 +31,8 @@ type DistributionFamilyConfig = {
   }
 }
 
-type InitDistributionConfig = {
+export type InitDistributionConfig = {
   families: DistributionFamilyConfig[]
-}
-
-export const allStaticBags: CreateInterface<StaticBagId>[] = [
-  'Council',
-  { WorkingGroup: 'Content' },
-  { WorkingGroup: 'Distribution' },
-  { WorkingGroup: 'App' },
-  { WorkingGroup: 'OperationsAlpha' },
-  { WorkingGroup: 'OperationsBeta' },
-  { WorkingGroup: 'OperationsGamma' },
-  { WorkingGroup: 'Storage' },
-]
-
-export const singleBucketConfig: InitDistributionConfig = {
-  families: [
-    {
-      metadata: { region: 'All' },
-      dynamicBagPolicy: {
-        'Channel': 1,
-        'Member': 1,
-      },
-      buckets: [
-        {
-          metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: allStaticBags,
-        },
-      ],
-    },
-  ],
-}
-
-export const doubleBucketConfig: InitDistributionConfig = {
-  families: [
-    {
-      metadata: { region: 'Region 1' },
-      dynamicBagPolicy: {
-        'Channel': 1,
-        'Member': 1,
-      },
-      buckets: [
-        {
-          metadata: { endpoint: process.env.DISTRIBUTOR_1_URL || 'http://localhost:3334' },
-          staticBags: allStaticBags,
-        },
-      ],
-    },
-    {
-      metadata: { region: 'Region 2' },
-      dynamicBagPolicy: {
-        'Channel': 1,
-        'Member': 1,
-      },
-      buckets: [
-        {
-          metadata: { endpoint: process.env.DISTRIBUTOR_2_URL || 'http://localhost:3336' },
-          staticBags: allStaticBags,
-        },
-      ],
-    },
-  ],
 }
 
 export default function createFlow({ families }: InitDistributionConfig) {
@@ -109,9 +49,9 @@ export default function createFlow({ families }: InitDistributionConfig) {
 
     const hireWorkersFixture = new HireWorkersFixture(api, query, 'distributionWorkingGroup', totalBucketsNum)
     await new FixtureRunner(hireWorkersFixture).run()
-    const operatorIds = hireWorkersFixture.getCreatedWorkerIds()
+    const workerIds = hireWorkersFixture.getCreatedWorkerIds()
 
-    const operatorKeys = await api.getWorkerRoleAccounts(operatorIds, 'distributionWorkingGroup')
+    const operatorKeys = await api.getWorkerRoleAccounts(workerIds, 'distributionWorkingGroup')
 
     // Create families, set buckets per bag limit
     const createFamilyTxs = families.map(() => api.tx.storage.createDistributionBucketFamily())
@@ -178,20 +118,20 @@ export default function createFlow({ families }: InitDistributionConfig) {
 
     // Invite bucket operators
     const bucketInviteTxs = bucketIds.map((bucketId, i) =>
-      api.tx.storage.inviteDistributionBucketOperator(bucketId, operatorIds[i])
+      api.tx.storage.inviteDistributionBucketOperator(bucketId, workerIds[i])
     )
     await api.sendExtrinsicsAndGetResults(bucketInviteTxs, distributionLeaderKey)
 
     // Accept invitations
     const acceptInvitationTxs = bucketIds.map((bucketId, i) =>
-      api.tx.storage.acceptDistributionBucketInvitation(operatorIds[i], bucketId)
+      api.tx.storage.acceptDistributionBucketInvitation(workerIds[i], bucketId)
     )
     await api.sendExtrinsicsAndGetResults(acceptInvitationTxs, operatorKeys)
 
     // Bucket metadata and static bags
     const bucketSetupPromises = _.flatten(
       bucketIds.map((bucketId, i) => {
-        const operatorId = operatorIds[i]
+        const operatorId = workerIds[i]
         const operatorKey = operatorKeys[i]
         const bucketConfig = bucketById.get(bucketId.toString())
         if (!bucketConfig) {
