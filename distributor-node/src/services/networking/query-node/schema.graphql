@@ -2004,6 +2004,24 @@ enum MembershipExternalResourceType {
   WHATSAPP
 }
 
+type Validator implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+  type: MembershipExternalResourceType!
+  isValidator: Boolean!
+  validatorAccount: String
+  memberMetadata: MemberMetadata!
+  memberMetadataId: String!
+  member: Membership
+  memberId: String
+}
+
 type MemberMetadata implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -2029,6 +2047,7 @@ type MemberMetadata implements BaseGraphQLObject {
   memberprofileupdatedeventnewMetadata: [MemberProfileUpdatedEvent!]
   membershipboughteventmetadata: [MembershipBoughtEvent!]
   membershipgiftedeventmetadata: [MembershipGiftedEvent!]
+  validatormemberMetadata: [Validator!]
 }
 
 union Avatar = AvatarObject | AvatarUri
@@ -3297,6 +3316,7 @@ type Membership implements BaseGraphQLObject {
   stakingaccountaddedeventmember: [StakingAccountAddedEvent!]
   stakingaccountconfirmedeventmember: [StakingAccountConfirmedEvent!]
   stakingaccountremovedeventmember: [StakingAccountRemovedEvent!]
+  validatormember: [Validator!]
   videoreactedeventreactingMember: [VideoReactedEvent!]
   videoreactionmember: [VideoReaction!]
   workinggroupapplicationapplicant: [WorkingGroupApplication!]
@@ -5621,6 +5641,17 @@ type UpcomingWorkingGroupOpeningEdge {
 type UpcomingWorkingGroupOpeningConnection {
   totalCount: Int!
   edges: [UpcomingWorkingGroupOpeningEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ValidatorEdge {
+  node: Validator!
+  cursor: String!
+}
+
+type ValidatorConnection {
+  totalCount: Int!
+  edges: [ValidatorEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -17675,6 +17706,67 @@ input MembershipBoughtEventUpdateInput {
   referrer: ID
 }
 
+input ValidatorWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  type_eq: MembershipExternalResourceType
+  type_in: [MembershipExternalResourceType!]
+  isValidator_eq: Boolean
+  isValidator_in: [Boolean!]
+  validatorAccount_eq: String
+  validatorAccount_contains: String
+  validatorAccount_startsWith: String
+  validatorAccount_endsWith: String
+  validatorAccount_in: [String!]
+  memberMetadata: MemberMetadataWhereInput
+  member: MembershipWhereInput
+  AND: [ValidatorWhereInput!]
+  OR: [ValidatorWhereInput!]
+  NOT: [ValidatorWhereInput!]
+}
+
+input ValidatorWhereUniqueInput {
+  id: ID!
+}
+
+input ValidatorCreateInput {
+  type: MembershipExternalResourceType!
+  isValidator: Boolean!
+  validatorAccount: String
+  memberMetadata: ID!
+  member: ID
+}
+
+input ValidatorUpdateInput {
+  type: MembershipExternalResourceType
+  isValidator: Boolean
+  validatorAccount: String
+  memberMetadata: ID
+  member: ID
+}
+
 input MemberMetadataWhereInput {
   id_eq: ID
   id_in: [ID!]
@@ -17730,6 +17822,9 @@ input MemberMetadataWhereInput {
   membershipgiftedeventmetadata_none: MembershipGiftedEventWhereInput
   membershipgiftedeventmetadata_some: MembershipGiftedEventWhereInput
   membershipgiftedeventmetadata_every: MembershipGiftedEventWhereInput
+  validatormemberMetadata_none: ValidatorWhereInput
+  validatormemberMetadata_some: ValidatorWhereInput
+  validatormemberMetadata_every: ValidatorWhereInput
   AND: [MemberMetadataWhereInput!]
   OR: [MemberMetadataWhereInput!]
   NOT: [MemberMetadataWhereInput!]
@@ -21045,6 +21140,9 @@ input MembershipWhereInput {
   stakingaccountremovedeventmember_none: StakingAccountRemovedEventWhereInput
   stakingaccountremovedeventmember_some: StakingAccountRemovedEventWhereInput
   stakingaccountremovedeventmember_every: StakingAccountRemovedEventWhereInput
+  validatormember_none: ValidatorWhereInput
+  validatormember_some: ValidatorWhereInput
+  validatormember_every: ValidatorWhereInput
   videoreactedeventreactingMember_none: VideoReactedEventWhereInput
   videoreactedeventreactingMember_some: VideoReactedEventWhereInput
   videoreactedeventreactingMember_every: VideoReactedEventWhereInput
@@ -28206,6 +28304,9 @@ type Query {
   upcomingWorkingGroupOpenings(offset: Int, limit: Int = 50, where: UpcomingWorkingGroupOpeningWhereInput, orderBy: [UpcomingWorkingGroupOpeningOrderByInput!]): [UpcomingWorkingGroupOpening!]!
   upcomingWorkingGroupOpeningByUniqueInput(where: UpcomingWorkingGroupOpeningWhereUniqueInput!): UpcomingWorkingGroupOpening
   upcomingWorkingGroupOpeningsConnection(first: Int, after: String, last: Int, before: String, where: UpcomingWorkingGroupOpeningWhereInput, orderBy: [UpcomingWorkingGroupOpeningOrderByInput!]): UpcomingWorkingGroupOpeningConnection!
+  validators(offset: Int, limit: Int = 50, where: ValidatorWhereInput, orderBy: [ValidatorOrderByInput!]): [Validator!]!
+  validatorByUniqueInput(where: ValidatorWhereUniqueInput!): Validator
+  validatorsConnection(first: Int, after: String, last: Int, before: String, where: ValidatorWhereInput, orderBy: [ValidatorOrderByInput!]): ValidatorConnection!
   videoAssetsDeletedByModeratorEvents(offset: Int, limit: Int = 50, where: VideoAssetsDeletedByModeratorEventWhereInput, orderBy: [VideoAssetsDeletedByModeratorEventOrderByInput!]): [VideoAssetsDeletedByModeratorEvent!]!
   videoAssetsDeletedByModeratorEventByUniqueInput(where: VideoAssetsDeletedByModeratorEventWhereUniqueInput!): VideoAssetsDeletedByModeratorEvent
   videoAssetsDeletedByModeratorEventsConnection(first: Int, after: String, last: Int, before: String, where: VideoAssetsDeletedByModeratorEventWhereInput, orderBy: [VideoAssetsDeletedByModeratorEventOrderByInput!]): VideoAssetsDeletedByModeratorEventConnection!
@@ -32109,6 +32210,25 @@ enum UpcomingWorkingGroupOpeningOrderByInput {
   rewardPerBlock_DESC
   metadata_ASC
   metadata_DESC
+}
+
+enum ValidatorOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  type_ASC
+  type_DESC
+  isValidator_ASC
+  isValidator_DESC
+  validatorAccount_ASC
+  validatorAccount_DESC
+  memberMetadata_ASC
+  memberMetadata_DESC
+  member_ASC
+  member_DESC
 }
 
 enum VideoAssetsDeletedByModeratorEventOrderByInput {

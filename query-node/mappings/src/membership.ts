@@ -121,7 +121,7 @@ async function saveMembershipExternalResources(
   return newExternalResources
 }
 
-function asMembershipExternalResource(
+export function asMembershipExternalResource(
   resource: MembershipMetadata.IExternalResource
 ): Pick<MembershipExternalResource, 'type' | 'value'>[] {
   const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]

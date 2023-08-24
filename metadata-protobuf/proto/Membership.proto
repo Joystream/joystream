@@ -21,6 +21,8 @@ message MembershipMetadata {
       IRC = 8;
       WECHAT = 9;
       WHATSAPP = 10;
+      VALIDATOR = 11;
+      
     }
     optional ResourceType type = 1;
     optional string value = 2;
