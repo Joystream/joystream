@@ -1,6 +1,6 @@
 type Validator @entity {
   id: ID!
   isValidator: Boolean!
-  validatorAccount:String
+  validatorAccount: String
   member: String
 }
