@@ -1,8 +1,6 @@
 type Validator @entity {
   id: ID!
-  type: MembershipExternalResourceType!
   isValidator: Boolean!
   validatorAccount:String
-  memberMetadata: MemberMetadata!
-  member: Membership
+  member: String
 }
