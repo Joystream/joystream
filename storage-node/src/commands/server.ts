@@ -283,6 +283,13 @@ Supported values: warn, error, debug, info. Default:debug`,
         enableUploadingAuth,
         downloadBuckets: selectedBuckets,
         uploadBuckets: writableBuckets,
+        sync: { enabled: flags.sync, interval: flags.syncInterval },
+        cleanup: {
+          enabled: flags.cleanup,
+          interval: flags.cleanupInterval,
+          maxQnLaggingThresholdInBlocks: MAXIMUM_QN_LAGGING_THRESHOLD,
+          minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
+        },
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
