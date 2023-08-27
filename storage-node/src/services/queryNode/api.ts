@@ -1,47 +1,51 @@
 import {
   ApolloClient,
-  NormalizedCacheObject,
-  HttpLink,
-  defaultDataIdFromObject,
-  InMemoryCache,
   DocumentNode,
-  split,
+  HttpLink,
+  InMemoryCache,
+  NormalizedCacheObject,
+  defaultDataIdFromObject,
   from,
+  split,
 } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
+import { WebSocketLink } from '@apollo/client/link/ws'
+import { getMainDefinition } from '@apollo/client/utilities'
 import fetch from 'cross-fetch'
+import stringify from 'fast-safe-stringify'
+import ws from 'ws'
+import logger from '../logger'
 import {
+  DataObjectByBagIdsDetailsFragment,
+  DataObjectDetailsFragment,
   GetBagConnection,
   GetBagConnectionQuery,
   GetBagConnectionQueryVariables,
+  GetDataObjectsByBagIdsConnection,
+  GetDataObjectsByBagIdsConnectionQuery,
+  GetDataObjectsByBagIdsConnectionQueryVariables,
+  GetDataObjectsConnection,
+  GetDataObjectsConnectionQuery,
+  GetDataObjectsConnectionQueryVariables,
   GetStorageBucketDetails,
-  GetStorageBucketDetailsQuery,
+  GetStorageBucketDetailsByWorkerId,
   GetStorageBucketDetailsByWorkerIdQuery,
   GetStorageBucketDetailsByWorkerIdQueryVariables,
+  GetStorageBucketDetailsQuery,
   GetStorageBucketDetailsQueryVariables,
-  StorageBucketDetailsFragment,
-  StorageBagDetailsFragment,
-  DataObjectDetailsFragment,
-  GetDataObjectConnectionQuery,
-  GetDataObjectConnectionQueryVariables,
-  GetDataObjectConnection,
-  StorageBucketIdsFragment,
   GetStorageBucketsConnection,
   GetStorageBucketsConnectionQuery,
   GetStorageBucketsConnectionQueryVariables,
-  GetStorageBucketDetailsByWorkerId,
+  QueryNodeState,
+  QueryNodeStateFields,
   QueryNodeStateFieldsFragment,
   QueryNodeStateSubscription,
   QueryNodeStateSubscriptionVariables,
-  QueryNodeState,
-  QueryNodeStateFields,
+  StorageBagDetailsFragment,
+  StorageBucketDetailsFragment,
+  StorageBucketIdsFragment,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
-import { WebSocketLink } from '@apollo/client/link/ws'
-import { getMainDefinition } from '@apollo/client/utilities'
-import ws from 'ws'
-import logger from '../logger'
-import stringify from 'fast-safe-stringify'
 
 /**
  * Defines query paging limits.
@@ -294,20 +298,49 @@ export class QueryNodeApi {
    * Returns data objects info by pages for the given bags.
    *
    * @param bagIds - query filter: bag IDs
-   * @param offset - starting record of the page
    */
-  public async getDataObjectDetails(bagIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
+  public async getDataObjectDetailsByBagIds(bagIds: string[]): Promise<Array<DataObjectByBagIdsDetailsFragment>> {
     const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    const fullResult: DataObjectDetailsFragment[] = []
+    const fullResult: DataObjectByBagIdsDetailsFragment[] = []
     while (allBagIds.length) {
       const bagIdsBatch = allBagIds.splice(0, 1000)
       const input: StorageBagWhereInput = { id_in: bagIdsBatch }
       fullResult.push(
         ...(await this.multipleEntitiesWithPagination<
+          DataObjectByBagIdsDetailsFragment,
+          GetDataObjectsByBagIdsConnectionQuery,
+          GetDataObjectsByBagIdsConnectionQueryVariables
+        >(
+          GetDataObjectsByBagIdsConnection,
+          { limit: MAX_RESULTS_PER_QUERY, bagIds: input },
+          'storageDataObjectsConnection'
+        ))
+      )
+    }
+
+    return fullResult
+  }
+
+  /**
+   * Returns data objects info by pages for the given dataObject IDs.
+   *
+   * @param bagIds - query filter: dataObject IDs
+   */
+  public async getDataObjectDetails(dataObjectIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
+    const allDataObjectIds = [...dataObjectIds] // Copy to avoid modifying the original array
+    const fullResult: DataObjectDetailsFragment[] = []
+    while (allDataObjectIds.length) {
+      const dataObjectIdsBatch = allDataObjectIds.splice(0, 1000)
+      fullResult.push(
+        ...(await this.multipleEntitiesWithPagination<
           DataObjectDetailsFragment,
-          GetDataObjectConnectionQuery,
-          GetDataObjectConnectionQueryVariables
-        >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection'))
+          GetDataObjectsConnectionQuery,
+          GetDataObjectsConnectionQueryVariables
+        >(
+          GetDataObjectsConnection,
+          { limit: MAX_RESULTS_PER_QUERY, dataObjectIds: dataObjectIdsBatch },
+          'storageDataObjectsConnection'
+        ))
       )
     }
 

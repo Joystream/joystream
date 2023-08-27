@@ -1,20 +1,24 @@
+import { ApiPromise } from '@polkadot/api'
+import { hexToString } from '@polkadot/util'
 import fs from 'fs'
+import _ from 'lodash'
 import path from 'path'
 import { pipeline } from 'stream'
-import { promisify } from 'util'
 import superagent from 'superagent'
 import urljoin from 'url-join'
+import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../services/logger'
-import _ from 'lodash'
+import {
+  addDataObjectIdToCache,
+  deleteDataObjectIdFromCache,
+  getDataObjectIdFromCache,
+} from '../caching/localDataObjects'
+import { isNewDataObject } from '../caching/newUploads'
+import { parseBagId } from '../helpers/bagTypes'
+import { hashFile } from '../helpers/hashing'
 import { getRemoteDataObjects } from './remoteStorageData'
 import { TaskSink } from './workingProcess'
-import { isNewDataObject } from '../caching/newUploads'
-import { addDataObjectIdToCache, deleteDataObjectIdFromCache } from '../caching/localDataObjects'
-import { hashFile } from '../helpers/hashing'
-import { parseBagId } from '../helpers/bagTypes'
-import { hexToString } from '@polkadot/util'
-import { ApiPromise } from '@polkadot/api'
 const fsPromises = fs.promises
 
 /**
@@ -45,16 +49,23 @@ export class DeleteLocalFileTask implements SyncTask {
   }
 
   description(): string {
-    return `Sync - deleting local file: ${this.filename} ....`
+    return `Cleanup - deleting local file: ${this.filename} ....`
   }
 
   async execute(): Promise<void> {
     const dataObjectId = this.filename
     if (isNewDataObject(dataObjectId)) {
-      logger.warn(`Sync - possible QueryNode update delay (new file) - deleting file canceled: ${this.filename}`)
+      logger.warn(`Cleanup - possible QueryNode update delay (new file) - deleting file canceled: ${this.filename}`)
       return
     }
 
+    const cachedDataObjectId = await getDataObjectIdFromCache(dataObjectId)
+    if (cachedDataObjectId && cachedDataObjectId.pinnedCount) {
+      logger.warn(
+        `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
+      )
+      return
+    }
     const fullPath = path.join(this.uploadsDirectory, this.filename)
     await fsPromises.unlink(fullPath)
 

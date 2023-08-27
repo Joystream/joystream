@@ -1,31 +1,35 @@
-import { acceptPendingDataObjects } from '../../runtime/extrinsics'
-import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
-import { hashFile } from '../../helpers/hashing'
-import { registerNewDataObjectId } from '../../caching/newUploads'
-import { addDataObjectIdToCache } from '../../caching/localDataObjects'
-import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
-import { getFileInfo } from '../../helpers/fileInfo'
-import logger from '../../logger'
 import { ApiPromise } from '@polkadot/api'
+import { PalletStorageBagIdType as BagId, PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
+import { hexToString } from '@polkadot/util'
+import BN from 'bn.js'
 import * as express from 'express'
 import fs from 'fs'
 import path from 'path'
-import send from 'send'
-import { hexToString } from '@polkadot/util'
-import { parseBagId } from '../../helpers/bagTypes'
 import { timeout } from 'promise-timeout'
-import { WebApiError, sendResponseWithError, getHttpStatusCodeByError, AppConfig } from './common'
-import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
-import { PalletMembershipMembershipObject as Membership, PalletStorageBagIdType as BagId } from '@polkadot/types/lookup'
-import BN from 'bn.js'
-import {
-  UploadFileQueryParams,
-  UploadTokenRequest,
-  UploadTokenBody,
-  GetFileRequestParams,
-  GetFileHeadersRequestParams,
-} from '../types'
+import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
+import {
+  addDataObjectIdToCache,
+  pinDataObjectIdToCache,
+  unpinDataObjectIdFromCache,
+} from '../../caching/localDataObjects'
+import { registerNewDataObjectId } from '../../caching/newUploads'
+import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
+import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
+import { parseBagId } from '../../helpers/bagTypes'
+import { getFileInfo } from '../../helpers/fileInfo'
+import { hashFile } from '../../helpers/hashing'
+import logger from '../../logger'
+import { acceptPendingDataObjects } from '../../runtime/extrinsics'
+import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
+import {
+  GetFileHeadersRequestParams,
+  GetFileRequestParams,
+  UploadFileQueryParams,
+  UploadTokenBody,
+  UploadTokenRequest,
+} from '../types'
+import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
 const fsPromises = fs.promises
 
 /**
@@ -37,6 +41,8 @@ export async function getFile(
   next: express.NextFunction
 ): Promise<void> {
   try {
+    await pinDataObjectIdToCache(req.params.id)
+
     const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
@@ -57,9 +63,14 @@ export async function getFile(
       sendResponseWithError(res, next, err, 'files')
     })
 
+    stream.on('end', async () => {
+      await unpinDataObjectIdFromCache(req.params.id)
+    })
+
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
+    await unpinDataObjectIdFromCache(req.params.id)
   }
 }
 
@@ -71,6 +82,8 @@ export async function getFileHeaders(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
+    await pinDataObjectIdToCache(req.params.id)
+
     const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
@@ -84,6 +97,8 @@ export async function getFileHeaders(
     res.status(200).send()
   } catch (err) {
     res.status(getHttpStatusCodeByError(err)).send()
+  } finally {
+    await unpinDataObjectIdFromCache(req.params.id)
   }
 }
 

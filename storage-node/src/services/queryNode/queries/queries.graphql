@@ -94,13 +94,36 @@ query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
   }
 }
 
-fragment DataObjectDetails on StorageDataObject {
+fragment DataObjectByBagIdsDetails on StorageDataObject {
   id
   storageBagId
 }
 
-query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $cursor: String) {
+query getDataObjectsByBagIdsConnection($bagIds: StorageBagWhereInput, $limit: Int, $cursor: String) {
   storageDataObjectsConnection(first: $limit, after: $cursor, where: { storageBag: $bagIds, isAccepted_eq: true }) {
+    edges {
+      cursor
+      node {
+        ...DataObjectByBagIdsDetails
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    totalCount
+  }
+}
+
+fragment DataObjectDetails on StorageDataObject {
+  id
+  storageBag {
+    ...StorageBagDetails
+  }
+}
+
+query getDataObjectsConnection($dataObjectIds: [ID!], $limit: Int, $cursor: String) {
+  storageDataObjectsConnection(first: $limit, after: $cursor, where: { id_in: $dataObjectIds, isAccepted_eq: true }) {
     edges {
       cursor
       node {

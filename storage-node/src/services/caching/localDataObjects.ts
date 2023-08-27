@@ -1,11 +1,14 @@
 import AwaitLock from 'await-lock'
-import path from 'path'
 import fs from 'fs'
+import path from 'path'
 import logger from '../logger'
 const fsPromises = fs.promises
 
+type DataObjectId = string
+type DataObjectPinCount = number
+
 // Local in-memory cache for IDs.
-let idCache = new Set<string>()
+const idCache = new Map<DataObjectId, DataObjectPinCount>()
 
 const lock = new AwaitLock()
 
@@ -17,7 +20,7 @@ const lock = new AwaitLock()
  */
 export async function getDataObjectIDs(): Promise<string[]> {
   await lock.acquireAsync()
-  const ids = Array.from(idCache)
+  const ids = [...idCache.keys()]
   lock.release()
 
   return ids
@@ -39,7 +42,7 @@ export async function loadDataObjectIdCache(uploadDir: string, tempDirName: stri
   const tempDirectoryName = path.parse(tempDirName).name
   const ids = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
 
-  idCache = new Set(ids)
+  ids.map((id) => idCache.set(id, 0))
 
   logger.debug(`Local ID cache loaded.`)
 
@@ -49,22 +52,50 @@ export async function loadDataObjectIdCache(uploadDir: string, tempDirName: stri
 /**
  * Adds data object ID to the local cache.
  *
- * @param dataObjectId - uploading directory
+ * @param dataObjectId - Storage data object ID
  *
  * @returns empty promise.
  */
 export async function addDataObjectIdToCache(dataObjectId: string): Promise<void> {
   await lock.acquireAsync()
 
-  idCache.add(dataObjectId)
+  idCache.set(dataObjectId, 0)
 
+  lock.release()
+}
+
+/**
+ * Pins data object ID in the local cache (increments the data object usage).
+ *
+ * @param dataObjectId - Storage data object ID
+ *
+ * @returns empty promise.
+ */
+export async function pinDataObjectIdToCache(dataObjectId: string): Promise<void> {
+  await lock.acquireAsync()
+  const currentPinnedCount = idCache.get(dataObjectId) || 0
+  idCache.set(dataObjectId, currentPinnedCount + 1)
+  lock.release()
+}
+
+/**
+ * Un-pins data object ID from the local cache (decrements the data object usage).
+ *
+ * @param dataObjectId - Storage data object ID
+ *
+ * @returns empty promise.
+ */
+export async function unpinDataObjectIdFromCache(dataObjectId: string): Promise<void> {
+  await lock.acquireAsync()
+  const currentPinnedCount = idCache.get(dataObjectId)
+  idCache.set(dataObjectId, currentPinnedCount ? currentPinnedCount - 1 : 0)
   lock.release()
 }
 
 /**
  * Deletes data object ID from the local cache.
  *
- * @param dataObjectId - uploading directory
+ * @param dataObjectId - Storage data object ID
  */
 export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise<void> {
   await lock.acquireAsync()
@@ -72,6 +103,24 @@ export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise
   idCache.delete(dataObjectId)
 
   lock.release()
+}
+
+/**
+ * Get data object ID from the local cache.
+ *
+ * @param dataObjectId - Storage data object ID
+ */
+export async function getDataObjectIdFromCache(
+  dataObjectId: string
+): Promise<{ dataObjectId: DataObjectId; pinnedCount: DataObjectPinCount } | undefined> {
+  if (idCache.has(dataObjectId)) {
+    await lock.acquireAsync()
+    const id = { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
+    lock.release()
+    return id
+  }
+
+  return undefined
 }
 
 /**

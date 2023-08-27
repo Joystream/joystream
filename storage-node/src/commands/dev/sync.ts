@@ -1,7 +1,8 @@
 import { Command, flags } from '@oclif/command'
-import { performSync } from '../../services/sync/synchronizer'
-import logger from '../../services/logger'
 import stringify from 'fast-safe-stringify'
+import logger from '../../services/logger'
+import { QueryNodeApi } from '../../services/queryNode/api'
+import { performSync } from '../../services/sync/synchronizer'
 
 /**
  * CLI command:
@@ -62,6 +63,7 @@ export default class DevSync extends Command {
   async run(): Promise<void> {
     const { flags } = this.parse(DevSync)
     const bucketId = flags.bucketId.toString()
+    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
     logger.info('Syncing...')
 
     try {
@@ -71,7 +73,7 @@ export default class DevSync extends Command {
         [bucketId],
         flags.syncWorkersNumber,
         flags.syncWorkersTimeout,
-        flags.queryNodeEndpoint,
+        qnApi,
         flags.uploads,
         flags.dataSourceOperatorUrl
       )
