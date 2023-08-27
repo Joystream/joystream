@@ -22,7 +22,8 @@ export async function saveValidator(
           id: `${memberMetadata.id}-${type}`,
           isValidator: false,
           validatorAccount: value,
-          member: member.handle,
+          member: member,
+          memberMetadata:memberMetadata
         })
       }
     )
