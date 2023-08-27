@@ -42,6 +42,7 @@ import {
   StakingAccountAddedEvent,
   StakingAccountConfirmedEvent,
   StakingAccountRemovedEvent,
+  Validator,
   WorkingGroup,
 } from 'query-node/dist/model'
 import {
@@ -89,6 +90,7 @@ import {
 } from './content'
 import { processCreateAppMessage, processUpdateAppMessage } from './content/app'
 import { createVideoCategory } from './content/videoCategory'
+import { saveValidator } from './validator'
 
 // Will only be used to get the initial balance till ephesus upgrade, after that it will be read from the event
 async function initialInvitationBalance(store: DatabaseManager) {
@@ -232,7 +234,9 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     memberEntry,
     buyMembershipParameters,
     inviteCount.toNumber()
-  )
+    )
+    
+    const metadata = await saveMembershipMetadata(store, member)
 
   const membershipBoughtEvent = new MembershipBoughtEvent({
     ...genericEventFields(event),
@@ -240,12 +244,14 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: await saveMembershipMetadata(store, member),
+    metadata:metadata,
     referrer: member.referredBy,
   })
 
   await store.save<MembershipBoughtEvent>(membershipBoughtEvent)
 
+
+  await saveValidator(store,member,metadata);
   // Update the other side of event<->membership relation
   memberEntry.membershipBoughtEventId = membershipBoughtEvent.id
   await store.save<Membership>(member)

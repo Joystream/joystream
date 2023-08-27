@@ -2013,13 +2013,12 @@ type Validator implements BaseGraphQLObject {
   deletedAt: DateTime
   deletedById: ID
   version: Int!
-  type: MembershipExternalResourceType!
-  isValidator: Boolean!
+  isVerified: Boolean!
   validatorAccount: String
+  member: Membership!
+  memberId: String!
   memberMetadata: MemberMetadata!
   memberMetadataId: String!
-  member: Membership
-  memberId: String
 }
 
 type MemberMetadata implements BaseGraphQLObject {
@@ -17731,17 +17730,15 @@ input ValidatorWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  type_eq: MembershipExternalResourceType
-  type_in: [MembershipExternalResourceType!]
-  isValidator_eq: Boolean
-  isValidator_in: [Boolean!]
+  isVerified_eq: Boolean
+  isVerified_in: [Boolean!]
   validatorAccount_eq: String
   validatorAccount_contains: String
   validatorAccount_startsWith: String
   validatorAccount_endsWith: String
   validatorAccount_in: [String!]
-  memberMetadata: MemberMetadataWhereInput
   member: MembershipWhereInput
+  memberMetadata: MemberMetadataWhereInput
   AND: [ValidatorWhereInput!]
   OR: [ValidatorWhereInput!]
   NOT: [ValidatorWhereInput!]
@@ -17752,19 +17749,17 @@ input ValidatorWhereUniqueInput {
 }
 
 input ValidatorCreateInput {
-  type: MembershipExternalResourceType!
-  isValidator: Boolean!
+  isVerified: Boolean!
   validatorAccount: String
+  member: ID!
   memberMetadata: ID!
-  member: ID
 }
 
 input ValidatorUpdateInput {
-  type: MembershipExternalResourceType
-  isValidator: Boolean
+  isVerified: Boolean
   validatorAccount: String
-  memberMetadata: ID
   member: ID
+  memberMetadata: ID
 }
 
 input MemberMetadataWhereInput {
@@ -32219,16 +32214,14 @@ enum ValidatorOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
-  type_ASC
-  type_DESC
-  isValidator_ASC
-  isValidator_DESC
+  isVerified_ASC
+  isVerified_DESC
   validatorAccount_ASC
   validatorAccount_DESC
-  memberMetadata_ASC
-  memberMetadata_DESC
   member_ASC
   member_DESC
+  memberMetadata_ASC
+  memberMetadata_DESC
 }
 
 enum VideoAssetsDeletedByModeratorEventOrderByInput {
