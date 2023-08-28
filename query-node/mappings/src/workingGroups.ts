@@ -714,7 +714,7 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
 }
 
 export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
+  const [metadataByte, ] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
   const group = await getWorkingGroup(store, event)
 
   const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
@@ -722,10 +722,10 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     if (group.name !== 'forumWorkingGroup') {
       return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
     }
-    const { postId, rationale } = metadata.moderatePost
+    const { postId, rationale, validator } = metadata.moderatePost
     const actor = await getWorkingGroupLead(store, group.name)
 
-    await moderatePost(store, event, 'leadRemark', postId, actor, rationale)
+    await moderatePost(store, event, 'leadRemark', postId, actor, rationale, validator)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
@@ -740,10 +740,10 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     if (group.name !== 'forumWorkingGroup') {
       return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
     }
-    const { postId, rationale } = metadata.moderatePost
+    const { postId, rationale, validator } = metadata.moderatePost
     const actor = await getWorker(store, group.name, workerId)
 
-    await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
+    await moderatePost(store, event, 'workerRemark', postId, actor, rationale, validator)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

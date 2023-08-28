@@ -113,7 +113,9 @@ export async function moderatePost(
   type: ModerationType,
   postId: string,
   actor: Worker,
-  rationale: string
+  rationale: string,
+  verfied?:boolean
+
 ): Promise<void> {
   const post = await store.get(ForumPost, { where: { id: postId }, relations: ['thread', 'thread.category'] })
 
@@ -137,7 +139,7 @@ export async function moderatePost(
     ...genericEventFields(event),
     actor,
     post,
-    rationale,
+    rationale
   })
 
   await store.save<PostModeratedEvent>(postModeratedEvent)

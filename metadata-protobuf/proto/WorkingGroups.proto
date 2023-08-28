@@ -61,6 +61,7 @@ message WorkingGroupMetadataAction {
 message ModeratePost {
   required uint64 post_id = 1;
   required string rationale = 2;
+  required bool validator = 3;
 }
 
 message RemarkMetadataAction {
