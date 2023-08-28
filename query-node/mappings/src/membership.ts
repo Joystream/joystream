@@ -74,6 +74,7 @@ import {
   getMemberById,
   getWorker,
   getWorkingGroupByName,
+  invalidMetadata,
   logger,
   saveMetaprotocolTransactionErrored,
   saveMetaprotocolTransactionSuccessful,
@@ -128,13 +129,14 @@ export function asMembershipExternalResource(
 ): Pick<MembershipExternalResource, 'type' | 'value'>[] {
   const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
 
-  if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
-    throw new Error(`Invalid ResourceType: ${typeKey}`)
+  if (typeKey && typeKey in MembershipExternalResourceType) {
+    const type = MembershipExternalResourceType[typeKey]
+    const value = resource.value
+    return type && value ? [{ type, value }] : []
+  } else {
+    invalidMetadata(`Invalid ResourceType: ${resource.type}`)
+    return []
   }
-
-  const type = MembershipExternalResourceType[typeKey]
-  const value = resource.value
-  return type && value ? [{ type, value }] : []
 }
 
 async function saveMembershipMetadata(
