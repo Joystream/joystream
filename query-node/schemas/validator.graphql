@@ -1,0 +1,7 @@
+type Validator @entity {
+  id: ID!
+  isVerified: Boolean!
+  validatorAccount: String!
+  member: Membership!
+  memberMetadata: MemberMetadata!
+}

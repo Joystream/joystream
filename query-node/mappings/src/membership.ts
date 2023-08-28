@@ -42,6 +42,7 @@ import {
   StakingAccountAddedEvent,
   StakingAccountConfirmedEvent,
   StakingAccountRemovedEvent,
+  Validator,
   WorkingGroup,
 } from 'query-node/dist/model'
 import {
@@ -73,7 +74,6 @@ import {
   getMemberById,
   getWorker,
   getWorkingGroupByName,
-  invalidMetadata,
   logger,
   saveMetaprotocolTransactionErrored,
   saveMetaprotocolTransactionSuccessful,
@@ -122,19 +122,18 @@ async function saveMembershipExternalResources(
   return newExternalResources
 }
 
-function asMembershipExternalResource(
+export function asMembershipExternalResource(
   resource: MembershipMetadata.IExternalResource
 ): Pick<MembershipExternalResource, 'type' | 'value'>[] {
   const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
 
-  if (typeKey && typeKey in MembershipExternalResourceType) {
-    const type = MembershipExternalResourceType[typeKey]
-    const value = resource.value
-    return type && value ? [{ type, value }] : []
-  } else {
-    invalidMetadata(`Invalid ResourceType: ${resource.type}`)
-    return []
+  if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
+    throw new Error(`Invalid ResourceType: ${typeKey}`)
   }
+
+  const type = MembershipExternalResourceType[typeKey]
+  const value = resource.value
+  return type && value ? [{ type, value }] : []
 }
 
 async function saveMembershipMetadata(
@@ -236,13 +235,15 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     inviteCount.toNumber()
   )
 
+  const metadata = await saveMembershipMetadata(store, member)
+
   const membershipBoughtEvent = new MembershipBoughtEvent({
     ...genericEventFields(event),
     newMember: member,
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: await saveMembershipMetadata(store, member),
+    metadata: metadata,
     referrer: member.referredBy,
   })
 
@@ -299,6 +300,16 @@ export async function members_MemberCreated({ store, event }: EventContext & Sto
     isFoundingMember: memberParameters.isFoundingMember.isTrue,
   })
 
+  const validator = new Validator({
+    id: member.id,
+    isVerified: false,
+    validatorAccount: member.metadata.validatorAccount,
+    member: member,
+    memberMetadata: member.metadata,
+  })
+
+  await store.save<Validator>(validator)
+
   await store.save<MemberCreatedEvent>(memberCreatedEvent)
 
   // Update the other side of event<->membership relation
@@ -329,6 +340,16 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   if (newHandle.isSome) {
     member.handle = bytesToString(newHandle.unwrap())
   }
+
+  const validator = new Validator({
+    id: member.id,
+    isVerified: false,
+    validatorAccount: metadata.validatorAccount,
+    member: member,
+    memberMetadata: member.metadata,
+  })
+
+  await store.save<Validator>(validator)
 
   await store.save<MemberMetadata>(member.metadata)
   await store.save<Membership>(member)
