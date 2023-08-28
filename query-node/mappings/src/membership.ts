@@ -74,6 +74,7 @@ import {
   getMemberById,
   getWorker,
   getWorkingGroupByName,
+  invalidMetadata,
   logger,
   saveMetaprotocolTransactionErrored,
   saveMetaprotocolTransactionSuccessful,
@@ -122,18 +123,19 @@ async function saveMembershipExternalResources(
   return newExternalResources
 }
 
-export function asMembershipExternalResource(
+function asMembershipExternalResource(
   resource: MembershipMetadata.IExternalResource
 ): Pick<MembershipExternalResource, 'type' | 'value'>[] {
   const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
 
-  if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
-    throw new Error(`Invalid ResourceType: ${typeKey}`)
+  if (typeKey && typeKey in MembershipExternalResourceType) {
+    const type = MembershipExternalResourceType[typeKey]
+    const value = resource.value
+    return type && value ? [{ type, value }] : []
+  } else {
+    invalidMetadata(`Invalid ResourceType: ${resource.type}`)
+    return []
   }
-
-  const type = MembershipExternalResourceType[typeKey]
-  const value = resource.value
-  return type && value ? [{ type, value }] : []
 }
 
 async function saveMembershipMetadata(
@@ -235,15 +237,13 @@ export async function members_MembershipBought({ store, event }: EventContext & 
     inviteCount.toNumber()
   )
 
-  const metadata = await saveMembershipMetadata(store, member)
-
   const membershipBoughtEvent = new MembershipBoughtEvent({
     ...genericEventFields(event),
     newMember: member,
     controllerAccount: member.controllerAccount,
     rootAccount: member.rootAccount,
     handle: member.handle,
-    metadata: metadata,
+    metadata: await saveMembershipMetadata(store, member),
     referrer: member.referredBy,
   })
 

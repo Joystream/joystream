@@ -63,8 +63,13 @@ message ModeratePost {
   required string rationale = 2;
 }
 
+message ValidatorVerifed{
+  required bool isVerified = 1;
+}
+
 message RemarkMetadataAction {
   oneof action {
     ModeratePost moderate_post = 1;
+    ValidatorVerifed validatorVerified_post = 2;
   }
 }
