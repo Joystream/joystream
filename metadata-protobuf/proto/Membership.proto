@@ -26,4 +26,9 @@ message MembershipMetadata {
     optional string value = 2;
   }
   repeated ExternalResource externalResources = 5;
+  
+  optional bool isVerified = 6;
+  optional string validatorAccount = 7;
 }
+
+
