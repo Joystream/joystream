@@ -158,8 +158,8 @@ async function saveMembershipMetadata(
     id: undefined,
     avatar,
     externalResources: undefined,
-    isVerified:false,
-    validatorAccount:metadata?.validatorAccount || undefined
+    isVerified: false,
+    validatorAccount: metadata?.validatorAccount || undefined,
   })
 
   await store.save<MemberMetadata>(metadataEntity)
