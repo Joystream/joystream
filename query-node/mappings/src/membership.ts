@@ -158,7 +158,7 @@ async function saveMembershipMetadata(
     id: undefined,
     avatar,
     externalResources: undefined,
-    isVerified: false,
+    isVerifiedValidator: false,
     validatorAccount: metadata?.validatorAccount || undefined,
   })
 
@@ -328,9 +328,9 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     }
   }
 
-  if (typeof metadata?.validatorAccount === 'string') {
+  if (typeof metadata?.validatorAccount === 'string'&& metadata.validatorAccount !== member.metadata.validatorAccount) {
     member.metadata.validatorAccount = (metadata.validatorAccount || null) as string
-    member.metadata.isVerified = false
+    member.metadata.isVerifiedValidator = false
   }
 
   if (newHandle.isSome) {
