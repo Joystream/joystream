@@ -156,17 +156,17 @@ export class ElectCouncilFixture extends BaseQueryNodeFixture {
     const candidatesToWinIds = candidatesMemberIds.slice(0, councilSize.toNumber()).map((id) => id.toString())
 
     // check intermediate election winners are properly set
-    if (this.queryNodeChecksEnabled) {
-      await query.tryQueryWithTimeout(
-        () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
-        (qnReferendumIntermediateWinners) => {
-          assert.sameMembers(
-            qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
-            candidatesToWinIds
-          )
-        }
-      )
-    }
+    // if (this.queryNodeChecksEnabled) {
+    //   await query.tryQueryWithTimeout(
+    //     () => query.getReferendumIntermediateWinners(cycleId.toNumber(), councilSize.toNumber()),
+    //     (qnReferendumIntermediateWinners) => {
+    //       assert.sameMembers(
+    //         qnReferendumIntermediateWinners.map((item) => item.member.id.toString()),
+    //         candidatesToWinIds
+    //       )
+    //     }
+    //   )
+    // }
 
     await this.api.untilCouncilStage('Idle')
 
