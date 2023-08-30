@@ -47,9 +47,6 @@ type MemberMetadata @entity {
 
   "Social media handles, email address..."
   externalResources: [MembershipExternalResource] @derivedFrom(field: "memberMetadata")
-
-  isVerifiedValidator: Boolean!
-  validatorAccount: String!
 }
 
 type MembershipEntryPaid @variant {
