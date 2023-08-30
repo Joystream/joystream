@@ -19,8 +19,8 @@ type MemberCreationParams = {
   externalResources?: MembershipMetadata.IExternalResource[] | null
   metadata: Bytes
   is_founding_member: boolean
-  isVerifiedValidator : boolean,
-  validatorAccount?:string
+  isVerifiedValidator: boolean
+  validatorAccount?: string
 }
 
 // Common code for Membership fixtures
@@ -33,7 +33,7 @@ export function generateParamsFromAccountId(accountId: string, isFoundingMember 
     { type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK, value: `https://${affix}.com` },
   ]
   const isVerifiedValidator = false
-  const validatorAccount =`validator${affix}`
+  const validatorAccount = `validator${affix}`
   const metadataBytes = Utils.metadataToBytes(MembershipMetadata, {
     name,
     about,
@@ -52,7 +52,7 @@ export function generateParamsFromAccountId(accountId: string, isFoundingMember 
     metadata: metadataBytes,
     is_founding_member: isFoundingMember,
     isVerifiedValidator,
-    validatorAccount
+    validatorAccount,
   }
 }
 

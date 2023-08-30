@@ -18,10 +18,8 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
   const updates: MemberProfileData[] = [
     // Partial updates
     // FIXME: Currently handle always need to be provided, see: https://github.com/Joystream/joystream/issues/2503
-    { handle: 'New handle 1', name: 'New name' ,      isVerifiedValidator:false,
-    validatorAccount:"validator address"},
-    { handle: 'New handle 2' ,      isVerifiedValidator:false,
-    validatorAccount:"validator address"},
+    { handle: 'New handle 1', name: 'New name', isVerifiedValidator: false, validatorAccount: 'validator address' },
+    { handle: 'New handle 2', isVerifiedValidator: false, validatorAccount: 'validator address' },
     // Setting metadata to null
     {
       handle: 'New handle 3',
@@ -29,8 +27,8 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
       about: '',
       avatarUri: '',
       externalResources: [{ type: MembershipMetadata.ExternalResource.ResourceType.EMAIL, value: 'A@example.com' }],
-      isVerifiedValidator:false,
-      validatorAccount:"validator address"
+      isVerifiedValidator: false,
+      validatorAccount: 'validator address',
     },
     // Full update
     {
@@ -41,10 +39,9 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
       externalResources: [
         { type: MembershipMetadata.ExternalResource.ResourceType.EMAIL, value: 'B@example.com' },
         { type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK, value: 'example.com' },
-        
       ],
-      isVerifiedValidator:false,
-      validatorAccount:"validator address"
+      isVerifiedValidator: false,
+      validatorAccount: 'validator address',
     },
   ]
 
