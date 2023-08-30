@@ -1,0 +1,4 @@
+type Validator @entity {
+  isVerifiedValidator: Boolean!
+  validatorAccount: String!
+}
