@@ -17713,8 +17713,8 @@ input MemberMetadataWhereInput {
   about_startsWith: String
   about_endsWith: String
   about_in: [String!]
-  isVerified_eq: Boolean
-  isVerified_in: [Boolean!]
+  isVerifiedValidator_eq: Boolean
+  isVerifiedValidator_in: [Boolean!]
   validatorAccount_eq: String
   validatorAccount_contains: String
   validatorAccount_startsWith: String
@@ -17752,12 +17752,16 @@ input MemberMetadataCreateInput {
   name: String
   avatar: JSONObject!
   about: String
+  isVerifiedValidator: Boolean!
+  validatorAccount: String!
 }
 
 input MemberMetadataUpdateInput {
   name: String
   avatar: JSONObject
   about: String
+  isVerifiedValidator: Boolean
+  validatorAccount: String
 }
 
 input MembershipGiftedEventWhereInput {
@@ -30460,6 +30464,10 @@ enum MemberMetadataOrderByInput {
   name_DESC
   about_ASC
   about_DESC
+  isVerifiedValidator_ASC
+  isVerifiedValidator_DESC
+  validatorAccount_ASC
+  validatorAccount_DESC
 }
 
 enum MemberProfileUpdatedEventOrderByInput {
