@@ -28,8 +28,8 @@ message MembershipMetadata {
   
   repeated ExternalResource externalResources = 5;
   
-  // optional bool isVerifiedValidator = 6;
-  // optional string validatorAccount = 7;
+  optional bool isVerifiedValidator = 6;
+  optional string validatorAccount = 7;
 }
 
 
