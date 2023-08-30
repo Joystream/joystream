@@ -328,7 +328,10 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     }
   }
 
-  if (typeof metadata?.validatorAccount === 'string'&& metadata.validatorAccount !== member.metadata.validatorAccount) {
+  if (
+    typeof metadata?.validatorAccount === 'string' &&
+    metadata.validatorAccount !== member.metadata.validatorAccount
+  ) {
     member.metadata.validatorAccount = (metadata.validatorAccount || null) as string
     member.metadata.isVerifiedValidator = false
   }
