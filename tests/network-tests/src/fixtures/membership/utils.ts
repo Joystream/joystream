@@ -19,7 +19,7 @@ type MemberCreationParams = {
   externalResources?: MembershipMetadata.IExternalResource[] | null
   metadata: Bytes
   is_founding_member: boolean
-  isVerifiedValidator: boolean
+  isVerifiedValidator?: boolean
   validatorAccount?: string
 }
 

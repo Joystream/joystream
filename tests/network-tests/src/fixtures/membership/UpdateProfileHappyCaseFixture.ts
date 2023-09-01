@@ -16,7 +16,7 @@ export type MemberProfileData = {
   about?: string | null
   avatarUri?: string | null
   externalResources?: MembershipMetadata.IExternalResource[] | null
-  isVerifiedValidator: boolean
+  isVerifiedValidator?: boolean
   validatorAccount?: string | null
 }
 
