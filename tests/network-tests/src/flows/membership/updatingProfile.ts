@@ -27,8 +27,6 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
       about: '',
       avatarUri: '',
       externalResources: [{ type: MembershipMetadata.ExternalResource.ResourceType.EMAIL, value: 'A@example.com' }],
-      // isVerifiedValidator: false,
-      // validatorAccount: 'validator address',
     },
     // Full update
     {
@@ -40,8 +38,6 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
         { type: MembershipMetadata.ExternalResource.ResourceType.EMAIL, value: 'B@example.com' },
         { type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK, value: 'example.com' },
       ],
-      // isVerifiedValidator: false,
-      // validatorAccount: 'validator address',
     },
   ]
 

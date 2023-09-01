@@ -16,8 +16,6 @@ export type MemberProfileData = {
   about?: string | null
   avatarUri?: string | null
   externalResources?: MembershipMetadata.IExternalResource[] | null
-  // isVerifiedValidator: boolean
-  // validatorAccount?: string | null
 }
 
 export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
@@ -68,12 +66,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       externalResources: isSet(this.newValues.externalResources)
         ? this.newValues.externalResources || null
         : this.oldValues.externalResources,
-      // isVerifiedValidator: isSet(this.newValues.isVerifiedValidator)
-      //   ? this.newValues.isVerifiedValidator
-      //   : this.oldValues.isVerifiedValidator,
-      // validatorAccount: isSet(this.newValues.validatorAccount)
-      //   ? this.newValues.validatorAccount
-      //   : this.oldValues.validatorAccount,
     }
   }
 
