@@ -2024,8 +2024,8 @@ type MemberMetadata implements BaseGraphQLObject {
   about: String
   member: Membership
   externalResources: [MembershipExternalResource!]
-  isVerifiedValidator: Boolean!
-  validatorAccount: String!
+  isVerifiedValidator: Boolean
+  validatorAccount: String
   membercreatedeventmetadata: [MemberCreatedEvent!]
   memberinvitedeventmetadata: [MemberInvitedEvent!]
   memberprofileupdatedeventnewMetadata: [MemberProfileUpdatedEvent!]
@@ -17752,8 +17752,8 @@ input MemberMetadataCreateInput {
   name: String
   avatar: JSONObject!
   about: String
-  isVerifiedValidator: Boolean!
-  validatorAccount: String!
+  isVerifiedValidator: Boolean
+  validatorAccount: String
 }
 
 input MemberMetadataUpdateInput {
