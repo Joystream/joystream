@@ -80,7 +80,7 @@ type Channel @entity {
 
   "List of all claimed rewards"
   claimedRewards: [ChannelRewardClaimedEvent!] @derivedFrom(field: "channel")
- 
+
   "Number of videos ever created in this channel"
   totalVideosCreated: Int!
 }
