@@ -23,13 +23,14 @@ fn natural_log_1_plus_x(interest: Permill) -> Perquintill {
         terms[i] = num.div(den);
     });
 
-    // first sum all + then subtract to avoid underflow errors
+    // sum all odd indices terms first
     let mut result = Perquintill::zero();
-    for i in 0..ORDER.div(2) {
-        result = result.saturating_add(terms[2 * i + 1]);
+    for el in terms.iter().skip(1).step_by(2) {
+        result = result.saturating_add(*el);
     }
-    for i in 0..ORDER.div(2) {
-        result = result.saturating_sub(terms[2 * i]);
+    // subtract all even indices terms
+    for el in terms.iter().step_by(2) {
+        result = result.saturating_sub(*el);
     }
 
     result
