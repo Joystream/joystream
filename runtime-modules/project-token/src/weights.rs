@@ -201,9 +201,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(4 as Weight))
 	}
 
-	fn update_max_yearly_patronage_rate() -> Weight {
-	    0
-	}
 }
 
 // Default implementation for tests
