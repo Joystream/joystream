@@ -1,4 +1,6 @@
 [workspace]
+resolver = "2"
+
 members = [
 	"runtime",
 	"runtime-modules/proposals/engine",
@@ -32,5 +34,8 @@ exclude = [
 # Substrate runtime requires unwinding.
 panic = "unwind"
 
-[patch.crates-io]
-ss58-registry = { package = 'ss58-registry', git = 'https://github.com/bwhm/ss58-registry', rev = 'a70121e7bbb56f983f6f17771cc79d8f19b481a0'}
+# Sacrifice compile speed for execution speed by using optimization flags:
+# https://doc.rust-lang.org/rustc/linker-plugin-lto.html
+lto = "fat"
+# https://doc.rust-lang.org/rustc/codegen-options/index.html#codegen-units
+codegen-units = 1

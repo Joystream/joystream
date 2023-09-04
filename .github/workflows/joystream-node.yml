@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
@@ -36,16 +36,15 @@ jobs:
 
       - name: Build
         env:
-          WASM_BUILD_TOOLCHAIN: nightly-2022-05-11 
+          WASM_BUILD_TOOLCHAIN: nightly-2022-11-15
         run: |
-          cargo +nightly-2022-05-11 clippy --release --features runtime-benchmarks &&
-          cargo +nightly-2022-05-11 test --release --features runtime-benchmarks &&
-          cargo +nightly-2022-05-11 build --release --features runtime-benchmarks
+          ./scripts/cargo-checks-with-benchmarking.sh &&
+          ./scripts/cargo-build-with-benchmarking.sh
         if: env.GIT_DIFF
 
       - name: Test Generate Weights
         run: |
-          ./scripts/generate-weights.sh 1 1 && git diff
+          ./scripts/generate-weights.sh 2 1 && git diff
         if: env.GIT_DIFF
 
   # Build and test joystream-node with all runtime profiles
@@ -56,7 +55,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
       - uses: technote-space/get-diff-action@v3
         with:
           PREFIX_FILTER: |
@@ -77,6 +76,19 @@ jobs:
         run: |
           yarn cargo-checks && yarn cargo-build
           ./target/release/call-sizes
+        if: env.GIT_DIFF
+      - name: OnRuntimeUpgrade (try-runtime)
+        run: |
+          cargo +nightly-2022-11-15 build --release --features try-runtime
+          RUST_LOG=info,runtime=debug ./target/release/joystream-node try-runtime \
+            --runtime ./target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.compressed.wasm \
+            on-runtime-upgrade \
+            live \
+            --uri wss://rpc.joystream.org:9944/
+        if: env.GIT_DIFF
+      - name: run_migrations test
+        run: |
+          RUN_MIGRATION_TESTS=true RUST_LOG=info cargo +nightly-2022-11-15 test --release --features try-runtime
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:

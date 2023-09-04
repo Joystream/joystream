@@ -8,7 +8,7 @@ use crate::{
 use balances::Pallet as Balances;
 use common::council::CouncilBudgetManager;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::storage::{StorageDoubleMap, StorageMap, StorageValue};
 use frame_support::traits::{Currency, Get, OnFinalize, OnInitialize};
 use frame_system::Pallet as System;
@@ -36,23 +36,23 @@ pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
     }
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
 }
 
-fn assert_was_fired<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_was_fired<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
 
     assert!(events.iter().any(|ev| ev.event == system_event));
 }
 
 fn get_byte(num: u128, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number) as u8)
+    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number))
         .try_into()
         .unwrap()
 }

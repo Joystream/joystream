@@ -18,7 +18,7 @@ fn cancel_buy_now() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -28,7 +28,7 @@ fn cancel_buy_now() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -36,7 +36,7 @@ fn cancel_buy_now() {
 
         // Cancel buy now
         assert_ok!(Content::cancel_buy_now(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         ));
@@ -70,7 +70,7 @@ fn cancel_buy_now_video_does_not_exist() {
 
         // Make an attempt to cancel buy now which corresponding video does not exist yet
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -94,7 +94,7 @@ fn cancel_buy_now_not_issued() {
 
         // Make an attempt to cancel buy now for nft which is not issued yet
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -118,7 +118,7 @@ fn cancel_buy_now_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -126,7 +126,7 @@ fn cancel_buy_now_auth_failed() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -134,7 +134,7 @@ fn cancel_buy_now_auth_failed() {
 
         // Make an attempt to cancel buy now with wrong credentials
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -158,7 +158,7 @@ fn cancel_buy_now_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -166,7 +166,7 @@ fn cancel_buy_now_not_authorized() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -174,7 +174,7 @@ fn cancel_buy_now_not_authorized() {
 
         // Make an attempt to cancel buy now if actor is not authorized
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
         );
@@ -198,7 +198,7 @@ fn cancel_buy_now_not_in_auction_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -206,7 +206,7 @@ fn cancel_buy_now_not_in_auction_state() {
 
         // Make an attempt to cancel buy now if there is no pending one
         let cancel_buy_now_result = Content::cancel_buy_now(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -229,7 +229,7 @@ fn cancel_buy_now_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::cancel_buy_now(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
             ),

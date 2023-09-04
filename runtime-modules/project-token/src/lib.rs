@@ -76,7 +76,7 @@ pub trait Config:
     frame_system::Config + balances::Config + storage::Config + membership::Config + timestamp::Config
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// the Balance type used
     type Balance: AtLeast32BitUnsigned
@@ -124,7 +124,7 @@ pub trait Config:
 
     /// Member origin validator
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberIdOf<Self>,
         Self::AccountId,
     >;
@@ -211,7 +211,7 @@ decl_storage! { generate_storage_info
 decl_module! {
     pub struct Module<T: Config> for enum Call
     where
-        origin: T::Origin
+        origin: T::RuntimeOrigin
     {
 
         /// Default deposit_event() handler
@@ -390,7 +390,7 @@ decl_module! {
             )?;
 
             // == MUTATION SAFE ==
-            AccountInfoByTokenAndMember::<T>::remove(token_id, &member_id);
+            AccountInfoByTokenAndMember::<T>::remove(token_id, member_id);
 
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.decrement_accounts_number();
@@ -434,7 +434,7 @@ decl_module! {
             let token_info = Self::ensure_token_exists(token_id)?;
 
             ensure!(
-                !AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id),
+                !AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id),
                 Error::<T>::AccountAlreadyExists,
             );
 
@@ -596,7 +596,7 @@ decl_module! {
             let vesting_cleanup_key = if vesting_schedule.is_some() {
                     // Ensure vesting schedule can added if doesn't already exist
                     // (MaxVestingSchedulesPerAccountPerToken not exceeded)
-                    let acc_data = AccountInfoByTokenAndMember::<T>::get(token_id, &member_id);
+                    let acc_data = AccountInfoByTokenAndMember::<T>::get(token_id, member_id);
                     acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
                         current_block,
                         VestingSource::Sale(sale_id)
@@ -616,7 +616,7 @@ decl_module! {
             }
 
             if account_data.is_some() {
-                AccountInfoByTokenAndMember::<T>::try_mutate(token_id, &member_id, |acc_data| {
+                AccountInfoByTokenAndMember::<T>::try_mutate(token_id, member_id, |acc_data| {
                     acc_data.process_sale_purchase::<T>(
                         sale_id,
                         amount,
@@ -745,7 +745,7 @@ decl_module! {
                 token_info.revenue_split.account_for_dividend(dividend_amount);
             });
 
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_info| {
                 account_info.stake(split_id, amount);
             });
 
@@ -806,7 +806,7 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_info| {
                 account_info.unstake();
             });
 
@@ -1099,7 +1099,7 @@ impl<T: Config>
 
         // == MUTATION SAFE ==
 
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_info| {
             account_info.increase_amount_by(unclaimed_patronage)
         });
 
@@ -1157,7 +1157,7 @@ impl<T: Config>
         );
 
         // == MUTATION SAFE ==
-        SymbolsUsed::<T>::insert(&token_data.symbol, ());
+        SymbolsUsed::<T>::insert(token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
@@ -1274,7 +1274,7 @@ impl<T: Config>
 
         // Decrease source account's tokens number by sale_params.upper_bound_quantity
         // (unsold tokens can be later recovered with `finalize_token_sale`)
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |ad| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |ad| {
             ad.decrease_amount_by(sale_params.upper_bound_quantity);
         });
 
@@ -1514,7 +1514,7 @@ impl<T: Config>
             .ok_or(Error::<T>::ArithmeticError)?;
 
         // == MUTATION SAFE ==
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &sale.tokens_source, |ad| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, sale.tokens_source, |ad| {
             ad.increase_amount_by(sale.quantity_left);
         });
         TokenInfoById::<T>::mutate(token_id, |token_info| {
@@ -1698,7 +1698,7 @@ impl<T: Config> Module<T> {
                 ValidatedWithBloatBond::Existing(dst_member_id) => {
                     AccountInfoByTokenAndMember::<T>::try_mutate(
                         token_id,
-                        &dst_member_id,
+                        dst_member_id,
                         |account_data| {
                             if let Some(vs) = vesting_schedule {
                                 account_data.add_or_update_vesting_schedule::<T>(
@@ -1736,7 +1736,7 @@ impl<T: Config> Module<T> {
             }
         }
 
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &src_member_id, |account_data| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, src_member_id, |account_data| {
             account_data.decrease_amount_by(validated_transfers.total_amount());
         });
 
@@ -1821,7 +1821,7 @@ impl<T: Config> Module<T> {
         params: &TokenIssuanceParametersOf<T>,
     ) -> DispatchResult {
         ensure!(
-            !SymbolsUsed::<T>::contains_key(&params.symbol),
+            !SymbolsUsed::<T>::contains_key(params.symbol),
             Error::<T>::TokenSymbolAlreadyInUse,
         );
 
@@ -2110,7 +2110,7 @@ impl<T: Config> Module<T> {
                     )),
                     Validated::NonExisting(member_id) => {
                         let repayable_bloat_bond = match locked_balance_used
-                            <= bloat_bond.saturating_mul((bloat_bond_index as u32).into())
+                            <= bloat_bond.saturating_mul((bloat_bond_index).into())
                         {
                             true => RepayableBloatBond::new(bloat_bond, None),
                             false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
@@ -2140,6 +2140,13 @@ impl<T: Config> Module<T> {
             pct_of_issuance_minted <= threshold,
             Error::<T>::OutstandingAmmProvidedSupplyTooLarge,
         );
+        Ok(())
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
         Ok(())
     }
 }

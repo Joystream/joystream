@@ -75,6 +75,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
+use sp_std::vec;
 
 use common::membership::MemberOriginValidator;
 use common::to_kb;
@@ -139,11 +140,11 @@ pub trait Config:
     + working_group::Config<DistributionWorkingGroupInstance>
 {
     /// Proposal Codex module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
@@ -393,7 +394,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// Proposal codex substrate module Call
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1104,5 +1105,12 @@ impl<T: Config> ProposalObserver<T> for Module<T> {
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);
 
         proposals_discussion::ThreadById::<T>::remove(thread_id);
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

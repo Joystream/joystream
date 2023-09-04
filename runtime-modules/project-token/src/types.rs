@@ -1,5 +1,6 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use common::{bloat_bond::RepayableBloatBond, MembershipTypes};
+use core::ops::AddAssign;
 use frame_support::storage::bounded_btree_map::BoundedBTreeMap;
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
@@ -327,8 +328,16 @@ pub struct VestingSchedule<BlockNumber, Balance> {
 impl<BlockNumber, Balance> VestingSchedule<BlockNumber, Balance>
 where
     BlockNumber: Saturating + PartialOrd + Copy,
-    Balance:
-        Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord + Zero,
+    Balance: Saturating
+        + Clone
+        + Copy
+        + From<u32>
+        + Unsigned
+        + TryInto<u32>
+        + TryInto<u64>
+        + Ord
+        + Zero
+        + AddAssign,
 {
     /// Construct a vesting schedule from `VestingScheduleParams` and `init_block`
     ///
@@ -492,7 +501,15 @@ impl<JoyBalance, Balance, BlockNumber, MemberId, AccountId>
     >
 where
     BlockNumber: Saturating + Zero + Copy + Clone + PartialOrd,
-    Balance: Saturating + Clone + Copy + From<u32> + Unsigned + TryInto<u32> + TryInto<u64> + Ord,
+    Balance: Saturating
+        + Clone
+        + Copy
+        + From<u32>
+        + Unsigned
+        + TryInto<u32>
+        + TryInto<u64>
+        + Ord
+        + AddAssign,
 {
     pub(crate) fn try_from_params<T: Config>(
         params: TokenSaleParamsOf<T>,
@@ -1007,7 +1024,8 @@ where
         + PartialOrd
         + Ord
         + TryInto<u64>
-        + Copy,
+        + Copy
+        + AddAssign,
     BlockNumber: Copy + Clone + PartialOrd + Ord + Saturating + From<u32> + Unsigned,
     RepayableBloatBond: Default,
     MaxVestingSchedules: Get<u32>,
@@ -1017,11 +1035,11 @@ where
         schedule: VestingSchedule<BlockNumber, Balance>,
         bloat_bond: RepayableBloatBond,
     ) -> Result<Self, DispatchError> {
-        let next_vesting_transfer_id = if let VestingSource::IssuerTransfer(_) = source {
-            1
-        } else {
-            0
+        let next_vesting_transfer_id = match source {
+            VestingSource::IssuerTransfer(_) => 1,
+            _ => 0,
         };
+
         let vesting_schedules = [(source, schedule.clone())]
             .iter()
             .cloned()
@@ -1276,7 +1294,14 @@ impl<JoyBalance, Balance, Hash, BlockNumber, VestingScheduleParams, MemberId, Ac
         RevenueSplitState<JoyBalance, BlockNumber>,
     >
 where
-    Balance: Zero + Copy + Saturating + Debug + From<u64> + UniqueSaturatedInto<u64> + Unsigned,
+    Balance: Zero
+        + Copy
+        + Saturating
+        + Debug
+        + From<u64>
+        + UniqueSaturatedInto<u64>
+        + Unsigned
+        + AddAssign,
     BlockNumber: PartialOrd + Saturating + Copy + AtLeast32BitUnsigned,
     JoyBalance: Copy + Saturating + Zero,
 {
@@ -1364,11 +1389,7 @@ where
                 rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
             };
 
-        let total_supply = params
-            .initial_allocation
-            .iter()
-            .map(|(_, v)| v.amount)
-            .sum();
+        let total_supply = params.initial_allocation.values().map(|v| v.amount).sum();
 
         Ok(TokenData {
             symbol: params.symbol,
@@ -1427,7 +1448,7 @@ where
     Balance: Sum + Copy,
 {
     pub fn total_amount(&self) -> Balance {
-        self.0.iter().map(|(_, payment)| payment.amount).sum()
+        self.0.values().map(|payment| payment.amount).sum()
     }
 }
 
@@ -1441,8 +1462,8 @@ where
 {
     pub fn total_amount(&self) -> Balance {
         self.0
-            .iter()
-            .map(|(_, validated_payment)| validated_payment.payment.amount)
+            .values()
+            .map(|validated_payment| validated_payment.payment.amount)
             .sum()
     }
 }

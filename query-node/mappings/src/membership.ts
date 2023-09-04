@@ -425,7 +425,7 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
 export async function members_MemberInvited({ store, event, block }: EventContext & StoreContext): Promise<void> {
   const { specVersion } = block.runtimeVersion
   const [memberId, inviteMembershipParameters, maybeInvitedMemberBalance] =
-    specVersion === 2001 ? new MemberInvitedEvent_V2001(event).params : new MemberInvitedEvent_V1001(event).params
+    specVersion === 1001 ? new MemberInvitedEvent_V1001(event).params : new MemberInvitedEvent_V2001(event).params
 
   const entryMethod = new MembershipEntryInvited()
   const invitedMember = await createNewMemberFromParams(store, memberId, entryMethod, inviteMembershipParameters, 0)

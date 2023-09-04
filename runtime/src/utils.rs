@@ -1,15 +1,16 @@
 use crate::{
-    Balance, Call, DefaultStorageDepositCleanupProfit, ExistentialDeposit, MinimumBloatBondPerByte,
-    Runtime, UncheckedExtrinsic,
+    Balance, DefaultStorageDepositCleanupProfit, ExistentialDeposit, MinimumBloatBondPerByte,
+    Runtime, RuntimeCall, UncheckedExtrinsic,
 };
 use codec::{Encode, FullCodec, MaxEncodedLen};
 use frame_support::{
+    dispatch::GetDispatchInfo,
     storage::{
         generator::{StorageDoubleMap, StorageMap},
         StoragePrefixedMap,
     },
     traits::StorageInfoTrait,
-    weights::{GetDispatchInfo, WeightToFee},
+    weights::{Weight, WeightToFee},
     StorageHasher,
 };
 pub use sp_runtime::Perbill;
@@ -19,15 +20,16 @@ use sp_std::mem::size_of;
 pub const ENCODED_EXTRINSIC_SIGNATURE_LENGTH: u64 = 102;
 
 /// Compute total fee for executing a call
-pub fn compute_fee(call: Call) -> Balance {
+pub fn compute_fee(call: RuntimeCall) -> Balance {
     let xt = UncheckedExtrinsic::new_unsigned(call);
     let length = xt.encode().len() as u64 + ENCODED_EXTRINSIC_SIGNATURE_LENGTH;
     let dispatch_info = &<UncheckedExtrinsic as GetDispatchInfo>::get_dispatch_info(&xt);
     let weight_fee = <Runtime as pallet_transaction_payment::Config>::WeightToFee::weight_to_fee(
         &dispatch_info.weight,
     );
-    let len_fee =
-        <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(&length);
+    let len_fee = <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
+        &Weight::from_parts(length, 0),
+    );
     let base_fee = <Runtime as pallet_transaction_payment::Config>::WeightToFee::weight_to_fee(
         &<Runtime as frame_system::Config>::BlockWeights::get()
             .get(dispatch_info.class)

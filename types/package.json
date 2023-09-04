@@ -1,6 +1,6 @@
 {
   "name": "@joystream/types",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Types for Joystream Substrate Runtime - Carthage release",
   "main": "lib/cjs/index.js",
   "types": "lib/index.d.ts",
@@ -41,7 +41,6 @@
     "@polkadot/keyring": "9.5.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
-    "ajv": "^6.11.0",
     "lodash": "^4.17.15",
     "moment": "^2.24.0"
   },
@@ -52,7 +51,7 @@
     "madge": "^3.9.2"
   },
   "engines": {
-    "node": ">=14.0.0",
+    "node": ">=14.18.0",
     "yarn": "^1.22.0"
   },
   "publishConfig": {
@@ -74,7 +73,7 @@
   },
   "homepage": "https://github.com/Joystream/joystream",
   "volta": {
-    "node": "14.16.1",
-    "yarn": "1.22.15"
+    "node": "18.6.0",
+    "yarn": "1.22.19"
   }
 }

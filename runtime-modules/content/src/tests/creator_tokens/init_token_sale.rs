@@ -131,7 +131,7 @@ fn init_token_sale_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::init_creator_token_sale(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 TokenSaleParamsOf::<Test> {

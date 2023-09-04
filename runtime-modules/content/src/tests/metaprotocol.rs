@@ -20,7 +20,7 @@ fn successful_agent_remark() {
         let msg = b"test".to_vec();
 
         assert_ok!(Content::channel_agent_remark(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             ContentActor::Member(COLLABORATOR_MEMBER_ID),
             channel_id,
             msg
@@ -42,7 +42,7 @@ fn unsuccessful_agent_remark_with_invalid_channel_id() {
 
         assert_err!(
             Content::channel_agent_remark(
-                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 invalid_channel_id,
                 msg
@@ -66,7 +66,7 @@ fn unsuccessful_agent_remark_with_invalid_account_id() {
 
         assert_err!(
             Content::channel_agent_remark(
-                Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID + 1),
+                RuntimeOrigin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID + 1),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 channel_id,
                 msg
@@ -90,7 +90,7 @@ fn unsuccessful_agent_remark_with_invalid_member_id() {
 
         assert_err!(
             Content::channel_agent_remark(
-                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
                 channel_id,
                 msg
@@ -114,7 +114,7 @@ fn unsuccessful_agent_remark_by_non_agent() {
 
         assert_err!(
             Content::channel_agent_remark(
-                Origin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(UNAUTHORIZED_COLLABORATOR_MEMBER_ID),
                 channel_id,
                 msg
@@ -138,7 +138,7 @@ fn unsuccessful_owner_remark_with_invalid_channel_id() {
 
         assert_err!(
             Content::channel_owner_remark(
-                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 invalid_channel_id,
                 msg
             ),
@@ -161,7 +161,7 @@ fn unsuccessful_owner_remark_with_invalid_account_id() {
 
         assert_err!(
             Content::channel_owner_remark(
-                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 channel_id,
                 msg
             ),
@@ -184,7 +184,7 @@ fn unsuccessful_owner_remark_by_non_owner() {
 
         assert_err!(
             Content::channel_owner_remark(
-                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 channel_id,
                 msg
             ),
@@ -205,7 +205,7 @@ fn unsuccessful_curator_channel_owner_remark_by_unauthorized_curator() {
 
         assert_err!(
             Content::channel_owner_remark(
-                Origin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_CURATOR_ACCOUNT_ID),
                 channel_id,
                 msg
             ),
@@ -228,7 +228,7 @@ fn unsuccessful_nft_owner_remark_with_nft_not_issued() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 msg
@@ -247,7 +247,7 @@ fn issue_and_sell_nft() {
 
     // Issue nft
     assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test>::default(),
@@ -258,7 +258,7 @@ fn issue_and_sell_nft() {
 
     // Sell nft
     assert_ok!(Content::sell_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         video_id,
         ContentActor::Member(DEFAULT_MEMBER_ID),
         DEFAULT_NFT_PRICE,
@@ -266,7 +266,7 @@ fn issue_and_sell_nft() {
 
     // Buy nft
     assert_ok!(Content::buy_nft(
-        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
         video_id,
         SECOND_MEMBER_ID,
         DEFAULT_NFT_PRICE,
@@ -284,7 +284,7 @@ fn successful_nft_owner_remark() {
         issue_and_sell_nft();
 
         assert_ok!(Content::nft_owner_remark(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             msg
@@ -304,7 +304,7 @@ fn unsuccessful_nft_owner_with_invalid_video_id() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 invalid_video_id,
                 msg
@@ -326,7 +326,7 @@ fn unsuccessful_nft_owner_by_non_authorized_actor() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
                 video_id,
                 msg
@@ -348,7 +348,7 @@ fn unsuccessful_nft_owner_with_invalid_acount() {
 
         assert_err!(
             Content::nft_owner_remark(
-                Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(SECOND_MEMBER_ID),
                 video_id,
                 msg
@@ -370,7 +370,7 @@ fn successful_nft_remark_during_transfer() {
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::nft_owner_remark(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             1u64,
             b"test".to_vec(),
@@ -389,7 +389,7 @@ fn successful_channel_owner_remark_during_transfer() {
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::channel_owner_remark(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             1u64,
             b"test".to_vec(),
         ));
@@ -411,7 +411,7 @@ fn successful_channel_agent_remark_during_transfer() {
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::channel_agent_remark(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             ContentActor::Member(COLLABORATOR_MEMBER_ID),
             1u64,
             b"test".to_vec(),

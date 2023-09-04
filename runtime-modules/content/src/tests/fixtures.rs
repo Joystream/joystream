@@ -4,7 +4,7 @@ use derive_new::new;
 
 use super::curators;
 // Importing mock event as MetaEvent to avoid name clash with Event from crate::* glob import
-pub use super::mock::Event as MetaEvent;
+pub use super::mock::RuntimeEvent as MetaEvent;
 use super::mock::*;
 use crate::*;
 use common::{
@@ -86,7 +86,7 @@ impl CreateCuratorGroupFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> Option<CuratorGroupId> {
         let new_group_id = Content::next_curator_group_id();
         let actual_result = Content::create_curator_group(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.is_active,
             self.permissions.clone(),
         );
@@ -230,7 +230,7 @@ impl CreateChannelFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let balance_pre = self.get_balance();
         let channel_id = Content::next_channel_id();
         let channel_bag_id = Content::bag_id_for_channel(&channel_id);
@@ -245,7 +245,7 @@ impl CreateChannelFixture {
 
         if actual_result.is_ok() {
             // ensure channel is on chain
-            assert!(ChannelById::<Test>::contains_key(&channel_id));
+            assert!(ChannelById::<Test>::contains_key(channel_id));
 
             // channel counter increased
             assert_eq!(
@@ -312,7 +312,7 @@ impl CreateChannelFixture {
                         )
                     },
                     self.params.clone(),
-                    channel_account.clone()
+                    channel_account
                 ))
             );
 
@@ -335,7 +335,7 @@ impl CreateChannelFixture {
             assert_eq!(balance_post, balance_pre);
             assert_eq!(beg_obj_id, end_obj_id);
             assert!(!storage::Bags::<Test>::contains_key(&channel_bag_id));
-            assert!(!ChannelById::<Test>::contains_key(&channel_id));
+            assert!(!ChannelById::<Test>::contains_key(channel_id));
             assert_eq!(NextChannelId::<Test>::get(), channel_id);
         }
     }
@@ -468,7 +468,7 @@ impl CreateVideoFixture {
     }
 
     pub fn call(self) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         assert_ok!(Content::create_video(
             origin,
             self.actor,
@@ -478,7 +478,7 @@ impl CreateVideoFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let balance_pre = self.get_balance();
         let module_balance_pre = ContentTreasury::<Test>::usable_balance();
         let channel_balance_pre = Balances::<Test>::usable_balance(
@@ -501,7 +501,7 @@ impl CreateVideoFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(VideoById::<Test>::contains_key(&video_id));
+            assert!(VideoById::<Test>::contains_key(video_id));
 
             assert_eq!(
                 Content::next_video_id(),
@@ -547,7 +547,7 @@ impl CreateVideoFixture {
                 }));
             }
         } else {
-            assert!(!VideoById::<Test>::contains_key(&video_id));
+            assert!(!VideoById::<Test>::contains_key(video_id));
 
             assert_eq!(Content::next_video_id(), video_id);
 
@@ -669,7 +669,7 @@ impl UpdateChannelFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let channel_pre = Content::channel_by_id(&self.channel_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
@@ -799,7 +799,7 @@ impl UpdateChannelPrivilegeLevelFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let channel_pre = Content::channel_by_id(&self.channel_id);
         let actual_result =
             Content::update_channel_privilege_level(origin, self.channel_id, self.privilege_level);
@@ -938,7 +938,7 @@ impl UpdateVideoFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let balance_pre = Balances::<Test>::free_balance(self.sender);
         let video_pre = Content::video_by_id(&self.video_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
@@ -1077,7 +1077,7 @@ impl DeleteChannelAssetsAsModeratorFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let channel_pre = Content::channel_by_id(&self.channel_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&self.channel_id);
@@ -1211,7 +1211,7 @@ pub trait ChannelDeletion {
                     self.expected_event_on_success()
                 );
 
-                assert!(!<ChannelById<Test>>::contains_key(&self.get_channel_id()));
+                assert!(!<ChannelById<Test>>::contains_key(self.get_channel_id()));
                 assert!(!channel_objects_ids.iter().any(|id| {
                     storage::DataObjectsById::<Test>::contains_key(&bag_id_for_channel, id)
                 }));
@@ -1247,7 +1247,7 @@ impl DeleteChannelFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             channel_bag_witness: channel_bag_witness(ChannelId::one()),
-            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+            num_objects_to_delete: DATA_OBJECTS_NUMBER,
         }
     }
 
@@ -1294,7 +1294,7 @@ impl ChannelDeletion for DeleteChannelFixture {
 
     fn execute_call(&self) -> DispatchResult {
         Content::delete_channel(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.channel_id,
             self.channel_bag_witness.clone(),
@@ -1336,7 +1336,7 @@ impl DeleteChannelAsModeratorFixture {
             actor: ContentActor::Lead,
             channel_id: ChannelId::one(),
             channel_bag_witness: channel_bag_witness(ChannelId::one()),
-            num_objects_to_delete: DATA_OBJECTS_NUMBER as u64,
+            num_objects_to_delete: DATA_OBJECTS_NUMBER,
             rationale: b"rationale".to_vec(),
         }
     }
@@ -1380,7 +1380,7 @@ impl ChannelDeletion for DeleteChannelAsModeratorFixture {
 
     fn execute_call(&self) -> DispatchResult {
         Content::delete_channel_as_moderator(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.channel_id,
             self.channel_bag_witness.clone(),
@@ -1453,10 +1453,10 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let channel_pre = ChannelById::<Test>::get(&self.channel_id);
+        let channel_pre = ChannelById::<Test>::get(self.channel_id);
 
         let actual_result = Content::set_channel_paused_features_as_moderator(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.channel_id,
             self.new_paused_features.clone(),
@@ -1465,7 +1465,7 @@ impl SetChannelPausedFeaturesAsModeratorFixture {
 
         assert_eq!(actual_result, expected_result);
 
-        let channel_post = ChannelById::<Test>::get(&self.channel_id);
+        let channel_post = ChannelById::<Test>::get(self.channel_id);
 
         if actual_result.is_ok() {
             assert_eq!(channel_post.paused_features, self.new_paused_features);
@@ -1517,7 +1517,7 @@ impl SetChannelVisibilityAsModeratorFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Content::set_channel_visibility_as_moderator(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.channel_id,
             self.is_hidden,
@@ -1573,7 +1573,7 @@ impl SetVideoVisibilityAsModeratorFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Content::set_video_visibility_as_moderator(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.is_hidden,
@@ -1644,7 +1644,7 @@ impl DeleteVideoAssetsAsModeratorFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let balance_pre = Balances::<Test>::usable_balance(self.sender);
         let video_pre = Content::video_by_id(&self.video_id);
         let bag_id_for_channel = Content::bag_id_for_channel(&video_pre.in_channel);
@@ -1739,7 +1739,7 @@ pub trait VideoDeletion {
 
     fn call_and_assert(&self, expected_result: DispatchResult) {
         let storage_root_pre = storage_root(StateVersion::V1);
-        let video_pre = <VideoById<Test>>::get(&self.get_video_id());
+        let video_pre = <VideoById<Test>>::get(self.get_video_id());
         let video_bloat_bond_reciever = video_pre
             .video_state_bloat_bond
             .get_recipient(self.get_sender());
@@ -1864,7 +1864,7 @@ impl VideoDeletion for DeleteVideoFixture {
 
     fn execute_call(&self) -> DispatchResult {
         Content::delete_video(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.num_objects_to_delete,
@@ -1943,7 +1943,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
 
     fn execute_call(&self) -> DispatchResult {
         Content::delete_video_as_moderator(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.storage_buckets_num_witness,
@@ -1975,7 +1975,7 @@ impl VideoDeletion for DeleteVideoAsModeratorFixture {
 }
 
 pub struct UpdateChannelPayoutsFixture {
-    origin: Origin,
+    origin: RuntimeOrigin,
     params: UpdateChannelPayoutsParameters<Test>,
     uploader_account: <Test as frame_system::Config>::AccountId,
 }
@@ -1993,13 +1993,13 @@ pub struct UpdateChannelPayoutsFixtureStateSnapshot {
 impl UpdateChannelPayoutsFixture {
     pub fn default() -> Self {
         Self {
-            origin: Origin::root(),
+            origin: RuntimeOrigin::root(),
             params: UpdateChannelPayoutsParameters::<Test>::default(),
             uploader_account: DEFAULT_MEMBER_ACCOUNT_ID,
         }
     }
 
-    pub fn with_origin(self, origin: Origin) -> Self {
+    pub fn with_origin(self, origin: RuntimeOrigin) -> Self {
         Self { origin, ..self }
     }
 
@@ -2067,7 +2067,7 @@ impl UpdateChannelPayoutsFixture {
                     .payload
                     .as_ref()
                     .map(|_| snapshot_pre.next_object_id),
-                self.uploader_account.clone()
+                self.uploader_account
             ))
         );
         if let Some(commitment) = self.params.commitment {
@@ -2137,7 +2137,7 @@ impl UpdateChannelPayoutsFixture {
         let actual_result = Content::update_channel_payouts(
             self.origin.clone(),
             self.params.clone(),
-            self.uploader_account.clone(),
+            self.uploader_account,
         );
 
         let snapshot_post = self.get_state_snapshot();
@@ -2189,7 +2189,7 @@ impl ClaimChannelRewardFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let channel_pre = Content::channel_by_id(self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
@@ -2288,7 +2288,7 @@ impl WithdrawFromChannelBalanceFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let channel_pre = Content::channel_by_id(self.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.channel_id);
@@ -2395,7 +2395,7 @@ impl ClaimAndWithdrawChannelRewardFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let channel_pre = Content::channel_by_id(&self.item.channel_id);
         let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
         let expected_dest = match channel_pre.owner {
@@ -2542,7 +2542,7 @@ impl IssueCreatorTokenFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let expected_token_id = project_token::Module::<Test>::next_token_id();
         let channel_pre = Content::channel_by_id(self.channel_id);
@@ -2619,7 +2619,7 @@ impl InitCreatorTokenSaleFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::init_creator_token_sale(
             origin,
@@ -2664,7 +2664,7 @@ impl UpdateUpcomingCreatorTokenSaleFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::update_upcoming_creator_token_sale(
             origin,
@@ -2721,7 +2721,7 @@ impl CreatorTokenIssuerTransferFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::creator_token_issuer_transfer(
             origin,
@@ -2769,7 +2769,7 @@ impl ReduceCreatorTokenPatronageRateFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::reduce_creator_token_patronage_rate_to(
             origin,
@@ -2810,7 +2810,7 @@ impl ClaimCreatorTokenPatronageCreditFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result =
             Content::claim_creator_token_patronage_credit(origin, self.actor, self.channel_id);
@@ -2847,7 +2847,7 @@ impl MakeCreatorTokenPermissionlessFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result =
             Content::make_creator_token_permissionless(origin, self.actor, self.channel_id);
@@ -2895,7 +2895,7 @@ impl IssueRevenueSplitFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::issue_revenue_split(
             origin,
@@ -2937,7 +2937,7 @@ impl FinalizeRevenueSplitFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::finalize_revenue_split(origin, self.actor, self.channel_id);
 
@@ -3051,7 +3051,7 @@ impl FinalizeCreatorTokenSaleFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
         let channel = Content::channel_by_id(self.channel_id);
@@ -3110,7 +3110,7 @@ impl UpdateChannelStateBloatBondFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let channel_state_bloat_bond_pre = Content::channel_state_bloat_bond_value();
 
         let actual_result =
@@ -3161,7 +3161,7 @@ impl UpdateVideoStateBloatBondFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
         let video_state_bloat_bond_pre = Content::video_state_bloat_bond_value();
 
         let actual_result =
@@ -3208,7 +3208,7 @@ impl DeissueCreatorTokenFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let channel_pre = Content::channel_by_id(self.channel_id);
 
@@ -3534,7 +3534,7 @@ impl IssueNftFixture {
         let video_pre = Content::video_by_id(self.video_id);
 
         let actual_result = Content::issue_nft(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.params.clone(),
@@ -3642,7 +3642,7 @@ impl StartOpenAuctionFixture {
         let video_pre = Content::video_by_id(self.video_id);
 
         let actual_result = Content::start_open_auction(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.params.clone(),
@@ -3754,7 +3754,7 @@ impl StartEnglishAuctionFixture {
         let video_pre = Content::video_by_id(self.video_id);
 
         let actual_result = Content::start_english_auction(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.params.clone(),
@@ -3840,7 +3840,7 @@ impl OfferNftFixture {
         let video_pre = Content::video_by_id(self.video_id);
 
         let actual_result = Content::offer_nft(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.video_id,
             self.actor,
             self.to,
@@ -3944,7 +3944,7 @@ impl MakeOpenAuctionBidFixture {
         let bid_pre = Content::open_auction_bid_by_video_and_member(self.video_id, self.member_id);
 
         let actual_result = Content::make_open_auction_bid(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.member_id,
             self.video_id,
             self.bid,
@@ -4061,7 +4061,7 @@ impl PickOpenAuctionWinnerFixture {
         let snapshot_pre = Self::create_auction_state_snapshot(self);
 
         let actual_result = Content::pick_open_auction_winner(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.winner_id,
@@ -4133,7 +4133,7 @@ impl NftOwnerRemarkFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Content::nft_owner_remark(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.msg.clone(),
@@ -4185,8 +4185,11 @@ impl DestroyNftFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let video_pre = Content::video_by_id(self.video_id);
 
-        let actual_result =
-            Content::destroy_nft(Origin::signed(self.sender), self.actor, self.video_id);
+        let actual_result = Content::destroy_nft(
+            RuntimeOrigin::signed(self.sender),
+            self.actor,
+            self.video_id,
+        );
 
         let video_post = Content::video_by_id(self.video_id);
 
@@ -4241,7 +4244,7 @@ impl ChannelAgentRemarkFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = Content::channel_agent_remark(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.channel_id,
             self.msg.clone(),
@@ -4380,7 +4383,7 @@ impl SellNftFixture {
         let video_pre = Content::video_by_id(self.video_id);
 
         let actual_result = Content::sell_nft(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.video_id,
             self.actor,
             self.price,
@@ -4460,7 +4463,11 @@ impl CancelAuctionFixture {
             AuctionType::Open => Content::cancel_open_auction,
         };
 
-        let actual_result = call(Origin::signed(self.sender), self.actor, self.video_id);
+        let actual_result = call(
+            RuntimeOrigin::signed(self.sender),
+            self.actor,
+            self.video_id,
+        );
 
         assert_eq!(actual_result, expected_result);
 
@@ -4519,8 +4526,11 @@ impl CancelOfferFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let video_pre = Content::video_by_id(self.video_id);
 
-        let actual_result =
-            Content::cancel_offer(Origin::signed(self.sender), self.actor, self.video_id);
+        let actual_result = Content::cancel_offer(
+            RuntimeOrigin::signed(self.sender),
+            self.actor,
+            self.video_id,
+        );
 
         assert_eq!(actual_result, expected_result);
 
@@ -4579,8 +4589,11 @@ impl CancelBuyNowFixture {
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let video_pre = Content::video_by_id(self.video_id);
 
-        let actual_result =
-            Content::cancel_buy_now(Origin::signed(self.sender), self.actor, self.video_id);
+        let actual_result = Content::cancel_buy_now(
+            RuntimeOrigin::signed(self.sender),
+            self.actor,
+            self.video_id,
+        );
 
         assert_eq!(actual_result, expected_result);
 
@@ -4642,7 +4655,7 @@ impl UpdateBuyNowPriceFixture {
         let video_pre = Content::video_by_id(self.video_id);
 
         let actual_result = Content::update_buy_now_price(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.actor,
             self.video_id,
             self.price,
@@ -5000,7 +5013,7 @@ pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number
     // Set storage bucket in the dynamic bag creation policy to zero.
     assert_eq!(
         Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             DynamicBagType::Channel,
             storage_bucket_number,
         ),
@@ -5008,7 +5021,7 @@ pub fn set_dynamic_bag_creation_policy_for_storage_numbers(storage_bucket_number
     );
     assert_eq!(
         Storage::<Test>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             DynamicBagType::Member,
             storage_bucket_number,
         ),
@@ -5019,7 +5032,7 @@ pub fn create_initial_storage_buckets_helper() -> StorageBucketId {
     // first set limits
     assert_eq!(
         Storage::<Test>::update_storage_buckets_voucher_max_limits(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             VOUCHER_OBJECTS_SIZE_LIMIT,
             VOUCHER_OBJECTS_NUMBER_LIMIT,
         ),
@@ -5033,7 +5046,7 @@ pub fn create_initial_storage_buckets_helper() -> StorageBucketId {
     // create bucket(s)
     assert_eq!(
         Storage::<Test>::create_storage_bucket(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             None,
             STORAGE_BUCKET_ACCEPTING_BAGS,
             STORAGE_BUCKET_OBJECTS_SIZE_LIMIT,
@@ -5048,7 +5061,7 @@ pub fn create_initial_storage_buckets_helper() -> StorageBucketId {
 pub fn set_data_object_state_bloat_bond(state_bloat_bond: u64) {
     assert_eq!(
         Storage::<Test>::update_data_object_state_bloat_bond(
-            Origin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
+            RuntimeOrigin::signed(STORAGE_WG_LEADER_ACCOUNT_ID),
             state_bloat_bond
         ),
         Ok(())
@@ -5061,7 +5074,7 @@ pub fn create_default_member_owned_channel_with_video_with_nft() -> (ChannelId, 
     create_default_member_owned_channel_with_video();
     // Issue nft
     assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test> {
@@ -5872,7 +5885,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Test>,
 ) {
     <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );
@@ -5882,5 +5895,5 @@ pub fn set_staking_candidate_lock(
     who: &<Test as frame_system::Config>::AccountId,
     amount: BalanceOf<Test>,
 ) {
-    <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
+    <Test as membership::Config>::StakingCandidateStakingHandler::lock(who, amount);
 }

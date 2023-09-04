@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks_instance, Zero};
+use frame_benchmarking::v1::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
 use frame_system::EventRecord;
 use frame_system::Pallet as System;
@@ -18,9 +18,9 @@ use membership::Module as Membership;
 const SEED: u32 = 0;
 const MAX_KILOBYTES_METADATA: u32 = 100;
 
-fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
@@ -32,7 +32,7 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 fn add_opening_helper<T: Config<I>, I: Instance>(
     id: u32,
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     let staking_policy = StakePolicy {
@@ -96,7 +96,7 @@ fn apply_on_opening_helper<T: Config<I>, I: Instance>(
 
 fn add_opening_and_apply_with_multiple_ids<T: Config<I> + membership::Config, I: Instance>(
     ids: &[u32],
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> (OpeningId, BTreeSet<ApplicationId>, Vec<T::AccountId>) {
     let opening_id = add_opening_helper::<T, I>(1, add_opening_origin, job_opening_type);
@@ -123,7 +123,7 @@ fn add_opening_and_apply_with_multiple_ids<T: Config<I> + membership::Config, I:
 
 fn add_and_apply_opening<T: Config<I>, I: Instance>(
     id: u32,
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     applicant_id: &T::AccountId,
     member_id: &T::MemberId,
     job_opening_type: &OpeningType,
@@ -227,7 +227,7 @@ pub fn complete_opening<T: Config<I> + membership::Config, I: Instance>(
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         id,
-        &T::Origin::from(add_worker_origin.clone()),
+        &T::RuntimeOrigin::from(add_worker_origin.clone()),
         caller_id,
         &member_id,
         &job_opening_type,
@@ -270,7 +270,7 @@ benchmarks_instance! {
         let (opening_id, successful_application_ids, application_account_id) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
                 &(1..i).collect::<Vec<_>>(),
-                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &T::RuntimeOrigin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
@@ -355,7 +355,7 @@ benchmarks_instance! {
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
                 &(1..i).collect::<Vec<_>>(),
-                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &T::RuntimeOrigin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
@@ -415,7 +415,7 @@ benchmarks_instance! {
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
                 &(1..i).collect::<Vec<_>>(),
-                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &T::RuntimeOrigin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
@@ -464,7 +464,7 @@ benchmarks_instance! {
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
                 &(1..i).collect::<Vec<_>>(),
-                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &T::RuntimeOrigin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
 
@@ -511,7 +511,7 @@ benchmarks_instance! {
         let (lead_account_id, lead_member_id) = member_funded_account::<T, I>("lead", 0);
         let opening_id = add_opening_helper::<T, I>(
             0,
-            &T::Origin::from(RawOrigin::Root),
+            &T::RuntimeOrigin::from(RawOrigin::Root),
             &OpeningType::Leader
         );
 
@@ -586,7 +586,7 @@ benchmarks_instance! {
         let (opening_id, successful_application_ids, _) =
             add_opening_and_apply_with_multiple_ids::<T, I>(
                 &(1..i).collect::<Vec<_>>(),
-                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &T::RuntimeOrigin::from(RawOrigin::Signed(lead_id.clone())),
                 &OpeningType::Regular
             );
     }: fill_opening(
@@ -637,7 +637,7 @@ benchmarks_instance! {
             insert_a_worker::<T, I>(OpeningType::Leader, 0, None);
         let opening_id = add_opening_helper::<T, I>(
             1,
-            &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+            &T::RuntimeOrigin::from(RawOrigin::Signed(lead_id.clone())),
             &OpeningType::Regular
         );
 
