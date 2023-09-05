@@ -22,6 +22,7 @@ serde = { version = '1.0.101', features = ['derive'], optional = true }
 scale-info = { version = "2.1.1", default-features = false, features = [
 	"derive",
 ] }
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e', optional = true }
@@ -50,6 +51,7 @@ std = [
 	'balances/std',
 	'membership/std',
 	'codec/std',
+	'pallet-timestamp/std',
 	'serde',
 	'scale-info/std',
 	'frame-benchmarking?/std',

@@ -715,7 +715,7 @@ pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_activate_amm<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -726,7 +726,7 @@ pub fn ensure_actor_authorized_to_activate_amm<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_deactivate_amm<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
