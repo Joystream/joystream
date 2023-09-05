@@ -2979,7 +2979,7 @@ impl ActivateAmmFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result =
             Content::activate_amm(origin, self.actor, self.channel_id, self.params.clone());
@@ -3015,7 +3015,7 @@ impl DeactivateAmmFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = Origin::signed(self.sender);
+        let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::deactivate_amm(origin, self.actor, self.channel_id);
 

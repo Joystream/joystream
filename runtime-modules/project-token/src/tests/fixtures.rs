@@ -1156,7 +1156,7 @@ impl AmmBuyFixture {
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::buy_on_amm(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
@@ -1229,7 +1229,7 @@ impl AmmSellFixture {
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::sell_on_amm(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,

@@ -843,7 +843,7 @@ decl_module! {
             let token_data = Self::ensure_token_exists(token_id)?;
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
 
-            let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id);
+            let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
             let amm_treasury_account = Self::amm_treasury_account(token_id);
             let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Buy)?;
             let bloat_bond = Self::bloat_bond();
@@ -1878,7 +1878,7 @@ impl<T: Config> Module<T> {
 
     /// Returns the account for the AMM treasury
     pub fn amm_treasury_account(token_id: T::TokenId) -> T::AccountId {
-        <T as Config>::ModuleId::get().into_sub_account_truncating(&("AMM", token_id))
+        <T as Config>::ModuleId::get().into_sub_account_truncating(("AMM", token_id))
     }
 
     pub(crate) fn validate_destination(
