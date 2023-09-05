@@ -27,7 +27,7 @@ proposals-discussion = { package = 'pallet-proposals-discussion', default-featur
 constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution' }
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership' }
 content = { package = 'pallet-content', default-features = false, path = '../../content' }
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', optional = true }
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 token = { package = 'pallet-project-token', default-features = false, path = '../../project-token' }
 
 # Benchmarking dependencies
