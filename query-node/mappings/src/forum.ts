@@ -1,51 +1,49 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { ForumPostMetadata, ForumThreadMetadata } from '@joystream/metadata-protobuf'
+import { MAX_TAGS_PER_FORUM_THREAD } from '@joystream/metadata-protobuf/consts'
+import { isSet } from '@joystream/metadata-protobuf/utils'
+import { Bytes } from '@polkadot/types'
+import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
+import _ from 'lodash'
 import {
-  bytesToString,
-  deserializeMetadata,
-  genericEventFields,
-  getWorker,
-  inconsistentState,
-  invalidMetadata,
-  perpareString,
-} from './common'
-import {
-  CategoryCreatedEvent,
-  CategoryStatusActive,
   CategoryArchivalStatusUpdatedEvent,
-  ForumCategory,
-  Worker,
-  CategoryStatusArchived,
+  CategoryCreatedEvent,
   CategoryDeletedEvent,
-  CategoryStatusRemoved,
-  ThreadCreatedEvent,
-  ForumThread,
-  Membership,
-  ThreadStatusActive,
-  ThreadModeratedEvent,
-  ThreadStatusModerated,
-  ThreadMetadataUpdatedEvent,
-  ThreadDeletedEvent,
-  ThreadStatusLocked,
-  ThreadStatusRemoved,
-  ThreadMovedEvent,
-  ForumPost,
-  PostStatusActive,
-  PostOriginThreadInitial,
-  PostAddedEvent,
-  PostStatusLocked,
-  PostOriginThreadReply,
-  CategoryStickyThreadUpdateEvent,
   CategoryMembershipOfModeratorUpdatedEvent,
-  PostModeratedEvent,
-  PostStatusModerated,
-  PostTextUpdatedEvent,
-  PostDeletedEvent,
-  PostStatusRemoved,
+  CategoryStatusActive,
+  CategoryStatusArchived,
+  CategoryStatusRemoved,
+  CategoryStickyThreadUpdateEvent,
+  ForumCategory,
+  ForumPost,
+  ForumThread,
   ForumThreadTag,
+  Membership,
+  PostAddedEvent,
+  PostDeletedEvent,
+  PostModeratedEvent,
+  PostOriginThreadInitial,
+  PostOriginThreadReply,
+  PostStatusActive,
+  PostStatusLocked,
+  PostStatusModerated,
+  PostStatusRemoved,
+  PostTextUpdatedEvent,
+  ThreadCreatedEvent,
+  ThreadDeletedEvent,
+  ThreadMetadataUpdatedEvent,
+  ThreadModeratedEvent,
+  ThreadMovedEvent,
+  ThreadStatusActive,
+  ThreadStatusLocked,
+  ThreadStatusModerated,
+  ThreadStatusRemoved,
+  Worker,
 } from 'query-node/dist/model'
+import { In, Not } from 'typeorm'
 import {
   Forum_CategoryArchivalStatusUpdatedEvent_V1001 as CategoryArchivalStatusUpdatedEvent_V1001,
   Forum_CategoryCreatedEvent_V1001 as CategoryCreatedEvent_V1001,
@@ -62,45 +60,42 @@ import {
   Forum_ThreadModeratedEvent_V1001 as ThreadModeratedEvent_V1001,
   Forum_ThreadMovedEvent_V1001 as ThreadMovedEvent_V1001,
 } from '../generated/types'
-import { PalletForumPrivilegedActor as PrivilegedActor } from '@polkadot/types/lookup'
-import { ForumPostMetadata, ForumThreadMetadata } from '@joystream/metadata-protobuf'
-import { isSet } from '@joystream/metadata-protobuf/utils'
-import { MAX_TAGS_PER_FORUM_THREAD } from '@joystream/metadata-protobuf/consts'
-import { Not, In } from 'typeorm'
-import { Bytes } from '@polkadot/types'
-import _ from 'lodash'
+import {
+  RelationsArr,
+  bytesToString,
+  deserializeMetadata,
+  genericEventFields,
+  getByIdOrFail,
+  getOneByOrFail,
+  getWorkerOrFail,
+  invalidMetadata,
+  prepareString,
+} from './common'
 
-async function getCategory(store: DatabaseManager, categoryId: string, relations?: string[]): Promise<ForumCategory> {
-  const category = await store.get(ForumCategory, { where: { id: categoryId }, relations })
-  if (!category) {
-    throw new Error(`Forum category not found by id: ${categoryId}`)
-  }
-
-  return category
+async function getCategoryOrFail(
+  store: DatabaseManager,
+  categoryId: string,
+  relations?: RelationsArr<ForumCategory>
+): Promise<ForumCategory> {
+  return getByIdOrFail(store, ForumCategory, categoryId, relations)
 }
 
-async function getThread(store: DatabaseManager, threadId: string): Promise<ForumThread> {
-  const thread = await store.get(ForumThread, { where: { id: threadId } })
-  if (!thread) {
-    throw new Error(`Forum thread not found by id: ${threadId.toString()}`)
-  }
-
-  return thread
+async function getThreadOrFail(store: DatabaseManager, threadId: string): Promise<ForumThread> {
+  return getByIdOrFail(store, ForumThread, threadId)
 }
 
-async function getPost(store: DatabaseManager, postId: string, relations?: string[]): Promise<ForumPost> {
-  const post = await store.get(ForumPost, { where: { id: postId }, relations })
-  if (!post) {
-    throw new Error(`Forum post not found by id: ${postId}`)
-  }
-
-  return post
+async function getPostOrFail(
+  store: DatabaseManager,
+  postId: string,
+  relations?: RelationsArr<ForumPost>
+): Promise<ForumPost> {
+  return getByIdOrFail(store, ForumPost, postId, relations)
 }
 
 type ModerationType = 'runtime' | 'leadRemark' | 'workerRemark'
 
 async function canModerate(store: DatabaseManager, actorId: string, categoryId: string): Promise<boolean> {
-  const category = await getCategory(store, categoryId, ['moderators', 'parent'])
+  const category = await getCategoryOrFail(store, categoryId, ['moderators', 'parent'])
   return (
     category.moderators.some(({ id }) => id === actorId) ||
     (category.parent ? canModerate(store, actorId, category.parent.id) : false)
@@ -155,24 +150,22 @@ export async function moderatePost(
 }
 
 async function getActorWorker(store: DatabaseManager, actor: PrivilegedActor): Promise<Worker> {
-  const worker = await store.get(Worker, {
-    where: {
+  const worker = await getOneByOrFail(
+    store,
+    Worker,
+    {
       group: { id: 'forumWorkingGroup' },
       ...(actor.isLead ? { isLead: true } : { runtimeId: actor.asModerator.toNumber() }),
     },
-    relations: ['group'],
-  })
-
-  if (!worker) {
-    throw new Error(`Corresponding worker not found by forum PrivielagedActor: ${JSON.stringify(actor.toHuman())}`)
-  }
+    ['group']
+  )
 
   return worker
 }
 
 function normalizeForumTagLabel(label: string): string {
   // Optionally: normalize to lowercase & ASCII only?
-  return perpareString(label)
+  return prepareString(label)
 }
 
 function parseThreadMetadata(metaBytes: Bytes) {
@@ -211,9 +204,6 @@ async function unsetThreadTags({ store }: StoreContext & EventContext, tags: For
   await Promise.all(
     tags.map(async (forumTag) => {
       --forumTag.visibleThreadsCount
-      if (forumTag.visibleThreadsCount < 0) {
-        inconsistentState('Trying to update forumTag.visibleThreadsCount to a number below 0!')
-      }
       await store.save<ForumThreadTag>(forumTag)
     })
   )
@@ -244,7 +234,7 @@ export async function forum_CategoryArchivalStatusUpdated({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [categoryId, newArchivalStatus, privilegedActor] = new CategoryArchivalStatusUpdatedEvent_V1001(event).params
-  const category = await getCategory(store, categoryId.toString())
+  const category = await getCategoryOrFail(store, categoryId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
   const categoryArchivalStatusUpdatedEvent = new CategoryArchivalStatusUpdatedEvent({
@@ -267,7 +257,7 @@ export async function forum_CategoryArchivalStatusUpdated({
 
 export async function forum_CategoryDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [categoryId, privilegedActor] = new CategoryDeletedEvent_V1001(event).params
-  const category = await getCategory(store, categoryId.toString())
+  const category = await getCategoryOrFail(store, categoryId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
   const categoryDeletedEvent = new CategoryDeletedEvent({
@@ -335,7 +325,7 @@ export async function forum_ThreadModerated(ctx: EventContext & StoreContext): P
   const { event, store } = ctx
   const [threadId, rationaleBytes, privilegedActor] = new ThreadModeratedEvent_V1001(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
-  const thread = await getThread(store, threadId.toString())
+  const thread = await getThreadOrFail(store, threadId.toString())
 
   const threadModeratedEvent = new ThreadModeratedEvent({
     ...genericEventFields(event),
@@ -359,7 +349,7 @@ export async function forum_ThreadModerated(ctx: EventContext & StoreContext): P
 export async function forum_ThreadMetadataUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
   const [threadId, , , newMetadataBytes] = new ThreadMetadataUpdatedEvent_V1001(event).params
-  const thread = await getThread(store, threadId.toString())
+  const thread = await getThreadOrFail(store, threadId.toString())
 
   const { title: newTitle, tags: newTagIds } = parseThreadMetadata(newMetadataBytes)
 
@@ -394,7 +384,7 @@ export async function forum_ThreadMetadataUpdated(ctx: EventContext & StoreConte
 export async function forum_ThreadDeleted(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
   const [threadId, , , hide] = new ThreadDeletedEvent_V1001(event).params
-  const thread = await getThread(store, threadId.toString())
+  const thread = await getThreadOrFail(store, threadId.toString())
 
   const threadDeletedEvent = new ThreadDeletedEvent({
     ...genericEventFields(event),
@@ -416,7 +406,7 @@ export async function forum_ThreadDeleted(ctx: EventContext & StoreContext): Pro
 
 export async function forum_ThreadMoved({ event, store }: EventContext & StoreContext): Promise<void> {
   const [threadId, newCategoryId, privilegedActor, oldCategoryId] = new ThreadMovedEvent_V1001(event).params
-  const thread = await getThread(store, threadId.toString())
+  const thread = await getThreadOrFail(store, threadId.toString())
   const actorWorker = await getActorWorker(store, privilegedActor)
 
   const threadMovedEvent = new ThreadMovedEvent({
@@ -436,7 +426,7 @@ export async function forum_ThreadMoved({ event, store }: EventContext & StoreCo
 export async function forum_PostAdded({ event, store }: EventContext & StoreContext): Promise<void> {
   const [postId, forumUserId, , threadId, metadataBytes, isEditable] = new PostAddedEvent_V1001(event).params
 
-  const thread = await getThread(store, threadId.toString())
+  const thread = await getThreadOrFail(store, threadId.toString())
   const metadata = deserializeMetadata(ForumPostMetadata, metadataBytes)
   const postText = metadata ? metadata.text || '' : bytesToString(metadataBytes)
   const repliesToPost =
@@ -512,8 +502,8 @@ export async function forum_CategoryMembershipOfModeratorUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [moderatorId, categoryId, canModerate] = new CategoryMembershipOfModeratorUpdatedEvent_V1001(event).params
-  const moderator = await getWorker(store, 'forumWorkingGroup', moderatorId.toNumber())
-  const category = await getCategory(store, categoryId.toString(), ['moderators'])
+  const moderator = await getWorkerOrFail(store, 'forumWorkingGroup', moderatorId.toNumber())
+  const category = await getCategoryOrFail(store, categoryId.toString(), ['moderators'])
 
   if (canModerate.valueOf()) {
     category.moderators.push(moderator)
@@ -540,7 +530,7 @@ export async function forum_PostModerated({ event, store }: EventContext & Store
 
 export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [postId, , , , newTextBytes] = new PostTextUpdatedEvent_V1001(event).params
-  const post = await getPost(store, postId.toString())
+  const post = await getPostOrFail(store, postId.toString())
 
   const postTextUpdatedEvent = new PostTextUpdatedEvent({
     ...genericEventFields(event),
@@ -567,7 +557,7 @@ export async function forum_PostDeleted({ event, store }: EventContext & StoreCo
 
   await Promise.all(
     Array.from(postsData.entries()).map(async ([{ postId }, hideFlag]) => {
-      const post = await getPost(store, postId.toString(), ['thread'])
+      const post = await getPostOrFail(store, postId.toString(), ['thread'])
       const newStatus = hideFlag.isTrue ? new PostStatusRemoved() : new PostStatusLocked()
       newStatus.postDeletedEventId = postDeletedEvent.id
       post.status = newStatus

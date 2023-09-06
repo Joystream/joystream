@@ -1,59 +1,67 @@
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import {
-  IVideoMetadata,
-  IPublishedBeforeJoystream,
+  IAppAction,
+  IChannelMetadata,
   ILicense,
   IMediaType,
-  IChannelMetadata,
+  IPublishedBeforeJoystream,
   ISubtitleMetadata,
-  IAppAction,
+  IVideoMetadata,
 } from '@joystream/metadata-protobuf'
 import { integrateMeta, isSet, isValidLanguageCode } from '@joystream/metadata-protobuf/utils'
 import { ed25519Verify } from '@polkadot/util-crypto'
-import { invalidMetadata, inconsistentState, logger, deterministicEntityId, EntityType } from '../common'
 import {
-  // primary entities
-  CuratorGroup,
-  Channel,
-  Video,
-  VideoCategory,
-  // secondary entities
-  Language,
-  License,
-  VideoMediaMetadata,
   App,
-  // asset
-  Membership,
-  VideoMediaEncoding,
-  StorageDataObject,
-  DataObjectTypeChannelAvatar,
-  DataObjectTypeChannelCoverPhoto,
-  DataObjectTypeVideoMedia,
-  DataObjectTypeVideoThumbnail,
-  ContentActorLead,
+  Channel,
   ContentActorCurator,
+  ContentActorLead,
   ContentActorMember,
   ContentActor as ContentActorVariant,
   Curator,
+  // primary entities
+  CuratorGroup,
+  DataObjectTypeChannelAvatar,
+  DataObjectTypeChannelCoverPhoto,
+  DataObjectTypeVideoMedia,
   DataObjectTypeVideoSubtitle,
+  DataObjectTypeVideoThumbnail,
+  // secondary entities
+  Language,
+  License,
+  // asset
+  Membership,
+  StorageDataObject,
+  Video,
+  VideoCategory,
+  VideoMediaEncoding,
+  VideoMediaMetadata,
   VideoSubtitle,
 } from 'query-node/dist/model'
+import {
+  EntityType,
+  RelationsArr,
+  deterministicEntityId,
+  getById,
+  getByIdOrFail,
+  getMembershipById,
+  invalidMetadata,
+  logger,
+} from '../common'
 // Joystream types
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { createType } from '@joystream/types'
+import { DataObjectId } from '@joystream/types/primitives'
+import { BTreeSet } from '@polkadot/types'
 import {
   PalletContentChannelOwner as ChannelOwner,
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentIterableEnumsChannelActionPermission,
 } from '@polkadot/types/lookup'
-import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { Bytes } from '@polkadot/types/primitive'
+import { u8aToHex } from '@polkadot/util'
 import BN from 'bn.js'
 import _ from 'lodash'
 import { getSortedDataObjectsByIds } from '../storage/utils'
-import { BTreeSet } from '@polkadot/types'
-import { DataObjectId } from '@joystream/types/primitives'
-import { Bytes } from '@polkadot/types/primitive'
-import { u8aToHex } from '@polkadot/util'
-import { createType } from '@joystream/types'
-import { getAppById } from './app'
 
 const ASSET_TYPES = {
   channel: [
@@ -184,7 +192,7 @@ async function validateAndGetApp(
     return undefined
   }
 
-  const app = await getAppById(ctx.store, appAction.appId)
+  const app = await getById(ctx.store, App, appAction.appId, ['ownerMember'])
 
   if (!app) {
     invalidMetadata('No app of given id found')
@@ -371,30 +379,14 @@ export async function convertChannelOwnerToMemberOrCuratorGroup(
   ownerCuratorGroup?: CuratorGroup
 }> {
   if (channelOwner.isMember) {
-    const member = await store.get(Membership, {
-      where: { id: channelOwner.asMember.toString() },
-    })
-
-    // ensure member exists
-    if (!member) {
-      return inconsistentState(`Channel owner is non-existing member`, channelOwner.asMember)
-    }
-
+    const member = await getByIdOrFail(store, Membership, channelOwner.asMember.toString())
     return {
       ownerMember: member,
       ownerCuratorGroup: undefined,
     }
   }
 
-  const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: channelOwner.asCuratorGroup.toString() },
-  })
-
-  // ensure curator group exists
-  if (!curatorGroup) {
-    return inconsistentState('Channel owner is non-existing curator group', channelOwner.asCuratorGroup)
-  }
-
+  const curatorGroup = await getByIdOrFail(store, CuratorGroup, channelOwner.asCuratorGroup.toString())
   return {
     ownerMember: undefined,
     ownerCuratorGroup: curatorGroup,
@@ -409,14 +401,7 @@ export async function convertContentActorToChannelOrNftOwner(
   ownerCuratorGroup?: CuratorGroup
 }> {
   if (contentActor.isMember) {
-    const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } })
-
-    // ensure member exists
-    if (!member) {
-      return inconsistentState(`Actor is non-existing member`, memberId)
-    }
-
+    const member = await getMembershipById(store, contentActor.asMember)
     return {
       ownerMember: member,
       ownerCuratorGroup: undefined, // this will clear the field
@@ -424,15 +409,8 @@ export async function convertContentActorToChannelOrNftOwner(
   }
 
   if (contentActor.isCurator) {
-    const curatorGroupId = contentActor.asCurator[0].toNumber()
-    const curatorGroup = await store.get(CuratorGroup, {
-      where: { id: curatorGroupId.toString() },
-    })
-
-    // ensure curator group exists
-    if (!curatorGroup) {
-      return inconsistentState('Actor is non-existing curator group', curatorGroupId)
-    }
+    const curatorGroupId = contentActor.asCurator[0].toString()
+    const curatorGroup = await getByIdOrFail(store, CuratorGroup, curatorGroupId)
 
     return {
       ownerMember: undefined, // this will clear the field
@@ -448,34 +426,17 @@ export async function convertContentActor(
   contentActor: ContentActor
 ): Promise<typeof ContentActorVariant> {
   if (contentActor.isMember) {
-    const memberId = contentActor.asMember.toNumber()
-    const member = await store.get(Membership, { where: { id: memberId.toString() } })
-
-    // ensure member exists
-    if (!member) {
-      return inconsistentState(`Actor is non-existing member`, memberId)
-    }
-
+    const member = await getMembershipById(store, contentActor.asMember)
     const result = new ContentActorMember()
     result.member = member
-
     return result
   }
 
   if (contentActor.isCurator) {
-    const curatorId = contentActor.asCurator[1].toNumber()
-    const curator = await store.get(Curator, {
-      where: { id: curatorId.toString() },
-    })
-
-    // ensure curator group exists
-    if (!curator) {
-      return inconsistentState('Actor is non-existing curator group', curatorId)
-    }
-
+    const curatorId = contentActor.asCurator[1].toString()
+    const curator = await getByIdOrFail(store, Curator, curatorId)
     const result = new ContentActorCurator()
     result.curator = curator
-
     return result
   }
 
@@ -744,4 +705,12 @@ export function mapAgentPermission(permission: PalletContentIterableEnumsChannel
 
 export function u8aToBytes(array?: Uint8Array | null): Bytes {
   return createType('Bytes', array ? u8aToHex(array) : '')
+}
+
+export async function getChannelOrFail(
+  store: DatabaseManager,
+  channelId: string,
+  relations?: RelationsArr<Channel>
+): Promise<Channel> {
+  return getByIdOrFail(store, Channel, channelId, relations)
 }

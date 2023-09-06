@@ -15,7 +15,10 @@ import {
 } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import {
+  App,
   AvatarUri,
+  ChannelPaymentMadeEvent,
+  Comment,
   InitialInvitationBalanceUpdatedEvent,
   InitialInvitationCountUpdatedEvent,
   InvitesTransferredEvent,
@@ -67,18 +70,18 @@ import {
 } from '../generated/types'
 import { membershipConfig } from './bootstrap-data'
 import {
+  MetaprotocolTxError,
+  RelationsArr,
   bytesToString,
   deserializeMetadata,
   genericEventFields,
-  getMemberById,
-  getWorker,
-  getWorkingGroupByName,
+  getMembershipById,
+  getWorkerOrFail,
+  getWorkingGroupByNameOrFail,
   invalidMetadata,
-  logger,
   saveMetaprotocolTransactionErrored,
   saveMetaprotocolTransactionSuccessful,
   toNumber,
-  unexpectedData,
 } from './common'
 import {
   processChannelPaymentFromMember,
@@ -89,7 +92,7 @@ import {
   processReactVideoMessage,
 } from './content'
 import { processCreateAppMessage, processUpdateAppMessage } from './content/app'
-import { createVideoCategory } from './content/videoCategory'
+import { processCreateVideoCategoryMessage } from './content/videoCategory'
 
 // Will only be used to get the initial balance till ephesus upgrade, after that it will be read from the event
 async function initialInvitationBalance(store: DatabaseManager) {
@@ -309,7 +312,10 @@ export async function members_MemberCreated({ store, event }: EventContext & Sto
 export async function members_MemberProfileUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, newHandle, newMetadata] = new MemberProfileUpdatedEvent_V1001(event).params
   const metadata = newMetadata.isSome ? deserializeMetadata(MembershipMetadata, newMetadata.unwrap()) : undefined
-  const member = await getMemberById(store, memberId, ['metadata', 'metadata.externalResources'])
+  const member = await getMembershipById(store, memberId, [
+    'metadata',
+    'metadata.externalResources',
+  ] as RelationsArr<Membership>)
 
   // FIXME: https://github.com/Joystream/hydra/issues/435
   if (typeof metadata?.name === 'string') {
@@ -360,7 +366,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
 
 export async function members_MemberAccountsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   const [memberId, newRootAccount, newControllerAccount] = new MemberAccountsUpdatedEvent_V1001(event).params
-  const member = await getMemberById(store, memberId)
+  const member = await getMembershipById(store, memberId)
 
   if (newControllerAccount.isSome) {
     member.controllerAccount = newControllerAccount.unwrap().toString()
@@ -386,8 +392,8 @@ export async function members_MemberVerificationStatusUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [memberId, verificationStatus, workerId] = new MemberVerificationStatusUpdatedEvent_V1001(event).params
-  const member = await getMemberById(store, memberId)
-  const worker = await getWorker(store, 'membershipWorkingGroup', workerId)
+  const member = await getMembershipById(store, memberId)
+  const worker = await getWorkerOrFail(store, 'membershipWorkingGroup', workerId)
 
   member.isVerified = verificationStatus.valueOf()
 
@@ -405,8 +411,8 @@ export async function members_MemberVerificationStatusUpdated({
 
 export async function members_InvitesTransferred({ store, event }: EventContext & StoreContext): Promise<void> {
   const [sourceMemberId, targetMemberId, numberOfInvites] = new InvitesTransferredEvent_V1001(event).params
-  const sourceMember = await getMemberById(store, sourceMemberId)
-  const targetMember = await getMemberById(store, targetMemberId)
+  const sourceMember = await getMembershipById(store, sourceMemberId)
+  const targetMember = await getMembershipById(store, targetMemberId)
 
   sourceMember.inviteCount -= numberOfInvites.toNumber()
   targetMember.inviteCount += numberOfInvites.toNumber()
@@ -433,12 +439,12 @@ export async function members_MemberInvited({ store, event, block }: EventContex
   const invitedMember = await createNewMemberFromParams(store, memberId, entryMethod, inviteMembershipParameters, 0)
 
   // Decrease invite count of inviting member
-  const invitingMember = await getMemberById(store, inviteMembershipParameters.invitingMemberId)
+  const invitingMember = await getMembershipById(store, inviteMembershipParameters.invitingMemberId)
   invitingMember.inviteCount -= 1
   await store.save<Membership>(invitingMember)
 
   // Decrease working group budget
-  const membershipWg = await getWorkingGroupByName(store, 'membershipWorkingGroup')
+  const membershipWg = await getWorkingGroupByNameOrFail(store, 'membershipWorkingGroup')
   const invitedMemberBalance = maybeInvitedMemberBalance
     ? maybeInvitedMemberBalance.toBn()
     : await initialInvitationBalance(store)
@@ -477,7 +483,7 @@ export async function members_StakingAccountAdded({ store, event }: EventContext
 
 export async function members_StakingAccountConfirmed({ store, event }: EventContext & StoreContext): Promise<void> {
   const [accountId, memberId] = new StakingAccountConfirmedEvent_V1001(event).params
-  const member = await getMemberById(store, memberId)
+  const member = await getMembershipById(store, memberId)
 
   member.boundAccounts.push(accountId.toString())
 
@@ -494,7 +500,7 @@ export async function members_StakingAccountConfirmed({ store, event }: EventCon
 
 export async function members_StakingAccountRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   const [accountId, memberId] = new StakingAccountRemovedEvent_V1001(event).params
-  const member = await getMemberById(store, memberId)
+  const member = await getMembershipById(store, memberId)
 
   member.boundAccounts.splice(
     member.boundAccounts.findIndex((a) => a === accountId.toString()),
@@ -567,14 +573,10 @@ export async function members_LeaderInvitationQuotaUpdated({
   const [newQuota] = new LeaderInvitationQuotaUpdatedEvent_V1001(event).params
 
   const groupName = 'membershipWorkingGroup'
-  const group = await store.get(WorkingGroup, {
-    where: { name: groupName },
-    relations: ['leader', 'leader.membership'],
-  })
-
-  if (!group) {
-    throw new Error(`Working group ${groupName} not found!`)
-  }
+  const group = await getWorkingGroupByNameOrFail(store, groupName, [
+    'leader',
+    'leader.membership',
+  ] as RelationsArr<WorkingGroup>)
 
   const lead = group.leader!.membership
   lead.inviteCount = toNumber(newQuota)
@@ -595,98 +597,119 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   const [memberId, metadataBytes, payment] =
     specVersion === 2001 ? new MemberRemarkedEvent_V2001(event).params : new MemberRemarkedEvent_V1001(event).params
 
-  try {
-    const metadata = deserializeMetadata(MemberRemarked, metadataBytes)
+  const member = await getMembershipById(store, memberId)
+  const metadata = deserializeMetadata(MemberRemarked, metadataBytes)
+  const metaprotocolTxResult = await processMemberRemark(ctx, member, metadata, payment?.unwrapOr(undefined))
 
-    const metaTransactionInfo = await processMemberRemark(ctx, memberId, metadata, payment?.unwrapOr(undefined))
-
-    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
-
-    // emit log event
-    logger.info('Member remarked', { metadata })
-  } catch (error) {
-    // emit log event
-    logger.info(`Bad metadata for member's remark`, { error })
-
-    // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for member's remark, error: ${error}}`)
+  if (metaprotocolTxResult instanceof MetaprotocolTransactionSuccessful) {
+    await saveMetaprotocolTransactionSuccessful(store, event, metaprotocolTxResult)
+  } else {
+    await saveMetaprotocolTransactionErrored(store, event, metaprotocolTxResult)
+    invalidMetadata(`Bad metadata for member's remark:`, { metadata, metaprotocolTxResult })
   }
 }
 
 async function processMemberRemark(
   { store, event }: EventContext & StoreContext,
-  memberId: MemberId,
+  member: Membership,
   decodedMetadata: DecodedMetadataObject<IMemberRemarked> | null,
   payment?: [AccountId32, Balance]
-): Promise<Partial<MetaprotocolTransactionSuccessful>> {
+): Promise<MetaprotocolTransactionSuccessful | MetaprotocolTxError> {
+  const metaprotocolTransactionSuccessful = new MetaprotocolTransactionSuccessful()
   if (decodedMetadata?.createApp) {
-    await processCreateAppMessage(store, event, decodedMetadata.createApp, memberId.toString())
+    const appOrError = await processCreateAppMessage(store, event, decodedMetadata.createApp, member)
 
-    return {}
+    if (appOrError instanceof App) {
+      return metaprotocolTransactionSuccessful
+    }
+    return appOrError
   }
 
   if (decodedMetadata?.updateApp) {
-    await processUpdateAppMessage(store, decodedMetadata.updateApp, memberId.toString())
+    const appOrError = await processUpdateAppMessage(store, decodedMetadata.updateApp, member)
 
-    return {}
+    if (appOrError instanceof App) {
+      return metaprotocolTransactionSuccessful
+    }
+    return appOrError
   }
 
   if (decodedMetadata?.reactVideo) {
-    await processReactVideoMessage(store, event, memberId, decodedMetadata.reactVideo)
+    await processReactVideoMessage(store, event, member, decodedMetadata.reactVideo)
 
-    return {}
+    return metaprotocolTransactionSuccessful
   }
 
   if (decodedMetadata?.reactComment) {
-    await processReactCommentMessage(store, event, memberId, decodedMetadata.reactComment)
+    const commentOrError = await processReactCommentMessage(store, event, member, decodedMetadata.reactComment)
 
-    return {}
+    if (commentOrError instanceof Comment) {
+      metaprotocolTransactionSuccessful.commentCreatedId = commentOrError.id
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
   }
 
   if (decodedMetadata?.createComment) {
-    const comment = await processCreateCommentMessage(store, event, memberId, decodedMetadata.createComment)
+    const commentOrError = await processCreateCommentMessage(store, event, member, decodedMetadata.createComment)
 
-    return { commentCreatedId: comment.id }
+    if (commentOrError instanceof Comment) {
+      metaprotocolTransactionSuccessful.commentCreatedId = commentOrError.id
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
   }
 
   if (decodedMetadata?.editComment) {
-    const comment = await processEditCommentMessage(store, event, memberId, decodedMetadata.editComment)
-    return { commentEditedId: comment.id }
+    const commentOrError = await processEditCommentMessage(store, event, member, decodedMetadata.editComment)
+    if (commentOrError instanceof Comment) {
+      metaprotocolTransactionSuccessful.commentEditedId = commentOrError.id
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
   }
 
   if (decodedMetadata?.deleteComment) {
-    const comment = await processDeleteCommentMessage(store, event, memberId, decodedMetadata.deleteComment)
-    return { commentDeletedId: comment.id }
+    const commentOrError = await processDeleteCommentMessage(store, event, member, decodedMetadata.deleteComment)
+
+    if (commentOrError instanceof Comment) {
+      metaprotocolTransactionSuccessful.commentDeletedId = commentOrError.id
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
   }
 
   // Though the payments can be sent along with any arbitrary metadata message type,
   // however they will only be processed if the message type is 'makeChannelPayment'
   if (decodedMetadata?.makeChannelPayment) {
     if (!payment) {
-      unexpectedData(
+      invalidMetadata(
         `payment info should be set when sending remark with 'makeChannelPayment' message type`,
         decodedMetadata
       )
+      return MetaprotocolTxError.InvalidMetadata
     }
 
-    const channelPayment = await processChannelPaymentFromMember(
+    const channelPaymentOrError = await processChannelPaymentFromMember(
       store,
       event,
-      memberId,
+      member,
       decodedMetadata.makeChannelPayment,
       payment
     )
-    return { channelPaidId: channelPayment.payeeChannel?.id }
+
+    if (channelPaymentOrError instanceof ChannelPaymentMadeEvent) {
+      metaprotocolTransactionSuccessful.channelPaidId = channelPaymentOrError.payeeChannel?.id || ''
+      return metaprotocolTransactionSuccessful
+    }
+    return channelPaymentOrError
   }
 
   if (decodedMetadata?.createVideoCategory) {
-    const createParams = decodedMetadata.createVideoCategory
-
-    const videoCategory = await createVideoCategory(store, event, createParams)
-
-    return { videoCategoryCreatedId: videoCategory.id }
+    const videoCategory = await processCreateVideoCategoryMessage(store, event, decodedMetadata.createVideoCategory)
+    metaprotocolTransactionSuccessful.videoCategoryCreatedId = videoCategory.id
+    return metaprotocolTransactionSuccessful
   }
 
-  // unknown message type
-  return unexpectedData('Unsupported message type in member_remark action', decodedMetadata)
+  return MetaprotocolTxError.InvalidMetadata
 }

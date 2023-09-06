@@ -2,44 +2,14 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import {
-  Storage_DataObjectsDeletedEvent_V1001 as DataObjectsDeletedEvent_V1001,
-  Storage_DataObjectsMovedEvent_V1001 as DataObjectsMovedEvent_V1001,
-  Storage_DataObjectsUpdatedEvent_V1001 as DataObjectsUpdatedEvent_V1001,
-  Storage_DataObjectsUploadedEvent_V1001 as DataObjectsUploadedEvent_V1001,
-  Storage_DistributionBucketCreatedEvent_V1001 as DistributionBucketCreatedEvent_V1001,
-  Storage_DistributionBucketDeletedEvent_V1001 as DistributionBucketDeletedEvent_V1001,
-  Storage_DistributionBucketsUpdatedForBagEvent_V1001 as DistributionBucketsUpdatedForBagEvent_V1001,
-  Storage_DistributionBucketFamilyCreatedEvent_V1001 as DistributionBucketFamilyCreatedEvent_V1001,
-  Storage_DistributionBucketFamilyDeletedEvent_V1001 as DistributionBucketFamilyDeletedEvent_V1001,
-  Storage_DistributionBucketFamilyMetadataSetEvent_V1001 as DistributionBucketFamilyMetadataSetEvent_V1001,
-  Storage_DistributionBucketMetadataSetEvent_V1001 as DistributionBucketMetadataSetEvent_V1001,
-  Storage_DistributionBucketInvitationAcceptedEvent_V1001 as DistributionBucketInvitationAcceptedEvent_V1001,
-  Storage_DistributionBucketInvitationCancelledEvent_V1001 as DistributionBucketInvitationCancelledEvent_V1001,
-  Storage_StorageOperatorMetadataSetEvent_V1001 as StorageOperatorMetadataSetEvent_V1001,
-  Storage_StorageBucketCreatedEvent_V1001 as StorageBucketCreatedEvent_V1001,
-  Storage_StorageBucketDeletedEvent_V1001 as StorageBucketDeletedEvent_V1001,
-  Storage_StorageBucketInvitationAcceptedEvent_V1001 as StorageBucketInvitationAcceptedEvent_V1001,
-  Storage_StorageBucketInvitationCancelledEvent_V1001 as StorageBucketInvitationCancelledEvent_V1001,
-  Storage_DistributionBucketModeUpdatedEvent_V1001 as DistributionBucketModeUpdatedEvent_V1001,
-  Storage_DynamicBagCreatedEvent_V1001 as DynamicBagCreatedEvent_V1001,
-  Storage_DynamicBagDeletedEvent_V1001 as DynamicBagDeletedEvent_V1001,
-  Storage_VoucherChangedEvent_V1001 as VoucherChangedEvent_V1001,
-  Storage_DistributionBucketOperatorInvitedEvent_V1001 as DistributionBucketOperatorInvitedEvent_V1001,
-  Storage_DistributionBucketOperatorRemovedEvent_V1001 as DistributionBucketOperatorRemovedEvent_V1001,
-  Storage_DistributionBucketStatusUpdatedEvent_V1001 as DistributionBucketStatusUpdatedEvent_V1001,
-  Storage_PendingDataObjectsAcceptedEvent_V1001 as PendingDataObjectsAcceptedEvent_V1001,
-  Storage_StorageBucketOperatorInvitedEvent_V1001 as StorageBucketOperatorInvitedEvent_V1001,
-  Storage_StorageBucketStatusUpdatedEvent_V1001 as StorageBucketStatusUpdatedEvent_V1001,
-  Storage_StorageBucketVoucherLimitsSetEvent_V1001 as StorageBucketVoucherLimitsSetEvent_V1001,
-  Storage_StorageBucketsUpdatedForBagEvent_V1001 as StorageBucketsUpdatedForBagEvent_V1001,
-} from '../../generated/types'
+import BN from 'bn.js'
 import {
   DistributionBucket,
   DistributionBucketFamily,
   DistributionBucketOperator,
   DistributionBucketOperatorMetadata,
   DistributionBucketOperatorStatus,
+  GeoCoordinates,
   NodeLocationMetadata,
   StorageBag,
   StorageBucket,
@@ -47,11 +17,42 @@ import {
   StorageBucketOperatorStatusInvited,
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
-  GeoCoordinates,
 } from 'query-node/dist/model'
-import BN from 'bn.js'
-import { getById, inconsistentState } from '../common'
-import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
+import {
+  Storage_DataObjectsDeletedEvent_V1001 as DataObjectsDeletedEvent_V1001,
+  Storage_DataObjectsMovedEvent_V1001 as DataObjectsMovedEvent_V1001,
+  Storage_DataObjectsUpdatedEvent_V1001 as DataObjectsUpdatedEvent_V1001,
+  Storage_DataObjectsUploadedEvent_V1001 as DataObjectsUploadedEvent_V1001,
+  Storage_DistributionBucketCreatedEvent_V1001 as DistributionBucketCreatedEvent_V1001,
+  Storage_DistributionBucketDeletedEvent_V1001 as DistributionBucketDeletedEvent_V1001,
+  Storage_DistributionBucketFamilyCreatedEvent_V1001 as DistributionBucketFamilyCreatedEvent_V1001,
+  Storage_DistributionBucketFamilyDeletedEvent_V1001 as DistributionBucketFamilyDeletedEvent_V1001,
+  Storage_DistributionBucketFamilyMetadataSetEvent_V1001 as DistributionBucketFamilyMetadataSetEvent_V1001,
+  Storage_DistributionBucketInvitationAcceptedEvent_V1001 as DistributionBucketInvitationAcceptedEvent_V1001,
+  Storage_DistributionBucketInvitationCancelledEvent_V1001 as DistributionBucketInvitationCancelledEvent_V1001,
+  Storage_DistributionBucketMetadataSetEvent_V1001 as DistributionBucketMetadataSetEvent_V1001,
+  Storage_DistributionBucketModeUpdatedEvent_V1001 as DistributionBucketModeUpdatedEvent_V1001,
+  Storage_DistributionBucketOperatorInvitedEvent_V1001 as DistributionBucketOperatorInvitedEvent_V1001,
+  Storage_DistributionBucketOperatorRemovedEvent_V1001 as DistributionBucketOperatorRemovedEvent_V1001,
+  Storage_DistributionBucketStatusUpdatedEvent_V1001 as DistributionBucketStatusUpdatedEvent_V1001,
+  Storage_DistributionBucketsUpdatedForBagEvent_V1001 as DistributionBucketsUpdatedForBagEvent_V1001,
+  Storage_DynamicBagCreatedEvent_V1001 as DynamicBagCreatedEvent_V1001,
+  Storage_DynamicBagDeletedEvent_V1001 as DynamicBagDeletedEvent_V1001,
+  Storage_PendingDataObjectsAcceptedEvent_V1001 as PendingDataObjectsAcceptedEvent_V1001,
+  Storage_StorageBucketCreatedEvent_V1001 as StorageBucketCreatedEvent_V1001,
+  Storage_StorageBucketDeletedEvent_V1001 as StorageBucketDeletedEvent_V1001,
+  Storage_StorageBucketInvitationAcceptedEvent_V1001 as StorageBucketInvitationAcceptedEvent_V1001,
+  Storage_StorageBucketInvitationCancelledEvent_V1001 as StorageBucketInvitationCancelledEvent_V1001,
+  Storage_StorageBucketOperatorInvitedEvent_V1001 as StorageBucketOperatorInvitedEvent_V1001,
+  Storage_StorageBucketStatusUpdatedEvent_V1001 as StorageBucketStatusUpdatedEvent_V1001,
+  Storage_StorageBucketVoucherLimitsSetEvent_V1001 as StorageBucketVoucherLimitsSetEvent_V1001,
+  Storage_StorageBucketsUpdatedForBagEvent_V1001 as StorageBucketsUpdatedForBagEvent_V1001,
+  Storage_StorageOperatorMetadataSetEvent_V1001 as StorageOperatorMetadataSetEvent_V1001,
+  Storage_VoucherChangedEvent_V1001 as VoucherChangedEvent_V1001,
+} from '../../generated/types'
+import { RelationsArr, getById, getByIdOrFail } from '../common'
+import { unsetAssetRelations, videoRelationsForCounters } from '../content/utils'
+import { getAllManagers } from '../derivedPropertiesManager/applications'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
@@ -59,20 +60,17 @@ import {
 } from './metadata'
 import {
   createDataObjects,
-  getStorageBucketWithOperatorMetadata,
+  deleteDataObjects,
+  distributionBucketId,
+  distributionBucketIdByFamilyAndIndex,
+  distributionOperatorId,
   getBag,
+  getDataObjectsInBag,
+  getDistributionBucketOperatorWithMetadata,
+  getDynamicBag,
   getDynamicBagId,
   getDynamicBagOwner,
-  getDataObjectsInBag,
-  getDynamicBag,
-  getDistributionBucketFamilyWithMetadata,
-  getDistributionBucketOperatorWithMetadata,
-  distributionBucketId,
-  distributionOperatorId,
-  distributionBucketIdByFamilyAndIndex,
-  deleteDataObjects,
 } from './utils'
-import { getAllManagers } from '../derivedPropertiesManager/applications'
 
 // STORAGE BUCKETS
 
@@ -100,7 +98,11 @@ export async function storage_StorageBucketCreated({ event, store }: EventContex
 
 export async function storage_StorageOperatorMetadataSet({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId, , metadataBytes] = new StorageOperatorMetadataSetEvent_V1001(event).params
-  const storageBucket = await getStorageBucketWithOperatorMetadata(store, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString(), [
+    'operatorMetadata',
+    'operatorMetadata.nodeLocation',
+    'operatorMetadata.nodeLocation.coordinates',
+  ] as RelationsArr<StorageBucket>)
   storageBucket.operatorMetadata = await processStorageOperatorMetadata(
     event,
     store,
@@ -113,7 +115,7 @@ export async function storage_StorageOperatorMetadataSet({ event, store }: Event
 export async function storage_StorageBucketStatusUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId, acceptingNewBags] = new StorageBucketStatusUpdatedEvent_V1001(event).params
 
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   storageBucket.acceptingNewBags = acceptingNewBags.isTrue
   await store.save<StorageBucket>(storageBucket)
 }
@@ -123,7 +125,7 @@ export async function storage_StorageBucketInvitationAccepted({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, workerId, transactorAccountId] = new StorageBucketInvitationAcceptedEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusActive()
   operatorStatus.workerId = workerId.toNumber()
   operatorStatus.transactorAccountId = transactorAccountId.toString()
@@ -136,7 +138,7 @@ export async function storage_StorageBucketInvitationCancelled({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new StorageBucketInvitationCancelledEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusMissing()
   storageBucket.operatorStatus = operatorStatus
   await store.save<StorageBucket>(storageBucket)
@@ -147,7 +149,7 @@ export async function storage_StorageBucketOperatorInvited({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, workerId] = new StorageBucketOperatorInvitedEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusInvited()
   operatorStatus.workerId = workerId.toNumber()
   storageBucket.operatorStatus = operatorStatus
@@ -159,7 +161,7 @@ export async function storage_StorageBucketOperatorRemoved({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new StorageBucketInvitationCancelledEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusMissing()
   storageBucket.operatorStatus = operatorStatus
   await store.save<StorageBucket>(storageBucket)
@@ -182,7 +184,7 @@ export async function storage_StorageBucketsUpdatedForBag({
 
 export async function storage_VoucherChanged({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId, voucher] = new VoucherChangedEvent_V1001(event).params
-  const bucket = await getById(store, StorageBucket, bucketId.toString())
+  const bucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
 
   bucket.dataObjectCountLimit = voucher.objectsLimit
   bucket.dataObjectsSizeLimit = voucher.sizeLimit
@@ -197,7 +199,7 @@ export async function storage_StorageBucketVoucherLimitsSet({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, sizeLimit, countLimit] = new StorageBucketVoucherLimitsSetEvent_V1001(event).params
-  const bucket = await getById(store, StorageBucket, bucketId.toString())
+  const bucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   bucket.dataObjectsSizeLimit = sizeLimit
   bucket.dataObjectCountLimit = countLimit
 
@@ -206,14 +208,11 @@ export async function storage_StorageBucketVoucherLimitsSet({
 
 export async function storage_StorageBucketDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new StorageBucketDeletedEvent_V1001(event).params
-  // TODO: Cascade remove on db level (would require changes in Hydra / comitting autogenerated files)
-  const storageBucket = await store.get(StorageBucket, {
-    where: { id: bucketId.toString() },
-    relations: ['bags', 'bags.storageBuckets'],
-  })
-  if (!storageBucket) {
-    inconsistentState(`Storage bucket by id ${bucketId.toString()} not found!`)
-  }
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString(), [
+    'bags',
+    'bags.storageBuckets',
+  ] as RelationsArr<StorageBucket>)
+
   // Remove relations
   await Promise.all(
     (storageBucket.bags || []).map((bag) => {
@@ -400,7 +399,10 @@ export async function storage_DistributionBucketFamilyMetadataSet({
 }: EventContext & StoreContext): Promise<void> {
   const [familyId, metadataBytes] = new DistributionBucketFamilyMetadataSetEvent_V1001(event).params
 
-  const family = await getDistributionBucketFamilyWithMetadata(store, familyId.toString())
+  const family = await getByIdOrFail(store, DistributionBucketFamily, familyId.toString(), [
+    'metadata',
+    'metadata.areas',
+  ] as RelationsArr<DistributionBucketFamily>)
   family.metadata = await processDistributionBucketFamilyMetadata(event, store, family.metadata, metadataBytes)
 
   await store.save<DistributionBucketFamily>(family)
@@ -440,7 +442,7 @@ export async function storage_DistributionBucketStatusUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, acceptingNewBags] = new DistributionBucketStatusUpdatedEvent_V1001(event).params
 
-  const bucket = await getById(store, DistributionBucket, distributionBucketId(bucketId))
+  const bucket = await getByIdOrFail(store, DistributionBucket, distributionBucketId(bucketId))
   bucket.acceptingNewBags = acceptingNewBags.valueOf()
 
   await store.save<DistributionBucket>(bucket)
@@ -449,13 +451,11 @@ export async function storage_DistributionBucketStatusUpdated({
 export async function storage_DistributionBucketDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new DistributionBucketDeletedEvent_V1001(event).params
   // TODO: Cascade remove on db level (would require changes in Hydra / comitting autogenerated files)
-  const distributionBucket = await store.get(DistributionBucket, {
-    where: { id: distributionBucketId(bucketId) },
-    relations: ['bags', 'bags.distributionBuckets'],
-  })
-  if (!distributionBucket) {
-    inconsistentState(`Distribution bucket by id ${distributionBucketId(bucketId)} not found!`)
-  }
+  const distributionBucket = await getByIdOrFail(store, DistributionBucket, distributionBucketId(bucketId), [
+    'bags',
+    'bags.distributionBuckets',
+  ] as RelationsArr<DistributionBucket>)
+
   // Remove relations
   await Promise.all(
     (distributionBucket.bags || []).map((bag) => {
@@ -504,7 +504,7 @@ export async function storage_DistributionBucketModeUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, distributing] = new DistributionBucketModeUpdatedEvent_V1001(event).params
 
-  const bucket = await getById(store, DistributionBucket, distributionBucketId(bucketId))
+  const bucket = await getByIdOrFail(store, DistributionBucket, distributionBucketId(bucketId))
   bucket.distributing = distributing.valueOf()
 
   await store.save<DistributionBucket>(bucket)
@@ -533,7 +533,11 @@ export async function storage_DistributionBucketInvitationCancelled({
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, workerId] = new DistributionBucketInvitationCancelledEvent_V1001(event).params
 
-  const invitedOperator = await getById(store, DistributionBucketOperator, distributionOperatorId(bucketId, workerId))
+  const invitedOperator = await getByIdOrFail(
+    store,
+    DistributionBucketOperator,
+    distributionOperatorId(bucketId, workerId)
+  )
 
   await store.remove<DistributionBucketOperator>(invitedOperator)
 }
@@ -544,7 +548,11 @@ export async function storage_DistributionBucketInvitationAccepted({
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, bucketId] = new DistributionBucketInvitationAcceptedEvent_V1001(event).params
 
-  const invitedOperator = await getById(store, DistributionBucketOperator, distributionOperatorId(bucketId, workerId))
+  const invitedOperator = await getByIdOrFail(
+    store,
+    DistributionBucketOperator,
+    distributionOperatorId(bucketId, workerId)
+  )
   invitedOperator.status = DistributionBucketOperatorStatus.ACTIVE
 
   await store.save<DistributionBucketOperator>(invitedOperator)

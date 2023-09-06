@@ -1,10 +1,10 @@
-import { VideoCategory } from 'query-node/dist/model'
-import { invalidMetadata, logger } from '../common'
 import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
 import { ICreateVideoCategory } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { VideoCategory } from 'query-node/dist/model'
+import { getById, invalidMetadata, logger } from '../common'
 
-export async function createVideoCategory(
+export async function processCreateVideoCategoryMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   categoryData: DecodedMetadataObject<ICreateVideoCategory>
@@ -14,8 +14,7 @@ export async function createVideoCategory(
   let parentCategory: VideoCategory | undefined
 
   if (categoryData.parentCategoryId) {
-    parentCategory = await store.get<VideoCategory>(VideoCategory, { where: { id: categoryData.parentCategoryId } })
-
+    parentCategory = await getById(store, VideoCategory, categoryData.parentCategoryId)
     if (!parentCategory) {
       invalidMetadata('Non-existing parent video category request', categoryData.parentCategoryId)
     }

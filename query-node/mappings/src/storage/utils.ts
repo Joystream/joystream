@@ -1,39 +1,35 @@
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
   PalletStorageBagIdType as BagId,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletStorageDistributionBucketIdRecord as DistributionBucketId,
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
-  PalletStorageDistributionBucketIdRecord as DistributionBucketId,
-  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
 } from '@polkadot/types/lookup'
+import BN from 'bn.js'
 import {
   DataObjectTypeUnknown,
+  DistributionBucketOperator,
   StorageBag,
-  StorageDataObject,
   StorageBagOwner,
   StorageBagOwnerChannel,
   StorageBagOwnerCouncil,
   StorageBagOwnerMember,
   StorageBagOwnerWorkingGroup,
-  StorageBucket,
-  DistributionBucketOperator,
-  DistributionBucketFamily,
+  StorageDataObject,
 } from 'query-node/dist/model'
-import BN from 'bn.js'
-import { bytesToString, inconsistentState, getById, RelationsArr } from '../common'
-import { In } from 'typeorm'
+import { RelationsArr, bytesToString, getByIdOrFail, getManyByOrFail } from '../common'
 
-import { BTreeSet } from '@polkadot/types'
-import _ from 'lodash'
 import {
-  WorkerId,
   DataObjectId,
   DistributionBucketFamilyId,
   DistributionBucketIndex,
+  WorkerId,
 } from '@joystream/types/primitives'
+import { BTreeSet } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
+import { unsetAssetRelations, videoRelationsForCounters } from '../content/utils'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
-import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 
 export type StorageDataObjectParams = {
   storageBagOrId: StorageBag | BagId
@@ -48,53 +44,35 @@ export async function getDataObjectsInBag(
   dataObjectIds: BTreeSet<DataObjectId>,
   relations: string[] = []
 ): Promise<StorageDataObject[]> {
-  const dataObjects = await store.getMany(StorageDataObject, {
-    where: {
-      id: In(Array.from(dataObjectIds).map((id) => id.toString())),
-      storageBag: { id: getBagId(bagId) },
-    },
-    relations,
-  })
-  if (dataObjects.length !== Array.from(dataObjectIds).length) {
-    inconsistentState(
-      `Missing data objects: ${_.difference(
-        Array.from(dataObjectIds).map((id) => id.toString()),
-        dataObjects.map((o) => o.id)
-      )} in bag ${getBagId(bagId)}`
-    )
-  }
-  return dataObjects
+  return getManyByOrFail(
+    store,
+    StorageDataObject,
+    [...dataObjectIds].map((id) => id.toString()),
+    { storageBag: { id: getBagId(bagId) } },
+    relations as RelationsArr<StorageDataObject>,
+    `Missing data objects in bag ${getBagId(bagId)}`
+  )
 }
 
 export async function getSortedDataObjectsByIds(
   store: DatabaseManager,
   dataObjectIds: BTreeSet<DataObjectId>
 ): Promise<StorageDataObject[]> {
-  const dataObjects = await store.getMany(StorageDataObject, {
-    where: {
-      id: In(Array.from(dataObjectIds).map((id) => id.toString())),
-    },
-  })
-  if (dataObjects.length !== Array.from(dataObjectIds).length) {
-    inconsistentState(
-      `Missing data objects: ${_.difference(
-        Array.from(dataObjectIds).map((id) => id.toString()),
-        dataObjects.map((o) => o.id)
-      )}`
-    )
-  }
+  const dataObjects = await getManyByOrFail(
+    store,
+    StorageDataObject,
+    [...dataObjectIds].map((id) => id.toString())
+  )
   return dataObjects.sort((a, b) => parseInt(a.id) - parseInt(b.id))
 }
 
 export function getStaticBagOwner(bagId: StaticBagId): typeof StorageBagOwner {
   if (bagId.isCouncil) {
     return new StorageBagOwnerCouncil()
-  } else if (bagId.isWorkingGroup) {
+  } else {
     const owner = new StorageBagOwnerWorkingGroup()
     owner.workingGroupId = bagId.asWorkingGroup.toString().toLowerCase()
     return owner
-  } else {
-    throw new Error(`Unexpected static bag type: ${bagId.type}`)
   }
 }
 
@@ -103,33 +81,21 @@ export function getDynamicBagOwner(bagId: DynamicBagId): typeof StorageBagOwner 
     const owner = new StorageBagOwnerChannel()
     owner.channelId = bagId.asChannel.toNumber()
     return owner
-  } else if (bagId.isMember) {
+  } else {
     const owner = new StorageBagOwnerMember()
     owner.memberId = bagId.asMember.toNumber()
     return owner
-  } else {
-    throw new Error(`Unexpected dynamic bag type: ${bagId.type}`)
   }
 }
 
 export function getStaticBagId(bagId: StaticBagId): string {
-  if (bagId.isCouncil) {
-    return `static:council`
-  } else if (bagId.isWorkingGroup) {
-    return `static:wg:${bagId.asWorkingGroup.type.toLowerCase()}`
-  } else {
-    throw new Error(`Unexpected static bag type: ${bagId.type}`)
-  }
+  return bagId.isCouncil ? `static:council` : `static:wg:${bagId.asWorkingGroup.type.toLowerCase()}`
 }
 
 export function getDynamicBagId(bagId: DynamicBagId): string {
-  if (bagId.isChannel) {
-    return `dynamic:channel:${bagId.asChannel.toString()}`
-  } else if (bagId.isMember) {
-    return `dynamic:member:${bagId.asMember.toString()}`
-  } else {
-    throw new Error(`Unexpected dynamic bag type: ${bagId.type}`)
-  }
+  return bagId.isChannel
+    ? `dynamic:channel:${bagId.asChannel.toString()}`
+    : `dynamic:member:${bagId.asMember.toString()}`
 }
 
 export function getBagId(bagId: BagId): string {
@@ -141,7 +107,7 @@ export async function getDynamicBag(
   bagId: DynamicBagId,
   relations?: RelationsArr<StorageBag>
 ): Promise<StorageBag> {
-  return getById(store, StorageBag, getDynamicBagId(bagId), relations)
+  return getByIdOrFail(store, StorageBag, getDynamicBagId(bagId), relations)
 }
 
 export async function getStaticBag(
@@ -177,39 +143,11 @@ export async function getDistributionBucketOperatorWithMetadata(
   store: DatabaseManager,
   id: string
 ): Promise<DistributionBucketOperator> {
-  const operator = await store.get(DistributionBucketOperator, {
-    where: { id },
-    relations: ['metadata', 'metadata.nodeLocation', 'metadata.nodeLocation.coordinates'],
-  })
-  if (!operator) {
-    throw new Error(`DistributionBucketOperator not found by id: ${id}`)
-  }
-  return operator
-}
-
-export async function getStorageBucketWithOperatorMetadata(store: DatabaseManager, id: string): Promise<StorageBucket> {
-  const bucket = await store.get(StorageBucket, {
-    where: { id },
-    relations: ['operatorMetadata', 'operatorMetadata.nodeLocation', 'operatorMetadata.nodeLocation.coordinates'],
-  })
-  if (!bucket) {
-    throw new Error(`StorageBucket not found by id: ${id}`)
-  }
-  return bucket
-}
-
-export async function getDistributionBucketFamilyWithMetadata(
-  store: DatabaseManager,
-  id: string
-): Promise<DistributionBucketFamily> {
-  const family = await store.get(DistributionBucketFamily, {
-    where: { id },
-    relations: ['metadata', 'metadata.areas'],
-  })
-  if (!family) {
-    throw new Error(`DistributionBucketFamily not found by id: ${id}`)
-  }
-  return family
+  return getByIdOrFail(store, DistributionBucketOperator, id, [
+    'metadata',
+    'metadata.nodeLocation',
+    'metadata.nodeLocation.coordinates',
+  ] as RelationsArr<DistributionBucketOperator>)
 }
 
 export async function createDataObjects(

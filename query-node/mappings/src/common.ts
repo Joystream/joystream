@@ -1,22 +1,29 @@
-import { DatabaseManager, SubstrateEvent, FindOneOptions } from '@joystream/hydra-common'
-import { Bytes, Option } from '@polkadot/types'
-import { Codec } from '@polkadot/types/types'
-import { MemberId, WorkerId } from '@joystream/types/primitives'
-import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WGType } from '@polkadot/types/lookup'
 import {
-  Worker,
+  DatabaseManager,
+  FindOneOptions,
+  FindOptionsOrderValue,
+  FindOptionsWhere,
+  SubstrateEvent,
+} from '@joystream/hydra-common'
+import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { metaToObject } from '@joystream/metadata-protobuf/utils'
+import { MemberId, WorkerId } from '@joystream/types/primitives'
+import { BaseModel } from '@joystream/warthog'
+import { Bytes, Option } from '@polkadot/types'
+import { PalletCommonWorkingGroupIterableEnumsWorkingGroup as WGType } from '@polkadot/types/lookup'
+import { Codec } from '@polkadot/types/types'
+import BN from 'bn.js'
+import {
   Event,
+  Membership,
+  MetaprotocolTransactionErrored,
+  MetaprotocolTransactionStatusEvent,
+  MetaprotocolTransactionSuccessful,
   Network,
   WorkingGroup as WGEntity,
-  MetaprotocolTransactionStatusEvent,
-  MetaprotocolTransactionErrored,
-  MetaprotocolTransactionSuccessful,
-  Membership,
+  Worker,
 } from 'query-node/dist/model'
-import { BaseModel } from '@joystream/warthog'
-import { metaToObject } from '@joystream/metadata-protobuf/utils'
-import { AnyMetadataClass, DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import BN from 'bn.js'
+import { In } from 'typeorm'
 
 export const CURRENT_NETWORK = Network.OLYMPIA
 
@@ -91,15 +98,16 @@ export function inconsistentState(extraInfo: string, data?: unknown): never {
   throw errorMessage
 }
 
-/*
-  Reports that insurmountable unexpected data has been encountered and throws an exception.
-*/
-export function unexpectedData(extraInfo: string, data?: unknown): never {
-  const errorMessage = 'Unexpected data: ' + extraInfo
+/**
+ * Reports an unimplemented mapping/variant error for which a runtime implementation logic exists and is not filtered.
+ */
+export function unimplementedError(extraInfo: string, data?: unknown): never {
+  const errorMessage = 'unimplemented error: ' + extraInfo
 
   // log error
   logger.error(errorMessage, data)
 
+  // eslint-disable-next-line local-rules/no-throw
   throw errorMessage
 }
 
@@ -124,7 +132,7 @@ export function deserializeMetadata<T>(
     const message = metadataType.decode(metadataBytes.toU8a(true))
     Object.keys(message).forEach((key) => {
       if (key in message && typeof message[key] === 'string') {
-        message[key] = perpareString(message[key])
+        message[key] = prepareString(message[key])
       }
     })
     return metaToObject(metadataType, message)
@@ -145,7 +153,7 @@ export function bytesToString(b: Bytes): string {
   )
 }
 
-export function perpareString(s: string): string {
+export function prepareString(s: string): string {
   // eslint-disable-next-line no-control-regex
   return s.replace(/\u0000/g, '')
 }
@@ -211,55 +219,33 @@ export function getWorkingGroupModuleName(group: WGType): WorkingGroupModuleName
     return 'operationsWorkingGroupGamma'
   }
 
-  unexpectedData('Unsupported working group encountered:', group.type)
+  unimplementedError('Unsupported working group encountered:', group.type)
 }
 
-export async function getWorkingGroupByName(
+export async function getWorkingGroupByNameOrFail(
   store: DatabaseManager,
   name: WorkingGroupModuleName,
-  relations: string[] = []
+  relations: RelationsArr<WGEntity> = []
 ): Promise<WGEntity> {
-  const group = await store.get(WGEntity, { where: { name }, relations })
-  if (!group) {
-    return inconsistentState(`Working group ${name} not found!`)
-  }
-  return group
+  return getOneByOrFail(store, WGEntity, { name }, relations)
 }
 
-export async function getMemberById(
+export async function getMembershipById(
   store: DatabaseManager,
   id: MemberId,
-  relations: string[] = []
+  relations: RelationsArr<Membership> = []
 ): Promise<Membership> {
-  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
-  if (!member) {
-    throw new Error(`Member(${id}) not found`)
-  }
-  return member
+  return getByIdOrFail(store, Membership, id.toString(), relations)
 }
 
-export async function getWorkingGroupLead(store: DatabaseManager, groupName: WorkingGroupModuleName) {
-  const lead = await store.get(Worker, { where: { groupId: groupName, isLead: true, isActive: true } })
-  if (!lead) {
-    return inconsistentState(`Couldn't find an active lead for ${groupName}`)
-  }
-
-  return lead
-}
-
-export async function getWorker(
+export async function getWorkerOrFail(
   store: DatabaseManager,
   groupName: WorkingGroupModuleName,
   runtimeId: WorkerId | number,
-  relations: string[] = []
+  relations: RelationsArr<Worker> = []
 ): Promise<Worker> {
   const workerDbId = `${groupName}-${runtimeId}`
-  const worker = await store.get(Worker, { where: { id: workerDbId }, relations })
-  if (!worker) {
-    return inconsistentState(`Expected worker not found by id ${workerDbId}`)
-  }
-
-  return worker
+  return getByIdOrFail(store, Worker, workerDbId, relations)
 }
 
 type EntityClass<T extends BaseModel> = {
@@ -277,13 +263,91 @@ export async function getById<T extends BaseModel>(
   entityClass: EntityClass<T>,
   id: string,
   relations?: RelationsArr<T>
+): Promise<T | undefined> {
+  return store.get(entityClass, { where: { id }, relations } as FindOneOptions<T>)
+}
+
+export async function getByIdOrFail<T extends BaseModel>(
+  store: DatabaseManager,
+  entityClass: EntityClass<T>,
+  id: string,
+  relations?: RelationsArr<T>,
+  errMessage?: string
 ): Promise<T> {
-  const result = await store.get(entityClass, { where: { id }, relations } as FindOneOptions<T>)
+  const result = await getById<T>(store, entityClass, id, relations)
   if (!result) {
-    throw new Error(`Expected ${entityClass.name} not found by ID: ${id}`)
+    // eslint-disable-next-line local-rules/no-throw
+    throw new Error(`Expected "${entityClass.name}" not found by ID: ${id} ${errMessage ? `- ${errMessage}` : ''}`)
   }
 
   return result
+}
+
+export async function getOneBy<T extends BaseModel>(
+  store: DatabaseManager,
+  entityClass: EntityClass<T>,
+  where?: FindOptionsWhere<T>,
+  relations?: RelationsArr<T>,
+  order?: Partial<{ [K in keyof T]: FindOptionsOrderValue }>
+): Promise<T | undefined> {
+  return store.get(entityClass, { where, relations, order } as FindOneOptions<T>)
+}
+
+/**
+ * Retrieves a entity by any field(s) or throws an error if not found
+ */
+export async function getOneByOrFail<T extends BaseModel>(
+  store: DatabaseManager,
+  entityClass: EntityClass<T>,
+  where?: FindOptionsWhere<T>,
+  relations?: RelationsArr<T>,
+  order?: Partial<{ [K in keyof T]: FindOptionsOrderValue }>,
+  errMessage?: string
+): Promise<T> {
+  const result = await getOneBy(store, entityClass, where, relations, order)
+  if (!result) {
+    // eslint-disable-next-line local-rules/no-throw
+    throw new Error(
+      `Expected "${entityClass.name}" not found by filter: ${JSON.stringify({
+        where,
+        relations,
+        order,
+      })} ${errMessage ? `- ${errMessage}` : ''}`
+    )
+  }
+
+  return result
+}
+
+export async function getManyBy<T extends BaseModel>(
+  store: DatabaseManager,
+  entityClass: EntityClass<T>,
+  entityIds: string[],
+  where?: FindOptionsWhere<T>,
+  relations?: RelationsArr<T>
+): Promise<T[]> {
+  return store.getMany(entityClass, { where: { id: In(entityIds), ...where }, relations } as FindOneOptions<T>)
+}
+
+export async function getManyByOrFail<T extends BaseModel>(
+  store: DatabaseManager,
+  entityClass: EntityClass<T>,
+  entityIds: string[],
+  where?: FindOptionsWhere<T>,
+  relations?: RelationsArr<T>,
+  errMessage?: string
+): Promise<T[]> {
+  const entities = await getManyBy(store, entityClass, entityIds, where, relations)
+  const loadedEntityIds = entities.map((item) => item.id)
+  if (loadedEntityIds.length !== entityIds.length) {
+    const missingIds = entityIds.filter((item) => !loadedEntityIds.includes(item))
+
+    // eslint-disable-next-line local-rules/no-throw
+    throw new Error(
+      `"${entityClass.name}" missing records for following IDs: ${missingIds} ${errMessage ? `- ${errMessage}` : ''}`
+    )
+  }
+  return entities
 }
 
 export function deterministicEntityId(createdInEvent: SubstrateEvent, additionalIdentifier?: string | number): string {
@@ -332,10 +396,10 @@ export async function saveMetaprotocolTransactionSuccessful(
 export async function saveMetaprotocolTransactionErrored(
   store: DatabaseManager,
   event: SubstrateEvent,
-  message: string
+  error: MetaprotocolTxError
 ): Promise<void> {
   const status = new MetaprotocolTransactionErrored()
-  status.message = message
+  status.message = error
 
   const metaprotocolTransaction = new MetaprotocolTransactionStatusEvent({
     ...genericEventFields(event),
@@ -343,4 +407,31 @@ export async function saveMetaprotocolTransactionErrored(
   })
 
   await store.save(metaprotocolTransaction)
+}
+
+export enum MetaprotocolTxError {
+  InvalidMetadata = 'InvalidMetadata',
+
+  // App errors
+  AppAlreadyExists = 'AppAlreadyExists',
+  AppNotFound = 'AppNotFound',
+  InvalidAppOwnerMember = 'InvalidAppOwnerMember',
+
+  // Video errors
+  VideoNotFound = 'VideoNotFound',
+  VideoNotFoundInChannel = 'VideoNotFoundInChannel',
+  VideoReactionsDisabled = 'VideoReactionsDisabled',
+
+  // Comment errors
+  CommentSectionDisabled = 'CommentSectionDisabled',
+  CommentNotFound = 'CommentNotFound',
+  ParentCommentNotFound = 'ParentCommentNotFound',
+  InvalidCommentAuthor = 'InvalidCommentAuthor',
+
+  // Membership error
+  MemberNotFound = 'MemberNotFound',
+  MemberBannedFromChannel = 'MemberBannedFromChannel',
+
+  // Channel errors
+  InvalidChannelRewardAccount = 'InvalidChannelRewardAccount',
 }
