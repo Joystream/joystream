@@ -440,10 +440,7 @@ export async function convertContentActorToChannelOrNftOwner(
     }
   }
 
-  // TODO: contentActor.isLead
-
-  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
-  throw new Error('Not-implemented ContentActor type used')
+  return { ownerMember: undefined, ownerCuratorGroup: undefined }
 }
 
 export async function convertContentActor(
@@ -482,12 +479,7 @@ export async function convertContentActor(
     return result
   }
 
-  if (contentActor.isLead) {
-    return new ContentActorLead()
-  }
-
-  logger.error('Not implemented ContentActor type', { contentActor: contentActor.toString() })
-  throw new Error('Not-implemented ContentActor type used')
+  return new ContentActorLead()
 }
 
 function processPublishedBeforeJoystream(
