@@ -302,8 +302,19 @@ async function parseProposalDetails(
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
     return details
+  }
+  // UpdateGlobalNftLimitProposalDetails
+  else if (proposalDetails.isUpdateGlobalNftLimit) {
+    const details = new UpdateGlobalNftLimitProposalDetails()
+    const specificDetails = proposalDetails.asUpdateGlobalNftLimit
+    if (specificDetails[0].isDaily) {
+      details.newDailyNftLimit = specificDetails[1].toNumber()
+    } else {
+      details.newWeeklyNftLimit = specificDetails[1].toNumber()
+    }
+    return details
   } else {
-    throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
+    unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
 }
 

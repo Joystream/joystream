@@ -332,6 +332,14 @@ type UpdateChannelPayoutsProposalDetails @variant {
   payloadHash: String
 }
 
+type UpdateGlobalNftLimitProposalDetails @variant {
+  "New daily NFT limit set in the proposal (if any)"
+  newDailyNftLimit: Int
+
+  "New weekly NFT limit set in the proposal (if any)"
+  newWeeklyNftLimit: Int
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -355,3 +363,4 @@ union ProposalDetails =
   | SetReferralCutProposalDetails
   | VetoProposalDetails
   | UpdateChannelPayoutsProposalDetails
+  | UpdateGlobalNftLimitProposalDetails
