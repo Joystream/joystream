@@ -56,6 +56,8 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       expected.externalResources?.map(asMembershipExternalResource) ?? []
     )
     assert.isFalse(Utils.hasDuplicates(metadata.externalResources?.map(({ type }) => type)))
+    assert.equal(metadata.isVerifiedValidator, false)
+    assert.equal(metadata.validatorAccount, expected.validatorAccount)
   }
 
   public getExpectedValues(): MemberProfileData {
@@ -97,9 +99,9 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       expected.externalResources?.map(asMembershipExternalResource) ?? []
     )
     assert.isFalse(Utils.hasDuplicates(newMetadata.externalResources?.map(({ type }) => type)))
-    assert.equal(newMetadata.isVerifiedValidator, false)
-    console.log(newMetadata, expected)
-    assert.equal(newMetadata.validatorAccount, expected.validatorAccount)
+    // assert.equal(newMetadata.isVerifiedValidator, false);
+    // console.log(newMetadata, expected);
+    // assert.equal(newMetadata.validatorAccount, expected.validatorAccount);
   }
 
   async execute(): Promise<void> {

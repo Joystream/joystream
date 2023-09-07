@@ -21,11 +21,11 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
     {
       handle: 'New handle 1',
       name: 'New name',
-      validatorAccount: '',
+      validatorAccount: 'validator address',
     },
     {
       handle: 'New handle 2',
-      validatorAccount: '',
+      validatorAccount: 'validator address2',
     },
     // Setting metadata to null
     {
@@ -39,7 +39,7 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
           value: 'A@example.com',
         },
       ],
-      validatorAccount: '',
+      validatorAccount: 'validator address2',
     },
     // Full update
     {
