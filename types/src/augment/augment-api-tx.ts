@@ -1,191 +1,11 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-<<<<<<< HEAD
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Compact, Option, U8aFixed, Vec, WrapperKeepOpaque, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
 import type { JoystreamNodeRuntimeOriginCaller, JoystreamNodeRuntimeSessionKeys, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonFundingRequestParameters, PalletCommonMerkleTreeProofElementRecord, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelBagWitness, PalletContentChannelCreationParametersRecord, PalletContentChannelOwner, PalletContentChannelUpdateParametersRecord, PalletContentInitTransferParameters, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentPullPaymentElement, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseRawSolution, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineHeartbeat, PalletImOnlineSr25519AppSr25519Signature, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenAmmParams, PalletProjectTokenMerkleProof, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSaleParams, PalletProjectTokenTransfersPayment, PalletProjectTokenTransfersPaymentWithVesting, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineVoteKind, PalletStakingPalletConfigOpPerbill, PalletStakingPalletConfigOpPercent, PalletStakingPalletConfigOpU128, PalletStakingPalletConfigOpU32, PalletStakingRewardDestination, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynamicBagType, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupStakePolicy, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusSlotsEquivocationProof, SpFinalityGrandpaEquivocationProof, SpNposElectionsElectionScore, SpNposElectionsSupport, SpRuntimeHeader, SpSessionMembershipProof } from '@polkadot/types/lookup';
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-import type { ApiTypes } from '@polkadot/api-base/types'
-import type {
-  BTreeMap,
-  BTreeSet,
-  Bytes,
-  Compact,
-  Option,
-  U8aFixed,
-  Vec,
-  bool,
-  u128,
-  u16,
-  u32,
-  u64,
-  u8,
-} from '@polkadot/types-codec'
-import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types'
-import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime'
-import type {
-  JoystreamNodeRuntimeOriginCaller,
-  JoystreamNodeRuntimeSessionKeys,
-  PalletBountyBountyActor,
-  PalletBountyBountyParametersBTreeSet,
-  PalletBountyOracleWorkEntryJudgment,
-  PalletCommonBalanceKind,
-  PalletCommonFundingRequestParameters,
-  PalletCommonMerkleTreeProofElementRecord,
-  PalletCommonWorkingGroupIterableEnumsWorkingGroup,
-  PalletContentChannelBagWitness,
-  PalletContentChannelCreationParametersRecord,
-  PalletContentChannelOwner,
-  PalletContentChannelUpdateParametersRecord,
-  PalletContentInitTransferParameters,
-  PalletContentIterableEnumsChannelActionPermission,
-  PalletContentNftLimitPeriod,
-  PalletContentNftTypesEnglishAuctionParamsRecord,
-  PalletContentNftTypesNftIssuanceParametersRecord,
-  PalletContentNftTypesOpenAuctionParamsRecord,
-  PalletContentPermissionsContentActor,
-  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction,
-  PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature,
-  PalletContentPullPaymentElement,
-  PalletContentTransferCommitmentParametersBTreeMap,
-  PalletContentUpdateChannelPayoutsParametersRecord,
-  PalletContentVideoCreationParametersRecord,
-  PalletContentVideoUpdateParametersRecord,
-  PalletElectionProviderMultiPhaseRawSolution,
-  PalletElectionProviderMultiPhaseSolutionOrSnapshotSize,
-  PalletForumExtendedPostIdObject,
-  PalletForumPrivilegedActor,
-  PalletImOnlineHeartbeat,
-  PalletImOnlineSr25519AppSr25519Signature,
-  PalletMembershipBuyMembershipParameters,
-  PalletMembershipCreateMemberParameters,
-  PalletMembershipGiftMembershipParameters,
-  PalletMembershipInviteMembershipParameters,
-  PalletMultisigTimepoint,
-  PalletProjectTokenAmmParams,
-  PalletProjectTokenMerkleProof,
-  PalletProjectTokenTokenIssuanceParameters,
-  PalletProjectTokenTokenSaleParams,
-  PalletProjectTokenTransfersPayment,
-  PalletProjectTokenTransfersPaymentWithVesting,
-  PalletProposalsCodexGeneralProposalParams,
-  PalletProposalsCodexProposalDetails,
-  PalletProposalsDiscussionThreadModeBTreeSet,
-  PalletProposalsEngineVoteKind,
-  PalletStakingPalletConfigOpPerbill,
-  PalletStakingPalletConfigOpPercent,
-  PalletStakingPalletConfigOpU128,
-  PalletStakingPalletConfigOpU32,
-  PalletStakingRewardDestination,
-  PalletStakingValidatorPrefs,
-  PalletStorageBagIdType,
-  PalletStorageDistributionBucketIdRecord,
-  PalletStorageDynamicBagType,
-  PalletVestingVestingInfo,
-  PalletWorkingGroupApplyOnOpeningParams,
-  PalletWorkingGroupOpeningType,
-  PalletWorkingGroupStakePolicy,
-  SpConsensusBabeDigestsNextConfigDescriptor,
-  SpConsensusSlotsEquivocationProof,
-  SpFinalityGrandpaEquivocationProof,
-  SpNposElectionsElectionScore,
-  SpNposElectionsSupport,
-  SpRuntimeHeader,
-  SpSessionMembershipProof,
-} from '@polkadot/types/lookup'
-=======
-import type { ApiTypes } from '@polkadot/api-base/types'
-import type {
-  BTreeMap,
-  BTreeSet,
-  Bytes,
-  Compact,
-  Option,
-  U8aFixed,
-  Vec,
-  WrapperKeepOpaque,
-  bool,
-  u128,
-  u16,
-  u32,
-  u64,
-  u8,
-} from '@polkadot/types-codec'
-import type { AnyNumber, IMethod, ITuple } from '@polkadot/types-codec/types'
-import type { AccountId32, Call, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime'
-import type {
-  JoystreamNodeRuntimeOriginCaller,
-  JoystreamNodeRuntimeSessionKeys,
-  PalletBountyBountyActor,
-  PalletBountyBountyParametersBTreeSet,
-  PalletBountyOracleWorkEntryJudgment,
-  PalletCommonBalanceKind,
-  PalletCommonFundingRequestParameters,
-  PalletCommonMerkleTreeProofElementRecord,
-  PalletCommonWorkingGroupIterableEnumsWorkingGroup,
-  PalletContentChannelBagWitness,
-  PalletContentChannelCreationParametersRecord,
-  PalletContentChannelOwner,
-  PalletContentChannelUpdateParametersRecord,
-  PalletContentInitTransferParameters,
-  PalletContentIterableEnumsChannelActionPermission,
-  PalletContentNftLimitPeriod,
-  PalletContentNftTypesEnglishAuctionParamsRecord,
-  PalletContentNftTypesNftIssuanceParametersRecord,
-  PalletContentNftTypesOpenAuctionParamsRecord,
-  PalletContentPermissionsContentActor,
-  PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction,
-  PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature,
-  PalletContentPullPaymentElement,
-  PalletContentTransferCommitmentParametersBTreeMap,
-  PalletContentUpdateChannelPayoutsParametersRecord,
-  PalletContentVideoCreationParametersRecord,
-  PalletContentVideoUpdateParametersRecord,
-  PalletElectionProviderMultiPhaseRawSolution,
-  PalletElectionProviderMultiPhaseSolutionOrSnapshotSize,
-  PalletForumExtendedPostIdObject,
-  PalletForumPrivilegedActor,
-  PalletImOnlineHeartbeat,
-  PalletImOnlineSr25519AppSr25519Signature,
-  PalletMembershipBuyMembershipParameters,
-  PalletMembershipCreateMemberParameters,
-  PalletMembershipGiftMembershipParameters,
-  PalletMembershipInviteMembershipParameters,
-  PalletMultisigTimepoint,
-  PalletProjectTokenAmmParams,
-  PalletProjectTokenMerkleProof,
-  PalletProjectTokenPaymentWithVesting,
-  PalletProjectTokenTokenIssuanceParameters,
-  PalletProjectTokenTokenSaleParams,
-  PalletProposalsCodexGeneralProposalParams,
-  PalletProposalsCodexProposalDetails,
-  PalletProposalsDiscussionThreadModeBTreeSet,
-  PalletProposalsEngineVoteKind,
-  PalletStakingPalletConfigOpPerbill,
-  PalletStakingPalletConfigOpPercent,
-  PalletStakingPalletConfigOpU128,
-  PalletStakingPalletConfigOpU32,
-  PalletStakingRewardDestination,
-  PalletStakingValidatorPrefs,
-  PalletStorageBagIdType,
-  PalletStorageDistributionBucketIdRecord,
-  PalletStorageDynamicBagType,
-  PalletVestingVestingInfo,
-  PalletWorkingGroupApplyOnOpeningParams,
-  PalletWorkingGroupOpeningType,
-  PalletWorkingGroupStakePolicy,
-  SpConsensusBabeDigestsNextConfigDescriptor,
-  SpConsensusSlotsEquivocationProof,
-  SpFinalityGrandpaEquivocationProof,
-  SpNposElectionsElectionScore,
-  SpNposElectionsSupport,
-  SpRuntimeHeader,
-  SpSessionMembershipProof,
-} from '@polkadot/types/lookup'
->>>>>>> 038e1a4b0f (fix: add video trailer id)
 
 declare module '@polkadot/api-base/types/submittable' {
   export interface AugmentedSubmittables<ApiType extends ApiTypes> {
@@ -1014,75 +834,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `O(A + B + C)` - from the the generated weights
        * # </weight>
        **/
-<<<<<<< HEAD
       createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any; storageBucketsNumWitness?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-      createVideo: AugmentedSubmittable<
-        (
-          actor:
-            | PalletContentPermissionsContentActor
-            | { Curator: any }
-            | { Member: any }
-            | { Lead: any }
-            | string
-            | Uint8Array,
-          channelId: u64 | AnyNumber | Uint8Array,
-          params:
-            | PalletContentVideoCreationParametersRecord
-            | {
-                assets?: any
-                meta?: any
-                autoIssueNft?: any
-                expectedVideoStateBloatBond?: any
-                expectedDataObjectStateBloatBond?: any
-                storageBucketsNumWitness?: any
-              }
-            | string
-            | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]
-      >
-=======
-      createVideo: AugmentedSubmittable<
-        (
-          actor:
-            | PalletContentPermissionsContentActor
-            | { Curator: any }
-            | { Member: any }
-            | { Lead: any }
-            | string
-            | Uint8Array,
-          channelId: u64 | AnyNumber | Uint8Array,
-          params:
-            | PalletContentVideoCreationParametersRecord
-            | {
-                assets?: any
-                meta?: any
-                autoIssueNft?: any
-                expectedVideoStateBloatBond?: any
-                expectedDataObjectStateBloatBond?: any
-                storageBucketsNumWitness?: any
-              }
-            | string
-            | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]
-      >
-      creatorTokenIssuerRemark: AugmentedSubmittable<
-        (
-          actor:
-            | PalletContentPermissionsContentActor
-            | { Curator: any }
-            | { Member: any }
-            | { Lead: any }
-            | string
-            | Uint8Array,
-          channelId: u64 | AnyNumber | Uint8Array,
-          msg: Bytes | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletContentPermissionsContentActor, u64, Bytes]
-      >
->>>>>>> 038e1a4b0f (fix: add video trailer id)
       /**
        * Perform transfer of tokens as creator token issuer
        * 
@@ -1096,46 +848,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `O(A)` - from the the generated weights
        * # </weight>
        **/
-<<<<<<< HEAD
       creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting, Bytes]>;
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-      creatorTokenIssuerTransfer: AugmentedSubmittable<
-        (
-          actor:
-            | PalletContentPermissionsContentActor
-            | { Curator: any }
-            | { Member: any }
-            | { Lead: any }
-            | string
-            | Uint8Array,
-          channelId: u64 | AnyNumber | Uint8Array,
-          outputs: PalletProjectTokenTransfersPaymentWithVesting,
-          metadata: Bytes | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting, Bytes]
-      >
-=======
-      creatorTokenIssuerTransfer: AugmentedSubmittable<
-        (
-          actor:
-            | PalletContentPermissionsContentActor
-            | { Curator: any }
-            | { Member: any }
-            | { Lead: any }
-            | string
-            | Uint8Array,
-          channelId: u64 | AnyNumber | Uint8Array,
-          outputs:
-            | Vec<ITuple<[u64, PalletProjectTokenPaymentWithVesting]>>
-            | [
-                u64 | AnyNumber | Uint8Array,
-                PalletProjectTokenPaymentWithVesting | { amount?: any; vestingSchedule?: any } | string | Uint8Array
-              ][],
-          metadata: Bytes | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletContentPermissionsContentActor, u64, Vec<ITuple<[u64, PalletProjectTokenPaymentWithVesting]>>, Bytes]
-      >
->>>>>>> 038e1a4b0f (fix: add video trailer id)
       /**
        * Deactivate Amm functionality for token
        **/
@@ -4342,6 +4055,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - origin, member_id pair must be a valid authentication pair
        * - token_id must exist
        * - user usable JOY balance must be enough for buying (+ existential deposit)
+       * - deadline constraint respected if provided
        * - slippage tolerance constraints respected if provided
        * - token total supply and amount value must be s.t. `eval` function doesn't overflow
        * 
@@ -4350,30 +4064,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - respective JOY amount transferred from user balance to amm treasury account
        * - event deposited
        **/
-<<<<<<< HEAD
       buyOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, deadline: Option<u64> | null | object | string | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]>;
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-      buyOnAmm: AugmentedSubmittable<
-        (
-          tokenId: u64 | AnyNumber | Uint8Array,
-          memberId: u64 | AnyNumber | Uint8Array,
-          amount: u128 | AnyNumber | Uint8Array,
-          deadline: Option<u64> | null | object | string | Uint8Array,
-          slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]
-      >
-=======
-      buyOnAmm: AugmentedSubmittable<
-        (
-          tokenId: u64 | AnyNumber | Uint8Array,
-          memberId: u64 | AnyNumber | Uint8Array,
-          amount: u128 | AnyNumber | Uint8Array,
-          slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [u64, u64, u128, Option<ITuple<[Permill, u128]>>]
-      >
->>>>>>> 038e1a4b0f (fix: add video trailer id)
       /**
        * Allow any user to remove an account
        * 
@@ -4539,6 +4230,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - token_id must exist
        * - token_id, member_id must be valid account coordinates
        * - user usable CRT balance must be at least `amount`
+       * - deadline constraint respected if provided
        * - slippage tolerance constraints respected if provided
        * - token total supply and amount value must be s.t. `eval` function doesn't overflow
        * - amm treasury account must have sufficient JOYs for the operation
@@ -4549,30 +4241,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - respective JOY amount transferred from amm treasury account to user account
        * - event deposited
        **/
-<<<<<<< HEAD
       sellOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, deadline: Option<u64> | null | object | string | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]>;
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-      sellOnAmm: AugmentedSubmittable<
-        (
-          tokenId: u64 | AnyNumber | Uint8Array,
-          memberId: u64 | AnyNumber | Uint8Array,
-          amount: u128 | AnyNumber | Uint8Array,
-          deadline: Option<u64> | null | object | string | Uint8Array,
-          slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]
-      >
-=======
-      sellOnAmm: AugmentedSubmittable<
-        (
-          tokenId: u64 | AnyNumber | Uint8Array,
-          memberId: u64 | AnyNumber | Uint8Array,
-          amount: u128 | AnyNumber | Uint8Array,
-          slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [u64, u64, u128, Option<ITuple<[Permill, u128]>>]
-      >
->>>>>>> 038e1a4b0f (fix: add video trailer id)
       /**
        * Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
        * in the specified amounts.
@@ -4601,36 +4270,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `O(T)` - from the the generated weights
        * # </weight>
        **/
-<<<<<<< HEAD
       transfer: AugmentedSubmittable<(srcMemberId: u64 | AnyNumber | Uint8Array, tokenId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPayment, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, PalletProjectTokenTransfersPayment, Bytes]>;
     };
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-      transfer: AugmentedSubmittable<
-        (
-          srcMemberId: u64 | AnyNumber | Uint8Array,
-          tokenId: u64 | AnyNumber | Uint8Array,
-          outputs: PalletProjectTokenTransfersPayment,
-          metadata: Bytes | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [u64, u64, PalletProjectTokenTransfersPayment, Bytes]
-      >
-    }
-=======
-      transfer: AugmentedSubmittable<
-        (
-          srcMemberId: u64 | AnyNumber | Uint8Array,
-          tokenId: u64 | AnyNumber | Uint8Array,
-          outputs: Vec<ITuple<[u64, u128]>> | [u64 | AnyNumber | Uint8Array, u128 | AnyNumber | Uint8Array][],
-          metadata: Bytes | string | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [u64, u64, Vec<ITuple<[u64, u128]>>, Bytes]
-      >
-      updateMaxYearlyPatronageRate: AugmentedSubmittable<
-        (rate: Permill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-        [Permill]
-      >
-    }
->>>>>>> 038e1a4b0f (fix: add video trailer id)
     proposalsCodex: {
       /**
        * Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -4647,89 +4288,8 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-<<<<<<< HEAD
       createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | { UpdateGlobalNftLimit: any } | { UpdateChannelPayouts: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
     };
-||||||| parent of 038e1a4b0f (fix: add video trailer id)
-      createProposal: AugmentedSubmittable<
-        (
-          generalProposalParameters:
-            | PalletProposalsCodexGeneralProposalParams
-            | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any }
-            | string
-            | Uint8Array,
-          proposalDetails:
-            | PalletProposalsCodexProposalDetails
-            | { Signal: any }
-            | { RuntimeUpgrade: any }
-            | { FundingRequest: any }
-            | { SetMaxValidatorCount: any }
-            | { CreateWorkingGroupLeadOpening: any }
-            | { FillWorkingGroupLeadOpening: any }
-            | { UpdateWorkingGroupBudget: any }
-            | { DecreaseWorkingGroupLeadStake: any }
-            | { SlashWorkingGroupLead: any }
-            | { SetWorkingGroupLeadReward: any }
-            | { TerminateWorkingGroupLead: any }
-            | { AmendConstitution: any }
-            | { CancelWorkingGroupLeadOpening: any }
-            | { SetMembershipPrice: any }
-            | { SetCouncilBudgetIncrement: any }
-            | { SetCouncilorReward: any }
-            | { SetInitialInvitationBalance: any }
-            | { SetInitialInvitationCount: any }
-            | { SetMembershipLeadInvitationQuota: any }
-            | { SetReferralCut: any }
-            | { VetoProposal: any }
-            | { UpdateGlobalNftLimit: any }
-            | { UpdateChannelPayouts: any }
-            | string
-            | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]
-      >
-    }
-=======
-      createProposal: AugmentedSubmittable<
-        (
-          generalProposalParameters:
-            | PalletProposalsCodexGeneralProposalParams
-            | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any }
-            | string
-            | Uint8Array,
-          proposalDetails:
-            | PalletProposalsCodexProposalDetails
-            | { Signal: any }
-            | { RuntimeUpgrade: any }
-            | { FundingRequest: any }
-            | { SetMaxValidatorCount: any }
-            | { CreateWorkingGroupLeadOpening: any }
-            | { FillWorkingGroupLeadOpening: any }
-            | { UpdateWorkingGroupBudget: any }
-            | { DecreaseWorkingGroupLeadStake: any }
-            | { SlashWorkingGroupLead: any }
-            | { SetWorkingGroupLeadReward: any }
-            | { TerminateWorkingGroupLead: any }
-            | { AmendConstitution: any }
-            | { CancelWorkingGroupLeadOpening: any }
-            | { SetMembershipPrice: any }
-            | { SetCouncilBudgetIncrement: any }
-            | { SetCouncilorReward: any }
-            | { SetInitialInvitationBalance: any }
-            | { SetInitialInvitationCount: any }
-            | { SetMembershipLeadInvitationQuota: any }
-            | { SetReferralCut: any }
-            | { VetoProposal: any }
-            | { UpdateGlobalNftLimit: any }
-            | { UpdateChannelPayouts: any }
-            | { UpdateMaxYearlyPatronageRate: any }
-            | string
-            | Uint8Array
-        ) => SubmittableExtrinsic<ApiType>,
-        [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]
-      >
-    }
->>>>>>> 038e1a4b0f (fix: add video trailer id)
     proposalsDiscussion: {
       /**
        * Adds a post with author origin check.

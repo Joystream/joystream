@@ -243,7 +243,6 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
                 ..
             }) => false,
             Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-            Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
             Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
             Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
                 general_proposal_parameters: _,
