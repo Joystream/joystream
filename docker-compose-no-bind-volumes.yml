@@ -164,23 +164,6 @@ services:
       POSTGRES_DB: ${INDEXER_DB_NAME}
       PGPORT: ${DB_PORT}
 
-  orion-db:
-    image: postgres:14
-    container_name: orion-db
-    restart: unless-stopped
-    ports:
-      - '127.0.0.1:${ORION_DB_PORT}:${ORION_DB_PORT}'
-    volumes:
-      - orion-db-data:/var/lib/postgresql/data
-    env_file:
-      # relative to working directory where docker-compose was run from
-      - .env
-    environment:
-      POSTGRES_USER: ${ORION_DB_USER}
-      POSTGRES_PASSWORD: ${ORION_DB_PASS}
-      POSTGRES_DB: ${ORION_DB_NAME}
-      PGPORT: ${ORION_DB_PORT}
-
   graphql-server:
     image: joystream/query-node
     build:
@@ -307,92 +290,159 @@ services:
     ports:
       - "3002:3002"
 
-  squid-archive:
-    container_name: squid-archive
-    image: subsquid/substrate-ingest:firesquid
-    depends_on:
-      - orion-db
+  orion-db:
+    image: postgres:14
+    container_name: orion-db
     restart: unless-stopped
     env_file:
       - .env
     environment:
-      - DB_NAME=${SUBSQUID_ARCHIVE_DB_NAME}
-      - DB_USER=${ORION_DB_USER}
-      - DB_PASS=${ORION_DB_PASS}
-      - DB_HOST=orion-db
-      - DB_PORT=${ORION_DB_PORT}
-    command: [
-        '-e',
-        '${JOYSTREAM_NODE_WS}',
-        '-c',
-        '20',
-        '--out',
-        'postgres://postgres:postgres@orion-db:${ORION_DB_PORT}/${SUBSQUID_ARCHIVE_DB_NAME}',
-      ]
-
-  squid-archive-gateway:
-    container_name: squid-archive-gateway
-    image: subsquid/substrate-gateway:firesquid
-    depends_on:
-      - orion-db
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      - DB_NAME=${SUBSQUID_ARCHIVE_DB_NAME}
-      - DB_USER=${ORION_DB_USER}
-      - DB_PASS=${ORION_DB_PASS}
-      - DB_HOST=orion-db
-      - DB_PORT=${ORION_DB_PORT}
-      - DATABASE_MAX_CONNECTIONS=5
-      - RUST_LOG=actix_web=info,actix_server=info
-    command: [
-        '--database-url',
-        'postgres://postgres:postgres@orion-db:${ORION_DB_PORT}/${SUBSQUID_ARCHIVE_DB_NAME}',
-      ]
+      POSTGRES_PASSWORD: ${ORION_DB_PASS}
+      POSTGRES_DB: ${ORION_DB_NAME}
     ports:
-      - '127.0.0.1:${SQUID_ARCHIVE_GATEWAY_PORT}:8000'
+      - '127.0.0.1:${ORION_DB_PORT}:${ORION_DB_PORT}'
+    command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf', '-p', '${ORION_DB_PORT}']
+    # command: ['postgres', '-p', '${ORION_DB_PORT}']
+    shm_size: 1g
+    volumes:
+      - orion-db-data:/var/lib/postgresql/data
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
 
+  # Orion processor
   orion-processor:
-    container_name: orion-processor
     image: joystream/orion:latest
+    container_name: orion-processor
     restart: unless-stopped
-    env_file:
-      - .env
     depends_on:
       - orion-db
+    env_file:
+      - .env
     environment:
       - DB_NAME=${ORION_DB_NAME}
-      - DB_USER=${ORION_DB_USER}
       - DB_PASS=${ORION_DB_PASS}
-      - DB_HOST=orion-db
       - DB_PORT=${ORION_DB_PORT}
-      - GQL_PORT=${ORION_API_PORT}
-      - ARCHIVE_GATEWAY_URL=http://squid-archive-gateway:8000/graphql
+      - DB_HOST=orion-db
+      - GQL_PORT=${GRAPHQL_API_PORT}
+    volumes:
+      - ./db/export:/squid/db/export
     command: >
       sh -c "npx squid-typeorm-migration apply && \
              node lib/processor.js"
     ports:
       - '127.0.0.1:${PROCESSOR_PROMETHEUS_PORT}:${PROCESSOR_PROMETHEUS_PORT}'
 
-  orion-api:
-    container_name: orion-api
+  # Orion GraphQL API
+  orion-graphql-api:
+    container_name: orion-graphql-api
     image: joystream/orion:latest
+    restart: unless-stopped
+    depends_on:
+      - orion-db
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_PORT=${ORION_DB_PORT}
+      - DB_HOST=orion-db
+      - GQL_PORT=${GRAPHQL_API_PORT}
+    command: ['npm', 'run', 'query-node-start']
+    ports:
+      - '127.0.0.1:${GRAPHQL_API_PORT}:${GRAPHQL_API_PORT}'
+
+  # Orion Authentication API
+  orion-auth-api:
+    container_name: orion-auth-api
+    image: joystream/orion:latest
+    restart: unless-stopped
+    depends_on:
+      - orion-db
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_PORT=${ORION_DB_PORT}
+      - DB_HOST=orion-db
+    command: ['npm', 'run', 'auth-server-start']
+    ports:
+      - '127.0.0.1:${AUTH_API_PORT}:${AUTH_API_PORT}'
+
+  # Orion archive node
+  squid-archive-db:
+    container_name: orion_archive_db
+    hostname: orion_archive_db
+    image: postgres:14 # CockroachDB cluster might be a better fit for production deployment
+    restart: unless-stopped
+    volumes:
+      - orion_archive_db_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: squid-archive
+    ports:
+      - '127.0.0.1:${ARCHIVE_DB_PORT}:${ARCHIVE_DB_PORT}'
+      - '[::1]:${ARCHIVE_DB_PORT}:${ARCHIVE_DB_PORT}'
+    command: ['postgres', '-c', 'log_statement=all', '-p', '${ARCHIVE_DB_PORT}']
+
+  squid-archive-ingest:
+    container_name: orion_archive_ingest
+    depends_on:
+      - squid-archive-db
     restart: unless-stopped
     env_file:
       - .env
+    image: subsquid/substrate-ingest:firesquid
+    command: [
+        '-e',
+        '${WS_SOURCE}',
+        '-c',
+        '20', # allow up to 20 pending requests for the above endpoint (default is 5)
+        #  "--start-block", "1000000", # uncomment to specify a non-zero start block
+        '--out',
+        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
+      ]
+
+  squid-archive-gateway:
+    container_name: orion_archive_gateway
+    hostname: orion_archive_gateway
     depends_on:
-      - orion-db
+      - squid-archive-db
+    restart: unless-stopped
+    image: subsquid/substrate-gateway:firesquid
+    env_file:
+      - .env
     environment:
-      - DB_NAME=${ORION_DB_NAME}
-      - DB_USER=${ORION_DB_USER}
-      - DB_PASS=${ORION_DB_PASS}
-      - DB_HOST=orion-db
-      - DB_PORT=${ORION_DB_PORT}
-      - GQL_PORT=${ORION_API_PORT}
-    command: ["npm", "run", "query-node-start"]
+      DATABASE_MAX_CONNECTIONS: 5
+      RUST_LOG: 'actix_web=info,actix_server=info'
+    command: [
+        '--database-url',
+        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
+      ]
     ports:
-      - '${ORION_API_PORT}:${ORION_API_PORT}'
+      - '127.0.0.1:${ARCHIVE_GATEWAY_PORT}:8000'
+      - '[::1]:${ARCHIVE_GATEWAY_PORT}:8000'
+
+  # Explorer service is optional.
+  # It provides rich GraphQL API for querying archived data.
+  # Many developers find it very useful for exploration and debugging.
+  squid-archive-explorer:
+    container_name: orion_archive_explorer
+    hostname: orion_archive_explorer
+    restart: unless-stopped
+    image: subsquid/substrate-explorer:firesquid
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgres # set to `cockroach` for Cockroach DB
+      DB_HOST: archive_db
+      DB_NAME: 'squid-archive'
+      DB_USER: 'postgres'
+      DB_PASS: 'postgres'
+    ports:
+      - '${ARCHIVE_EXPLORER_PORT}:3000'
 
 volumes:
   chain-data:
@@ -424,4 +474,6 @@ volumes:
   distributor-2-data:
     driver: local
   orion-db-data:
+    driver: local
+  orion_archive_db_data:
     driver: local
