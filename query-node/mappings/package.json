@@ -16,14 +16,15 @@
     "bootstrap-data:fetch": "yarn bootstrap-data:fetch:members && yarn bootstrap-data:fetch:workingGroups && yarn bootstrap-data:fetch:categories"
   },
   "dependencies": {
-    "@polkadot/types": "8.9.1",
+    "@apollo/client": "^3.2.5",
     "@joystream/hydra-common": "5.0.0-alpha.4",
     "@joystream/hydra-db-utils": "5.0.0-alpha.4",
-    "@joystream/warthog": "^2.41.9",
     "@joystream/js": "^1.4.0",
-    "@apollo/client": "^3.2.5"
+    "@joystream/warthog": "^2.41.9",
+    "@polkadot/types": "8.9.1"
   },
   "devDependencies": {
+    "eslint-plugin-local-rules": "2.0.0",
     "prettier": "^2.2.1",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3"

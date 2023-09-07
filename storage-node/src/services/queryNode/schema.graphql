@@ -2102,7 +2102,7 @@ type Proposal implements BaseGraphQLObject {
   proposalexecutedeventproposal: [ProposalExecutedEvent!]
 }
 
-union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails
+union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails | UpdateGlobalNftLimitProposalDetails
 
 union ProposalStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant | ProposalStatusVetoed | ProposalStatusExecuted | ProposalStatusExecutionFailed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
 
@@ -2818,6 +2818,14 @@ type UpdateChannelPayoutsProposalDetails {
 
   """The hash of the channel payout payload file"""
   payloadHash: String
+}
+
+type UpdateGlobalNftLimitProposalDetails {
+  """New daily NFT limit set in the proposal (if any)"""
+  newDailyNftLimit: Int
+
+  """New weekly NFT limit set in the proposal (if any)"""
+  newWeeklyNftLimit: Int
 }
 
 type UpdateWorkingGroupBudgetProposalDetails {
