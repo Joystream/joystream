@@ -30,10 +30,12 @@ export const configSchema: JSONSchema4 = objectSchema({
         queryNode: {
           description: 'Query node graphql server uri (for example: http://localhost:8081/graphql)',
           type: 'string',
+          format: 'uri',
         },
         joystreamNodeWs: {
           description: 'Joystream node websocket api uri (for example: ws://localhost:9944)',
           type: 'string',
+          format: 'uri',
         },
       },
       required: ['queryNode', 'joystreamNodeWs'],
@@ -101,7 +103,21 @@ export const configSchema: JSONSchema4 = objectSchema({
             endpoint: {
               description: 'Elastichsearch endpoint to push the logs to (for example: http://localhost:9200)',
               type: 'string',
+              format: 'uri',
             },
+            index: {
+              description:
+                'Elasticsearch index to push the logs to. If not provided, will fallback to "distributor-node"',
+              type: 'string',
+            },
+            auth: objectSchema({
+              description: 'Elasticsearch basic authentication credentials',
+              properties: {
+                username: { type: 'string' },
+                password: { type: 'string' },
+              },
+              required: ['username', 'password'],
+            }),
           },
           required: ['level', 'endpoint'],
         }),

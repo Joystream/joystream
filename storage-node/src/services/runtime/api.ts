@@ -1,17 +1,17 @@
-import { ApiPromise, WsProvider, SubmittableResult } from '@polkadot/api'
-import type { Index } from '@polkadot/types/interfaces/runtime'
-import { ISubmittableResult, IEvent } from '@polkadot/types/types'
-import { TypeRegistry } from '@polkadot/types'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { SubmittableExtrinsic, AugmentedEvent } from '@polkadot/api/types'
-import { DispatchError } from '@polkadot/types/interfaces/system'
-import logger from '../../services/logger'
-import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
+import { ApiPromise, SubmittableResult, WsProvider } from '@polkadot/api'
+import { AugmentedEvent, SubmittableExtrinsic } from '@polkadot/api/types'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { TypeRegistry } from '@polkadot/types'
+import type { Index } from '@polkadot/types/interfaces/runtime'
+import { DispatchError } from '@polkadot/types/interfaces/system'
+import { IEvent, ISubmittableResult } from '@polkadot/types/types'
 import { formatBalance } from '@polkadot/util'
+import AwaitLock from 'await-lock'
 import stringify from 'fast-safe-stringify'
 import sleep from 'sleep-promise'
-import AwaitLock from 'await-lock'
+import ExitCodes from '../../command-base/ExitCodes'
+import logger from '../../services/logger'
 
 /**
  * Dedicated error for the failed extrinsics.
@@ -99,7 +99,7 @@ async function sendExtrinsic(
         return
       }
 
-      if (result.status.isInBlock) {
+      if (result.status.isInBlock || result.status.isFinalized) {
         unsubscribe()
         result.events
           .filter(({ event }) => event.section === 'system')
@@ -171,7 +171,7 @@ async function lockAndGetNonce(api: ApiPromise, account: KeyringPair): Promise<I
  * @param error - DispatchError instance
  * @returns error string.
  */
-function formatDispatchError(api: ApiPromise, error: DispatchError): string {
+export function formatDispatchError(api: ApiPromise, error: DispatchError): string {
   // Need to assert that registry is of TypeRegistry type, since Registry intefrace
   // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
   const typeRegistry = api.registry as TypeRegistry
@@ -229,4 +229,20 @@ export function getEvent<
     throw new ExtrinsicFailedError(`Cannot find expected ${section}.${eventName} event in result: ${result.toHuman()}`)
   }
   return event as EventType
+}
+
+/**
+ * Helper function for parsing multiple events from the successful extrinsic result.
+ *
+ * @param result - extrinsic result
+ * @param section - pallet name
+ * @param eventNames - event name/s
+ * @returns void promise.
+ */
+export function getEvents<
+  S extends keyof ApiPromise['events'] & string,
+  M extends keyof ApiPromise['events'][S] & string,
+  EventType = ApiPromise['events'][S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
+>(result: SubmittableResult, section: S, eventNames: M[]): EventType[] {
+  return result.filterRecords(section, eventNames).map((e) => e.event as unknown as EventType)
 }

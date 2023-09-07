@@ -13,7 +13,7 @@ services:
       - 9933:9933
 
   colossus-1:
-    image: node:14
+    image: node:18
     container_name: colossus-1
     restart: on-failure
     volumes:
@@ -32,8 +32,11 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
+    entrypoint: ['/joystream/entrypoints/storage.sh']
     command: [
-      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -41,7 +44,7 @@ services:
     ]
 
   distributor-1:
-    image: node:14
+    image: node:18
     container_name: distributor-1
     restart: on-failure
     volumes:
@@ -71,15 +74,18 @@ services:
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__ASSETS: /data
       JOYSTREAM_DISTRIBUTOR__DIRECTORIES__CACHE_STATE: /cache
       JOYSTREAM_DISTRIBUTOR__LOGS__FILE__PATH: /logs
-    #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
-    #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${TELEMETRY_ENDPOINT}
+      OTEL_RESOURCE_ATTRIBUTES: service.name=distributor-1,deployment.environment=production
+      #   JOYSTREAM_DISTRIBUTOR__LOGS__CONSOLE: "off"
+      #   JOYSTREAM_DISTRIBUTOR__LOGS__FILE: "off"
       # JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "{\"level\":\"debug\",\"endpoint\":\"http://elasticsearch:9200\"}"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    command: ['yarn', 'joystream-distributor', 'start']
+    entrypoint: ['/joystream/entrypoints/distributor.sh']
+    command: ['start']
 
   colossus-2:
-    image: node:14
+    image: node:18
     container_name: colossus-2
     restart: on-failure
     volumes:
@@ -98,8 +104,9 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
+    entrypoint: ['yarn', 'storage-node']
     command: [
-      'yarn', 'storage-node', 'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
@@ -107,7 +114,7 @@ services:
     ]
 
   distributor-2:
-    image: node:14
+    image: node:18
     container_name: distributor-2
     restart: on-failure
     volumes:
@@ -143,7 +150,8 @@ services:
     #   JOYSTREAM_DISTRIBUTOR__LOGS__ELASTIC: "off"
     #   JOYSTREAM_DISTRIBUTOR__LIMITS__STORAGE: 50G
     #   JOYSTREAM_DISTRIBUTOR__BUCKETS: "[\"1:0\",\"1:1\"]"
-    command: ['yarn', 'joystream-distributor', 'start']
+    entrypoint: ['yarn', 'joystream-distributor']
+    command: ['start']
 
   db:
     image: postgres:12
@@ -163,7 +171,7 @@ services:
       PGPORT: ${DB_PORT}
 
   graphql-server:
-    image: node:14
+    image: node:18
     container_name: graphql-server
     restart: unless-stopped
     env_file:
@@ -175,6 +183,8 @@ services:
       - GRAPHQL_PLAYGROUND_ENDPOINT=${GRAPHQL_PLAYGROUND_ENDPOINT}
       - GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT=${GRAPHQL_PLAYGROUND_SUBSCRIPTION_ENDPOINT}
       - GRAPHQL_PLAYGROUND_CDN_URL=${GRAPHQL_PLAYGROUND_CDN_URL}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=query-node,deployment.environment=production
     ports:
       - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
       - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
@@ -185,10 +195,10 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'query-node:start:prod']
+    entrypoint: ['/joystream/entrypoints/graphql-server.sh']
 
   processor:
-    image: node:14
+    image: node:18
     container_name: processor
     restart: unless-stopped
     env_file:
@@ -201,6 +211,11 @@ services:
       - BATCH_SIZE=100
       - QUEUE_FACTOR=1
       - QUEUE_MAX_CAP_FACTOR=4
+      - WARTHOG_DB_HOST=db
+      - WARTHOG_DB_DATABASE=${DB_NAME}
+      - WARTHOG_DB_USERNAME=${DB_USER}
+      - WARTHOG_DB_PASSWORD=${DB_PASS}
+      - WARTHOG_APP_PORT=4002
     depends_on:
       - db
     volumes:
@@ -208,7 +223,14 @@ services:
         source: .
         target: /joystream
     working_dir: /joystream
-    command: ['yarn', 'workspace', 'query-node-root', 'processor:start']
+    entrypoint: sh
+    command: >
+      -c "
+        yarn workspace query-node config:dev ;
+        yarn workspace query-node-root db:prepare ;
+        yarn workspace query-node-root db:migrate ;
+        yarn workspace query-node-root processor:start
+      "
 
   indexer:
     image: joystream/hydra-indexer:v5.0.0-alpha.1
@@ -247,7 +269,6 @@ services:
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
       - WARTHOG_APP_PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
-      - DEBUG=*
     ports:
       - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
     depends_on:
@@ -280,28 +301,160 @@ services:
     ports:
       - "3002:3002"
 
-  orion:
-    container_name: orion
-    image: joystream/orion
+  # PostgerSQL database for Orion
+  orion-db:
+    image: postgres:14
+    container_name: orion-db
+    restart: unless-stopped
+    env_file:
+      - .env
     environment:
-      - ORION_PORT=6116
-      - ORION_MONGO_HOSTNAME=mongo
-      - ORION_FEATURED_CONTENT_SECRET=password123
-      - ORION_ADMIN_SECRET=password123
-      - ORION_QUERY_NODE_URL=http://graphql-server:${GRAPHQL_SERVER_PORT}/graphql
-      - APP_PRIVATE_KEY=secret123
+      POSTGRES_PASSWORD: ${ORION_DB_PASS}
+      POSTGRES_DB: ${ORION_DB_NAME}
     ports:
-      - "6116:6116"
-    depends_on:
-      - mongo
-    restart: always
-
-  mongo:
-    restart: always
-    container_name: mongo
-    image: library/mongo:4.4
+      - '127.0.0.1:${ORION_DB_PORT}:${ORION_DB_PORT}'
+    command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf', '-p', '${ORION_DB_PORT}']
+    # command: ['postgres', '-p', '${ORION_DB_PORT}']
+    shm_size: 1g
     volumes:
-      - orion-mongo-data:/data/db
+      - orion-db-data:/var/lib/postgresql/data
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
+
+  # Orion processor
+  orion-processor:
+    image: joystream/orion:latest
+    container_name: orion-processor
+    restart: unless-stopped
+    depends_on:
+      - orion-db
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_PORT=${ORION_DB_PORT}
+      - DB_HOST=orion-db
+      - GQL_PORT=${GRAPHQL_API_PORT}
+    volumes:
+      - ./db/export:/squid/db/export
+    command: >
+      sh -c "npx squid-typeorm-migration apply && \
+             node lib/processor.js"
+    ports:
+      - '127.0.0.1:${PROCESSOR_PROMETHEUS_PORT}:${PROCESSOR_PROMETHEUS_PORT}'
+
+  # Orion GraphQL API
+  orion-graphql-api:
+    container_name: orion-graphql-api
+    image: joystream/orion:latest
+    restart: unless-stopped
+    depends_on:
+      - orion-db
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_PORT=${ORION_DB_PORT}
+      - DB_HOST=orion-db
+      - GQL_PORT=${GRAPHQL_API_PORT}
+    command: ['npm', 'run', 'query-node-start']
+    ports:
+      - '127.0.0.1:${GRAPHQL_API_PORT}:${GRAPHQL_API_PORT}'
+
+  # Orion Authentication API
+  orion-auth-api:
+    container_name: orion-auth-api
+    image: joystream/orion:latest
+    restart: unless-stopped
+    depends_on:
+      - orion-db
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${ORION_DB_NAME}
+      - DB_PASS=${ORION_DB_PASS}
+      - DB_PORT=${ORION_DB_PORT}
+      - DB_HOST=orion-db
+    command: ['npm', 'run', 'auth-server-start']
+    ports:
+      - '127.0.0.1:${AUTH_API_PORT}:${AUTH_API_PORT}'
+
+  # Orion archive node
+  squid-archive-db:
+    container_name: orion_archive_db
+    hostname: orion_archive_db
+    image: postgres:14 # CockroachDB cluster might be a better fit for production deployment
+    restart: unless-stopped
+    volumes:
+      - orion_archive_db_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: squid-archive
+    ports:
+      - '127.0.0.1:${ARCHIVE_DB_PORT}:${ARCHIVE_DB_PORT}'
+      - '[::1]:${ARCHIVE_DB_PORT}:${ARCHIVE_DB_PORT}'
+    command: ['postgres', '-c', 'log_statement=all', '-p', '${ARCHIVE_DB_PORT}']
+
+  squid-archive-ingest:
+    container_name: orion_archive_ingest
+    depends_on:
+      - squid-archive-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    image: subsquid/substrate-ingest:firesquid
+    command: [
+        '-e',
+        '${WS_SOURCE}',
+        '-c',
+        '20', # allow up to 20 pending requests for the above endpoint (default is 5)
+        #  "--start-block", "1000000", # uncomment to specify a non-zero start block
+        '--out',
+        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
+      ]
+
+  squid-archive-gateway:
+    container_name: orion_archive_gateway
+    hostname: orion_archive_gateway
+    depends_on:
+      - squid-archive-db
+    restart: unless-stopped
+    image: subsquid/substrate-gateway:firesquid
+    env_file:
+      - .env
+    environment:
+      DATABASE_MAX_CONNECTIONS: 5
+      RUST_LOG: 'actix_web=info,actix_server=info'
+    command: [
+        '--database-url',
+        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
+      ]
+    ports:
+      - '127.0.0.1:${ARCHIVE_GATEWAY_PORT}:8000'
+      - '[::1]:${ARCHIVE_GATEWAY_PORT}:8000'
+
+  # Explorer service is optional.
+  # It provides rich GraphQL API for querying archived data.
+  # Many developers find it very useful for exploration and debugging.
+  squid-archive-explorer:
+    container_name: orion_archive_explorer
+    hostname: orion_archive_explorer
+    restart: unless-stopped
+    image: subsquid/substrate-explorer:firesquid
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgres # set to `cockroach` for Cockroach DB
+      DB_HOST: archive_db
+      DB_NAME: 'squid-archive'
+      DB_USER: 'postgres'
+      DB_PASS: 'postgres'
+    ports:
+      - '${ARCHIVE_EXPLORER_PORT}:3000'
 
 volumes:
   chain-data:
@@ -332,5 +485,7 @@ volumes:
     driver: local
   distributor-2-data:
     driver: local
-  orion-mongo-data:
+  orion-db-data:
+    driver: local
+  orion_archive_db_data:
     driver: local

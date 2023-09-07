@@ -28,13 +28,20 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
 
       - id: compute_shasum
         name: Compute runtime code shasum
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+
+      # docker manifest inspect command requires authentication
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Check if we already have the main image on Dockerhub
         id: compute_main_image_exists
@@ -71,8 +78,14 @@ jobs:
 
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: '18.x'
 
+      # docker manifest inspect requires authentication
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Check if we have pre-built image on Dockerhub
         id: compute_image_exists
         # Will output 0 if image exists and 1 if does not exists
@@ -104,6 +117,10 @@ jobs:
           no-fail-on-empty-changeset: '1'
           parameter-overrides: 'KeyName=${{ env.KEY_NAME }},EC2AMI=${{ matrix.ec2ami }},EC2InstanceType=${{ matrix.ec2type }}'
         if: ${{ steps.compute_image_exists.outputs.image_exists == 1 }}
+
+      - name: Wait for docker build server to be ready
+        run: |
+          sleep 30
 
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2

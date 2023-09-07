@@ -14,6 +14,7 @@ fi
 
 # sort/owner/group/mtime arguments only work with gnu version of tar!
 ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020-01-01' \
+    --exclude='*.md' \
     Cargo.lock \
     Cargo.toml \
     runtime \

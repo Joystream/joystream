@@ -1,3 +1,32 @@
+### 3.7.0
+
+- Updates `leader:update-bag` CLI command to `leader:update-bags` to accept multiple bag ids as input. This allows the command to be used to update storage buckets of multiple bags in a single batched transaction.
+
+### 3.6.0
+
+- Collosus can now store multiple keys in it's keyring.
+- The `--accountUri` and `--password` args can be used multiple times to add multiple keys. This adds support for worker to use different transactor accounts for each bucket.
+- Added `--keyStore` argument for all commands to configure a directory containing multiple key files to the keyring.
+- Server can run and to serve specific buckets, by passing a comma separated list of bucket ids with the `--buckets` argument.
+- Renamed `--operatorId` argument to `--workerId` in operator commands for consistency.
+
+### 3.5.1
+
+- **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.
+
+### 3.5.0
+
+- Integrates OpenTelemetry API/SDK with Colossus for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.
+
+### 3.4.0
+
+- Added option 'none' to 'logFileChangeFrequency' argument. The default is still 'daily'. 'none' prevents log rotaion on time basis and only rotates when max size for logs files is reached.
+
+### 3.3.0
+
+- Added customization options for Elasticsearch logging. Users can now specify index name and auth options.
+- **FIX** [#4773](https://github.com/Joystream/joystream/issues/4773) Cleanup temporary files created when upload fails.
+
 ### 3.2.0
 
 - Updated `joystream/types` and `@joystream/metadata-protobuf` dependencies.
