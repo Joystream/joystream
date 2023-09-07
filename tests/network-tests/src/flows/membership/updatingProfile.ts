@@ -40,6 +40,7 @@ export default async function updatingProfile({
           value: "A@example.com",
         },
       ],
+      validatorAccount: "",
     },
     // Full update
     {
@@ -57,7 +58,7 @@ export default async function updatingProfile({
           value: "example.com",
         },
       ],
-      validatorAccount: "",
+      validatorAccount: "validator address",
     },
   ];
 
