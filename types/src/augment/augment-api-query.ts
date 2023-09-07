@@ -984,10 +984,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       salePlatformFee: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
       /**
-       * Set for the tokens symbols
-       **/
-      symbolsUsed: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<Null>, [H256]>;
-      /**
        * map TokenId => TokenData to retrieve token information
        **/
       tokenInfoById: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<PalletProjectTokenTokenData>, [u64]>;

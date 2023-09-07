@@ -118,7 +118,6 @@ fn issue_token<T: Config>(
             .iter()
             .cloned()
             .collect(),
-            symbol: <T as frame_system::Config>::Hashing::hash_of(b"CRT"),
             transfer_policy,
             patronage_rate: DEFAULT_PATRONAGE,
             revenue_split_rate: DEFAULT_REVENUE_SPLIT_RATE,

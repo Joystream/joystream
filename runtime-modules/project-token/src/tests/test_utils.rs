@@ -26,7 +26,6 @@ pub struct TokenDataBuilder {
         <Test as crate::Config>::Balance,
         <Test as frame_system::Config>::BlockNumber,
     >,
-    pub(crate) symbol: <Test as frame_system::Config>::Hash,
     pub(crate) revenue_split: RevenueSplitState<
         <Test as crate::Config>::Balance,
         <Test as frame_system::Config>::BlockNumber,
@@ -43,7 +42,6 @@ impl TokenDataBuilder {
             next_sale_id: self.next_sale_id,
             transfer_policy: self.transfer_policy,
             patronage_info: self.patronage_info,
-            symbol: self.symbol,
             accounts_number: 0u64,
             revenue_split: self.revenue_split,
             next_revenue_split_id: 0u32,
@@ -98,8 +96,6 @@ impl TokenDataBuilder {
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
-            // hash of "default"
-            symbol: <Test as frame_system::Config>::Hash::default(),
             revenue_split: RevenueSplitState::Inactive,
             revenue_split_rate: Permill::zero(),
         }
@@ -112,7 +108,6 @@ impl GenesisConfigBuilder {
             token_info_by_id: vec![],
             account_info_by_token_and_member: vec![],
             next_token_id: TokenId::one(),
-            symbol_used: vec![],
             min_sale_duration: BlockNumber::zero(),
             bloat_bond: DEFAULT_BLOAT_BOND.into(),
             min_revenue_split_duration: MIN_REVENUE_SPLIT_DURATION.into(),
@@ -126,7 +121,6 @@ impl GenesisConfigBuilder {
 
     // add token with given params & zero supply
     pub fn with_token(mut self, token_id: TokenId, token_info: TokenData) -> Self {
-        self.symbol_used = vec![(token_info.symbol.clone(), ())];
         self.token_info_by_id.push((token_id, token_info));
         self.next_token_id = self.next_token_id.saturating_add(TokenId::one());
         self
@@ -188,7 +182,6 @@ impl GenesisConfigBuilder {
             account_info_by_token_and_member: self.account_info_by_token_and_member,
             token_info_by_id: self.token_info_by_id,
             next_token_id: self.next_token_id,
-            symbol_used: self.symbol_used,
             bloat_bond: self.bloat_bond,
             min_sale_duration: self.min_sale_duration,
             min_revenue_split_duration: self.min_revenue_split_duration,
@@ -351,9 +344,8 @@ where
     }
 }
 
-impl<Hash, Balance, VestingScheduleParams, TransferPolicyParams, MemberId>
+impl<Balance, VestingScheduleParams, TransferPolicyParams, MemberId>
     TokenIssuanceParameters<
-        Hash,
         TokenAllocation<Balance, VestingScheduleParams>,
         TransferPolicyParams,
         MemberId,

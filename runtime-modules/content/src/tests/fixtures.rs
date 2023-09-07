@@ -2482,7 +2482,6 @@ impl IssueCreatorTokenFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             params: TokenIssuanceParametersOf::<Test> {
-                symbol: Hashing::hash_of(b"CRT"),
                 patronage_rate: DEFAULT_PATRONAGE_RATE,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()

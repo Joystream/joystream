@@ -1,6 +1,6 @@
 #![cfg(test)]
-use frame_support::{assert_err, assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::{traits::Hash, Permill, Perquintill};
+use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
+use sp_runtime::{Permill, Perquintill};
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
@@ -894,22 +894,6 @@ fn deissue_token_with_event_deposit() {
 }
 
 #[test]
-fn deissue_token_with_symbol_removed() {
-    let token_id = token!(1);
-    let token_data: TokenDataOf<Test> = TokenDataBuilder::new_empty().build();
-    let symbol = token_data.symbol.clone();
-
-    let config = GenesisConfigBuilder::new_empty()
-        .with_token(token_id, token_data)
-        .build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::deissue_token(token_id);
-        assert!(!<crate::SymbolsUsed<Test>>::contains_key(symbol));
-    })
-}
-
-#[test]
 fn deissue_token_with_token_info_removed() {
     let token_id = token!(1);
     let token_data = TokenDataBuilder::new_empty().build();
@@ -925,32 +909,11 @@ fn deissue_token_with_token_info_removed() {
 }
 
 #[test]
-fn issue_token_fails_with_existing_symbol() {
-    let config = GenesisConfigBuilder::new_empty().build();
-    let symbol = Hashing::hash_of(b"test");
-
-    build_test_externalities(config).execute_with(|| {
-        IssueTokenFixture::default()
-            .with_symbol(symbol)
-            .execute_call()
-            .unwrap();
-
-        let result = IssueTokenFixture::default()
-            .with_symbol(symbol)
-            .execute_call();
-
-        assert_err!(result, Error::<Test>::TokenSymbolAlreadyInUse);
-    })
-}
-
-#[test]
 fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
-    let token_id = token!(1);
     let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
     let bloat_bond = joy!(100);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
@@ -974,12 +937,10 @@ fn issue_token_fails_with_insufficient_balance_for_bloat_bond() {
 
 #[test]
 fn issue_token_ok_with_bloat_bond_transferred() {
-    let token_id = token!(1);
     let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
     let (treasury, bloat_bond) = (Token::module_treasury_account(), joy!(100));
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
@@ -1015,14 +976,12 @@ fn issue_token_ok_owner_having_already_issued_a_token() {
     let config = GenesisConfigBuilder::new_empty().build();
 
     let params1 = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&"CRT1".to_string()),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
     .with_allocation(&owner_id, init_supply, None);
 
     let params2 = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&"CRT2".to_string()),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..params1.clone()
     };
@@ -1076,7 +1035,6 @@ fn issue_token_ok_with_event_deposit() {
     let (owner_id, owner_acc) = member!(1);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         patronage_rate: yearly_rate!(1),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
@@ -1095,7 +1053,6 @@ fn issue_token_ok_with_event_deposit() {
 #[test]
 fn issue_token_ok_with_token_info_added() {
     let token_id = token!(1);
-    let symbol = Hashing::hash_of(&token_id);
     let transfer_policy = TransferPolicyParams::Permissionless;
     let patronage_rate = yearly_rate!(10);
     let config = GenesisConfigBuilder::new_empty().build();
@@ -1104,8 +1061,7 @@ fn issue_token_ok_with_token_info_added() {
         let arrangement = IssueTokenFixture::default()
             .with_split_rate(DEFAULT_SPLIT_RATE)
             .with_transfer_policy(transfer_policy.clone())
-            .with_patronage_rate(patronage_rate)
-            .with_symbol(symbol);
+            .with_patronage_rate(patronage_rate);
 
         arrangement.execute_call().unwrap();
 
@@ -1115,7 +1071,6 @@ fn issue_token_ok_with_token_info_added() {
                 tokens_issued: DEFAULT_INITIAL_ISSUANCE,
                 total_supply: DEFAULT_INITIAL_ISSUANCE,
                 transfer_policy: transfer_policy.into(),
-                symbol: symbol,
                 accounts_number: 1u64, // owner account
                 patronage_info: PatronageData::<Balance, BlockNumber> {
                     last_unclaimed_patronage_tally_block: System::block_number(),
@@ -1140,7 +1095,6 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
     let supply = balance!(100);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         transfer_policy: TransferPolicyParams::Permissionless,
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
@@ -1166,11 +1120,9 @@ fn issue_token_ok_with_correct_patronage_rate_approximated() {
 
 #[test]
 fn issue_token_fails_with_zero_split_rate() {
-    let token_id = token!(1);
     let (_, owner_acc) = member!(1);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: Permill::zero(),
         ..Default::default()
     };
@@ -1186,13 +1138,11 @@ fn issue_token_fails_with_zero_split_rate() {
 
 #[test]
 fn issue_token_fails_with_non_existing_initial_allocation_member() {
-    let token_id = token!(1);
     let (_, owner_acc) = member!(1);
     let (valid_member_id, _) = member!(2);
     let (invalid_member_id, _) = member!(9999);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         initial_allocation: vec![
             (
@@ -1226,24 +1176,6 @@ fn issue_token_fails_with_non_existing_initial_allocation_member() {
 }
 
 #[test]
-fn issue_token_ok_with_symbol_added() {
-    let token_id = token!(1);
-    let (_, owner_acc) = member!(1);
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
-        revenue_split_rate: DEFAULT_SPLIT_RATE,
-        ..Default::default()
-    };
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params.clone(), default_upload_context());
-        assert!(<crate::SymbolsUsed<Test>>::contains_key(&params.symbol));
-    })
-}
-
-#[test]
 fn issue_token_ok_with_owner_accounts_data_added() {
     let token_id = token!(1);
     let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
@@ -1255,7 +1187,6 @@ fn issue_token_ok_with_owner_accounts_data_added() {
     };
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
@@ -1307,7 +1238,6 @@ fn issue_token_ok_with_invitation_locked_funds() {
     let (treasury, bloat_bond) = (Token::module_treasury_account(), joy!(100));
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
@@ -1392,12 +1322,10 @@ fn issue_token_ok_with_invitation_locked_funds() {
 
 #[test]
 fn issue_token_fails_with_insufficient_locked_funds() {
-    let token_id = token!(1);
     let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
     let bloat_bond = joy!(100);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }
@@ -1434,12 +1362,10 @@ fn issue_token_fails_with_insufficient_locked_funds() {
 
 #[test]
 fn issue_token_fails_with_incompatible_locked_funds() {
-    let token_id = token!(1);
     let ((owner_id, owner_acc), mem1, mem2) = (member!(1), member!(2).0, member!(3).0);
     let bloat_bond = joy!(100);
 
     let params = TokenIssuanceParametersOf::<Test> {
-        symbol: Hashing::hash_of(&token_id),
         revenue_split_rate: DEFAULT_SPLIT_RATE,
         ..Default::default()
     }

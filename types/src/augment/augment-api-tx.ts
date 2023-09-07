@@ -1004,7 +1004,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `O(A)` - from the the generated weights
        * # </weight>
        **/
-      issueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenIssuanceParameters | { initialAllocation?: any; symbol?: any; transferPolicy?: any; patronageRate?: any; revenueSplitRate?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenIssuanceParameters]>;
+      issueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenIssuanceParameters | { initialAllocation?: any; transferPolicy?: any; patronageRate?: any; revenueSplitRate?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenIssuanceParameters]>;
       /**
        * Issue NFT
        * 

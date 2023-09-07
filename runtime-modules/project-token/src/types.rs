@@ -98,9 +98,6 @@ pub struct TokenData<Balance, Hash, BlockNumber, TokenSale, RevenueSplitState> {
     /// Transfer policy
     pub transfer_policy: TransferPolicy<Hash>,
 
-    /// Symbol used to identify token
-    pub symbol: Hash,
-
     /// Patronage Information
     pub patronage_info: PatronageData<Balance, BlockNumber>,
 
@@ -731,12 +728,9 @@ pub struct TokenAllocation<Balance, VestingScheduleParams> {
 
 /// Input parameters for token issuance
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, Debug, TypeInfo)]
-pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, MemberId: Ord> {
+pub struct TokenIssuanceParameters<TokenAllocation, TransferPolicyParams, MemberId: Ord> {
     /// Initial allocation of the token
     pub initial_allocation: BTreeMap<MemberId, TokenAllocation>,
-
-    /// Token Symbol
-    pub symbol: Hash,
 
     /// Initial transfer policy:
     pub transfer_policy: TransferPolicyParams,
@@ -750,7 +744,6 @@ pub struct TokenIssuanceParameters<Hash, TokenAllocation, TransferPolicyParams, 
 
 impl<Hash, MemberId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>
     TokenIssuanceParameters<
-        Hash,
         TokenAllocation<Balance, VestingScheduleParams>,
         TransferPolicyParams<WhitelistParams<Hash, SingleDataObjectUploadParams>>,
         MemberId,
@@ -1371,7 +1364,6 @@ where
             .sum();
 
         Ok(TokenData {
-            symbol: params.symbol,
             total_supply,
             tokens_issued: total_supply,
             sale: None,
@@ -1538,7 +1530,6 @@ pub type TokenAllocationOf<T> = TokenAllocation<TokenBalanceOf<T>, VestingSchedu
 
 /// Alias for Token Issuance Parameters
 pub type TokenIssuanceParametersOf<T> = TokenIssuanceParameters<
-    <T as frame_system::Config>::Hash,
     TokenAllocationOf<T>,
     TransferPolicyParamsOf<T>,
     <T as MembershipTypes>::MemberId,

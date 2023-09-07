@@ -11,15 +11,16 @@ message UpdateTokenMetadata {
 
 message TokenMetadata {
   optional string name = 1; // Title
-  optional string description = 2; // token description
+  required string symbol = 2; // Symbol
+  optional string description = 3; // token description
   oneof avatar {
-    uint32 avatar_object = 3; // avatar for token - index into external [assets array](#.Assets)
-    string avatar_uri = 4; // Url to member's avatar
+    uint32 avatar_object = 4; // avatar for token - index into external [assets array](#.Assets)
+    string avatar_uri = 5; // Url to member's avatar
   }
-  repeated Benefit benefits = 5; // benefits for tokne
-  optional string whitelist_application_note = 6; // note for applicant
-  optional string whitelist_application_apply_link = 7; // link to application process
-  optional uint64 trailer_video_id = 8; // runtime id for video trailer
+  repeated Benefit benefits = 6; // benefits for tokne
+  optional string whitelist_application_note = 7; // note for applicant
+  optional string whitelist_application_apply_link = 8; // link to application process
+  optional uint64 trailer_video_id = 9; // runtime id for video trailer
 }
 
 message Benefit {

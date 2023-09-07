@@ -49,7 +49,6 @@ pub type Balance = TokenBalanceOf<Test>;
 pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Config>::Hashing;
-pub type HashOut = <Test as frame_system::Config>::Hash;
 pub type VestingSchedule = VestingScheduleOf<Test>;
 pub type Moment = <Test as pallet_timestamp::Config>::Moment;
 pub type MemberId = u64;
@@ -498,7 +497,6 @@ pub struct GenesisConfigBuilder {
     pub(crate) token_info_by_id: Vec<(TokenId, TokenData)>,
     pub(crate) next_token_id: TokenId,
     pub(crate) bloat_bond: JoyBalance,
-    pub(crate) symbol_used: Vec<(HashOut, ())>,
     pub(crate) min_sale_duration: BlockNumber,
     pub(crate) min_revenue_split_duration: BlockNumber,
     pub(crate) min_revenue_split_time_to_start: BlockNumber,

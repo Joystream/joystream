@@ -5,11 +5,11 @@ use crate::types::{AmmParams, Joy, Payment, Transfers, TransfersOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
-use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
+use crate::{traits::PalletToken, types::VestingSource};
 use frame_support::dispatch::DispatchResult;
-use frame_support::storage::{StorageDoubleMap, StorageMap};
+use frame_support::storage::StorageDoubleMap;
 use sp_arithmetic::traits::One;
-use sp_runtime::{testing::H256, traits::Hash, DispatchError, Permill};
+use sp_runtime::{DispatchError, Permill};
 
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
@@ -93,7 +93,6 @@ impl IssueTokenFixture {
             issuer_account: member!(1).1,
             params: IssuanceParams {
                 patronage_rate: yearly_rate!(0),
-                symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()
@@ -142,16 +141,6 @@ impl IssueTokenFixture {
             ..self
         }
     }
-
-    pub fn with_symbol(self, symbol: H256) -> Self {
-        Self {
-            params: IssuanceParams {
-                symbol,
-                ..self.params
-            },
-            ..self
-        }
-    }
 }
 
 impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
@@ -183,7 +172,6 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
                 ..TokenData::from_params::<Test>(self.params.clone()).unwrap()
             }
         );
-        assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
         // Event emitted
         last_event_eq!(RawEvent::TokenIssued(
             snapshot_pre.next_token_id,

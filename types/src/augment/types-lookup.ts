@@ -1405,7 +1405,6 @@ declare module '@polkadot/types/lookup' {
   /** @name PalletProjectTokenTokenIssuanceParameters (172) */
   export interface PalletProjectTokenTokenIssuanceParameters extends Struct {
     readonly initialAllocation: BTreeMap<u64, PalletProjectTokenTokenAllocation>;
-    readonly symbol: H256;
     readonly transferPolicy: PalletProjectTokenTransferPolicyParams;
     readonly patronageRate: Permill;
     readonly revenueSplitRate: Permill;
@@ -5325,7 +5324,6 @@ declare module '@polkadot/types/lookup' {
     readonly nextSaleId: u32;
     readonly sale: Option<PalletProjectTokenTokenSale>;
     readonly transferPolicy: PalletProjectTokenTransferPolicy;
-    readonly symbol: H256;
     readonly patronageInfo: PalletProjectTokenPatronageData;
     readonly accountsNumber: u64;
     readonly revenueSplitRate: Permill;

@@ -149,11 +149,6 @@ decl_storage! { generate_storage_info
         /// Token Id nonce
         pub NextTokenId get(fn next_token_id) config(): T::TokenId;
 
-        /// Set for the tokens symbols
-        pub SymbolsUsed get(fn symbol_used) config():
-        map
-            hasher(blake2_128_concat) T::Hash => ();
-
         /// Bloat Bond value used during account creation
         pub BloatBond get(fn bloat_bond) config(): JoyBalanceOf<T>;
 
@@ -1120,14 +1115,12 @@ impl<T: Config>
     /// Issue token with specified characteristics
     ///
     /// Preconditions:
-    /// - `symbol` specified in the parameters must NOT exists in `SymbolsUsed`
     /// - `issuer_account` usable balance in JOYs >=
     ///   `initial_allocation.len() * bloat_bond + JoyExistentialDeposit`
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    /// - symbol is added to `SymbolsUsed`
     /// - total bloat bond in JOY is transferred from `issuer_account` to treasury account
     /// - new token accounts are initialized based on `initial_allocation`
     fn issue_token(
@@ -1157,7 +1150,6 @@ impl<T: Config>
         );
 
         // == MUTATION SAFE ==
-        SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
@@ -1359,14 +1351,13 @@ impl<T: Config>
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
-    /// - `symbol` for `token_id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        let token_info = Self::ensure_token_exists(token_id)?;
+        let _ = Self::ensure_token_exists(token_id)?;
         Self::ensure_can_deissue_token(token_id)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_deissue_token(token_info.symbol, token_id);
+        Self::do_deissue_token(token_id);
 
         Self::deposit_event(RawEvent::TokenDeissued(token_id));
 
@@ -1631,8 +1622,7 @@ impl<T: Config> Module<T> {
     }
 
     /// Perform token de-issuing: unfallible
-    pub(crate) fn do_deissue_token(symbol: T::Hash, token_id: T::TokenId) {
-        SymbolsUsed::<T>::remove(symbol);
+    pub(crate) fn do_deissue_token(token_id: T::TokenId) {
         TokenInfoById::<T>::remove(token_id);
         // TODO: add extra state removal as implementation progresses
     }
@@ -1820,11 +1810,6 @@ impl<T: Config> Module<T> {
     pub(crate) fn validate_issuance_parameters(
         params: &TokenIssuanceParametersOf<T>,
     ) -> DispatchResult {
-        ensure!(
-            !SymbolsUsed::<T>::contains_key(&params.symbol),
-            Error::<T>::TokenSymbolAlreadyInUse,
-        );
-
         for (member_id, _) in params.initial_allocation.iter() {
             ensure!(
                 T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
