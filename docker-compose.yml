@@ -380,6 +380,82 @@ services:
     ports:
       - '127.0.0.1:${AUTH_API_PORT}:${AUTH_API_PORT}'
 
+  # Orion archive node
+  squid-archive-db:
+    container_name: orion_archive_db
+    hostname: orion_archive_db
+    image: postgres:14 # CockroachDB cluster might be a better fit for production deployment
+    restart: unless-stopped
+    volumes:
+      - orion_archive_db_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: squid-archive
+    ports:
+      - '127.0.0.1:${ARCHIVE_DB_PORT}:${ARCHIVE_DB_PORT}'
+      - '[::1]:${ARCHIVE_DB_PORT}:${ARCHIVE_DB_PORT}'
+    command: ['postgres', '-c', 'log_statement=all', '-p', '${ARCHIVE_DB_PORT}']
+
+  squid-archive-ingest:
+    container_name: orion_archive_ingest
+    depends_on:
+      - squid-archive-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    image: subsquid/substrate-ingest:firesquid
+    command: [
+        '-e',
+        '${WS_SOURCE}',
+        '-c',
+        '20', # allow up to 20 pending requests for the above endpoint (default is 5)
+        #  "--start-block", "1000000", # uncomment to specify a non-zero start block
+        '--out',
+        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
+      ]
+
+  squid-archive-gateway:
+    container_name: orion_archive_gateway
+    hostname: orion_archive_gateway
+    depends_on:
+      - squid-archive-db
+    restart: unless-stopped
+    image: subsquid/substrate-gateway:firesquid
+    env_file:
+      - .env
+    environment:
+      DATABASE_MAX_CONNECTIONS: 5
+      RUST_LOG: 'actix_web=info,actix_server=info'
+    command: [
+        '--database-url',
+        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
+      ]
+    ports:
+      - '127.0.0.1:${ARCHIVE_GATEWAY_PORT}:8000'
+      - '[::1]:${ARCHIVE_GATEWAY_PORT}:8000'
+
+  # Explorer service is optional.
+  # It provides rich GraphQL API for querying archived data.
+  # Many developers find it very useful for exploration and debugging.
+  squid-archive-explorer:
+    container_name: orion_archive_explorer
+    hostname: orion_archive_explorer
+    restart: unless-stopped
+    image: subsquid/substrate-explorer:firesquid
+    env_file:
+      - .env
+    environment:
+      DB_TYPE: postgres # set to `cockroach` for Cockroach DB
+      DB_HOST: archive_db
+      DB_NAME: 'squid-archive'
+      DB_USER: 'postgres'
+      DB_PASS: 'postgres'
+    ports:
+      - '${ARCHIVE_EXPLORER_PORT}:3000'
+
 volumes:
   chain-data:
     driver: local
@@ -410,4 +486,6 @@ volumes:
   distributor-2-data:
     driver: local
   orion-db-data:
+    driver: local
+  orion_archive_db_data:
     driver: local
