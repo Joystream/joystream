@@ -34,6 +34,7 @@ import {
   BudgetFundedEvent,
   BudgetSetEvent,
   BudgetSpendingEvent,
+  ForumPost,
   InvalidActionMetadata,
   LeaderSetEvent,
   LeaderUnsetEvent,
@@ -107,6 +108,7 @@ import {
   bytesToString,
   deserializeMetadata,
   genericEventFields,
+  getById,
   getByIdOrFail,
   getOneByOrFail,
   getWorkerOrFail,
@@ -718,7 +720,11 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     const { postId, rationale } = metadata.moderatePost
     const actor = await getWorkingGroupLeadOrFail(store, group.name)
 
-    await moderatePost(store, event, 'leadRemark', postId, actor, rationale)
+    const post = await getById(store, ForumPost, postId)
+    if (!post) {
+      return invalidMetadata(`Forum post not found by id: ${postId}`)
+    }
+    await moderatePost(store, event, 'leadRemark', post, actor, rationale)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
@@ -736,7 +742,11 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     const { postId, rationale } = metadata.moderatePost
     const actor = await getWorkerOrFail(store, group.name, workerId)
 
-    await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
+    const post = await getById(store, ForumPost, postId)
+    if (!post) {
+      return invalidMetadata(`Forum post not found by id: ${postId}`)
+    }
+    await moderatePost(store, event, 'workerRemark', post, actor, rationale)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

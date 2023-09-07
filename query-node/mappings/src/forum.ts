@@ -106,25 +106,18 @@ export async function moderatePost(
   store: DatabaseManager,
   event: SubstrateEvent,
   type: ModerationType,
-  postId: string,
+  post: ForumPost,
   actor: Worker,
   rationale: string
 ): Promise<void> {
-  const post = await store.get(ForumPost, { where: { id: postId }, relations: ['thread', 'thread.category'] })
+  const thread = await getOneByOrFail(store, ForumThread, { posts: { id: post.id } }, ['category'])
 
-  if (!post) {
-    const message = `Forum post not found by id: ${postId}`
-    if (type === 'runtime') {
-      throw Error(message)
-    }
-    return invalidMetadata(message)
-  }
   if (type !== 'runtime' && post.status.isTypeOf !== 'PostStatusLocked') {
     return invalidMetadata(
       `Trying to moderate forum post ${post.id}, with status ${post.status.isTypeOf}. Only locked forum post can be moderated with remark`
     )
   }
-  if (type === 'workerRemark' && !(await canModerate(store, actor.id, post.thread.category.id))) {
+  if (type === 'workerRemark' && !(await canModerate(store, actor.id, thread.category.id))) {
     return invalidMetadata(`The worker ${actor.id} can not moderate the post: ${post.id}`)
   }
 
@@ -144,7 +137,6 @@ export async function moderatePost(
   post.isVisible = false
   await store.save<ForumPost>(post)
 
-  const { thread } = post
   --thread.visiblePostsCount
   await store.save<ForumThread>(thread)
 }
@@ -525,7 +517,8 @@ export async function forum_CategoryMembershipOfModeratorUpdated({
 export async function forum_PostModerated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [postId, rationaleBytes, privilegedActor] = new PostModeratedEvent_V1001(event).params
   const actorWorker = await getActorWorker(store, privilegedActor)
-  await moderatePost(store, event, 'runtime', postId.toString(), actorWorker, bytesToString(rationaleBytes))
+  const post = await getPostOrFail(store, postId.toString())
+  await moderatePost(store, event, 'runtime', post, actorWorker, bytesToString(rationaleBytes))
 }
 
 export async function forum_PostTextUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
