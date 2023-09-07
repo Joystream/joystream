@@ -98,6 +98,7 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     )
     assert.isFalse(Utils.hasDuplicates(newMetadata.externalResources?.map(({ type }) => type)))
     assert.equal(newMetadata.isVerifiedValidator, false)
+    console.log(newMetadata, expected)
     assert.equal(newMetadata.validatorAccount, expected.validatorAccount)
   }
 
