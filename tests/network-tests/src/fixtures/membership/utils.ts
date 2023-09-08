@@ -20,7 +20,7 @@ type MemberCreationParams = {
   metadata: Bytes
   is_founding_member: boolean
   isVerifiedValidator?: boolean
-  validatorAccount?: string | null
+  validatorAccount?: string
 }
 
 // Common code for Membership fixtures

@@ -332,7 +332,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     typeof metadata?.validatorAccount === 'string' &&
     metadata.validatorAccount !== member.metadata.validatorAccount
   ) {
-    member.metadata.validatorAccount = metadata.validatorAccount || undefined
+    member.metadata.about = (metadata.about || null) as string | undefined
     member.metadata.isVerifiedValidator = false
   }
 

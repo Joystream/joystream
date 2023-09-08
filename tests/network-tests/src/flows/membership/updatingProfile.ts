@@ -39,7 +39,7 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
           value: 'A@example.com',
         },
       ],
-      validatorAccount: 'validator address2',
+      validatorAccount: '',
     },
     // Full update
     {
@@ -57,7 +57,6 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
           value: 'example.com',
         },
       ],
-      validatorAccount: '',
     },
   ]
 
@@ -70,6 +69,7 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
   for (const newValues of updates) {
     const context = { account, memberId }
     const updateProfileHappyCaseFixture = new UpdateProfileHappyCaseFixture(api, query, context, oldValues, newValues)
+
     await new FixtureRunner(updateProfileHappyCaseFixture).runWithQueryNodeChecks()
     oldValues = updateProfileHappyCaseFixture.getExpectedValues()
   }
