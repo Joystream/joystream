@@ -61,9 +61,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
   }
 
   public getExpectedValues(): MemberProfileData {
-    console.log('new value : ', this.newValues)
-    console.log('old value : ', this.oldValues)
-    console.log(isSet(this.newValues.validatorAccount), 'name : ', isSet(this.newValues.name))
     return {
       handle: isSet(this.newValues.handle) ? this.newValues.handle : this.oldValues.handle,
       name: isSet(this.newValues.name) ? this.newValues.name || null : this.oldValues.name,
