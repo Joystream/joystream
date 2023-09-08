@@ -124,10 +124,7 @@ export class ApiFactory {
 
   constructor(api: ApiPromise, treasuryAccountUri: string, miniSecret: string) {
     this.api = api
-    this.keyring = new Keyring({
-      type: 'sr25519',
-      ss58Format: JOYSTREAM_ADDRESS_PREFIX,
-    })
+    this.keyring = new Keyring({ type: 'sr25519', ss58Format: JOYSTREAM_ADDRESS_PREFIX })
     this.treasuryAccount = this.keyring.addFromUri(treasuryAccountUri).address
     this.miniSecret = miniSecret
     this.addressesToKeyId = new Map()
@@ -430,13 +427,7 @@ export class Api {
 
   public treasuryTransferBalanceToAccounts(destinations: string[], amount: BN): Promise<ISubmittableResult[]> {
     return Promise.all(
-      destinations.map((account) =>
-        this.transferBalance({
-          from: this.treasuryAccount,
-          to: account,
-          amount,
-        })
-      )
+      destinations.map((account) => this.transferBalance({ from: this.treasuryAccount, to: account, amount }))
     )
   }
 
@@ -699,10 +690,10 @@ export class Api {
         const { announcingPeriodDuration, idlePeriodDuration } = this.consts.council
         const { voteStageDuration, revealStageDuration } = this.consts.referendum
         const durationByStage = {
-          Announcing: announcingPeriodDuration,
-          Voting: voteStageDuration,
-          Revealing: revealStageDuration,
-          Idle: idlePeriodDuration,
+          'Announcing': announcingPeriodDuration,
+          'Voting': voteStageDuration,
+          'Revealing': revealStageDuration,
+          'Idle': idlePeriodDuration,
         } as const
 
         const currentStageEndsIn = currentStageStartedAt.add(durationByStage[currentStage]).sub(currentBlock)
@@ -944,9 +935,7 @@ export class Api {
   ) {
     return this.sender.signAndSend(
       this.api.tx.storage.updateStorageBucketsForBag(
-        createType('PalletStorageBagIdType', {
-          Dynamic: { Channel: Number(channelId) },
-        }),
+        createType('PalletStorageBagIdType', { Dynamic: { Channel: Number(channelId) } }),
         createType(
           'BTreeSet<u64>',
           addStorageBuckets.map((item) => item)
