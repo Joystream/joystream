@@ -772,7 +772,8 @@ export default {
       GlobalNftLimitUpdated: '(PalletContentNftLimitPeriod,u64)',
       ChannelNftLimitUpdated: '(PalletContentPermissionsContentActor,PalletContentNftLimitPeriod,u64,u64)',
       ToggledNftLimits: 'bool',
-      CreatorTokenIssued: '(PalletContentPermissionsContentActor,u64,u64)'
+      CreatorTokenIssued: '(PalletContentPermissionsContentActor,u64,u64)',
+      CreatorTokenIssuerRemarked: '(u64,u64,Bytes)'
     }
   },
   /**
@@ -1196,7 +1197,8 @@ export default {
     initialAllocation: 'BTreeMap<u64, PalletProjectTokenTokenAllocation>',
     transferPolicy: 'PalletProjectTokenTransferPolicyParams',
     patronageRate: 'Permill',
-    revenueSplitRate: 'Permill'
+    revenueSplitRate: 'Permill',
+    metadata: 'Bytes'
   },
   /**
    * Lookup173: pallet_project_token::types::TokenAllocation<Balance, pallet_project_token::types::VestingScheduleParams<BlockNumber>>
@@ -3155,9 +3157,10 @@ export default {
         channelId: 'u64',
         params: 'PalletProjectTokenAmmParams',
       },
-      deactivate_amm: {
+      creator_token_issuer_remark: {
         actor: 'PalletContentPermissionsContentActor',
-        channelId: 'u64'
+        channelId: 'u64',
+        remark: 'Bytes'
       }
     }
   },

@@ -740,6 +740,9 @@ pub struct TokenIssuanceParameters<TokenAllocation, TransferPolicyParams, Member
 
     /// Revenue split rate
     pub revenue_split_rate: Permill,
+
+    /// Metadata for the token
+    pub metadata: Vec<u8>,
 }
 
 impl<Hash, MemberId, Balance, VestingScheduleParams, SingleDataObjectUploadParams>

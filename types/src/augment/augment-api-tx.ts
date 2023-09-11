@@ -836,6 +836,10 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       createVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletContentVideoCreationParametersRecord | { assets?: any; meta?: any; autoIssueNft?: any; expectedVideoStateBloatBond?: any; expectedDataObjectStateBloatBond?: any; storageBucketsNumWitness?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentVideoCreationParametersRecord]>;
       /**
+       * Allow crt issuer to update metadata for an existing token
+       **/
+      creatorTokenIssuerRemark: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, remark: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Bytes]>;
+      /**
        * Perform transfer of tokens as creator token issuer
        * 
        * <weight>
@@ -849,10 +853,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       creatorTokenIssuerTransfer: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, outputs: PalletProjectTokenTransfersPaymentWithVesting, metadata: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTransfersPaymentWithVesting, Bytes]>;
-      /**
-       * Deactivate Amm functionality for token
-       **/
-      deactivateAmm: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64]>;
       /**
        * Deissue channel's creator token
        * 
@@ -1004,7 +1004,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `O(A)` - from the the generated weights
        * # </weight>
        **/
-      issueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenIssuanceParameters | { initialAllocation?: any; transferPolicy?: any; patronageRate?: any; revenueSplitRate?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenIssuanceParameters]>;
+      issueCreatorToken: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, params: PalletProjectTokenTokenIssuanceParameters | { initialAllocation?: any; transferPolicy?: any; patronageRate?: any; revenueSplitRate?: any; metadata?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletProjectTokenTokenIssuanceParameters]>;
       /**
        * Issue NFT
        * 

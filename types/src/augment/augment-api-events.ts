@@ -469,6 +469,7 @@ declare module '@polkadot/api-base/types/events' {
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
+      CreatorTokenIssuerRemarked: AugmentedEvent<ApiType, [u64, u64, Bytes]>;
       CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>]>;
       CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
       CuratorGroupPermissionsUpdated: AugmentedEvent<ApiType, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>]>;
