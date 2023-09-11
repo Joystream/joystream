@@ -25,7 +25,6 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
     },
     {
       handle: 'New handle 2',
-      validatorAccount: 'validator address2',
     },
     // Setting metadata to null
     {
