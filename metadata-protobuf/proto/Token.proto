@@ -11,7 +11,7 @@ message UpdateTokenMetadata {
 
 message TokenMetadata {
   optional string name = 1; // Title
-  required string symbol = 2; // Symbol
+  optional string symbol = 2; // Symbol
   optional string description = 3; // token description
   oneof avatar {
     uint32 avatar_object = 4; // avatar for token - index into external [assets array](#.Assets)

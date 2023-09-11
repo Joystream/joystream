@@ -3798,6 +3798,36 @@ decl_module! {
 
         }
 
+        /// Deactivate Amm functionality for token
+        #[weight = 100_000_000] // TODO: Adjust weight
+        pub fn deactivate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_deactivate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::deactivate_amm(
+                token_id,
+                member_id,
+            )?;
+
+        }
+
         /// Allow crt issuer to update metadata for an existing token
         #[weight = 100_000_000] // TODO: Adjust weight
         pub fn creator_token_issuer_remark(
