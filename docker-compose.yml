@@ -318,7 +318,7 @@ services:
     shm_size: 1g
     volumes:
       - orion-db-data:/var/lib/postgresql/data
-      - ./postgres.conf:/etc/postgresql/postgresql.conf
+      - ./orion-postgres.conf:/etc/postgresql/postgresql.conf
 
   # Orion processor
   orion-processor:
