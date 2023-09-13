@@ -376,6 +376,8 @@ services:
       - DB_PASS=${ORION_DB_PASS}
       - DB_PORT=${ORION_DB_PORT}
       - DB_HOST=orion-db
+      - SENDGRID_API_KEY=${ORION_SENDGRID_API_KEY}
+      - SENDGRID_FROM_EMAIL=${ORION_SENDGRID_FROM_EMAIL}
     command: ['npm', 'run', 'auth-server-start']
     ports:
       - '127.0.0.1:${AUTH_API_PORT}:${AUTH_API_PORT}'
