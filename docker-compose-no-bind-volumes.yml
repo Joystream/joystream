@@ -306,7 +306,7 @@ services:
     shm_size: 1g
     volumes:
       - orion-db-data:/var/lib/postgresql/data
-      - ./postgres.conf:/etc/postgresql/postgresql.conf
+      - ./orion-postgres.conf:/etc/postgresql/postgresql.conf
 
   # Orion processor
   orion-processor:
@@ -437,10 +437,11 @@ services:
       - .env
     environment:
       DB_TYPE: postgres # set to `cockroach` for Cockroach DB
-      DB_HOST: archive_db
+      DB_HOST: orion_archive_db
       DB_NAME: 'squid-archive'
       DB_USER: 'postgres'
       DB_PASS: 'postgres'
+      DB_PORT: ${ARCHIVE_DB_PORT}
     ports:
       - '${ARCHIVE_EXPLORER_PORT}:3000'
 
