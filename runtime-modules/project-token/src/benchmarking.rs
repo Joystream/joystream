@@ -121,6 +121,7 @@ fn issue_token<T: Config>(
             transfer_policy,
             patronage_rate: DEFAULT_PATRONAGE,
             revenue_split_rate: DEFAULT_REVENUE_SPLIT_RATE,
+            metadata: vec![],
         },
         UploadContext {
             bag_id: BagId::<T>::default(),
