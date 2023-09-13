@@ -756,8 +756,7 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     if (group.name !== 'operationsWorkingGroupBeta') {
       return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
     }
-    const { memberId } = metadata.verifyValidator
-    const member = await getMemberById(store, memberId, ['metadata', 'metadata.externalResources'])
+    const member = await getMemberById(store, workerId, ['metadata', 'metadata.externalResources'])
 
     member.metadata.isVerifiedValidator = true
     await store.save<Membership>(member)
