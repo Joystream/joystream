@@ -63,8 +63,12 @@ message ModeratePost {
   required string rationale = 2;
 }
 
+message VerifyValidator{
+  required uint64 memberId = 1;
+}
 message RemarkMetadataAction {
   oneof action {
     ModeratePost moderate_post = 1;
+    VerifyValidator verify_validator = 2;
   }
 }
