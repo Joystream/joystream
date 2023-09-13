@@ -449,10 +449,11 @@ services:
       - .env
     environment:
       DB_TYPE: postgres # set to `cockroach` for Cockroach DB
-      DB_HOST: archive_db
+      DB_HOST: orion_archive_db
       DB_NAME: 'squid-archive'
       DB_USER: 'postgres'
       DB_PASS: 'postgres'
+      DB_PORT: ${ARCHIVE_DB_PORT}
     ports:
       - '${ARCHIVE_EXPLORER_PORT}:3000'
 
