@@ -1,3 +1,9 @@
+##
+
+### 1.3.0
+
+- Adds support for TTL based caching of `StorageDataObject` QN entity for `HEAD /assets` requests. The TTL is configurable using `interval.queryNodeCacheTTL` flag.
+
 ### 1.2.2
 
 - **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.
