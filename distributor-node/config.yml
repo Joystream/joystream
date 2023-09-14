@@ -26,6 +26,7 @@ limits:
   outboundRequestsTimeoutMs: 5000
   pendingDownloadTimeoutSec: 3600
   maxCachedItemSize: 1G
+  queryNodeCacheTTL: 60
 intervals:
   saveCacheState: 60
   checkStorageNodeResponseTimes: 60

@@ -50,7 +50,7 @@ export class NetworkingService {
     this.logging = logging
     this.stateCache = stateCache
     this.logger = logging.createLogger('NetworkingManager')
-    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
+    this.queryNodeApi = new QueryNodeApi(config, this.logging)
     void this.checkActiveStorageNodeEndpoints()
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
