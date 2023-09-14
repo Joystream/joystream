@@ -1472,7 +1472,6 @@ benchmarks! {
                 next_sale_id: 0,
                 sale: None,
                 transfer_policy: params.transfer_policy.into(),
-                symbol: params.symbol,
                 patronage_info: PatronageData::<TokenBalanceOf<T>, T::BlockNumber> {
                     rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
                     unclaimed_patronage_tally_amount: Zero::zero(),
