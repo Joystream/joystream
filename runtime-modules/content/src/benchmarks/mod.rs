@@ -1233,10 +1233,8 @@ fn create_token_issuance_params<T: Config>(
     initial_allocation: BTreeMap<T::MemberId, TokenAllocationOf<T>>,
 ) -> TokenIssuanceParametersOf<T> {
     let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
-    let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
     TokenIssuanceParametersOf::<T> {
         initial_allocation,
-        symbol: token_symbol,
         transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
             commitment: transfer_policy_commit,
             payload: Some(SingleDataObjectUploadParams {
