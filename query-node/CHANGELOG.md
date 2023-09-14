@@ -1,3 +1,7 @@
+### 1.3.0
+
+- Fix external resources mapping of membership metadata to ignore unrecognized type.
+
 ### 1.2.2
 
 - Integrates OpenTelemetry API/SDK with Query Node's Graphql Server for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.
