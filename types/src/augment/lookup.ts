@@ -3157,6 +3157,10 @@ export default {
         channelId: 'u64',
         params: 'PalletProjectTokenAmmParams',
       },
+      deactivate_amm: {
+        actor: 'PalletContentPermissionsContentActor',
+        channelId: 'u64',
+      },
       creator_token_issuer_remark: {
         actor: 'PalletContentPermissionsContentActor',
         channelId: 'u64',
