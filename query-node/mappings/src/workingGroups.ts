@@ -762,7 +762,9 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
       return invalidMetadata(`${actor} is not an HR account`)
     }
 
-    const member = await getMemberById(store, workerId, ['metadata'])
+    const memberId = createType('u64', Number(metadata.verifyValidator.memberId))
+
+    const member = await getMemberById(store, memberId, ['metadata'])
 
     member.metadata.isVerifiedValidator = true
     await store.save<Membership>(member)
