@@ -1079,8 +1079,8 @@ export default {
       HideVideo: 'Null',
       HideChannel: 'Null',
       ChangeChannelFeatureStatus: 'PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature',
-      DeleteVideo: 'Null',
-      DeleteChannel: 'Null',
+      DeprecatedDeleteVideo: 'Null',
+      DeprecatedDeleteChannel: 'Null',
       DeleteVideoAssets: 'bool',
       DeleteNonVideoChannelAssets: 'Null',
       UpdateChannelNftLimits: 'Null'
@@ -2979,13 +2979,6 @@ export default {
         storageBucketsNumWitness: 'u32',
         rationale: 'Bytes',
       },
-      delete_channel_as_moderator: {
-        actor: 'PalletContentPermissionsContentActor',
-        channelId: 'u64',
-        channelBagWitness: 'PalletContentChannelBagWitness',
-        numObjectsToDelete: 'u64',
-        rationale: 'Bytes',
-      },
       set_channel_visibility_as_moderator: {
         actor: 'PalletContentPermissionsContentActor',
         channelId: 'u64',
@@ -3013,13 +3006,6 @@ export default {
         videoId: 'u64',
         storageBucketsNumWitness: 'u32',
         assetsToRemove: 'BTreeSet<u64>',
-        rationale: 'Bytes',
-      },
-      delete_video_as_moderator: {
-        actor: 'PalletContentPermissionsContentActor',
-        videoId: 'u64',
-        storageBucketsNumWitness: 'Option<u32>',
-        numObjectsToDelete: 'u64',
         rationale: 'Bytes',
       },
       set_video_visibility_as_moderator: {

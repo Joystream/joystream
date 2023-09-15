@@ -14,17 +14,9 @@ import {
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 import {
-  DeleteVideoAsModeratorFixture,
-  DeleteVideoAsModeratorParams,
-} from '../../fixtures/content/curatorModeration/DeleteVideoByModerator'
-import {
   DeleteVideoAssetsAsModeratorFixture,
   DeleteVideoAssetsAsModeratorParams,
 } from '../../fixtures/content/curatorModeration/DeleteVideoAssetsByModerator'
-import {
-  DeleteChannelAsModeratorFixture,
-  DeleteChannelAsModeratorParams,
-} from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
 
 export default async function curatorModerationActions({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:curator-moderation-actions')
@@ -75,7 +67,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   )
   await new FixtureRunner(createChannelsAndVideos).run()
 
-  const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
+  const { videosData } = createChannelsAndVideos.getCreatedItems()
 
   // create curator & curator group
 
@@ -85,7 +77,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
       permissionsByLevel: [
         {
           channelPrivilegeLevel: 0,
-          contentModerationActionSet: ['DeleteChannel', 'DeleteVideo', 'DeleteVideoAssets'],
+          contentModerationActionSet: ['HideChannel', 'DeleteVideoAssets'],
           permissionToDeleteNftAssets: false,
         },
       ],
@@ -101,7 +93,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     {
       curatorGroupId,
       curatorId,
-      permissions: ['AddVideo', 'DeleteVideo'],
+      permissions: ['AddVideo', 'DeleteChannel'],
     },
   ]
 
@@ -109,23 +101,6 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   await new FixtureRunner(addCuratorToGroupFixture).run()
 
   // test curator moderation actions
-
-  /**
-   * delete video as moderator
-   */
-
-  const numOfVideoObjectsToDelete = (await query.dataObjectsByVideoId(videosData[0].videoId.toString())).length
-  const deleteVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
-    {
-      asCurator: [curatorGroupId, curatorId],
-      videoId: videosData[0].videoId, // first video
-      numOfObjectsToDelete: numOfVideoObjectsToDelete,
-      rationale: 'Deleted video due to offensive content',
-    },
-  ]
-
-  const deleteVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(api, query, deleteVideoAsModeratorParams)
-  await new FixtureRunner(deleteVideoAsModeratorFixture).runWithQueryNodeChecks()
 
   /**
    * delete video assets as moderator
@@ -149,43 +124,6 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     deleteVideoAssetsAsModeratorParams
   )
   await new FixtureRunner(deleteVideoAssetsAsModeratorFixture).runWithQueryNodeChecks()
-
-  /**
-   * delete channel as moderator
-   */
-
-  // delete other video as well because for channel to be deleted, it should have no video
-  const deleteSecondVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
-    {
-      asCurator: [curatorGroupId, curatorId],
-      videoId: videosData[1].videoId, // second video
-      numOfObjectsToDelete: 0,
-      rationale: 'Deleted 2nd video',
-    },
-  ]
-
-  const deleteSecondVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(
-    api,
-    query,
-    deleteSecondVideoAsModeratorParams
-  )
-  await new FixtureRunner(deleteSecondVideoAsModeratorFixture).runWithQueryNodeChecks()
-
-  const deleteChannelAsModeratorParams: DeleteChannelAsModeratorParams[] = [
-    {
-      asCurator: [curatorGroupId, curatorId],
-      channelId: channelIds[0],
-      numOfObjectsToDelete: 2,
-      rationale: 'Deleted channel due to repeated violations of ToS',
-    },
-  ]
-
-  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(
-    api,
-    query,
-    deleteChannelAsModeratorParams
-  )
-  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

@@ -23,7 +23,6 @@ import {
   BanOrUnbanMemberParams,
   BanOrUnbanMembersFixture,
 } from '../../fixtures/content'
-import { DeleteChannelAsModeratorFixture } from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
 import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 
@@ -287,12 +286,6 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
   const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, [channelIds[0]])
   await new FixtureRunner(deleteChannelWithVideosFixture).run()
-
-  // Delete channel as moderator (to ensure all referencing relations are properly removed without causing QN processor crash)
-  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(api, query, [
-    { channelId: channelIds[1], rationale: 'Test', numOfObjectsToDelete: 2 },
-  ])
-  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }
