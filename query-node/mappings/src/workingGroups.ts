@@ -754,12 +754,12 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
   } else if (metadata?.verifyValidator) {
     if (group.name !== 'operationsWorkingGroupBeta') {
-      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+      return invalidMetadata(`The ${group.name} cannot verify validator accounts`)
     }
 
     const actor = await getWorker(store, group.name, workerId)
     if (actor === undefined) {
-      return invalidMetadata(`The ${actor} is not HR account`)
+      return invalidMetadata(`${actor} is not an HR account`)
     }
 
     const member = await getMemberById(store, workerId, ['metadata'])
@@ -793,7 +793,7 @@ export async function workingGroups_WorkerRoleAccountUpdated({
   await store.save<Worker>(worker)
 }
 
-export async function workingGro_WorkerRewardAccountUpdated({
+export async function workingGroup_WorkerRewardAccountUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
