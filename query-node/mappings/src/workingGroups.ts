@@ -793,7 +793,7 @@ export async function workingGroups_WorkerRoleAccountUpdated({
   await store.save<Worker>(worker)
 }
 
-export async function workingGroups_WorkerRewardAccountUpdated({
+export async function workingGro_WorkerRewardAccountUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
