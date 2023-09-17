@@ -390,6 +390,12 @@ query getChannelNftCollectors {
   }
 }
 
+query getDataObjectsByChannelId($channelId: ID) {
+  storageDataObjects(where: { type_json: { channelId_eq: $channelId } }) {
+    ...StorageDataObjectFields
+  }
+}
+
 query getDataObjectsByVideoId($videoId: ID) {
   storageDataObjects(where: { type_json: { videoId_eq: $videoId } }) {
     ...StorageDataObjectFields
