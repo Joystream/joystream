@@ -95,8 +95,6 @@ typegen:
     - content.VideoUpdated
     - content.VideoDeleted
     - content.ChannelDeleted
-    - content.ChannelDeletedByModerator
-    - content.VideoDeletedByModerator
     - content.ChannelAssetsDeletedByModerator
     - content.VideoAssetsDeletedByModerator
     - content.VideoVisibilitySetByModerator
@@ -748,10 +746,6 @@ mappings:
       handler: content_ContentDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
-    - event: content.ChannelDeletedByModerator
-      handler: content_ChannelDeletedByModerator
-    - event: content.VideoDeletedByModerator
-      handler: content_VideoDeletedByModerator
     - event: content.ChannelAssetsDeletedByModerator
       handler: content_ChannelAssetsDeletedByModerator
     - event: content.VideoAssetsDeletedByModerator

@@ -3380,38 +3380,6 @@ type ChannelAssetsDeletedByModeratorEvent implements BaseGraphQLObject {
   rationale: String!
 }
 
-type ChannelDeletedByModeratorEvent implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted."""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in."""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Actor that deleted the video."""
-  actor: ContentActor!
-
-  """ID  of the deleted channel"""
-  channelId: Int!
-
-  """Why the video was deleted"""
-  rationale: String!
-}
-
 type ChannelVisibilitySetByModeratorEvent implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -3484,38 +3452,6 @@ type VideoAssetsDeletedByModeratorEvent implements BaseGraphQLObject {
   assetIds: [Int!]!
 
   """why the channel assets were deleted"""
-  rationale: String!
-}
-
-type VideoDeletedByModeratorEvent implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted."""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in."""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Actor that deleted the video."""
-  actor: ContentActor!
-
-  """ID  of the deleted video"""
-  videoId: Int!
-
-  """Why the video was deleted"""
   rationale: String!
 }
 
@@ -4086,17 +4022,6 @@ type ChannelAssetsDeletedByModeratorEventEdge {
 type ChannelAssetsDeletedByModeratorEventConnection {
   totalCount: Int!
   edges: [ChannelAssetsDeletedByModeratorEventEdge!]!
-  pageInfo: PageInfo!
-}
-
-type ChannelDeletedByModeratorEventEdge {
-  node: ChannelDeletedByModeratorEvent!
-  cursor: String!
-}
-
-type ChannelDeletedByModeratorEventConnection {
-  totalCount: Int!
-  edges: [ChannelDeletedByModeratorEventEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -5645,17 +5570,6 @@ type VideoCategoryEdge {
 type VideoCategoryConnection {
   totalCount: Int!
   edges: [VideoCategoryEdge!]!
-  pageInfo: PageInfo!
-}
-
-type VideoDeletedByModeratorEventEdge {
-  node: VideoDeletedByModeratorEvent!
-  cursor: String!
-}
-
-type VideoDeletedByModeratorEventConnection {
-  totalCount: Int!
-  edges: [VideoDeletedByModeratorEventEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -21630,91 +21544,6 @@ input ChannelAssetsDeletedByModeratorEventUpdateInput {
   rationale: String
 }
 
-input ChannelDeletedByModeratorEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  actor_json: JSONObject
-  channelId_eq: Int
-  channelId_gt: Int
-  channelId_gte: Int
-  channelId_lt: Int
-  channelId_lte: Int
-  channelId_in: [Int!]
-  rationale_eq: String
-  rationale_contains: String
-  rationale_startsWith: String
-  rationale_endsWith: String
-  rationale_in: [String!]
-  AND: [ChannelDeletedByModeratorEventWhereInput!]
-  OR: [ChannelDeletedByModeratorEventWhereInput!]
-  NOT: [ChannelDeletedByModeratorEventWhereInput!]
-}
-
-input ChannelDeletedByModeratorEventWhereUniqueInput {
-  id: ID!
-}
-
-input ChannelDeletedByModeratorEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  actor: JSONObject!
-  channelId: Float!
-  rationale: String!
-}
-
-input ChannelDeletedByModeratorEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  actor: JSONObject
-  channelId: Float
-  rationale: String
-}
-
 input ChannelVisibilitySetByModeratorEventWhereInput {
   id_eq: ID
   id_in: [ID!]
@@ -23079,91 +22908,6 @@ input VideoAssetsDeletedByModeratorEventUpdateInput {
   videoId: Float
   areNftAssets: Boolean
   assetIds: [Int!]
-  rationale: String
-}
-
-input VideoDeletedByModeratorEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  actor_json: JSONObject
-  videoId_eq: Int
-  videoId_gt: Int
-  videoId_gte: Int
-  videoId_lt: Int
-  videoId_lte: Int
-  videoId_in: [Int!]
-  rationale_eq: String
-  rationale_contains: String
-  rationale_startsWith: String
-  rationale_endsWith: String
-  rationale_in: [String!]
-  AND: [VideoDeletedByModeratorEventWhereInput!]
-  OR: [VideoDeletedByModeratorEventWhereInput!]
-  NOT: [VideoDeletedByModeratorEventWhereInput!]
-}
-
-input VideoDeletedByModeratorEventWhereUniqueInput {
-  id: ID!
-}
-
-input VideoDeletedByModeratorEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  actor: JSONObject!
-  videoId: Float!
-  rationale: String!
-}
-
-input VideoDeletedByModeratorEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  actor: JSONObject
-  videoId: Float
   rationale: String
 }
 
@@ -27809,9 +27553,6 @@ type Query {
   channelAssetsDeletedByModeratorEvents(offset: Int, limit: Int = 50, where: ChannelAssetsDeletedByModeratorEventWhereInput, orderBy: [ChannelAssetsDeletedByModeratorEventOrderByInput!]): [ChannelAssetsDeletedByModeratorEvent!]!
   channelAssetsDeletedByModeratorEventByUniqueInput(where: ChannelAssetsDeletedByModeratorEventWhereUniqueInput!): ChannelAssetsDeletedByModeratorEvent
   channelAssetsDeletedByModeratorEventsConnection(first: Int, after: String, last: Int, before: String, where: ChannelAssetsDeletedByModeratorEventWhereInput, orderBy: [ChannelAssetsDeletedByModeratorEventOrderByInput!]): ChannelAssetsDeletedByModeratorEventConnection!
-  channelDeletedByModeratorEvents(offset: Int, limit: Int = 50, where: ChannelDeletedByModeratorEventWhereInput, orderBy: [ChannelDeletedByModeratorEventOrderByInput!]): [ChannelDeletedByModeratorEvent!]!
-  channelDeletedByModeratorEventByUniqueInput(where: ChannelDeletedByModeratorEventWhereUniqueInput!): ChannelDeletedByModeratorEvent
-  channelDeletedByModeratorEventsConnection(first: Int, after: String, last: Int, before: String, where: ChannelDeletedByModeratorEventWhereInput, orderBy: [ChannelDeletedByModeratorEventOrderByInput!]): ChannelDeletedByModeratorEventConnection!
   channelFundsWithdrawnEvents(offset: Int, limit: Int = 50, where: ChannelFundsWithdrawnEventWhereInput, orderBy: [ChannelFundsWithdrawnEventOrderByInput!]): [ChannelFundsWithdrawnEvent!]!
   channelFundsWithdrawnEventByUniqueInput(where: ChannelFundsWithdrawnEventWhereUniqueInput!): ChannelFundsWithdrawnEvent
   channelFundsWithdrawnEventsConnection(first: Int, after: String, last: Int, before: String, where: ChannelFundsWithdrawnEventWhereInput, orderBy: [ChannelFundsWithdrawnEventOrderByInput!]): ChannelFundsWithdrawnEventConnection!
@@ -28225,9 +27966,6 @@ type Query {
   videoCategories(offset: Int, limit: Int = 50, where: VideoCategoryWhereInput, orderBy: [VideoCategoryOrderByInput!]): [VideoCategory!]!
   videoCategoryByUniqueInput(where: VideoCategoryWhereUniqueInput!): VideoCategory
   videoCategoriesConnection(first: Int, after: String, last: Int, before: String, where: VideoCategoryWhereInput, orderBy: [VideoCategoryOrderByInput!]): VideoCategoryConnection!
-  videoDeletedByModeratorEvents(offset: Int, limit: Int = 50, where: VideoDeletedByModeratorEventWhereInput, orderBy: [VideoDeletedByModeratorEventOrderByInput!]): [VideoDeletedByModeratorEvent!]!
-  videoDeletedByModeratorEventByUniqueInput(where: VideoDeletedByModeratorEventWhereUniqueInput!): VideoDeletedByModeratorEvent
-  videoDeletedByModeratorEventsConnection(first: Int, after: String, last: Int, before: String, where: VideoDeletedByModeratorEventWhereInput, orderBy: [VideoDeletedByModeratorEventOrderByInput!]): VideoDeletedByModeratorEventConnection!
   videoDeletedEvents(offset: Int, limit: Int = 50, where: VideoDeletedEventWhereInput, orderBy: [VideoDeletedEventOrderByInput!]): [VideoDeletedEvent!]!
   videoDeletedEventByUniqueInput(where: VideoDeletedEventWhereUniqueInput!): VideoDeletedEvent
   videoDeletedEventsConnection(first: Int, after: String, last: Int, before: String, where: VideoDeletedEventWhereInput, orderBy: [VideoDeletedEventOrderByInput!]): VideoDeletedEventConnection!
@@ -29293,27 +29031,6 @@ enum CategoryStickyThreadUpdateEventOrderByInput {
 }
 
 enum ChannelAssetsDeletedByModeratorEventOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  inExtrinsic_ASC
-  inExtrinsic_DESC
-  inBlock_ASC
-  inBlock_DESC
-  network_ASC
-  network_DESC
-  indexInBlock_ASC
-  indexInBlock_DESC
-  channelId_ASC
-  channelId_DESC
-  rationale_ASC
-  rationale_DESC
-}
-
-enum ChannelDeletedByModeratorEventOrderByInput {
   createdAt_ASC
   createdAt_DESC
   updatedAt_ASC
@@ -32168,27 +31885,6 @@ enum VideoCategoryOrderByInput {
   parentCategory_DESC
   createdInBlock_ASC
   createdInBlock_DESC
-}
-
-enum VideoDeletedByModeratorEventOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  inExtrinsic_ASC
-  inExtrinsic_DESC
-  inBlock_ASC
-  inBlock_DESC
-  network_ASC
-  network_DESC
-  indexInBlock_ASC
-  indexInBlock_DESC
-  videoId_ASC
-  videoId_DESC
-  rationale_ASC
-  rationale_DESC
 }
 
 enum VideoDeletedEventOrderByInput {
