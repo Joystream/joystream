@@ -1,3 +1,22 @@
 {
-
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2020",
+        "outDir": "lib",
+        "rootDir": "src",
+        "strict": true,
+        "declaration": false,
+        "sourceMap": true,
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "skipLibCheck": true,
+        "strictPropertyInitialization": false
+    },
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
 }

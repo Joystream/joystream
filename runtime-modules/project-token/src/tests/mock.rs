@@ -50,7 +50,6 @@ pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Config>::Hashing;
 pub type VestingSchedule = VestingScheduleOf<Test>;
-pub type Moment = <Test as pallet_timestamp::Config>::Moment;
 pub type MemberId = u64;
 
 #[macro_export]
@@ -349,13 +348,6 @@ impl frame_system::Config for Test {
     type SS58Prefix = ConstU16<42>;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
-}
-
-impl pallet_timestamp::Config for Test {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-    type WeightInfo = ();
 }
 
 impl balances::Config for Test {

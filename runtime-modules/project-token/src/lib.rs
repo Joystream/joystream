@@ -33,7 +33,6 @@ use frame_support::{
     PalletId,
 };
 use frame_system::ensure_signed;
-use pallet_timestamp::{self as timestamp};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
@@ -73,7 +72,7 @@ type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
 /// Pallet Configuration
 pub trait Config:
-    frame_system::Config + balances::Config + storage::Config + membership::Config + timestamp::Config
+    frame_system::Config + balances::Config + storage::Config + membership::Config
 {
     /// Events
     type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
@@ -814,7 +813,6 @@ decl_module! {
         /// - origin, member_id pair must be a valid authentication pair
         /// - token_id must exist
         /// - user usable JOY balance must be enough for buying (+ existential deposit)
-        /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         ///
@@ -823,7 +821,7 @@ decl_module! {
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
-        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -855,11 +853,6 @@ decl_module! {
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(price.saturating_sub(desired_price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
-            }
-
-            // timestamp deadline check
-            if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             // == MUTATION SAFE ==
@@ -898,7 +891,6 @@ decl_module! {
         /// - token_id must exist
         /// - token_id, member_id must be valid account coordinates
         /// - user usable CRT balance must be at least `amount`
-        /// - deadline constraint respected if provided
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         /// - amm treasury account must have sufficient JOYs for the operation
@@ -909,7 +901,7 @@ decl_module! {
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
         #[weight = 100_000_000] // TODO: adjust weight
-        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, deadline: Option<<T as timestamp::Config>::Moment>, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -937,11 +929,6 @@ decl_module! {
             // slippage tolerance check
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
-            }
-
-            // timestamp deadline check
-            if let Some(deadline) = deadline {
-                ensure!(<timestamp::Pallet<T>>::now() <= deadline, Error::<T>::DeadlineExpired);
             }
 
             let sell_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);

@@ -3975,7 +3975,6 @@ declare module '@polkadot/types/lookup' {
       readonly tokenId: u64;
       readonly memberId: u64;
       readonly amount: u128;
-      readonly deadline: Option<u64>;
       readonly slippageTolerance: Option<ITuple<[Permill, u128]>>;
     } & Struct;
     readonly isSellOnAmm: boolean;
@@ -3983,7 +3982,6 @@ declare module '@polkadot/types/lookup' {
       readonly tokenId: u64;
       readonly memberId: u64;
       readonly amount: u128;
-      readonly deadline: Option<u64>;
       readonly slippageTolerance: Option<ITuple<[Permill, u128]>>;
     } & Struct;
     readonly type: 'Transfer' | 'Burn' | 'DustAccount' | 'JoinWhitelist' | 'PurchaseTokensOnSale' | 'ParticipateInSplit' | 'ExitRevenueSplit' | 'BuyOnAmm' | 'SellOnAmm';

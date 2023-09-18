@@ -3420,14 +3420,12 @@ export default {
         tokenId: 'u64',
         memberId: 'u64',
         amount: 'u128',
-        deadline: 'Option<u64>',
         slippageTolerance: 'Option<(Permill,u128)>',
       },
       sell_on_amm: {
         tokenId: 'u64',
         memberId: 'u64',
         amount: 'u128',
-        deadline: 'Option<u64>',
         slippageTolerance: 'Option<(Permill,u128)>'
       }
     }

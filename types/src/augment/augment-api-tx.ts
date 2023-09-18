@@ -4059,7 +4059,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * - origin, member_id pair must be a valid authentication pair
        * - token_id must exist
        * - user usable JOY balance must be enough for buying (+ existential deposit)
-       * - deadline constraint respected if provided
        * - slippage tolerance constraints respected if provided
        * - token total supply and amount value must be s.t. `eval` function doesn't overflow
        * 
@@ -4068,7 +4067,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - respective JOY amount transferred from user balance to amm treasury account
        * - event deposited
        **/
-      buyOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, deadline: Option<u64> | null | object | string | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]>;
+      buyOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<ITuple<[Permill, u128]>>]>;
       /**
        * Allow any user to remove an account
        * 
@@ -4234,7 +4233,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * - token_id must exist
        * - token_id, member_id must be valid account coordinates
        * - user usable CRT balance must be at least `amount`
-       * - deadline constraint respected if provided
        * - slippage tolerance constraints respected if provided
        * - token total supply and amount value must be s.t. `eval` function doesn't overflow
        * - amm treasury account must have sufficient JOYs for the operation
@@ -4245,7 +4243,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - respective JOY amount transferred from amm treasury account to user account
        * - event deposited
        **/
-      sellOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, deadline: Option<u64> | null | object | string | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<u64>, Option<ITuple<[Permill, u128]>>]>;
+      sellOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<ITuple<[Permill, u128]>>]>;
       /**
        * Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
        * in the specified amounts.
