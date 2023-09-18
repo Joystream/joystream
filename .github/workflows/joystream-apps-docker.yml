@@ -42,7 +42,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build joystream-node
-        run: RUNTIME_PROFILE=TESTING ./build-node-docker.sh
+        run: |
+          RUNTIME_PROFILE=TESTING ./build-node-docker.sh
+          # reclaim some disk space
+          docker system prune --force
 
       # docker/build-push-action doc:
       # Be careful because any file mutation in the steps that precede the
@@ -59,6 +62,8 @@ jobs:
           push: false
           load: true
           tags: joystream/storage-node:latest
+      - name: reclaim disk space
+        run: docker system prune --force
       - name: Build distributor-node
         uses: docker/build-push-action@v3
         with:
@@ -68,6 +73,8 @@ jobs:
           push: false
           load: true
           tags: joystream/distributor-node:latest
+      - name: reclaim disk space
+        run: docker system prune --force
       - name: Build query-node
         uses: docker/build-push-action@v3
         with:
@@ -80,6 +87,7 @@ jobs:
 
       - name: Test with latest images
         run: |
+          docker system prune --force
           yarn build:packages
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
           ./tests/network-tests/run-tests.sh content-directory
