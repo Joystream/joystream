@@ -93,7 +93,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     {
       curatorGroupId,
       curatorId,
-      permissions: ['AddVideo', 'DeleteChannel'],
+      permissions: ['AddVideo', 'DeleteVideo'],
     },
   ]
 
