@@ -14,7 +14,7 @@ use common::{
     merkle_tree::helpers::{build_merkle_path_helper, generate_merkle_root_helper},
     BudgetManager,
 };
-use frame_benchmarking::{benchmarks, Zero};
+use frame_benchmarking::v1::{benchmarks, Zero};
 use frame_support::{
     storage::StorageMap,
     traits::{Currency, Get},
@@ -84,13 +84,13 @@ benchmarks! {
         verify {
 
             let channel_id: T::ChannelId = One::one();
-            assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(channel_id));
 
             let channel = ChannelById::<T>::get(channel_id);
             let channel_acc = ContentTreasury::<T>::account_for_channel(channel_id);
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelCreated(
                         channel_id,
                         channel,
@@ -178,10 +178,10 @@ benchmarks! {
         origin, actor, channel_id, update_params.clone())
         verify {
 
-            assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(channel_id));
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelUpdated(
                         actor,
                         channel_id,
@@ -248,10 +248,10 @@ benchmarks! {
         origin, actor, channel_id, update_params.clone())
         verify {
 
-            assert!(ChannelById::<T>::contains_key(&channel_id));
+            assert!(ChannelById::<T>::contains_key(channel_id));
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelUpdated(
                         actor,
                         channel_id,
@@ -288,7 +288,7 @@ benchmarks! {
         verify {
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelDeleted(
                         actor,
                         channel_id
@@ -325,7 +325,7 @@ benchmarks! {
         verify {
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelPrivilegeLevelUpdated(
                         channel_id,
                         privilege_level,
@@ -363,7 +363,7 @@ benchmarks! {
         verify {
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelPausedFeaturesUpdatedByModerator(
                         actor,
                         channel_id,
@@ -414,55 +414,12 @@ benchmarks! {
         rationale.clone())
         verify {
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelAssetsDeletedByModerator(
                         actor,
                         channel_id,
                         assets_to_remove,
                         rationale,
-                    )
-                ).into());
-        }
-
-    delete_channel_as_moderator{
-
-        let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
-
-        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-
-        let c in (T::MinDistributionBucketsPerBag::get()) .. (T::MaxDistributionBucketsPerBag::get());
-
-        let d in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
-
-        let (
-            channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id
-        ) =
-            setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
-
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
-        let rationale = vec![1u8].repeat((d * 1000) as usize);
-
-        set_all_channel_paused_features::<T>(channel_id);
-    }: _ (origin,
-          actor,
-          channel_id,
-          channel_bag_witness,
-          a.into(),
-          rationale.clone())
-        verify {
-
-            assert_last_event::<T>(
-                <T as Config>::Event::from(
-                    Event::<T>::ChannelDeletedByModerator(
-                        actor,
-                        channel_id,
-                        rationale
                     )
                 ).into());
         }
@@ -495,7 +452,7 @@ benchmarks! {
         verify {
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelVisibilitySetByModerator(
                         actor,
                         channel_id,
@@ -542,75 +499,12 @@ benchmarks! {
         verify {
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoAssetsDeletedByModerator(
                         actor,
                         video_id,
                         assets_to_remove,
                         true,
-                        rationale,
-                    )
-                ).into());
-        }
-
-    delete_video_as_moderator_with_assets {
-
-        let a in 1 .. T::MaxNumberOfAssetsPerVideo::get(); //max objs number
-
-        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-
-        let c in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
-
-        let rationale = vec![1u8].repeat((c * 1000) as usize);
-        let (video_id, (curator_acc_id, actor, channel_id, _)) =
-            setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
-
-        set_all_channel_paused_features::<T>(channel_id);
-    }: delete_video_as_moderator (
-        RawOrigin::Signed(curator_acc_id),
-        actor,
-        video_id,
-        Some(b),
-        a.into(),
-        rationale.clone())
-        verify {
-
-            assert_last_event::<T>(
-                <T as Config>::Event::from(
-                    Event::<T>::VideoDeletedByModerator(
-                        actor,
-                        video_id,
-                        rationale,
-                    )
-                ).into());
-        }
-
-    delete_video_as_moderator_without_assets {
-        let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
-
-        let (video_id, (curator_acc_id, actor, channel_id, _)) =
-            setup_worst_case_scenario_mutable_video::<T>(
-                None,
-                T::MaxStorageBucketsPerBag::get()
-            )?;
-
-        let rationale = vec![1u8].repeat((a * 1000) as usize);
-
-        set_all_channel_paused_features::<T>(channel_id);
-    }: delete_video_as_moderator (
-        RawOrigin::Signed(curator_acc_id),
-        actor,
-        video_id,
-        None,
-        0,
-        rationale.clone())
-        verify {
-
-            assert_last_event::<T>(
-                <T as Config>::Event::from(
-                    Event::<T>::VideoDeletedByModerator(
-                        actor,
-                        video_id,
                         rationale,
                     )
                 ).into());
@@ -640,7 +534,7 @@ benchmarks! {
         verify {
 
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoVisibilitySetByModerator(
                         actor,
                         video_id,
@@ -657,7 +551,7 @@ benchmarks! {
      */
 
     create_curator_group {
-        let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
+        let a in 0 .. T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
 
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = Pallet::<T>::next_curator_group_id();
@@ -673,14 +567,14 @@ benchmarks! {
             let group = Pallet::<T>::curator_group_by_id(group_id);
             assert!(group == CuratorGroupRecord::try_create::<T>(true, &permissions_by_level).unwrap());
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::CuratorGroupCreated(group_id)
                 ).into()
             );
         }
 
     update_curator_group_permissions {
-        let a in 0 .. (T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get() as u32);
+        let a in 0 .. T::MaxKeysPerCuratorGroupPermissionsByLevelMap::get();
 
         let (_, lead_account) = insert_content_leader::<T>();
         let group_id = setup_worst_case_curator_group_with_curators::<T>(
@@ -698,7 +592,7 @@ benchmarks! {
             let group = Pallet::<T>::curator_group_by_id(group_id);
             assert_eq!(group.get_permissions_by_level(), permissions_by_level);
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::CuratorGroupPermissionsUpdated(
                         group_id,
                         permissions_by_level
@@ -723,7 +617,7 @@ benchmarks! {
             let group = Pallet::<T>::curator_group_by_id(group_id);
             assert!(!group.is_active());
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::CuratorGroupStatusSet(group_id, false)
                 ).into()
             );
@@ -751,7 +645,7 @@ benchmarks! {
                 Some(permissions.clone())
             );
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::CuratorAdded(group_id, curator_id, permissions)
                 ).into()
             );
@@ -773,7 +667,7 @@ benchmarks! {
             let group = Pallet::<T>::curator_group_by_id(group_id);
             assert!(group.get_curators().get(&curator_id).is_none());
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::CuratorRemoved(group_id, curator_id)
                 ).into()
             );
@@ -818,7 +712,7 @@ benchmarks! {
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
             assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoCreated(
                         actor,
                         channel_id,
@@ -879,7 +773,7 @@ benchmarks! {
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
             assert_eq!(video.video_state_bloat_bond.amount, Pallet::<T>::video_state_bloat_bond_value());
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoCreated(
                         actor,
                         channel_id,
@@ -930,7 +824,7 @@ benchmarks! {
             assert_eq!(BTreeSet::from(video.data_objects), existing_asset_ids);
             assert!(video.nft_status.is_none());
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoUpdated(
                         actor,
                         video_id,
@@ -997,7 +891,7 @@ benchmarks! {
             assert!(video.nft_status.is_none());
             assert_eq!(BTreeSet::from(video.data_objects), expected_asset_ids);
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoUpdated(
                         actor,
                         video_id,
@@ -1061,7 +955,7 @@ benchmarks! {
                 _ => panic!("Unexpected video nft transactional status")
             }
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoUpdated(
                         actor,
                         video_id,
@@ -1141,7 +1035,7 @@ benchmarks! {
                 _ => panic!("Unexpected video nft transactional status")
             }
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::VideoUpdated(
                         actor,
                         video_id,
@@ -1171,7 +1065,7 @@ benchmarks! {
     ) verify {
         assert!(Pallet::<T>::ensure_video_exists(&video_id).is_err());
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::VideoDeleted(
                     actor,
                     video_id
@@ -1199,7 +1093,7 @@ benchmarks! {
     ) verify {
         assert!(Pallet::<T>::ensure_video_exists(&video_id).is_err());
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::VideoDeleted(
                     actor,
                     video_id
@@ -1215,7 +1109,7 @@ benchmarks! {
      */
 
     initialize_channel_transfer {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
         let (_, new_owner_id) = member_funded_account::<T>();
         let new_owner = ChannelOwner::Member(new_owner_id);
         let new_collaborators = worst_case_scenario_collaborators::<T>(
@@ -1253,7 +1147,7 @@ benchmarks! {
                 ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
         );
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::InitializedChannelTransfer(
                     channel_id,
                     actor,
@@ -1277,7 +1171,7 @@ benchmarks! {
         let channel = Pallet::<T>::channel_by_id(channel_id);
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::CancelChannelTransfer(
                     channel_id,
                     actor,
@@ -1287,7 +1181,7 @@ benchmarks! {
     }
 
     accept_channel_transfer_curator_to_curator {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
 
         let (channel_id, group_id, lead_account_id, _, _) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1329,7 +1223,7 @@ benchmarks! {
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
         assert_eq!(channel.owner, new_owner);
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::ChannelTransferAccepted(
                     channel_id,
                     witness
@@ -1339,7 +1233,7 @@ benchmarks! {
     }
 
     accept_channel_transfer_member_to_curator {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
 
         let (channel_id, member_id, member_account_id, content_lead_acc_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
@@ -1382,7 +1276,7 @@ benchmarks! {
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
         assert_eq!(channel.owner, new_owner);
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::ChannelTransferAccepted(
                     channel_id,
                     witness
@@ -1392,7 +1286,7 @@ benchmarks! {
     }
 
     accept_channel_transfer_member_to_member {
-        let a in 0 .. (T::MaxNumberOfCollaboratorsPerChannel::get() as u32);
+        let a in 0 .. T::MaxNumberOfCollaboratorsPerChannel::get();
 
         let (channel_id, member_id, member_account_id, content_lead_acc_id) =
             setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
@@ -1430,7 +1324,7 @@ benchmarks! {
         assert!(channel.transfer_status == ChannelTransferStatus::NoActiveTransfer);
         assert_eq!(channel.owner, new_owner);
         assert_last_event::<T>(
-            <T as Config>::Event::from(
+            <T as Config>::RuntimeEvent::from(
                 Event::<T>::ChannelTransferAccepted(
                     channel_id,
                     witness
@@ -1484,7 +1378,7 @@ benchmarks! {
                 amm_curve: None,
             });
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::CreatorTokenIssued(
                         actor,
                         channel_id,
@@ -1543,7 +1437,7 @@ benchmarks! {
             }
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::TokenAmountTransferredByIssuer(
                         token_id,
                         curator_member_id,
@@ -1583,7 +1477,7 @@ benchmarks! {
             assert_eq!(token.transfer_policy, TransferPolicy::Permissionless);
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::TransferPolicyChangedToPermissionless(
                         token_id
                     )
@@ -1611,7 +1505,7 @@ benchmarks! {
             assert_eq!(channel.creator_token_id, None);
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::TokenDeissued(token_id)
                 ).into()
             );
@@ -1663,7 +1557,7 @@ benchmarks! {
             assert!(owner_acc_data.split_staking_status.is_some());
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::TokenSaleInitialized(
                         token_id,
                         token.next_sale_id - 1,
@@ -1708,7 +1602,7 @@ benchmarks! {
             assert_eq!(token.sale.as_ref().unwrap().duration, new_duration.unwrap());
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::UpcomingTokenSaleUpdated(
                         token_id,
                         sale_id,
@@ -1764,7 +1658,7 @@ benchmarks! {
             assert_eq!(council_budget_post, council_budget_pre + funds_collected);
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::TokenSaleFinalized(
                         token_id,
                         sale_id,
@@ -1813,7 +1707,7 @@ benchmarks! {
             assert_eq!(council_budget_post, council_budget_pre + withdrawn);
             // Check event emitted
             assert_past_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::RevenueSplitIssued(
                         token_id,
                         start,
@@ -1867,7 +1761,7 @@ benchmarks! {
             assert_eq!(owner_acc_balance_post, owner_acc_balance_pre + withdrawn);
             // Check event emitted
             assert_past_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::RevenueSplitIssued(
                         token_id,
                         start,
@@ -1947,7 +1841,7 @@ benchmarks! {
             assert_eq!(channel_balance_post, channel_balance_pre + leftovers);
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::RevenueSplitFinalized(
                         token_id,
                         channel_acc,
@@ -1991,7 +1885,7 @@ benchmarks! {
             );
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::PatronageRateDecreasedTo(
                         token_id,
                         new_block_rate.to_yearly_rate_representation(T::BlocksPerYear::get())
@@ -2037,7 +1931,7 @@ benchmarks! {
             assert_lt!(expected_claim - actually_claimed, deficiency_margin);
             // Check event emitted
             assert_last_event::<T>(
-                <T as project_token::Config>::Event::from(
+                <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::PatronageCreditClaimed(
                         token_id,
                         actually_claimed,
@@ -2193,94 +2087,6 @@ benchmarks! {
             assert_eq!(
                 T::CouncilBudgetManager::get_budget(),
                 T::ExistentialDeposit::get(),
-            );
-        }
-
-    // Worst case scenario:
-    // - channel belonging to a member with max number of collaborators and max agent permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_member_channel_reward {
-        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
-
-        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
-        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
-        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
-        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
-        let (channel_id, member_id, member_account_id, lead_account_id) =
-            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
-        let lead_origin = RawOrigin::Signed(lead_account_id);
-        let origin = RawOrigin::Signed(member_account_id.clone());
-
-        set_all_channel_paused_features_except::<T>(channel_id, vec![
-            PausableChannelFeature::CreatorCashout,
-            PausableChannelFeature::ChannelFundsTransfer,
-        ]);
-
-        Pallet::<T>::update_channel_payouts(
-            RawOrigin::Root.into(),
-            UpdateChannelPayoutsParameters::<T> {
-                commitment: Some(commitment),
-                ..Default::default()
-            },
-            member_account_id.clone()
-        )?;
-
-        let actor = ContentActor::Member(member_id);
-        let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
-        let item = payments[0];
-        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
-        verify {
-            assert_eq!(
-                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
-                item.cumulative_reward_earned
-            );
-            assert_eq!(
-                Balances::<T>::usable_balance(member_account_id),
-                cumulative_reward_claimed + balances_pre,
-            );
-        }
-
-    // Worst case scenario:
-    // - curator channel belonging to a group with max number curator and max curator permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_curator_channel_reward {
-        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
-
-        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
-        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
-        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
-        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
-        let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
-
-        set_all_channel_paused_features_except::<T>(channel_id, vec![
-            PausableChannelFeature::CreatorCashout,
-            PausableChannelFeature::ChannelFundsTransfer,
-        ]);
-
-        Pallet::<T>::update_channel_payouts(
-            RawOrigin::Root.into(),
-            UpdateChannelPayoutsParameters::<T> {
-                commitment: Some(commitment),
-                ..Default::default()
-            },
-            lead_account_id
-        )?;
-
-        let actor = ContentActor::Lead;
-        let item = payments[0];
-        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
-        verify {
-            assert_eq!(
-                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
-                item.cumulative_reward_earned
-            );
-            assert_eq!(
-                T::CouncilBudgetManager::get_budget(),
-                cumulative_reward_claimed + T::ExistentialDeposit::get(),
             );
         }
 
@@ -3291,7 +3097,7 @@ benchmarks! {
     }: _(origin, channel_id, msg.clone())
         verify {
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelOwnerRemarked(
                         channel_id,
                         msg
@@ -3324,7 +3130,7 @@ benchmarks! {
     }: _(origin, actor, channel_id, msg.clone())
         verify {
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::ChannelAgentRemarked(
                         actor,
                         channel_id,
@@ -3373,7 +3179,7 @@ benchmarks! {
     }: _(origin, nft_owner_actor, video_id, msg.clone())
         verify {
             assert_last_event::<T>(
-                <T as Config>::Event::from(
+                <T as Config>::RuntimeEvent::from(
                     Event::<T>::NftOwnerRemarked(
                         nft_owner_actor,
                         video_id,
@@ -3473,13 +3279,6 @@ pub mod tests {
     }
 
     #[test]
-    fn delete_channel_as_moderator() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_channel_as_moderator());
-        });
-    }
-
-    #[test]
     fn set_channel_visibility_as_moderator() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_set_channel_visibility_as_moderator());
@@ -3490,20 +3289,6 @@ pub mod tests {
     fn delete_video_assets_as_moderator() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_delete_video_assets_as_moderator());
-        });
-    }
-
-    #[test]
-    fn delete_video_as_moderator_with_assets() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_video_as_moderator_with_assets());
-        });
-    }
-
-    #[test]
-    fn delete_video_as_moderator_without_assets() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_video_as_moderator_without_assets());
         });
     }
 
@@ -3683,23 +3468,9 @@ pub mod tests {
     }
 
     #[test]
-    fn claim_channel_and_withdraw_member_channel_reward() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_claim_and_withdraw_member_channel_reward());
-        })
-    }
-
-    #[test]
     fn issue_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_issue_nft());
-        })
-    }
-
-    #[test]
-    fn claim_channel_and_withdraw_curator_channel_reward() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_claim_and_withdraw_curator_channel_reward());
         })
     }
 

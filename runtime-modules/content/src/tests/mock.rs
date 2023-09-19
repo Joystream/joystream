@@ -170,8 +170,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -179,7 +179,7 @@ impl frame_system::Config for Test {
     type AccountId = U256;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -202,7 +202,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -231,16 +231,11 @@ impl ContentActorAuthenticator for Test {
     type CuratorGroupId = u64;
 
     fn validate_member_id(member_id: &Self::MemberId) -> bool {
-        if Membership::membership(member_id).is_some()
+        Membership::membership(member_id).is_some()
             || MEMBER_IDS.contains(member_id)
             || COLABORATOR_IDS.contains(member_id)
             || CURATOR_IDS.contains(member_id)
             || LEAD_MEMBER_ID == *member_id
-        {
-            true
-        } else {
-            false
-        }
     }
 
     fn get_leader_member_id() -> Option<Self::MemberId> {
@@ -248,7 +243,7 @@ impl ContentActorAuthenticator for Test {
     }
 
     fn get_curator_member_id(curator_id: &Self::CuratorId) -> Option<Self::MemberId> {
-        ContentWorkingGroup::get_worker_member_id(curator_id).or_else(|| match *curator_id {
+        ContentWorkingGroup::get_worker_member_id(curator_id).or(match *curator_id {
             DEFAULT_CURATOR_ID => Some(DEFAULT_CURATOR_MEMBER_ID),
             UNAUTHORIZED_CURATOR_ID => Some(UNAUTHORIZED_CURATOR_MEMBER_ID),
             _ => None,
@@ -316,7 +311,7 @@ pub const DEFAULT_DISTRIBUTION_PROVIDER_ID: u64 = 12;
 pub const ANOTHER_DISTRIBUTION_PROVIDER_ID: u64 = 13;
 
 impl storage::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -380,7 +375,7 @@ impl Config for Test {
     type WeightInfo = ();
 
     /// The overarching event type.
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     /// Type of identifier for Videos
     type VideoId = u64;
@@ -485,7 +480,7 @@ impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
@@ -500,7 +495,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
@@ -516,7 +511,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
 pub type ContentWorkingGroupInstance = working_group::Instance3;
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, LockId3>;
@@ -528,9 +523,9 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, U256> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, U256> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<U256, DispatchError> {
         let account_id = ensure_signed(origin).unwrap();
@@ -542,8 +537,8 @@ impl common::membership::MemberOriginValidator<Origin, u64, U256> for () {
     }
 
     fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
-        return Membership::is_member_controller_account(member_id, account_id)
-            || TestMemberships::is_member_controller_account(member_id, account_id);
+        Membership::is_member_controller_account(member_id, account_id)
+            || TestMemberships::is_member_controller_account(member_id, account_id)
     }
 }
 thread_local! {
@@ -758,7 +753,7 @@ parameter_types! {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;
@@ -797,13 +792,15 @@ impl common::working_group::WorkingGroupBudgetHandler<U256, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -882,9 +879,9 @@ impl MembershipInfoProvider<Test> for TestMemberships {
 }
 
 // Mock MemberOriginValidator impl.
-impl MemberOriginValidator<Origin, u64, U256> for TestMemberships {
+impl MemberOriginValidator<RuntimeOrigin, u64, U256> for TestMemberships {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<U256, DispatchError> {
         let sender = ensure_signed(origin)?;
@@ -897,9 +894,9 @@ impl MemberOriginValidator<Origin, u64, U256> for TestMemberships {
 
     fn is_member_controller_account(member_id: &u64, account_id: &U256) -> bool {
         Membership::is_member_controller_account(member_id, account_id)
-            || MEMBER_IDS.contains(&member_id)
-            || COLABORATOR_IDS.contains(&member_id)
-            || CURATOR_IDS.contains(&member_id)
+            || MEMBER_IDS.contains(member_id)
+            || COLABORATOR_IDS.contains(member_id)
+            || CURATOR_IDS.contains(member_id)
             || LEAD_MEMBER_ID == *member_id
     }
 }
@@ -911,7 +908,7 @@ pub struct DistributionWG;
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -922,7 +919,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         Ok(())
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -971,7 +970,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -982,7 +981,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         Ok(())
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
@@ -1067,7 +1068,7 @@ parameter_types! {
 }
 
 impl project_token::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = u64;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;

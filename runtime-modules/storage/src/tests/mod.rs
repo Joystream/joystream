@@ -842,12 +842,12 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_1
+            data_object_id_1
         ));
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_2
+            data_object_id_2
         ));
 
         assert_eq!(
@@ -880,12 +880,12 @@ fn upload_succeeded_static_bag_with_data_size_and_deletion_fee() {
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_3
+            data_object_id_3
         ));
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_4
+            data_object_id_4
         ));
 
         assert_eq!(
@@ -956,12 +956,12 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_1
+            data_object_id_1
         ));
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_2
+            data_object_id_2
         ));
 
         assert_eq!(
@@ -994,12 +994,12 @@ fn upload_succeeded_dynamic_bag_with_data_size_and_deletion_fee() {
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_3
+            data_object_id_3
         ));
 
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id_4
+            data_object_id_4
         ));
 
         assert_eq!(
@@ -2105,11 +2105,11 @@ fn move_data_objects_succeeded() {
         // Pre-checks
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &src_bag_id,
-            &data_object_id
+            data_object_id
         ));
         assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &dest_bag_id,
-            &data_object_id
+            data_object_id
         ));
 
         MoveDataObjectsFixture::default()
@@ -2121,11 +2121,11 @@ fn move_data_objects_succeeded() {
         // Post-checks
         assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &src_bag_id,
-            &data_object_id
+            data_object_id
         ));
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &dest_bag_id,
-            &data_object_id
+            data_object_id
         ));
 
         EventFixture::assert_last_crate_event(RawEvent::DataObjectsMoved(
@@ -2434,7 +2434,7 @@ fn delete_data_objects_succeeded() {
         // pre-checks
         assert!(<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id
+            data_object_id
         ));
 
         assert_eq!(
@@ -2455,7 +2455,7 @@ fn delete_data_objects_succeeded() {
         // post-checks
         assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id
+            data_object_id
         ));
 
         assert_eq!(
@@ -2529,7 +2529,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         EventFixture::contains_crate_event(RawEvent::DataObjectsUploaded(
             data_object_ids.clone(),
-            upload_params.clone(),
+            upload_params,
             Storage::data_object_state_bloat_bond_value(),
         ));
 
@@ -2546,7 +2546,7 @@ fn delete_data_objects_succeeded_with_voucher_usage() {
 
         assert!(!<crate::DataObjectsById<Test>>::contains_key(
             &bag_id,
-            &data_object_id
+            data_object_id
         ));
 
         //// Post-check voucher
@@ -3047,10 +3047,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_distribution_buckets() {
 
         let total_distributed_buckets_number =
             distribution_bucket_ids1.len() + distribution_bucket_ids2.len();
-        assert_eq!(
-            bag.distributed_by.len(),
-            total_distributed_buckets_number as usize
-        );
+        assert_eq!(bag.distributed_by.len(), total_distributed_buckets_number);
 
         let distributed_by_bag = bag.distributed_by;
         for distribution_bucket_id in distributed_by_bag.as_ref() {
@@ -3094,7 +3091,7 @@ fn delete_dynamic_bags_succeeded_with_assigned_storage_buckets() {
             .call_and_assert(Ok(()));
 
         let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
-        let bag = <crate::Bags<Test>>::get(&bag_id);
+        let bag = <crate::Bags<Test>>::get(bag_id);
 
         assert_eq!(bag.stored_by, storage_buckets);
 
@@ -3644,7 +3641,7 @@ fn create_dynamic_bag_succeeded() {
 
         fixture.call_and_assert(Ok(()));
 
-        let bag_id: BagId<Test> = dynamic_bag_id.clone().into();
+        let bag_id: BagId<Test> = dynamic_bag_id.into();
         let bag: crate::Bag<Test> = <crate::Bags<Test>>::get(bag_id);
 
         // Check that IDs are within possible range.
@@ -3657,10 +3654,7 @@ fn create_dynamic_bag_succeeded() {
 
         let total_distributed_buckets_number =
             distribution_bucket_ids1.len() + distribution_bucket_ids2.len();
-        assert_eq!(
-            bag.distributed_by.len(),
-            total_distributed_buckets_number as usize
-        );
+        assert_eq!(bag.distributed_by.len(), total_distributed_buckets_number);
 
         for distribution_bucket_id in bag.distributed_by.as_ref() {
             let bucket = Storage::distribution_bucket_by_family_id_by_index(
@@ -4042,7 +4036,7 @@ fn create_distribution_bucket_succeeded() {
             .unwrap();
 
         assert!(
-            crate::DistributionBucketByFamilyIdById::<Test>::contains_key(&family_id, &bucket_id)
+            crate::DistributionBucketByFamilyIdById::<Test>::contains_key(family_id, bucket_id)
         );
 
         EventFixture::assert_last_crate_event(RawEvent::DistributionBucketCreated(
@@ -5625,7 +5619,7 @@ fn unsuccessful_dyn_bag_creation_with_bucket_objects_size_limit_reached() {
         CreateDynamicBagFixture::default()
             .with_objects(vec![DataObjectCreationParameters {
                 size: DEFAULT_STORAGE_BUCKET_SIZE_LIMIT + 1,
-                ipfs_content_id: create_cid(1u32.into()),
+                ipfs_content_id: create_cid(1u32),
             }])
             .with_storage_buckets(storage_buckets)
             .call_and_assert(Err(
@@ -5646,7 +5640,7 @@ fn unsuccessful_dyn_bag_creation_with_bucket_objects_number_limit_reached() {
             (0..(DEFAULT_STORAGE_BUCKET_OBJECTS_LIMIT as u32 + 1))
                 .map(|idx| DataObjectCreationParameters {
                     size: 1,
-                    ipfs_content_id: create_cid(idx.into()),
+                    ipfs_content_id: create_cid(idx),
                 })
                 .collect();
 
@@ -6333,7 +6327,7 @@ fn uploading_objects_with_invalid_cid_length_should_fail() {
         };
 
         UploadFixture::default()
-            .with_params(upload_params.clone())
+            .with_params(upload_params)
             .call_and_assert(Err(Error::<Test>::InvalidCidLength.into()));
     })
 }
@@ -6389,8 +6383,8 @@ fn creating_dynamic_bag_with_objects_having_invalid_cid_length_should_fail() {
         }];
 
         CreateDynamicBagFixture::default()
-            .with_bag_id(dynamic_bag_id.clone())
-            .with_storage_buckets(storage_bucket_ids.clone())
+            .with_bag_id(dynamic_bag_id)
+            .with_storage_buckets(storage_bucket_ids)
             .with_distribution_buckets(
                 distribution_bucket_ids1
                     .iter()

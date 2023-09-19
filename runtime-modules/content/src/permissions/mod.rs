@@ -372,7 +372,7 @@ pub fn ensure_actor_has_channel_permissions<T: Config>(
         ContentActor::Lead => ensure_channel_is_owned_by_curators::<T>(channel).map(|_| None),
         ContentActor::Curator(curator_group_id, curator_id) => {
             ensure_channel_is_owned_by_curator_group::<T>(channel, curator_group_id)?;
-            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            let group = Module::<T>::curator_group_by_id(curator_group_id);
             let agent_permissions =
                 group.get_existing_group_member_channel_agent_permissions::<T>(curator_id)?;
             ensure_agent_has_required_permissions::<T>(agent_permissions, required_permissions)?;
@@ -414,7 +414,7 @@ fn ensure_agent_has_required_permissions<T: Config>(
 
 /// Ensure actor can manage nft
 pub fn ensure_actor_authorized_to_manage_nft<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     nft_owner: &NftOwner<T::MemberId>,
     in_channel: T::ChannelId,
@@ -436,7 +436,7 @@ pub fn ensure_actor_authorized_to_manage_nft<T: Config>(
 
 // Ensure actor can manage categories
 pub fn ensure_actor_authorized_to_manage_categories<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
 ) -> DispatchResult {
     // Only lead and curators can manage categories
@@ -465,7 +465,7 @@ pub fn actor_to_channel_owner<T: Config>(
 
 // authorize actor and claim payment
 pub fn ensure_actor_authorized_to_claim_payment<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
@@ -479,7 +479,7 @@ pub fn ensure_actor_authorized_to_claim_payment<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_withdraw_from_channel<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
@@ -530,7 +530,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
     match actor {
         ContentActor::Lead => Ok(()),
         ContentActor::Curator(curator_group_id, ..) => {
-            let group = Module::<T>::curator_group_by_id(&curator_group_id);
+            let group = Module::<T>::curator_group_by_id(curator_group_id);
             group.ensure_group_member_can_perform_moderation_actions::<T>(
                 actions,
                 channel_privilege_level,
@@ -545,7 +545,7 @@ pub fn ensure_actor_authorized_to_perform_moderation_actions<T: Config>(
 
 // start Transfer channel check.
 pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
@@ -560,7 +560,7 @@ pub fn ensure_actor_authorized_to_transfer_channel<T: Config>(
 
 // cancel Transfer channel check.
 pub fn ensure_actor_authorized_to_cancel_channel_transfer<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<Option<ChannelAgentPermissions>, DispatchError> {
@@ -575,7 +575,7 @@ pub fn ensure_actor_authorized_to_cancel_channel_transfer<T: Config>(
 
 // Council reward
 pub fn ensure_actor_authorized_to_claim_council_reward<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     owner: &ChannelOwner<T::MemberId, T::CuratorGroupId>,
 ) -> DispatchResult {
     let sender = ensure_signed(origin)?;
@@ -600,7 +600,7 @@ pub fn ensure_no_channel_transfers<T: Config>(channel: &Channel<T>) -> DispatchR
 
 // Nft limits
 pub fn ensure_actor_authorized_to_update_channel_nft_limits<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> DispatchResult {
@@ -626,7 +626,7 @@ pub fn get_member_id_of_actor<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_issue_creator_token<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -637,7 +637,7 @@ pub fn ensure_actor_authorized_to_issue_creator_token<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -648,7 +648,7 @@ pub fn ensure_actor_authorized_to_claim_creator_token_patronage<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<(T::AccountId, Option<ChannelAgentPermissions>), DispatchError> {
@@ -660,7 +660,7 @@ pub fn ensure_actor_authorized_to_init_and_manage_creator_token_sale<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -671,7 +671,7 @@ pub fn ensure_actor_authorized_to_perform_creator_token_issuer_transfer<T: Confi
 }
 
 pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -682,7 +682,7 @@ pub fn ensure_actor_authorized_to_make_creator_token_permissionless<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -693,7 +693,7 @@ pub fn ensure_actor_authorized_to_reduce_creator_token_patronage_rate<T: Config>
 }
 
 pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -704,7 +704,7 @@ pub fn ensure_actor_authorized_to_manage_revenue_splits<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -715,7 +715,7 @@ pub fn ensure_actor_authorized_to_deissue_creator_token<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_activate_amm<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {
@@ -726,7 +726,7 @@ pub fn ensure_actor_authorized_to_activate_amm<T: Config>(
 }
 
 pub fn ensure_actor_authorized_to_deactivate_amm<T: Config>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     channel: &Channel<T>,
 ) -> Result<T::AccountId, DispatchError> {

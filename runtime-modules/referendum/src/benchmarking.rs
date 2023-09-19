@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use frame_benchmarking::{account, benchmarks_instance, Zero};
+use frame_benchmarking::v1::{account, benchmarks_instance, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;
@@ -22,9 +22,9 @@ pub trait OptionCreator<AccountId, MemberId> {
     fn create_option(account_id: AccountId, member_id: MemberId);
 }
 
-fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::Event) {
+fn assert_last_event<T: Config<I>, I: Instance>(generic_event: <T as Config<I>>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
@@ -382,7 +382,7 @@ benchmarks_instance! {
     }
 
     on_initialize_revealing {
-        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1);
 
         let cycle_id = 1;
         let salt = vec![0u8];
@@ -499,7 +499,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_for_new_winner {
-        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1);
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -563,7 +563,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_not_in_winners {
-        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1);
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -617,7 +617,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_space_replace_last_winner {
-        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1);
 
         let salt = vec![0u8];
         let vote_option = 2 * (i + 1); // Greater than number of voters + number of candidates
@@ -679,7 +679,7 @@ benchmarks_instance! {
     }
 
     reveal_vote_already_existing {
-        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1) as u32;
+        let i in 0 .. (T::MaxWinnerTargetCount::get() - 1);
 
         let salt = vec![0u8];
         let vote_option = i;

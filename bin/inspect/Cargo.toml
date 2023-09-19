@@ -8,14 +8,14 @@ homepage = "https://substrate.io"
 repository = "https://github.com/paritytech/substrate/"
 
 [dependencies]
-clap = { version = "3.1.6", features = ["derive"] }
-codec = { package = "parity-scale-codec", version = "3.1.5" }
+clap = { version = "4.0.9", features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.2.2" }
 thiserror = "1.0"
-sc-cli = { package = 'sc-cli', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
-sc-client-api = { package = 'sc-client-api', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
-sc-executor = { package = 'sc-executor', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
-sc-service = { package = 'sc-service', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522', default-features = false }
-sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
-sp-core = { package = 'sp-core', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
-sp-runtime = { package = 'sp-runtime', git = 'https://github.com/joystream/substrate.git', rev = 'd29a53b11c3e530d1656eef502cb0f1f8fff3522' }
+sc-cli = { package = 'sc-cli', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
+sc-client-api = { package = 'sc-client-api', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
+sc-executor = { package = 'sc-executor', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
+sc-service = { package = 'sc-service', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e', default-features = false }
+sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
+sp-core = { package = 'sp-core', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
+sp-runtime = { package = 'sp-runtime', git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e' }
 overrides = { package = "overrides", path = "../overrides" }

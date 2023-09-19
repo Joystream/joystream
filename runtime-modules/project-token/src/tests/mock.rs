@@ -55,14 +55,17 @@ pub type MemberId = u64;
 #[macro_export]
 macro_rules! last_event_eq {
     ($e:expr) => {
-        assert_eq!(System::events().last().unwrap().event, Event::Token($e))
+        assert_eq!(
+            System::events().last().unwrap().event,
+            RuntimeEvent::Token($e)
+        )
     };
 }
 
 #[macro_export]
 macro_rules! origin {
     ($a: expr) => {
-        Origin::signed($a)
+        RuntimeOrigin::signed($a)
     };
 }
 
@@ -124,7 +127,7 @@ frame_support::construct_runtime!(
 );
 
 impl storage::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -166,7 +169,7 @@ impl pallet_timestamp::Config for Test {
 }
 
 impl Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = u128;
     type TokenId = u64;
     type BlockNumberToBalance = Block2Balance;
@@ -214,7 +217,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for Distributio
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -225,7 +228,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         Ok(())
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -273,7 +278,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -284,7 +289,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         Ok(())
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == DISTRIBUTION_WG_LEADER_ACCOUNT_ID,
@@ -335,8 +342,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -344,7 +351,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -360,7 +367,7 @@ impl frame_system::Config for Test {
 impl balances::Config for Test {
     type Balance = u128;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -371,7 +378,7 @@ impl balances::Config for Test {
 
 /// Implement membership trait for Test
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;
@@ -411,13 +418,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u128> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -471,9 +480,9 @@ impl MembershipInfoProvider<Test> for TestMemberships {
 }
 
 // Mock MemberOriginValidator impl
-impl MemberOriginValidator<Origin, u64, u64> for TestMemberships {
+impl MemberOriginValidator<RuntimeOrigin, u64, u64> for TestMemberships {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let sender = ensure_signed(origin)?;

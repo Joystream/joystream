@@ -1,4 +1,4 @@
-use super::mocks::{Balances, Bounty, Event, System, Test};
+use super::mocks::{Balances, Bounty, RuntimeEvent, System, Test};
 use crate::{
     AssuranceContractType, BountyActor, BountyCreationParameters, BountyMilestone, BountyRecord,
     ClosedContractWhitelist, Config, Entry, FundingType, OracleJudgmentOf, RawEvent,
@@ -41,7 +41,7 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u128, balanc
 }
 
 pub fn increase_account_balance(account_id: &u128, balance: u64) {
-    let _ = Balances::deposit_creating(&account_id, balance);
+    let _ = Balances::deposit_creating(account_id, balance);
 }
 
 pub fn get_funder_state_bloat_bond_amount() -> u64 {
@@ -65,7 +65,7 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = Event::Bounty(expected_raw_event);
+        let converted_event = RuntimeEvent::Bounty(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -81,12 +81,12 @@ impl EventFixture {
             OracleJudgmentOf<Test>,
         >,
     ) {
-        let converted_event = Event::Bounty(expected_raw_event);
+        let converted_event = RuntimeEvent::Bounty(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -96,7 +96,7 @@ impl EventFixture {
         assert_eq!(System::events().pop().unwrap(), expected_event);
     }
 
-    fn contains_global_event(expected_event: Event) {
+    fn contains_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -263,7 +263,7 @@ impl CreateBountyFixture {
 
         if actual_result.is_ok() {
             assert_eq!(next_bounty_count_value, Bounty::bounty_count());
-            assert!(<crate::Bounties<Test>>::contains_key(&bounty_id));
+            assert!(<crate::Bounties<Test>>::contains_key(bounty_id));
 
             let expected_milestone = match self.expected_milestone.clone() {
                 Some(milestone) => milestone,
@@ -284,7 +284,7 @@ impl CreateBountyFixture {
             assert_eq!(expected_bounty, Bounty::bounties(bounty_id));
         } else {
             assert_eq!(next_bounty_count_value - 1, Bounty::bounty_count());
-            assert!(!<crate::Bounties<Test>>::contains_key(&bounty_id));
+            assert!(!<crate::Bounties<Test>>::contains_key(bounty_id));
         }
     }
 }
@@ -341,8 +341,8 @@ impl FundBountyFixture {
         let actual_result = Bounty::fund_bounty(
             self.origin.clone().into(),
             self.funder.clone(),
-            self.bounty_id.clone(),
-            self.amount.clone(),
+            self.bounty_id,
+            self.amount,
         );
 
         assert_eq!(actual_result, expected_result);
@@ -410,7 +410,7 @@ impl WithdrawFundingFixture {
         let actual_result = Bounty::withdraw_funding(
             self.origin.clone().into(),
             self.funder.clone(),
-            self.bounty_id.clone(),
+            self.bounty_id,
         );
 
         assert_eq!(actual_result, expected_result);
@@ -482,7 +482,7 @@ impl AnnounceWorkEntryFixture {
             assert_eq!(next_entry_count_value, Bounty::entry_count());
             assert!(<crate::Entries<Test>>::contains_key(
                 self.bounty_id,
-                &entry_id
+                entry_id
             ));
 
             let expected_entry = Entry::<Test> {
@@ -504,7 +504,7 @@ impl AnnounceWorkEntryFixture {
             assert_eq!(next_entry_count_value - 1, Bounty::entry_count());
             assert!(!<crate::Entries<Test>>::contains_key(
                 self.bounty_id,
-                &entry_id
+                entry_id
             ));
 
             assert_eq!(
@@ -773,7 +773,7 @@ impl WithdrawEntrantStakeFixture {
         if actual_result.is_ok() {
             assert!(!<crate::Entries<Test>>::contains_key(
                 self.bounty_id,
-                &self.entry_id
+                self.entry_id
             ));
 
             if <crate::Bounties<Test>>::contains_key(self.bounty_id) {
@@ -806,7 +806,7 @@ impl WithdrawOracleRewardFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
-            Bounty::withdraw_oracle_reward(self.origin.clone().into(), self.bounty_id.clone());
+            Bounty::withdraw_oracle_reward(self.origin.clone().into(), self.bounty_id);
 
         assert_eq!(actual_result, expected_result);
     }

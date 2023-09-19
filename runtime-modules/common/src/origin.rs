@@ -6,21 +6,21 @@ pub trait ActorOriginValidator<Origin, ActorId, AccountId> {
     fn ensure_actor_origin(origin: Origin, actor_id: ActorId) -> Result<AccountId, &'static str>;
 }
 
-// TODO: delete when T::Origin will support the clone()
-/// Multiplies the T::Origin.
+// TODO: delete when T::RuntimeOrigin will support the clone()
+/// Multiplies the T::RuntimeOrigin.
 /// In our current substrate version frame_system::Origin doesn't support clone(),
 /// but it will be supported in latest up-to-date substrate version.
-pub fn double_origin<T: frame_system::Config>(origin: T::Origin) -> (T::Origin, T::Origin) {
-    let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
+// pub fn double_origin<T: frame_system::Config>(origin: T::RuntimeOrigin) -> (T::RuntimeOrigin, T::RuntimeOrigin) {
+//     let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
 
-    let (cloned_origin1, cloned_origin2) = match coerced_origin {
-        RawOrigin::None => (RawOrigin::None, RawOrigin::None),
-        RawOrigin::Root => (RawOrigin::Root, RawOrigin::Root),
-        RawOrigin::Signed(account_id) => (
-            RawOrigin::Signed(account_id.clone()),
-            RawOrigin::Signed(account_id),
-        ),
-    };
+//     let (cloned_origin1, cloned_origin2) = match coerced_origin {
+//         RawOrigin::None => (RawOrigin::None, RawOrigin::None),
+//         RawOrigin::Root => (RawOrigin::Root, RawOrigin::Root),
+//         RawOrigin::Signed(account_id) => (
+//             RawOrigin::Signed(account_id.clone()),
+//             RawOrigin::Signed(account_id),
+//         ),
+//     };
 
-    (cloned_origin1.into(), cloned_origin2.into())
-}
+//     (cloned_origin1.into(), cloned_origin2.into())
+// }

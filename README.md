@@ -91,7 +91,7 @@ RUNTIME_PROFILE=TESTING yarn start
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2022-11-15 cargo build --release
 ./target/release/joystream-node -- --pruning archive --chain joy-mainnet.json
 ```
 

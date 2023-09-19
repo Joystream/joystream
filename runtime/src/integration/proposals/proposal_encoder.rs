@@ -1,4 +1,4 @@
-use crate::{Call, Runtime};
+use crate::{Runtime, RuntimeCall};
 use common::working_group::WorkingGroup;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
@@ -17,23 +17,25 @@ use sp_std::vec::Vec;
 macro_rules! wrap_working_group_call {
     ($working_group:expr, $working_group_instance_call:expr) => {{
         match $working_group {
-            WorkingGroup::Content => Call::ContentWorkingGroup($working_group_instance_call),
-            WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
-            WorkingGroup::Forum => Call::ForumWorkingGroup($working_group_instance_call),
-            WorkingGroup::Membership => Call::MembershipWorkingGroup($working_group_instance_call),
+            WorkingGroup::Content => RuntimeCall::ContentWorkingGroup($working_group_instance_call),
+            WorkingGroup::Storage => RuntimeCall::StorageWorkingGroup($working_group_instance_call),
+            WorkingGroup::Forum => RuntimeCall::ForumWorkingGroup($working_group_instance_call),
+            WorkingGroup::Membership => {
+                RuntimeCall::MembershipWorkingGroup($working_group_instance_call)
+            }
             WorkingGroup::Distribution => {
-                Call::DistributionWorkingGroup($working_group_instance_call)
+                RuntimeCall::DistributionWorkingGroup($working_group_instance_call)
             }
             WorkingGroup::OperationsAlpha => {
-                Call::OperationsWorkingGroupAlpha($working_group_instance_call)
+                RuntimeCall::OperationsWorkingGroupAlpha($working_group_instance_call)
             }
             WorkingGroup::OperationsBeta => {
-                Call::OperationsWorkingGroupBeta($working_group_instance_call)
+                RuntimeCall::OperationsWorkingGroupBeta($working_group_instance_call)
             }
             WorkingGroup::OperationsGamma => {
-                Call::OperationsWorkingGroupGamma($working_group_instance_call)
+                RuntimeCall::OperationsWorkingGroupGamma($working_group_instance_call)
             }
-            WorkingGroup::App => Call::AppWorkingGroup($working_group_instance_call),
+            WorkingGroup::App => RuntimeCall::AppWorkingGroup($working_group_instance_call),
         }
     }};
 }
@@ -48,19 +50,19 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
     ) -> Vec<u8> {
         let call = match proposal_details {
             ProposalDetails::Signal(signal) => {
-                Call::JoystreamUtility(joystream_utility::Call::execute_signal_proposal { signal })
-            }
-            ProposalDetails::FundingRequest(funding_requests) => {
-                Call::Council(council::Call::funding_request { funding_requests })
-            }
-            ProposalDetails::SetMaxValidatorCount(new) => {
-                Call::Staking(pallet_staking::Call::set_validator_count { new })
-            }
-            ProposalDetails::RuntimeUpgrade(wasm) => {
-                Call::JoystreamUtility(joystream_utility::Call::execute_runtime_upgrade_proposal {
-                    wasm,
+                RuntimeCall::JoystreamUtility(joystream_utility::Call::execute_signal_proposal {
+                    signal,
                 })
             }
+            ProposalDetails::FundingRequest(funding_requests) => {
+                RuntimeCall::Council(council::Call::funding_request { funding_requests })
+            }
+            ProposalDetails::SetMaxValidatorCount(new) => {
+                RuntimeCall::Staking(pallet_staking::Call::set_validator_count { new })
+            }
+            ProposalDetails::RuntimeUpgrade(wasm) => RuntimeCall::JoystreamUtility(
+                joystream_utility::Call::execute_runtime_upgrade_proposal { wasm },
+            ),
             ProposalDetails::CreateWorkingGroupLeadOpening(create_opening_params) => {
                 wrap_working_group_call!(
                     create_opening_params.group,
@@ -74,11 +76,13 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 )
             }
             ProposalDetails::UpdateWorkingGroupBudget(amount, working_group, balance_kind) => {
-                Call::JoystreamUtility(joystream_utility::Call::update_working_group_budget {
-                    working_group,
-                    amount,
-                    balance_kind,
-                })
+                RuntimeCall::JoystreamUtility(
+                    joystream_utility::Call::update_working_group_budget {
+                        working_group,
+                        amount,
+                        balance_kind,
+                    },
+                )
             }
             ProposalDetails::DecreaseWorkingGroupLeadStake(
                 worker_id,
@@ -107,7 +111,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 )
             }
             ProposalDetails::AmendConstitution(constitution_text) => {
-                Call::Constitution(pallet_constitution::Call::amend_constitution {
+                RuntimeCall::Constitution(pallet_constitution::Call::amend_constitution {
                     constitution_text,
                 })
             }
@@ -118,43 +122,45 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 )
             }
             ProposalDetails::SetMembershipPrice(new_price) => {
-                Call::Members(membership::Call::set_membership_price { new_price })
+                RuntimeCall::Members(membership::Call::set_membership_price { new_price })
             }
 
             ProposalDetails::SetCouncilBudgetIncrement(budget_increment) => {
-                Call::Council(council::Call::set_budget_increment { budget_increment })
+                RuntimeCall::Council(council::Call::set_budget_increment { budget_increment })
             }
 
             ProposalDetails::SetCouncilorReward(councilor_reward) => {
-                Call::Council(council::Call::set_councilor_reward { councilor_reward })
+                RuntimeCall::Council(council::Call::set_councilor_reward { councilor_reward })
             }
             ProposalDetails::SetInitialInvitationBalance(new_initial_balance) => {
-                Call::Members(membership::Call::set_initial_invitation_balance {
+                RuntimeCall::Members(membership::Call::set_initial_invitation_balance {
                     new_initial_balance,
                 })
             }
             ProposalDetails::SetInitialInvitationCount(new_invitation_count) => {
-                Call::Members(membership::Call::set_initial_invitation_count {
+                RuntimeCall::Members(membership::Call::set_initial_invitation_count {
                     new_invitation_count,
                 })
             }
             ProposalDetails::SetMembershipLeadInvitationQuota(invitation_quota) => {
-                Call::Members(membership::Call::set_leader_invitation_quota { invitation_quota })
+                RuntimeCall::Members(membership::Call::set_leader_invitation_quota {
+                    invitation_quota,
+                })
             }
             ProposalDetails::SetReferralCut(percent_value) => {
-                Call::Members(membership::Call::set_referral_cut { percent_value })
+                RuntimeCall::Members(membership::Call::set_referral_cut { percent_value })
             }
             ProposalDetails::VetoProposal(proposal_id) => {
-                Call::ProposalsEngine(proposals_engine::Call::veto_proposal { proposal_id })
+                RuntimeCall::ProposalsEngine(proposals_engine::Call::veto_proposal { proposal_id })
             }
             ProposalDetails::UpdateGlobalNftLimit(nft_limit_period, limit) => {
-                Call::Content(content::Call::update_global_nft_limit {
+                RuntimeCall::Content(content::Call::update_global_nft_limit {
                     nft_limit_period,
                     limit,
                 })
             }
             ProposalDetails::UpdateChannelPayouts(params) => {
-                Call::Content(content::Call::update_channel_payouts {
+                RuntimeCall::Content(content::Call::update_channel_payouts {
                     params,
                     uploader_account: member_controller_account,
                 })

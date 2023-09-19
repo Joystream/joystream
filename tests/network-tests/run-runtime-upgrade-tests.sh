@@ -4,9 +4,6 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-# Log only to stderr
-# Only output from this script should be the container id of the node at the very end
-
 # Location that will be mounted to /spec in containers
 # This is where the initial balances files and generated chainspec files will be located.
 DATA_PATH=$PWD/data
@@ -19,7 +16,7 @@ TARGET_RUNTIME=${TARGET_RUNTIME:=target}
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=$(docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 echo >&2 "sudo account from suri: ${SUDO_ACCOUNT}"
 echo >&2 "treasury account from suri: ${TREASURY_ACCOUNT}"
@@ -51,7 +48,7 @@ function generate_config_files() {
 
 # Create a chain spec file
 function create_raw_chain_spec() {
-    docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
+    docker run --pull never --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
         generate \
         --authorities 1 \
         --nominators 1 \
@@ -62,20 +59,23 @@ function create_raw_chain_spec() {
         --keystore-path /spec/keystore
 
     # Convert the chain spec file to a raw chainspec file
-    docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
+    docker run --pull never --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
         --raw --disable-default-bootnode \
         --chain /spec/chain-spec.json >${DATA_PATH}/chain-spec-raw.json
 
 }
 
 # Start a chain with generated chain spec
-function start_old_joystream_node {
-    docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
+function start_joystream_node {
+    docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec \
+        --name joystream-node \
         -p 9944:9944 -p 9933:9933 joystream-node \
         --validator --unsafe-ws-external --unsafe-rpc-external \
         --rpc-methods Unsafe --rpc-cors=all -l runtime \
-        --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry \
-        --keystore-path /spec/keystore/auth-0
+        --chain /spec/chain-spec-forked.json --pruning=archive --no-telemetry --no-mdns \
+        --no-hardware-benchmarks \
+        --keystore-path /spec/keystore/auth-0 \
+        --base-path /data
 }
 
 #######################################
@@ -89,6 +89,7 @@ function start_old_joystream_node {
 function set_new_runtime_wasm_path() {
     docker create --name target-node joystream/node:${TARGET_RUNTIME}
     docker cp target-node:/joystream/runtime.compact.compressed.wasm ${DATA_PATH}/new_runtime.wasm
+    docker rm target-node
 }
 
 #######################################
@@ -130,36 +131,23 @@ function fork_off_init() {
 # Arguments:
 #   None
 #######################################
-function export_chainspec_file_to_disk() {
+function init_chain_db() {
     # write the initial genesis state to db, in order to avoid waiting for an arbitrary amount of time
+    # when starting the node to startup. it can take a significant amount of time
+    # if the initial state is large.
     # exporting should give some essential tasks errors but they are harmless https://github.com/paritytech/substrate/issues/10583
     echo >&2 "exporting state"
-    docker-compose -f ../../docker-compose.yml run \
+    docker-compose -f ../../docker-compose.yml run --rm \
         -v ${DATA_PATH}:/spec joystream-node export-state \
-        --chain /spec/chain-spec-raw.json \
+        --chain /spec/chain-spec-forked.json \
         --base-path /data --pruning archive >${DATA_PATH}/exported-state.json
-}
-
-# cleanup
-function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
-    docker rm --volumes target-node
-    docker-compose -f ../../docker-compose.yml down -v --remove-orphans
-    docker volume prune -f # sometimes volumes are still running
 }
 
 # entrypoint
 function main {
-    CONTAINER_ID=""
-    export JOYSTREAM_NODE_TAG=${RUNTIME}
     if [ $TARGET_RUNTIME == $RUNTIME ]; then
         echo >&2 "Same tag for runtime and target runtime aborting..."
         exit 0
-    fi
-
-    # Start a query-node
-    if [ "${NO_QN}" != true ]; then
-        ../../query-node/start.sh
     fi
 
     # 0. Generate config files
@@ -174,15 +162,21 @@ function main {
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
-    # 4. copy chainspec to disk
-    export_chainspec_file_to_disk
-    echo >&2 "chainspec exported"
-    # 5. start node
-    CONTAINER_ID=$(start_old_joystream_node)
-    echo >&2 "mainnet node starting"
 
-    # wait 1 minute
-    sleep 90
+    CONTAINER_ID=""
+    export JOYSTREAM_NODE_TAG=${RUNTIME}
+    # 4. early chain db init
+    init_chain_db
+    echo >&2 "chain db initialized"
+    # 5. start node
+    CONTAINER_ID=$(start_joystream_node)
+    echo >&2 "joystream node starting"
+
+    # Start a query-node
+    ../../query-node/start.sh
+
+    # Wait for chain and query node to get in sync
+    sleep 200
 
     # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
     if [ "${NO_STORAGE}" != true ]; then
@@ -191,7 +185,27 @@ function main {
         export SKIP_STORAGE_AND_DISTRIBUTION=true
     fi
 
-    ./run-test-scenario.sh runtimeUpgrade
+    # We allow this step to fail as the indexer currently has
+    # a problem dealing with the runtime upgrade block
+    ./run-test-scenario.sh runtimeUpgrade || :
+
+    # stop joystream-node, but don't remove volumes
+    echo >&2 "stopping joystream-node"
+    docker stop ${CONTAINER_ID}
+    docker rm ${CONTAINER_ID}
+
+    # start new joystream-node - ensure that new node is compatible with old database
+    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
+    CONTAINER_ID=$(start_joystream_node)
+    echo >&2 "starting new joystream-node"
+
+    # restart indexer
+    docker restart indexer
+
+    sleep 90
+
+    ./run-test-scenario.sh postRuntimeUpgrade
+
     ./run-test-scenario.sh content-directory
 }
 

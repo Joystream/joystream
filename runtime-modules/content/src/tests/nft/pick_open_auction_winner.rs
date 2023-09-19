@@ -16,7 +16,7 @@ fn pick_open_auction_winner() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -34,7 +34,7 @@ fn pick_open_auction_winner() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -47,7 +47,7 @@ fn pick_open_auction_winner() {
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -55,7 +55,7 @@ fn pick_open_auction_winner() {
 
         // Pick open auction winner
         assert_ok!(Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -97,7 +97,7 @@ fn pick_open_auction_winner_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -115,7 +115,7 @@ fn pick_open_auction_winner_auth_failed() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -128,7 +128,7 @@ fn pick_open_auction_winner_auth_failed() {
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -139,7 +139,7 @@ fn pick_open_auction_winner_auth_failed() {
 
         // Make an attempt to pick open auction winner with wrong credentials
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -168,7 +168,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -186,7 +186,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -199,7 +199,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -210,7 +210,7 @@ fn pick_open_auction_winner_actor_not_authorized() {
 
         // Make an attempt to pick open auction winner if actor is not authorized to do this
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -235,7 +235,7 @@ fn pick_open_auction_winner_video_does_not_exist() {
 
         // Make an attempt to pick open auction winner which corresponding video does not exist
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -264,7 +264,7 @@ fn pick_open_auction_winner_nft_is_not_issued() {
 
         // Make an attempt to pick open auction winner for nft which is not issued yet
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -293,7 +293,7 @@ fn pick_open_auction_winner_not_in_auction_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -301,7 +301,7 @@ fn pick_open_auction_winner_not_in_auction_state() {
 
         // Make an attempt to pick open auction winner for nft which is not in auction state
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -330,7 +330,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -348,7 +348,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -361,7 +361,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -369,7 +369,7 @@ fn pick_open_auction_winner_is_not_open_auction_type() {
 
         // Make an attempt to pick open auction winner for nft which is in english auction state
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -398,7 +398,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -416,7 +416,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -427,7 +427,7 @@ fn pick_open_auction_winner_bid_does_not_exist() {
 
         // Make an attempt to pick open auction winner if last bid does not exist
         let pick_open_auction_winner_result = Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             SECOND_MEMBER_ID,
@@ -457,7 +457,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -475,7 +475,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -492,7 +492,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             high_bid,
@@ -502,7 +502,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
 
         // Attempt to race
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             low_bid,
@@ -511,7 +511,7 @@ fn pick_open_auction_winner_fails_with_invalid_bid_commit() {
         // bid amount secured by commit
         assert_err!(
             Content::pick_open_auction_winner(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 SECOND_MEMBER_ID,
@@ -542,7 +542,7 @@ fn pick_open_auction_winner_ok_with_nft_member_owner_correctly_credited() {
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::pick_open_auction_winner(
-            Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(THIRD_MEMBER_ACCOUNT_ID),
             ContentActor::Member(THIRD_MEMBER_ID),
             VideoId::one(),
             SECOND_MEMBER_ID,
@@ -572,7 +572,7 @@ fn pick_open_auction_ok_with_channel_owner_correctly_credited() {
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             VideoId::one(),
             SECOND_MEMBER_ID,
@@ -597,7 +597,7 @@ fn pick_open_auction_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::pick_open_auction_winner(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 SECOND_MEMBER_ID,

@@ -40,6 +40,8 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
+import curatorModerationActions from '../flows/content/curatorModerationActions'
+import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -111,8 +113,15 @@ scenario('Full', async ({ job, env }) => {
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob
   )
-  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
+  const curatorModerationActionsJob = job('curator moderation actions', curatorModerationActions).after(
     commentsAndReactionsJob
+  )
+  const collaboratorAndCuratorPermissionsJob = job(
+    'curators and collaborators permissions',
+    collaboratorAndCuratorPermissions
+  ).after(curatorModerationActionsJob)
+  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
+    collaboratorAndCuratorPermissionsJob
   )
 
   // Apps

@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use super::fixtures::*;
-use super::mock::{CuratorGroupId, CuratorId, Event, *};
+use super::mock::{CuratorGroupId, CuratorId, RuntimeEvent, *};
 use crate::*;
 use frame_support::{assert_err, assert_ok};
 
@@ -24,7 +24,7 @@ pub fn add_curator_to_new_group(
 ) -> CuratorGroupId {
     let curator_group_id = create_curator_group(BTreeMap::new());
     assert_ok!(Content::add_curator_to_group(
-        Origin::signed(LEAD_ACCOUNT_ID),
+        RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
         curator_id,
         curator_agent_permissions.iter().cloned().collect()
@@ -38,7 +38,7 @@ pub fn add_curator_to_new_group_with_permissions(
 ) -> CuratorGroupId {
     let curator_group_id = create_curator_group(permissions);
     assert_ok!(Content::add_curator_to_group(
-        Origin::signed(LEAD_ACCOUNT_ID),
+        RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
         curator_group_id,
         curator_id,
         BTreeSet::new()
@@ -58,14 +58,14 @@ fn curator_group_management() {
 
         // Activate group
         assert_ok!(Content::set_curator_group_status(
-            Origin::signed(LEAD_ACCOUNT_ID),
+            RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
             true
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::Content(RawEvent::CuratorGroupStatusSet(curator_group_id, true))
+            RuntimeEvent::Content(RawEvent::CuratorGroupStatusSet(curator_group_id, true))
         );
 
         let group = Content::curator_group_by_id(curator_group_id);
@@ -77,7 +77,7 @@ fn curator_group_management() {
                 0,
                 BTreeSet::from_iter(vec![
                     ContentModerationAction::HideVideo,
-                    ContentModerationAction::DeleteVideo,
+                    ContentModerationAction::HideChannel,
                 ]),
             ),
             (
@@ -98,8 +98,6 @@ fn curator_group_management() {
             (
                 2,
                 BTreeSet::from_iter(vec![
-                    ContentModerationAction::DeleteVideo,
-                    ContentModerationAction::DeleteChannel,
                     ContentModerationAction::HideChannel,
                     ContentModerationAction::HideVideo,
                     ContentModerationAction::ChangeChannelFeatureStatus(
@@ -129,7 +127,7 @@ fn curator_group_management() {
 
         // Update group permissions
         assert_ok!(Content::update_curator_group_permissions(
-            Origin::signed(LEAD_ACCOUNT_ID),
+            RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
             permissions.clone()
         ));
@@ -137,7 +135,7 @@ fn curator_group_management() {
         // Check CuratorGroupPermissionsUpdated event
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::Content(RawEvent::CuratorGroupPermissionsUpdated(
+            RuntimeEvent::Content(RawEvent::CuratorGroupPermissionsUpdated(
                 curator_group_id,
                 permissions.clone()
             ))
@@ -162,7 +160,7 @@ fn curator_group_management() {
         // Cannot add non curators into group
         assert_err!(
             Content::add_curator_to_group(
-                Origin::signed(LEAD_ACCOUNT_ID),
+                RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
                 DEFAULT_MEMBER_ID, // not a curator,
                 BTreeSet::new()
@@ -172,7 +170,7 @@ fn curator_group_management() {
 
         // Add curator to group
         assert_ok!(Content::add_curator_to_group(
-            Origin::signed(LEAD_ACCOUNT_ID),
+            RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
             DEFAULT_CURATOR_ID,
             BTreeSet::new()
@@ -180,7 +178,7 @@ fn curator_group_management() {
 
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::Content(RawEvent::CuratorAdded(
+            RuntimeEvent::Content(RawEvent::CuratorAdded(
                 curator_group_id,
                 DEFAULT_CURATOR_ID,
                 BTreeSet::new()
@@ -194,7 +192,7 @@ fn curator_group_management() {
         // Cannot add same curator again
         assert_err!(
             Content::add_curator_to_group(
-                Origin::signed(LEAD_ACCOUNT_ID),
+                RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
                 DEFAULT_CURATOR_ID,
                 BTreeSet::new()
@@ -205,7 +203,7 @@ fn curator_group_management() {
         // Cannot remove curator if not in group
         assert_err!(
             Content::remove_curator_from_group(
-                Origin::signed(LEAD_ACCOUNT_ID),
+                RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
                 MEMBERS_COUNT + 1 // not a curator
             ),
@@ -214,14 +212,14 @@ fn curator_group_management() {
 
         // Remove curator from group
         assert_ok!(Content::remove_curator_from_group(
-            Origin::signed(LEAD_ACCOUNT_ID),
+            RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
             curator_group_id,
             DEFAULT_CURATOR_ID
         ));
 
         assert_eq!(
             System::events().last().unwrap().event,
-            Event::Content(RawEvent::CuratorRemoved(
+            RuntimeEvent::Content(RawEvent::CuratorRemoved(
                 curator_group_id,
                 DEFAULT_CURATOR_ID
             ))
@@ -233,7 +231,7 @@ fn curator_group_management() {
         // Already removed cannot remove again
         assert_err!(
             Content::remove_curator_from_group(
-                Origin::signed(LEAD_ACCOUNT_ID),
+                RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
                 curator_group_id,
                 DEFAULT_CURATOR_ID
             ),
@@ -281,7 +279,7 @@ fn unsuccessful_curator_group_permissions_update_with_max_permissions_by_level_m
         // Update group permissions
         assert_eq!(
             Content::update_curator_group_permissions(
-                Origin::signed(LEAD_ACCOUNT_ID),
+                RuntimeOrigin::signed(LEAD_ACCOUNT_ID),
                 group_id,
                 permissions
             ),

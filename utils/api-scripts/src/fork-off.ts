@@ -26,6 +26,8 @@ const skippedModulesPrefix = [
   'FinalityTracker',
   'Authorship',
   'Sudo',
+  'Staking',
+  'BagsList',
   // Joystream specific
   'Council', // empty council
   'Referendum',

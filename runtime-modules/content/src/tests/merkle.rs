@@ -563,11 +563,11 @@ fn unsuccessfull_channel_payouts_update_with_invalid_origin() {
         increase_account_balance_helper(LEAD_ACCOUNT_ID, INITIAL_BALANCE);
 
         UpdateChannelPayoutsFixture::default()
-            .with_origin(Origin::signed(LEAD_ACCOUNT_ID))
+            .with_origin(RuntimeOrigin::signed(LEAD_ACCOUNT_ID))
             .call_and_assert(Err(DispatchError::BadOrigin));
 
         UpdateChannelPayoutsFixture::default()
-            .with_origin(Origin::none())
+            .with_origin(RuntimeOrigin::none())
             .call_and_assert(Err(DispatchError::BadOrigin));
     })
 }

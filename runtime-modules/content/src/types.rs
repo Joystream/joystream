@@ -203,10 +203,10 @@ pub mod iterable_enums {
         /// Allows updating channel transfer status through `update_channel_transfer_status` tx
         TransferChannel,
         /// Allows claiming channel reward through `claim_channel_reward` tx
-        // or `claim_and_withdraw_channel_reward` tx (provided `WithdrawFromChannelBalance` permission is also granted)
+        // (provided `WithdrawFromChannelBalance` permission is also granted)
         ClaimChannelReward,
         // Allows the agent to trigger channel balance withdrawal through `withdraw_from_channel_balance` tx
-        // or `claim_and_withdraw_channel_reward` tx (provided `ClaimChannelReward` permission is also granted).
+        // (provided `ClaimChannelReward` permission is also granted).
         // The withdrawal always goes to the channel owner member controller account (for member channels) /
         // the council budget (curator channels)
         WithdrawFromChannelBalance,

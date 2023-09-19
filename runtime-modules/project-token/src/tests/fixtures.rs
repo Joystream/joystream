@@ -537,7 +537,7 @@ impl Fixture<PurchaseTokensOnSaleFixtureStateSnapshot> for PurchaseTokensOnSaleF
 
     fn execute_call(&self) -> DispatchResult {
         Token::purchase_tokens_on_sale(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
@@ -923,7 +923,7 @@ impl ParticipateInSplitFixture {
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::participate_in_split(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
@@ -971,7 +971,7 @@ impl TransferFixture {
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::transfer(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.src_member_id,
             self.token_id,
             self.outputs.clone(),
@@ -1023,8 +1023,11 @@ impl ExitRevenueSplitFixture {
 
     pub fn execute_call(&self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
-        let result =
-            Token::exit_revenue_split(Origin::signed(self.sender), self.token_id, self.member_id);
+        let result = Token::exit_revenue_split(
+            RuntimeOrigin::signed(self.sender),
+            self.token_id,
+            self.member_id,
+        );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error
@@ -1132,7 +1135,7 @@ impl AmmBuyFixture {
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::buy_on_amm(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
@@ -1195,7 +1198,7 @@ impl AmmSellFixture {
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::sell_on_amm(
-            Origin::signed(self.sender),
+            RuntimeOrigin::signed(self.sender),
             self.token_id,
             self.member_id,
             self.amount,
