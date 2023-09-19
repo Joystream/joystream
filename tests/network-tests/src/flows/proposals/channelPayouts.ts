@@ -5,7 +5,6 @@ import { getChannelDefaults } from '../../fixtures/content/contentTemplates'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import {
-  ClaimAndWithdrawChannelRewardFixture,
   ClaimChannelRewardFixture,
   ClaimChannelRewardParams,
   cliExamplesFolderPath,
@@ -146,30 +145,20 @@ export default async function channelPayouts({ api, query, lock }: FlowProps): P
       },
     ]
 
-    // If it's the the 2nd attempt, we'll use claimAndWithdraw tx
-    if (i === 2) {
-      const claimAndWithdrawChannelRewardFixture = new ClaimAndWithdrawChannelRewardFixture(
-        api,
-        query,
-        claimChannelRewardParams
-      )
-      await new FixtureRunner(claimAndWithdrawChannelRewardFixture).runWithQueryNodeChecks()
-    } else {
-      // Otherwise we claim and withdraw separately
-      const claimChannelRewardFixture = new ClaimChannelRewardFixture(api, query, claimChannelRewardParams)
-      await new FixtureRunner(claimChannelRewardFixture).runWithQueryNodeChecks()
+    // Otherwise we claim and withdraw separately
+    const claimChannelRewardFixture = new ClaimChannelRewardFixture(api, query, claimChannelRewardParams)
+    await new FixtureRunner(claimChannelRewardFixture).runWithQueryNodeChecks()
 
-      // Withdraw channel reward to destination account
-      const withdrawChannelRewardParams: WithdrawChannelRewardParams[] = [
-        {
-          asMember: channelOwner.memberId,
-          channelId: rewardChannelId,
-          amount: minCashout,
-        },
-      ]
-      const withdrawChannelRewardFixture = new WithdrawChannelRewardFixture(api, query, withdrawChannelRewardParams)
-      await new FixtureRunner(withdrawChannelRewardFixture).runWithQueryNodeChecks()
-    }
+    // Withdraw channel reward to destination account
+    const withdrawChannelRewardParams: WithdrawChannelRewardParams[] = [
+      {
+        asMember: channelOwner.memberId,
+        channelId: rewardChannelId,
+        amount: minCashout,
+      },
+    ]
+    const withdrawChannelRewardFixture = new WithdrawChannelRewardFixture(api, query, withdrawChannelRewardParams)
+    await new FixtureRunner(withdrawChannelRewardFixture).runWithQueryNodeChecks()
   }
 
   unlock()

@@ -1091,7 +1091,6 @@ pub struct AmmBuyFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
-    deadline: Option<Moment>,
     slippage_tolerance: Option<(Permill, Balance)>,
 }
 
@@ -1103,7 +1102,6 @@ impl AmmBuyFixture {
             token_id: One::one(),
             member_id,
             amount: Balance::from(DEFAULT_AMM_BUY_AMOUNT),
-            deadline: None,
             slippage_tolerance: None,
         }
     }
@@ -1124,13 +1122,6 @@ impl AmmBuyFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_deadline(self, deadline: Moment) -> Self {
-        Self {
-            deadline: Some(deadline),
-            ..self
-        }
-    }
-
     pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
         Self {
             slippage_tolerance: Some(tolerance),
@@ -1145,7 +1136,6 @@ impl AmmBuyFixture {
             self.token_id,
             self.member_id,
             self.amount,
-            self.deadline,
             self.slippage_tolerance,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
@@ -1164,7 +1154,6 @@ pub struct AmmSellFixture {
     token_id: TokenId,
     member_id: MemberId,
     amount: Balance,
-    deadline: Option<Moment>,
     slippage_tolerance: Option<(Permill, Balance)>,
 }
 
@@ -1176,7 +1165,6 @@ impl AmmSellFixture {
             token_id: One::one(),
             member_id,
             amount: Balance::from(DEFAULT_AMM_SELL_AMOUNT),
-            deadline: None,
             slippage_tolerance: None,
         }
     }
@@ -1197,13 +1185,6 @@ impl AmmSellFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_deadline(self, deadline: Moment) -> Self {
-        Self {
-            deadline: Some(deadline),
-            ..self
-        }
-    }
-
     pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
         Self {
             slippage_tolerance: Some(tolerance),
@@ -1218,7 +1199,6 @@ impl AmmSellFixture {
             self.token_id,
             self.member_id,
             self.amount,
-            self.deadline,
             self.slippage_tolerance,
         );
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);

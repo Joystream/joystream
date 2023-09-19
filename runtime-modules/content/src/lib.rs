@@ -1750,54 +1750,6 @@ decl_module! {
                     new_video_state_bloat_bond));
         }
 
-        /// Claim and withdraw reward in JOY from channel account
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (H)` where:
-        /// - `H` is the lenght of the provided merkle `proof`
-        /// - DB:
-        ///    - O(1)
-        /// # </weight>
-        #[weight =
-            WeightInfoContent::<T>::claim_and_withdraw_member_channel_reward(proof.len() as u32)
-                .max(WeightInfoContent::<T>::claim_and_withdraw_curator_channel_reward(
-                    proof.len() as u32
-                ))]
-        pub fn claim_and_withdraw_channel_reward(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            proof: Vec<ProofElement<T>>,
-            item: PullPayment<T>
-        ) -> DispatchResult {
-            let (channel, reward_account, amount) =
-                Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
-
-            // Ensure withdrawals are not paused
-            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
-
-            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
-
-            let destination = Self::channel_funds_destination(&channel)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
-            // This call should (and is assumed to) never fail:
-            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?;
-
-            Self::deposit_event(RawEvent::ChannelRewardClaimedAndWithdrawn(
-                actor,
-                item.channel_id,
-                amount,
-                destination,
-            ));
-
-            Ok(())
-        }
-
         /// Issue NFT
         ///
         /// <weight>

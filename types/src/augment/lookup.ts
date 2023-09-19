@@ -2967,11 +2967,6 @@ export default {
       update_video_state_bloat_bond: {
         newVideoStateBloatBond: 'u128',
       },
-      claim_and_withdraw_channel_reward: {
-        actor: 'PalletContentPermissionsContentActor',
-        proof: 'Vec<PalletCommonMerkleTreeProofElementRecord>',
-        item: 'PalletContentPullPaymentElement',
-      },
       issue_nft: {
         actor: 'PalletContentPermissionsContentActor',
         videoId: 'u64',

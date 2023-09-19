@@ -756,19 +756,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       channelOwnerRemark: AugmentedSubmittable<(channelId: u64 | AnyNumber | Uint8Array, msg: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, Bytes]>;
       /**
-       * Claim and withdraw reward in JOY from channel account
-       * 
-       * <weight>
-       * 
-       * ## Weight
-       * `O (H)` where:
-       * - `H` is the lenght of the provided merkle `proof`
-       * - DB:
-       * - O(1)
-       * # </weight>
-       **/
-      claimAndWithdrawChannelReward: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, proof: Vec<PalletCommonMerkleTreeProofElementRecord> | (PalletCommonMerkleTreeProofElementRecord | { hash_?: any; side?: any } | string | Uint8Array)[], item: PalletContentPullPaymentElement | { channelId?: any; cumulativeRewardEarned?: any; reason?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, Vec<PalletCommonMerkleTreeProofElementRecord>, PalletContentPullPaymentElement]>;
-      /**
        * Claim reward in JOY from channel account
        * 
        * <weight>

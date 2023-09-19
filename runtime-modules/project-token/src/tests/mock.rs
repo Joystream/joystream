@@ -116,7 +116,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system,
         Balances: balances,
-        Timestamp: pallet_timestamp,
+        Timestamp: pallet_timestamp::{Pallet, Call, Storage, Inherent},
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>},
         Token: token::{Pallet, Call, Storage, Config<T>, Event<T>},
@@ -156,6 +156,13 @@ impl storage::Config for Test {
 impl common::MembershipTypes for Test {
     type MemberId = u64;
     type ActorId = u64;
+}
+
+impl pallet_timestamp::Config for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl Config for Test {

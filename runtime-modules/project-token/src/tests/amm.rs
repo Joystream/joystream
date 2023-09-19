@@ -135,23 +135,6 @@ fn amm_buy_succeeds_with_existing_user() {
 }
 
 #[test]
-fn amm_buy_fails_with_deadline_expired() {
-    let deadline_timestamp = 0u64;
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
-        .execute_with(|| {
-            IssueTokenFixture::default().execute_call().unwrap();
-            ActivateAmmFixture::default().execute_call().unwrap();
-            pallet_timestamp::Pallet::<Test>::set_timestamp(deadline_timestamp + 10u64);
-            let result = AmmBuyFixture::default()
-                .with_deadline(deadline_timestamp)
-                .execute_call();
-
-            assert_err!(result, Error::<Test>::DeadlineExpired);
-        })
-}
-
-#[test]
 fn amm_buy_failed_with_slippage_constraint_violated() {
     let slippage_tolerance = (Permill::zero(), Balance::zero());
     let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
@@ -571,25 +554,6 @@ fn amm_sell_fails_with_token_not_in_amm_state() {
             let result = AmmSellFixture::default().execute_call();
 
             assert_err!(result, Error::<Test>::NotInAmmState);
-        })
-}
-
-#[test]
-fn amm_sell_fails_with_deadline_expired() {
-    let deadline_timestamp = 0u64;
-    let (user_account_id, user_balance) = (member!(2).1, joy!(5_000_000));
-    build_default_test_externalities_with_balances(vec![(user_account_id, user_balance)])
-        .execute_with(|| {
-            IssueTokenFixture::default().execute_call().unwrap();
-            ActivateAmmFixture::default().execute_call().unwrap();
-            AmmBuyFixture::default().execute_call().unwrap();
-            pallet_timestamp::Pallet::<Test>::set_timestamp(deadline_timestamp + 10u64);
-
-            let result = AmmSellFixture::default()
-                .with_deadline(deadline_timestamp)
-                .execute_call();
-
-            assert_err!(result, Error::<Test>::DeadlineExpired);
         })
 }
 
