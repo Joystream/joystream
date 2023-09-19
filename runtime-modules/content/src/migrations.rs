@@ -2,7 +2,7 @@
 
 use super::*;
 use frame_support::{
-    dispatch::GetStorageVersion, parameter_types, traits::OnRuntimeUpgrade, BoundedBTreeMap,
+    parameter_types, traits::OnRuntimeUpgrade, traits::StorageVersion, BoundedBTreeMap,
     BoundedBTreeSet,
 };
 use sp_std::collections::btree_map::BTreeMap;
