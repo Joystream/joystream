@@ -27,6 +27,7 @@ mod tests;
 mod benchmarks;
 
 mod errors;
+pub mod migrations;
 mod nft;
 mod permissions;
 mod types;
@@ -294,7 +295,6 @@ decl_storage! { generate_storage_info
         /// NFT limits enabled or not
         /// Can be updated in flight by the Council
         pub NftLimitsEnabled get(fn nft_limits_enabled) config(): bool;
-
     }
     add_extra_genesis {
         build(|_| {
