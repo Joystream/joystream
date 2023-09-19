@@ -33,10 +33,7 @@ export class RemarkModeratePostsFixture extends WithForumWorkersFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.moderations.map((u) => {
       const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
-        moderatePost: {
-          postId: Long.fromString(String(u.postId)),
-          rationale: u.rationale,
-        },
+        moderatePost: { postId: Long.fromString(String(u.postId)), rationale: u.rationale },
       })
       return u.asWorker
         ? this.api.tx.forumWorkingGroup.workerRemark(u.asWorker, metadata)
