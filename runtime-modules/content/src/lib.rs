@@ -92,14 +92,14 @@ use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 type WeightInfoContent<T> = <T as Config>::WeightInfo;
 
 /// The log target of this pallet.
-pub const LOG_TARGET: &'static str = "runtime::content";
+pub const LOG_TARGET: &str = "runtime::content";
 
 // syntactic sugar for logging.
 #[macro_export]
 macro_rules! log {
 	($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
 		log::$level!(
-			target: crate::LOG_TARGET,
+			target: $crate::LOG_TARGET,
 			concat!("[{:?}] 📹 ", $patter), <frame_system::Pallet<T>>::block_number() $(, $values)*
 		)
 	};
