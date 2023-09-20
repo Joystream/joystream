@@ -72,7 +72,7 @@ use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, StorageVersion},
     PalletId, Parameter,
 };
 
@@ -90,6 +90,25 @@ use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, M
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 type WeightInfoContent<T> = <T as Config>::WeightInfo;
+
+/// The log target of this pallet.
+pub const LOG_TARGET: &'static str = "runtime::content";
+
+// syntactic sugar for logging.
+#[macro_export]
+macro_rules! log {
+	($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
+		log::$level!(
+			target: crate::LOG_TARGET,
+			concat!("[{:?}] 📹 ", $patter), <frame_system::Pallet<T>>::block_number() $(, $values)*
+		)
+	};
+}
+
+// Nara release. enum variants removed:
+// - ContentModerationAction::DeleteVideo
+// - ContentModerationAction::DeleteChannel
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 /// Module configuration trait for Content Directory Module
 pub trait Config:
@@ -3666,6 +3685,8 @@ decl_module! {
                 channel.creator_token_id = None;
             });
         }
+
+        type StorageVersion = CURRENT_STORAGE_VERSION;
     }
 }
 

@@ -5229,6 +5229,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "log",
  "pallet-balances",
  "pallet-common",
  "pallet-insecure-randomness-collective-flip",
