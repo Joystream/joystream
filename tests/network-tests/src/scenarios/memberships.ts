@@ -9,6 +9,7 @@ import { scenario } from '../Scenario'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import leadOpening from '../flows/working-groups/leadOpening'
 import electCouncil from '../flows/council/elect'
+import updateValidatorAccount from "../flows/membership/validatorProfile";
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Memberships', async ({ job }) => {
@@ -24,4 +25,5 @@ scenario('Memberships', async ({ job }) => {
   job('transferring invites', transferringInvites)
   job('managing staking accounts', managingStakingAccounts)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job("updating member verify account status", updateValidatorAccount);
 })
