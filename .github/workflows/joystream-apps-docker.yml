@@ -2,6 +2,11 @@ name: Publish Colossus/Argus/QueryNode Docker images
 
 on:
   workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Comma-separated list of packages to publish to Docker Hub'
+        required: true
+        default: '*'
   pull_request:
 
 jobs:
@@ -42,6 +47,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Build joystream-node
+        if: github.event_name == 'pull_request'
         run: RUNTIME_PROFILE=TESTING ./build-node-docker.sh
 
       # docker/build-push-action doc:
@@ -79,25 +85,37 @@ jobs:
           tags: joystream/query-node:latest
 
       - name: Test with latest images
+        if: github.event_name == 'pull_request'
         run: |
           yarn build:packages
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
           ./tests/network-tests/run-tests.sh content-directory
 
-      - name: Push new versions
-        if: github.event_name == 'workflow_dispatch'
+      - name: Push storage-node
+        if: contains(github.event.inputs.packages, 'storage-node') || github.event.inputs.packages == '*'
         run: |
           docker image tag joystream/storage-node:latest joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
-          docker image tag joystream/distributor-node:latest joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
-          docker image tag joystream/query-node:latest joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
           docker push joystream/storage-node:${{ steps.extract_versions.outputs.colossus_version }}
+      - name: Push distributor-node
+        if: contains(github.event.inputs.packages, 'distributor-node') || github.event.inputs.packages == '*'
+        run: |
+          docker image tag joystream/distributor-node:latest joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
           docker push joystream/distributor-node:${{ steps.extract_versions.outputs.argus_version }}
+      - name: Push query-node
+        if: contains(github.event.inputs.packages, 'query-node') || github.event.inputs.packages == '*'
+        run: |
+          docker image tag joystream/query-node:latest joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
           docker push joystream/query-node:${{ steps.extract_versions.outputs.qn_version }}
 
-      - name: Push latest tag
-        if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch'
-        run: |
-          docker push joystream/storage-node:latest
-          docker push joystream/distributor-node:latest
-          docker push joystream/query-node:latest
+      - name: Push storage-node latest tag
+        if: github.ref == 'refs/heads/master' && (contains(github.event.inputs.packages, 'storage-node') || github.event.inputs.packages == '*')
+        run: docker push joystream/storage-node:latest
+
+      - name: Push distributor-node latest tag
+        if: github.ref == 'refs/heads/master' && (contains(github.event.inputs.packages, 'query-node') || github.event.inputs.packages == '*')
+        run: docker push joystream/distributor-node:latest
+
+      - name: Push query-node latest tag
+        if: github.ref == 'refs/heads/master' && (contains(github.event.inputs.packages, 'query-node') || github.event.inputs.packages == '*')
+        run: docker push joystream/query-node:latest
 
