@@ -1,3 +1,7 @@
+### 3.7.0
+
+- Updates `leader:update-bag` CLI command to `leader:update-bags` to accept multiple bag ids as input. This allows the command to be used to update storage buckets of multiple bags in a single batched transaction.
+
 ### 3.6.0
 
 - Collosus can now store multiple keys in it's keyring.

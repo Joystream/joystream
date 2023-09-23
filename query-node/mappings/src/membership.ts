@@ -73,6 +73,7 @@ import {
   getMemberById,
   getWorker,
   getWorkingGroupByName,
+  invalidMetadata,
   logger,
   saveMetaprotocolTransactionErrored,
   saveMetaprotocolTransactionSuccessful,
@@ -126,13 +127,14 @@ function asMembershipExternalResource(
 ): Pick<MembershipExternalResource, 'type' | 'value'>[] {
   const typeKey = isSet(resource.type) && MembershipMetadata.ExternalResource.ResourceType[resource.type]
 
-  if (!typeKey || !(typeKey in MembershipExternalResourceType)) {
-    throw new Error(`Invalid ResourceType: ${typeKey}`)
+  if (typeKey && typeKey in MembershipExternalResourceType) {
+    const type = MembershipExternalResourceType[typeKey]
+    const value = resource.value
+    return type && value ? [{ type, value }] : []
+  } else {
+    invalidMetadata(`Invalid ResourceType: ${resource.type}`)
+    return []
   }
-
-  const type = MembershipExternalResourceType[typeKey]
-  const value = resource.value
-  return type && value ? [{ type, value }] : []
 }
 
 async function saveMembershipMetadata(
@@ -156,6 +158,8 @@ async function saveMembershipMetadata(
     id: undefined,
     avatar,
     externalResources: undefined,
+    isVerifiedValidator: false,
+    validatorAccount: metadata?.validatorAccount || undefined,
   })
 
   await store.save<MemberMetadata>(metadataEntity)
@@ -192,7 +196,9 @@ async function createNewMemberFromParams(
     entry: entryMethod,
     referredBy:
       entryMethod.isTypeOf === 'MembershipEntryPaid' && (params as BuyMembershipParameters).referrerId.isSome
-        ? new Membership({ id: (params as BuyMembershipParameters).referrerId.unwrap().toString() })
+        ? new Membership({
+            id: (params as BuyMembershipParameters).referrerId.unwrap().toString(),
+          })
         : undefined,
     isVerified: isFoundingMember,
     inviteCount,
@@ -202,7 +208,9 @@ async function createNewMemberFromParams(
     referredMembers: [],
     invitedBy:
       entryMethod.isTypeOf === 'MembershipEntryInvited'
-        ? new Membership({ id: (params as InviteMembershipParameters).invitingMemberId.toString() })
+        ? new Membership({
+            id: (params as InviteMembershipParameters).invitingMemberId.toString(),
+          })
         : undefined,
     isFoundingMember,
     isCouncilMember: false,
@@ -322,6 +330,14 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     if (member.metadata.avatar) {
       member.metadata.avatar.avatarUri = metadata.avatarUri
     }
+  }
+
+  if (
+    typeof metadata?.validatorAccount === 'string' &&
+    metadata.validatorAccount !== member.metadata.validatorAccount
+  ) {
+    member.metadata.validatorAccount = (metadata.validatorAccount || null) as string | undefined
+    member.metadata.isVerifiedValidator = false
   }
 
   if (newHandle.isSome) {

@@ -1,6 +1,10 @@
-### 1.3.0
+### 1.4.0
 
 - Adds `StorageBag.objectsSize` field to `StorageBag` entity schema. This enables to query the total size of all objects in a storage bag.
+
+### 1.3.0
+
+- Fix external resources mapping of membership metadata to ignore unrecognized type.
 
 ### 1.2.2
 

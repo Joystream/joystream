@@ -1,5 +1,5 @@
 import { ReadonlyConfig } from '../../types/config'
-import { QueryNodeApi } from './query-node/api'
+import { QueryFetchPolicy, QueryNodeApi } from './query-node/api'
 import { Logger } from 'winston'
 import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
@@ -50,7 +50,7 @@ export class NetworkingService {
     this.logging = logging
     this.stateCache = stateCache
     this.logger = logging.createLogger('NetworkingManager')
-    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
+    this.queryNodeApi = new QueryNodeApi(config, this.logging)
     void this.checkActiveStorageNodeEndpoints()
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
@@ -137,8 +137,8 @@ export class NetworkingService {
     return parsed
   }
 
-  public async dataObjectInfo(objectId: string): Promise<DataObjectInfo> {
-    const details = await this.queryNodeApi.getDataObjectDetails(objectId)
+  public async dataObjectInfo(objectId: string, fetchPolicy: QueryFetchPolicy): Promise<DataObjectInfo> {
+    const details = await this.queryNodeApi.getDataObjectDetails(objectId, fetchPolicy)
     let exists = false
     let isSupported = false
     let isAccepted = false

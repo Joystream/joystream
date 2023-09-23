@@ -86,6 +86,10 @@ jobs:
           # Make sure ami image is available in the region specified in configure aws creds step
           parameter-overrides: 'KeyName=joystream-github-action-key-new,EC2InstanceType=t2.xlarge,EC2AMI=ami-06b4d9ba1f23a8da4'
 
+      - name: Wait for docker build server to be ready
+        run: |
+          sleep 30
+
       - name: Run playbook
         uses: dawidd6/action-ansible-playbook@v2
         with:
