@@ -112,7 +112,7 @@ jobs:
         run: docker push joystream/storage-node:latest
 
       - name: Push distributor-node latest tag
-        if: github.ref == 'refs/heads/master' && (contains(github.event.inputs.packages, 'query-node') || github.event.inputs.packages == '*')
+        if: github.ref == 'refs/heads/master' && (contains(github.event.inputs.packages, 'distributor-node') || github.event.inputs.packages == '*')
         run: docker push joystream/distributor-node:latest
 
       - name: Push query-node latest tag
