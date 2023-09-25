@@ -542,10 +542,9 @@
     pluralize "^8.0.0"
     tslib "1.11.2"
 
-"@joystream/hydra-typegen@5.0.0-alpha.4":
+"@joystream/hydra-typegen@file:../../joystream-hydra-typegen-v5.0.0-alpha.4.tgz":
   version "5.0.0-alpha.4"
-  resolved "https://registry.yarnpkg.com/@joystream/hydra-typegen/-/hydra-typegen-5.0.0-alpha.4.tgz#f87457f243cbd05245250c8e4f45a67d2be7228c"
-  integrity sha512-IMtpWyrtlrwrDSkZSjJOj8vx5gcFh92JXBiKLNMkRJuGxvxmNWnIhbMImve1pnCEhHsNKppxEMG/u7IWHPHqEg==
+  resolved "file:../../joystream-hydra-typegen-v5.0.0-alpha.4.tgz#3684c9efc2fb443f48c11d41612abee17078d8bf"
   dependencies:
     "@oclif/command" "^1.8.0"
     "@oclif/config" "^1"
