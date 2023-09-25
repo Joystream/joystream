@@ -29,6 +29,7 @@ import {
   StorageDataObject,
   Video,
   VideoAssetsDeletedByModeratorEvent,
+  VideoDeletedByModeratorEvent,
   VideoDeletedEvent,
   VideoReactedEvent,
   VideoReaction,
@@ -41,6 +42,7 @@ import { FindOptionsWhere, In } from 'typeorm'
 import {
   Content_VideoAssetsDeletedByModeratorEvent_V1001 as VideoAssetsDeletedByModeratorEvent_V1001,
   Content_VideoCreatedEvent_V1001 as VideoCreatedEvent_V1001,
+  Content_VideoDeletedByModeratorEvent_V1001 as VideoDeletedByModeratorEvent_V1001,
   Content_VideoDeletedEvent_V1001 as VideoDeletedEvent_V1001,
   Content_VideoUpdatedEvent_V1001 as VideoUpdatedEvent_V1001,
   Content_VideoVisibilitySetByModeratorEvent_V1001 as VideoVisibilitySetByModeratorEvent_V1001,
@@ -333,6 +335,25 @@ export async function content_VideoAssetsDeletedByModerator({
   })
 
   await store.save<VideoAssetsDeletedByModeratorEvent>(videoAssetsDeletedByModeratorEvent)
+}
+
+export async function content_VideoDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
+  // read event data
+  const [actor, videoId, rationale] = new VideoDeletedByModeratorEvent_V1001(event).params
+
+  await deleteVideo(store, videoId)
+
+  // common event processing - second
+
+  const videoDeletedByModeratorEvent = new VideoDeletedByModeratorEvent({
+    ...genericEventFields(event),
+
+    videoId: Number(videoId),
+    rationale: bytesToString(rationale),
+    actor: await convertContentActor(store, actor),
+  })
+
+  await store.save<VideoDeletedByModeratorEvent>(videoDeletedByModeratorEvent)
 }
 
 export async function content_VideoVisibilitySetByModerator({

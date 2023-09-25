@@ -95,6 +95,10 @@ typegen:
     - content.VideoUpdated
     - content.VideoDeleted
     - content.ChannelDeleted
+      # Deprecated in runtime spec version 2002 (nara), but still required for QN processing from genesis block
+    - content.ChannelDeletedByModerator
+      # Deprecated in runtime spec version 2002 (nara), but still required for QN processing from genesis block
+    - content.VideoDeletedByModerator
     - content.ChannelAssetsDeletedByModerator
     - content.VideoAssetsDeletedByModerator
     - content.VideoVisibilitySetByModerator
@@ -746,6 +750,10 @@ mappings:
       handler: content_ContentDeleted
     - event: content.ChannelDeleted
       handler: content_ChannelDeleted
+    - event: content.ChannelDeletedByModerator
+      handler: content_ChannelDeletedByModerator
+    - event: content.VideoDeletedByModerator
+      handler: content_VideoDeletedByModerator
     - event: content.ChannelAssetsDeletedByModerator
       handler: content_ChannelAssetsDeletedByModerator
     - event: content.VideoAssetsDeletedByModerator
