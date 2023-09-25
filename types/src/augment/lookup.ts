@@ -820,7 +820,6 @@ export default {
       VideoStateBloatBondValueUpdated: 'u128',
       ChannelAssetsRemoved: '(PalletContentPermissionsContentActor,u64,BTreeSet<u64>,PalletContentChannelRecord)',
       ChannelDeleted: '(PalletContentPermissionsContentActor,u64)',
-      ChannelDeletedByModerator: '(PalletContentPermissionsContentActor,u64,Bytes)',
       ChannelVisibilitySetByModerator: '(PalletContentPermissionsContentActor,u64,bool,Bytes)',
       ChannelPausedFeaturesUpdatedByModerator: '(PalletContentPermissionsContentActor,u64,BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature>,Bytes)',
       ChannelAssetsDeletedByModerator: '(PalletContentPermissionsContentActor,u64,BTreeSet<u64>,Bytes)',
@@ -829,7 +828,6 @@ export default {
       VideoCreated: '(PalletContentPermissionsContentActor,u64,u64,PalletContentVideoCreationParametersRecord,BTreeSet<u64>)',
       VideoUpdated: '(PalletContentPermissionsContentActor,u64,PalletContentVideoUpdateParametersRecord,BTreeSet<u64>)',
       VideoDeleted: '(PalletContentPermissionsContentActor,u64)',
-      VideoDeletedByModerator: '(PalletContentPermissionsContentActor,u64,Bytes)',
       VideoVisibilitySetByModerator: '(PalletContentPermissionsContentActor,u64,bool,Bytes)',
       VideoAssetsDeletedByModerator: '(PalletContentPermissionsContentActor,u64,BTreeSet<u64>,bool,Bytes)',
       ChannelPayoutsUpdated: '(PalletContentUpdateChannelPayoutsParametersRecord,Option<u64>,AccountId32)',
@@ -2979,13 +2977,6 @@ export default {
         storageBucketsNumWitness: 'u32',
         rationale: 'Bytes',
       },
-      delete_channel_as_moderator: {
-        actor: 'PalletContentPermissionsContentActor',
-        channelId: 'u64',
-        channelBagWitness: 'PalletContentChannelBagWitness',
-        numObjectsToDelete: 'u64',
-        rationale: 'Bytes',
-      },
       set_channel_visibility_as_moderator: {
         actor: 'PalletContentPermissionsContentActor',
         channelId: 'u64',
@@ -3013,13 +3004,6 @@ export default {
         videoId: 'u64',
         storageBucketsNumWitness: 'u32',
         assetsToRemove: 'BTreeSet<u64>',
-        rationale: 'Bytes',
-      },
-      delete_video_as_moderator: {
-        actor: 'PalletContentPermissionsContentActor',
-        videoId: 'u64',
-        storageBucketsNumWitness: 'Option<u32>',
-        numObjectsToDelete: 'u64',
         rationale: 'Bytes',
       },
       set_video_visibility_as_moderator: {

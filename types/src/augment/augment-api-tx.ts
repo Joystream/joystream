@@ -859,7 +859,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       deleteChannel: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, channelBagWitness: PalletContentChannelBagWitness | { storageBucketsNum?: any; distributionBucketsNum?: any } | string | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelBagWitness, u64]>;
-      deleteChannelAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, channelId: u64 | AnyNumber | Uint8Array, channelBagWitness: PalletContentChannelBagWitness | { storageBucketsNum?: any; distributionBucketsNum?: any } | string | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, PalletContentChannelBagWitness, u64, Bytes]>;
       /**
        * <weight>
        * 
@@ -885,19 +884,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       deleteVideo: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, storageBucketsNumWitness: Option<u32> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, u64, Option<u32>]>;
-      /**
-       * <weight>
-       * 
-       * ## Weight
-       * `O (A + B + C)` where:
-       * - `A` is the value of `num_objects_to_delete`
-       * - `B` is the value of `storage_buckets_num_witness`
-       * - `C` is the size of `rationale` in kilobytes
-       * - DB:
-       * - `O(A + B)` - from the the generated weights
-       * # </weight>
-       **/
-      deleteVideoAsModerator: AugmentedSubmittable<(actor: PalletContentPermissionsContentActor | { Curator: any } | { Member: any } | { Lead: any } | string | Uint8Array, videoId: u64 | AnyNumber | Uint8Array, storageBucketsNumWitness: Option<u32> | null | object | string | Uint8Array, numObjectsToDelete: u64 | AnyNumber | Uint8Array, rationale: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletContentPermissionsContentActor, u64, Option<u32>, u64, Bytes]>;
       /**
        * <weight>
        * 
