@@ -38,12 +38,12 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::Hash;
 use sp_runtime::SaturatedConversion;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 type WeightInfoConstitution<T> = <T as Config>::WeightInfo;
 
 pub trait Config: frame_system::Config {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -74,7 +74,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         fn deposit_event() = default;
 
         /// Sets the current constitution hash. Requires root origin.
@@ -101,5 +101,12 @@ decl_module! {
 
             Self::deposit_event(Event::<T>::ConstutionAmended(hash, constitution_text));
         }
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

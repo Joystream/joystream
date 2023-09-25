@@ -12,6 +12,7 @@ import stringify from 'fast-safe-stringify'
 import sleep from 'sleep-promise'
 import ExitCodes from '../../command-base/ExitCodes'
 import logger from '../../services/logger'
+import { SpRuntimeDispatchError } from '@polkadot/types/lookup'
 
 /**
  * Dedicated error for the failed extrinsics.
@@ -171,7 +172,7 @@ async function lockAndGetNonce(api: ApiPromise, account: KeyringPair): Promise<I
  * @param error - DispatchError instance
  * @returns error string.
  */
-export function formatDispatchError(api: ApiPromise, error: DispatchError): string {
+export function formatDispatchError(api: ApiPromise, error: DispatchError | SpRuntimeDispatchError): string {
   // Need to assert that registry is of TypeRegistry type, since Registry intefrace
   // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
   const typeRegistry = api.registry as TypeRegistry

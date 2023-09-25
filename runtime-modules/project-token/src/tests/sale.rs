@@ -702,7 +702,7 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
             <Test as crate::Config>::JoyExistentialDeposit::get() + bloat_bond,
         );
         assert_ok!(Token::join_whitelist(
-            Origin::signed(member!(2).1),
+            RuntimeOrigin::signed(member!(2).1),
             member!(2).0,
             Token::next_token_id() - 1,
             proof

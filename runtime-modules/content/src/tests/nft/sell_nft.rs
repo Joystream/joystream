@@ -18,14 +18,14 @@ fn sell_nft() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
         ));
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -63,7 +63,7 @@ fn sell_nft_video_does_not_exist() {
 
         // Make an attempt to sell nft which corresponding video does not exist yet
         let sell_nft_result = Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -88,7 +88,7 @@ fn sell_nft_not_issued() {
 
         // Make an attempt to sell nft which is not issued yet
         let sell_nft_result = Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -113,7 +113,7 @@ fn sell_nft_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -121,7 +121,7 @@ fn sell_nft_auth_failed() {
 
         // Make an attempt to sell nft with wrong credentials
         let sell_nft_result = Content::sell_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -146,7 +146,7 @@ fn sell_nft_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -154,7 +154,7 @@ fn sell_nft_not_authorized() {
 
         // Make an attempt to sell nft if actor is not authorized
         let sell_nft_result = Content::sell_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -179,7 +179,7 @@ fn sell_nft_transactional_status_is_not_idle() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -187,7 +187,7 @@ fn sell_nft_transactional_status_is_not_idle() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -196,7 +196,7 @@ fn sell_nft_transactional_status_is_not_idle() {
 
         // Make an attempt to sell nft when it is already offered
         let sell_nft_result = Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -220,7 +220,7 @@ fn sell_nft_fails_during_transfer() {
 
         assert_noop!(
             Content::sell_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 DEFAULT_NFT_PRICE,

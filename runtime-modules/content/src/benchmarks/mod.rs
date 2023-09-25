@@ -13,7 +13,7 @@ use crate::{
 
 use balances::Pallet as Balances;
 use common::{working_group::WorkingGroupAuthenticator, MembershipTypes};
-use frame_benchmarking::account;
+use frame_benchmarking::v1::account;
 use frame_support::{
     dispatch::DispatchError,
     storage::{StorageDoubleMap, StorageMap, StorageValue},
@@ -198,7 +198,7 @@ impl<T> RuntimeConfig for T where
 {
 }
 
-fn get_signed_account_id<T>(account_id: u64) -> T::Origin
+fn get_signed_account_id<T>(account_id: u64) -> T::RuntimeOrigin
 where
     T::AccountId: CreateAccountId,
     T: Config,
@@ -206,12 +206,12 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::RuntimeEvent) {
     assert_past_event::<T>(expected_event, 0);
 }
 
 fn assert_past_event<T: Config>(
-    expected_event: <T as frame_system::Config>::Event,
+    expected_event: <T as frame_system::Config>::RuntimeEvent,
     index_from_last: u32,
 ) {
     let events = System::<T>::events();
@@ -274,7 +274,7 @@ fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
 }
 
 fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
@@ -288,7 +288,7 @@ fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
 }
 
 fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     working_group::Module::<T, I>::add_opening(
@@ -327,7 +327,7 @@ where
     let worker_id = working_group::NextWorkerId::<T, I>::get();
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Signed(leader_acc.clone())),
+        &T::RuntimeOrigin::from(RawOrigin::Signed(leader_acc.clone())),
         &account_id,
         &member_id,
         &OpeningType::Regular,
@@ -367,7 +367,7 @@ where
     let account_id = change_member_account::<T>(member_id, acc_id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Root),
+        &T::RuntimeOrigin::from(RawOrigin::Root),
         &account_id,
         &member_id,
         &OpeningType::Leader,
@@ -510,7 +510,7 @@ fn set_dyn_bag_creation_storage_bucket_numbers<T>(
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         bag_type,
         storage_bucket_number,
     )
@@ -526,7 +526,7 @@ fn update_families_in_dynamic_bag_creation_policy<T>(
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::update_families_in_dynamic_bag_creation_policy(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         bag_type,
         families,
     )
@@ -542,7 +542,7 @@ fn set_storage_buckets_voucher_max_limits<T>(
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::update_storage_buckets_voucher_max_limits(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         voucher_objects_size_limit,
         voucher_objs_number_limit,
     )
@@ -556,7 +556,7 @@ where
     // Set storage bucket in the dynamic bag creation policy to zero.
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::create_storage_bucket(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         None,
         accepting_bags,
         storage_bucket_objs_size_limit::<T>(),
@@ -581,7 +581,7 @@ where
                     .next_distribution_bucket_index;
 
             Storage::<T>::create_distribution_bucket(
-                T::Origin::from(storage_wg_leader_signed.clone()),
+                T::RuntimeOrigin::from(storage_wg_leader_signed.clone()),
                 distribution_bucket_family_id,
                 true,
             )
@@ -609,8 +609,10 @@ where
 
     let db_family_id = Storage::<T>::next_distribution_bucket_family_id();
 
-    Storage::<T>::create_distribution_bucket_family(T::Origin::from(distribution_wg_leader_signed))
-        .unwrap();
+    Storage::<T>::create_distribution_bucket_family(T::RuntimeOrigin::from(
+        distribution_wg_leader_signed,
+    ))
+    .unwrap();
 
     (
         db_family_id,
@@ -1654,7 +1656,7 @@ fn add_english_auction_bid<T: Config>(
     video_id: T::VideoId,
 ) -> BalanceOf<T> {
     let bid_amount = nft_buy_now_price::<T>() - Pallet::<T>::min_bid_step();
-    let origin: T::Origin = RawOrigin::Signed(sender).into();
+    let origin: T::RuntimeOrigin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     bid_amount
 }
@@ -1665,7 +1667,7 @@ fn add_open_auction_bid<T: Config>(
     video_id: T::VideoId,
 ) -> OpenAuctionBid<T> {
     let bid_amount = nft_buy_now_price::<T>() - 1u32.into();
-    let origin: T::Origin = RawOrigin::Signed(sender).into();
+    let origin: T::RuntimeOrigin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_open_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id)
 }

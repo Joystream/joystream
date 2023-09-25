@@ -15,7 +15,7 @@ function cleanup() {
 
 trap cleanup EXIT
 
-sleep 3
+sleep 30
 
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime

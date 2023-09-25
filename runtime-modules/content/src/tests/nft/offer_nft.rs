@@ -18,7 +18,7 @@ fn offer_nft() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -26,7 +26,7 @@ fn offer_nft() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -67,7 +67,7 @@ fn offer_nft_video_does_not_exist() {
 
         // Make an attempt to offer nft which corresponding video does not exist
         let offer_nft_result = Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -93,7 +93,7 @@ fn offer_nft_not_issued() {
 
         // Make an attempt to offer nft which is not issued yet
         let offer_nft_result = Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -119,7 +119,7 @@ fn offer_nft_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -127,7 +127,7 @@ fn offer_nft_auth_failed() {
 
         // Make an attempt to offer nft with wrong credentials
         let offer_nft_result = Content::offer_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -153,7 +153,7 @@ fn offer_nft_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -161,7 +161,7 @@ fn offer_nft_not_authorized() {
 
         // Make an attempt to offer nft if actor is not authorized
         let offer_nft_result = Content::offer_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             UNAUTHORIZED_MEMBER_ID,
@@ -187,7 +187,7 @@ fn offer_nft_transactional_status_is_not_idle() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -195,7 +195,7 @@ fn offer_nft_transactional_status_is_not_idle() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -204,7 +204,7 @@ fn offer_nft_transactional_status_is_not_idle() {
 
         // Make an attempt to offer nft when it is already offered
         let offer_nft_result = Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -227,7 +227,7 @@ fn offer_nft_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::offer_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 1u64,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 SECOND_MEMBER_ID,

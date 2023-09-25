@@ -14,7 +14,7 @@ fn settle_english_auction() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -32,7 +32,7 @@ fn settle_english_auction() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -48,7 +48,7 @@ fn settle_english_auction() {
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -62,7 +62,7 @@ fn settle_english_auction() {
 
         // Claim won english auction
         assert_ok!(Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
         ));
 
@@ -106,7 +106,7 @@ fn settle_english_auction_cannot_be_completed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -124,7 +124,7 @@ fn settle_english_auction_cannot_be_completed() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -137,15 +137,17 @@ fn settle_english_auction_cannot_be_completed() {
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
         ));
 
         // Make an attempt to claim won english auction if it did not expire yet
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -164,8 +166,10 @@ fn settle_english_auction_video_does_not_exist() {
         let video_id = NextVideoId::<Test>::get();
 
         // Make an attempt to claim won english auction which corresponding video does not exist
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -188,8 +192,10 @@ fn settle_english_auction_nft_is_not_issued() {
         create_default_member_owned_channel_with_video();
 
         // Make an attempt to claim won english auction for nft which is not issued yet
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -213,15 +219,17 @@ fn settle_english_auction_not_in_auction_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
         ));
 
         // Make an attempt to claim won english auction for nft which is not in auction state
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -245,7 +253,7 @@ fn settle_english_auction_is_not_english_auction_type() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -263,7 +271,7 @@ fn settle_english_auction_is_not_english_auction_type() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -276,15 +284,17 @@ fn settle_english_auction_is_not_english_auction_type() {
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
         ));
 
         // Make an attempt to claim won english auction for nft which is not in english auction state
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -308,7 +318,7 @@ fn settle_english_auction_last_bid_does_not_exist() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -326,7 +336,7 @@ fn settle_english_auction_last_bid_does_not_exist() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -336,8 +346,10 @@ fn settle_english_auction_last_bid_does_not_exist() {
         run_to_block(Content::max_auction_duration() + 1);
 
         // Make an attempt to claim won english auction if last bid does not exist
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_err!(
@@ -356,7 +368,7 @@ fn setup_english_auction_scenario() {
 
     // Issue nft
     assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test>::default(),
@@ -374,7 +386,7 @@ fn setup_english_auction_scenario() {
 
     // Start nft auction
     assert_ok!(Content::start_english_auction(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         auction_params,
@@ -396,7 +408,7 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner() {
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -404,7 +416,7 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner() {
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID,
             video_id,
             bid + Content::min_bid_step(),
@@ -414,8 +426,10 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner() {
         run_to_block(Content::max_auction_duration() + 1);
 
         // Make an attempt to claim won english auction if last bid does not exist
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_ok!(settle_english_auction_result);
@@ -449,7 +463,7 @@ fn settle_english_auction_ok_with_balances_check() {
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -472,7 +486,7 @@ fn settle_english_auction_ok_with_balances_check() {
         // Make nft auction bid
         let next_bid = bid + Content::min_bid_step();
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID,
             video_id,
             next_bid,
@@ -496,8 +510,10 @@ fn settle_english_auction_ok_with_balances_check() {
         run_to_block(Content::max_auction_duration() + 1);
 
         // Settle the auciton.
-        let settle_english_auction_result =
-            Content::settle_english_auction(Origin::signed(SECOND_MEMBER_ACCOUNT_ID), video_id);
+        let settle_english_auction_result = Content::settle_english_auction(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            video_id,
+        );
 
         // Failure checked
         assert_ok!(settle_english_auction_result);
@@ -539,7 +555,7 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_bala
 
         // Make nft auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -548,7 +564,7 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_bala
         // Make nft auction bid
         let new_bid = bid + Content::min_bid_step();
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID,
             video_id,
             new_bid,
@@ -559,7 +575,7 @@ fn settle_english_auction_ok_with_nft_claimed_by_non_winner_and_winner_free_bala
 
         // Make an attempt to claim won english auction if last bid does not exist
         assert_ok!(Content::settle_english_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
         ));
 
@@ -582,7 +598,7 @@ fn settle_english_auction_fails_during_transfer() {
             ed() + Content::min_starting_price(),
         );
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             VideoId::one(),
             Content::min_starting_price(),
@@ -595,7 +611,7 @@ fn settle_english_auction_fails_during_transfer() {
 
         assert_noop!(
             Content::settle_english_auction(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one()
             ),
             Error::<Test>::InvalidChannelTransferStatus,

@@ -598,9 +598,7 @@ fn unsuccessful_channel_update_with_invalid_objects_id_to_remove() {
         UpdateChannelFixture::default()
             .with_sender(DEFAULT_MEMBER_ACCOUNT_ID)
             .with_actor(ContentActor::Member(DEFAULT_MEMBER_ID))
-            .with_assets_to_remove(
-                ((DATA_OBJECTS_NUMBER as u64)..(2 * DATA_OBJECTS_NUMBER as u64)).collect(),
-            )
+            .with_assets_to_remove((DATA_OBJECTS_NUMBER..(2 * DATA_OBJECTS_NUMBER)).collect())
             .call_and_assert(Err(
                 Error::<Test>::AssetsToRemoveBeyondEntityAssetsSet.into()
             ));
@@ -1308,11 +1306,11 @@ fn unsuccessful_moderation_action_channel_deletion_with_invalid_num_objects_to_d
         DeleteChannelAsModeratorFixture::default()
             .with_sender(DEFAULT_CURATOR_ACCOUNT_ID)
             .with_actor(ContentActor::Curator(group_id, DEFAULT_CURATOR_ID))
-            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER - 1)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
         // As lead
         DeleteChannelAsModeratorFixture::default()
-            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER as u64 - 1)
+            .with_num_objects_to_delete(DATA_OBJECTS_NUMBER - 1)
             .call_and_assert(Err(Error::<Test>::InvalidBagSizeSpecified.into()));
     })
 }
@@ -2035,7 +2033,7 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
         // Try to issue nft for existing video as owner
         assert_eq!(
             Content::issue_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 VideoId::one(),
                 nft_params.clone()
@@ -2045,7 +2043,7 @@ fn video_nft_cannot_be_issued_when_channel_video_nft_issuance_paused() {
         // Try to issue nft for existing video as collaborator
         assert_eq!(
             Content::issue_nft(
-                Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(COLLABORATOR_MEMBER_ID),
                 VideoId::one(),
                 nft_params.clone()

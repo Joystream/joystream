@@ -11,7 +11,7 @@ fn purchase_tokens_on_sale(amount: u64) {
         existential_deposit + DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE * amount,
     );
     project_token::Module::<Test>::purchase_tokens_on_sale(
-        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
         project_token::Module::<Test>::next_token_id() - 1,
         SECOND_MEMBER_ID,
         amount,

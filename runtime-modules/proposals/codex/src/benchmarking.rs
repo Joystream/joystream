@@ -10,7 +10,7 @@ use common::to_kb;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use content::NftLimitPeriod;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::Currency;
 use frame_system::EventRecord;
@@ -31,9 +31,9 @@ use working_group::{
 const SEED: u32 = 0;
 const MAX_KILOBYTES_METADATA: u32 = 100;
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     assert!(
         !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{ConstU32, Currency, EnsureOneOf, LockIdentifier};
+use frame_support::traits::{ConstU32, Currency, EitherOfDiverse, LockIdentifier};
 use frame_support::{ensure, parameter_types, PalletId};
 use frame_system::{ensure_signed, EnsureRoot, EnsureSigned};
 use sp_core::H256;
@@ -51,8 +51,8 @@ impl frame_system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -60,7 +60,7 @@ impl frame_system::Config for Test {
     type AccountId = u128;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type DbWeight = ();
     type Version = ();
@@ -75,7 +75,7 @@ impl frame_system::Config for Test {
 }
 
 impl Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
     type Membership = ();
@@ -145,9 +145,9 @@ impl common::membership::MembershipTypes for Test {
     type ActorId = u64;
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u128> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u128> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u128, DispatchError> {
         let sender = ensure_signed(origin)?;
@@ -184,7 +184,7 @@ impl pallet_timestamp::Config for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type ReferralCutMaximumPercent = ReferralCutMaximumPercent;
     type WorkingGroup = Wg;
@@ -224,13 +224,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u128, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -274,7 +276,7 @@ parameter_types! {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxReserves = ConstU32<2>;
@@ -300,7 +302,7 @@ parameter_types! {
 pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Referendum = referendum::Pallet<Test, ReferendumInstance>;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -328,10 +330,11 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = u64;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -357,7 +360,7 @@ impl referendum::Config<ReferendumInstance> for Test {
             .iter()
             .map(|item| referendum::OptionResult {
                 option_id: item.option_id,
-                vote_power: item.vote_power.into(),
+                vote_power: item.vote_power,
             })
             .collect();
         <council::Pallet<Test> as council::ReferendumConnection<Test>>::recieve_referendum_results(

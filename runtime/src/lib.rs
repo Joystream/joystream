@@ -54,16 +54,14 @@ extern crate lazy_static; // for proposals_configuration module
 
 use codec::Decode;
 use frame_election_provider_support::{
-    onchain, ElectionDataProvider, ExtendedBalance, SequentialPhragmen, VoteWeight,
+    onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
 };
-use frame_support::pallet_prelude::Get;
 use frame_support::traits::{
-    ConstU16, ConstU32, Contains, Currency, EnsureOneOf, Imbalance, KeyOwnerProofSystem,
+    ConstU16, ConstU32, Contains, Currency, EitherOfDiverse, Imbalance, KeyOwnerProofSystem,
     LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
-use frame_support::weights::{
-    constants::WEIGHT_PER_SECOND, ConstantMultiplier, DispatchClass, Weight,
-};
+use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, Weight};
+use frame_support::{dispatch::DispatchClass, pallet_prelude::Get};
 pub use weights::{
     block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
     rocksdb_weights::constants::RocksDbWeight,
@@ -108,6 +106,7 @@ use static_assertions::const_assert;
 pub use frame_system::Call as SystemCall;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
+#[cfg(any(feature = "std", test))]
 pub use pallet_staking::StakerStatus;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -145,7 +144,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 2001,
+    spec_version: 2002,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -174,8 +173,9 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(10);
 /// We allow `Normal` extrinsics to fill up the block up to 75%, the rest can be used
 /// by  Operational  extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
-/// We allow for 2 seconds of compute with a 6 second average block time.
-pub const MAXIMUM_BLOCK_WEIGHT: Weight = 2 * WEIGHT_PER_SECOND;
+/// We allow for 2 seconds of compute with a 6 second average block time, with maximum proof size.
+const MAXIMUM_BLOCK_WEIGHT: Weight =
+    Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2), u64::MAX);
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 2400;
@@ -229,23 +229,29 @@ pub enum CallFilter {}
 // Filter out only a subset of calls on content pallet, some specific proposals
 // and the bounty creation call.
 #[cfg(not(feature = "runtime-benchmarks"))]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(call: &<Runtime as frame_system::Config>::Call) -> bool {
+impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
+    fn contains(call: &<Runtime as frame_system::Config>::RuntimeCall) -> bool {
         match call {
-            Call::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
-            Call::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_curator_group_permissions {
+            RuntimeCall::Content(content::Call::<Runtime>::destroy_nft { .. }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::toggle_nft_limits { .. }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::update_curator_group_permissions {
                 ..
             }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_privilege_level { .. }) => false,
-            Call::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => false,
-            Call::Content(content::Call::<Runtime>::set_channel_paused_features_as_moderator {
+            RuntimeCall::Content(content::Call::<Runtime>::update_channel_privilege_level {
                 ..
             }) => false,
-            Call::Content(content::Call::<Runtime>::initialize_channel_transfer { .. }) => false,
-            Call::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
-            Call::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
-            Call::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
+            RuntimeCall::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => {
+                false
+            }
+            RuntimeCall::Content(
+                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. },
+            ) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::initialize_channel_transfer {
+                ..
+            }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
+            RuntimeCall::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
+            RuntimeCall::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
                 general_proposal_parameters: _,
                 proposal_details,
             }) => !matches!(
@@ -259,8 +265,8 @@ impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
 
 // Do not filter any calls when building benchmarks so we can benchmark everything
 #[cfg(feature = "runtime-benchmarks")]
-impl Contains<<Runtime as frame_system::Config>::Call> for CallFilter {
-    fn contains(_call: &<Runtime as frame_system::Config>::Call) -> bool {
+impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
+    fn contains(_call: &<Runtime as frame_system::Config>::RuntimeCall) -> bool {
         true
     }
 }
@@ -270,8 +276,8 @@ impl frame_system::Config for Runtime {
     type BlockWeights = RuntimeBlockWeights;
     type BlockLength = RuntimeBlockLength;
     type DbWeight = RocksDbWeight;
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = Index;
     type BlockNumber = BlockNumber;
     type Hash = Hash;
@@ -279,7 +285,7 @@ impl frame_system::Config for Runtime {
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount;
     type Version = Version;
     type PalletInfo = PalletInfo;
@@ -292,11 +298,11 @@ impl frame_system::Config for Runtime {
     type MaxConsumers = ConstU32<16>;
 }
 
-impl pallet_randomness_collective_flip::Config for Runtime {}
+impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
 
 impl substrate_utility::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
     type WeightInfo = weights::substrate_utility::SubstrateWeight<Runtime>;
 }
@@ -335,9 +341,12 @@ impl pallet_babe::Config for Runtime {
     type MaxAuthorities = MaxAuthorities;
 }
 
+parameter_types! {
+    pub const MaxSetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
+}
+
 impl pallet_grandpa::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
+    type RuntimeEvent = RuntimeEvent;
 
     type KeyOwnerProofSystem = Historical;
 
@@ -357,19 +366,20 @@ impl pallet_grandpa::Config for Runtime {
 
     type WeightInfo = weights::pallet_grandpa::SubstrateWeight<Runtime>;
     type MaxAuthorities = MaxAuthorities;
+    type MaxSetIdSessionEntries = MaxSetIdSessionEntries;
 }
 
 impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
-    Call: From<LocalCall>,
+    RuntimeCall: From<LocalCall>,
 {
     fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
-        call: Call,
+        call: RuntimeCall,
         public: <Signature as sp_runtime::traits::Verify>::Signer,
         account: AccountId,
         nonce: Index,
     ) -> Option<(
-        Call,
+        RuntimeCall,
         <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
     )> {
         integration::transactions::create_transaction::<C>(call, public, account, nonce)
@@ -383,10 +393,10 @@ impl frame_system::offchain::SigningTypes for Runtime {
 
 impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
-    Call: From<C>,
+    RuntimeCall: From<C>,
 {
     type Extrinsic = UncheckedExtrinsic;
-    type OverarchingCall = Call;
+    type OverarchingCall = RuntimeCall;
 }
 
 parameter_types! {
@@ -424,7 +434,7 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type Balance = Balance;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
@@ -468,6 +478,7 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Author>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = constants::fees::WeightToFee;
@@ -475,14 +486,8 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = constants::fees::SlowAdjustingFeeUpdate<Self>;
 }
 
-parameter_types! {
-    pub const UncleGenerations: BlockNumber = 0;
-}
-
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
-    type UncleGenerations = UncleGenerations;
-    type FilterUncle = ();
     type EventHandler = (Staking, ImOnline);
 }
 
@@ -496,7 +501,7 @@ impl_opaque_keys! {
 }
 
 impl pallet_session::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = pallet_staking::StashOf<Self>;
     type ShouldEndSession = Babe;
@@ -554,6 +559,7 @@ parameter_types! {
     pub const MaxNominatorRewardedPerValidator: u32 = 256;
     pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
     pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 8;
+    pub HistoryDepth: u32 = 120;
 }
 
 pub struct StakingBenchmarkingConfig;
@@ -569,13 +575,13 @@ impl pallet_staking::Config for Runtime {
     type UnixTime = Timestamp;
     type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote; // U128CurrencyToVote;
     type RewardRemainder = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Slash = ();
     type Reward = (); // rewards are minted from the void
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
     type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = EnsureRoot<AccountId>;
+    type AdminOrigin = EnsureRoot<AccountId>;
     type SessionInterface = Self;
     // TODO (Mainnet): enable normal curve
     // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
@@ -584,10 +590,13 @@ impl pallet_staking::Config for Runtime {
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = ElectionProviderMultiPhase;
-    type GenesisElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
+    type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type VoterList = BagsList;
+    // type VoterList = VoterList; // not renaming for now
+    type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
-    type OnStakerSlash = (); // NominationPools;
+    type HistoryDepth = HistoryDepth;
+    type OnStakerSlash = ();
     type WeightInfo = weights::pallet_staking::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = StakingBenchmarkingConfig;
     type BondingRestriction = RestrictStakingAccountsFromBonding;
@@ -634,6 +643,9 @@ frame_election_provider_support::generate_solution_type!(
 parameter_types! {
     pub MaxNominations: u32 = <NposSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
     pub MaxElectingVoters: u32 = 12_500;
+    // The maximum winners that can be elected by the Election pallet which is equivalent to the
+    // maximum active validators the staking pallet can have.
+    pub MaxActiveValidators: u32 = 400; // should not be more than max_validator_count genesis config in staking pallet?
 }
 
 /// The numbers configured here could always be more than the the maximum limits of staking pallet
@@ -656,10 +668,10 @@ pub const MINER_MAX_ITERATIONS: u32 = 10;
 
 /// A source of random balance for NposSolver, which is meant to be run by the OCW election miner.
 pub struct OffchainRandomBalancing;
-impl Get<Option<(usize, ExtendedBalance)>> for OffchainRandomBalancing {
-    fn get() -> Option<(usize, ExtendedBalance)> {
+impl Get<Option<BalancingConfig>> for OffchainRandomBalancing {
+    fn get() -> Option<BalancingConfig> {
         use sp_runtime::traits::TrailingZeroInput;
-        let iters = match MINER_MAX_ITERATIONS {
+        let iterations = match MINER_MAX_ITERATIONS {
             0 => 0,
             max => {
                 let seed = sp_io::offchain::random_seed();
@@ -670,7 +682,11 @@ impl Get<Option<(usize, ExtendedBalance)>> for OffchainRandomBalancing {
             }
         };
 
-        Some((iters, 0))
+        let config = BalancingConfig {
+            iterations,
+            tolerance: 0,
+        };
+        Some(config)
     }
 }
 
@@ -682,11 +698,8 @@ impl onchain::Config for OnChainSeqPhragmen {
         pallet_election_provider_multi_phase::SolutionAccuracyOf<Runtime>,
     >;
     type DataProvider = <Runtime as pallet_election_provider_multi_phase::Config>::DataProvider;
-    type WeightInfo =
-        weights::pallet_election_provider_support_benchmarking::SubstrateWeight<Runtime>;
-}
-
-impl onchain::BoundedConfig for OnChainSeqPhragmen {
+    type WeightInfo = frame_election_provider_support::weights::SubstrateWeight<Runtime>;
+    type MaxWinners = <Runtime as pallet_election_provider_multi_phase::Config>::MaxWinners;
     type VotersBound = MaxElectingVoters;
     type TargetsBound = ConstU32<2_000>;
 }
@@ -711,7 +724,7 @@ impl pallet_election_provider_multi_phase::MinerConfig for Runtime {
 }
 
 impl pallet_election_provider_multi_phase::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type EstimateCallFee = TransactionPayment;
     type SignedPhase = SignedPhase;
@@ -731,8 +744,8 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type SlashHandler = (); // burn slashes
     type RewardHandler = (); // nothing to do upon rewards
     type DataProvider = Staking;
-    type Fallback = onchain::BoundedExecution<OnChainSeqPhragmen>;
-    type GovernanceFallback = onchain::BoundedExecution<OnChainSeqPhragmen>;
+    type Fallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
+    type GovernanceFallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type Solver = SequentialPhragmen<
         AccountId,
         pallet_election_provider_multi_phase::SolutionAccuracyOf<Self>,
@@ -741,6 +754,7 @@ impl pallet_election_provider_multi_phase::Config for Runtime {
     type ForceOrigin = EnsureRoot<AccountId>; // EnsureRootOrHalfCouncil;
     type MaxElectableTargets = ConstU16<{ u16::MAX }>;
     type MaxElectingVoters = MaxElectingVoters;
+    type MaxWinners = MaxActiveValidators; // How does this relate with staking pallet
     type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
     type WeightInfo = weights::pallet_election_provider_multi_phase::SubstrateWeight<Self>;
 }
@@ -749,8 +763,9 @@ parameter_types! {
     pub const BagThresholds: &'static [u64] = &voter_bags::THRESHOLDS;
 }
 
-impl pallet_bags_list::Config for Runtime {
-    type Event = Event;
+type VoterBagsListInstance = pallet_bags_list::Instance1;
+impl pallet_bags_list::Config<VoterBagsListInstance> for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type ScoreProvider = Staking;
     type WeightInfo = weights::pallet_bags_list::SubstrateWeight<Runtime>;
     type BagThresholds = BagThresholds;
@@ -769,7 +784,7 @@ parameter_types! {
 
 impl pallet_im_online::Config for Runtime {
     type AuthorityId = ImOnlineId;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type NextSessionRotation = Babe;
     type ValidatorSet = Historical;
     type ReportUnresponsiveness = Offences;
@@ -781,7 +796,7 @@ impl pallet_im_online::Config for Runtime {
 }
 
 impl pallet_offences::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
     type OnOffenceHandler = Staking;
 }
@@ -816,7 +831,7 @@ parameter_types! {
 
     // Channel bloat bond related:
     pub ChannelCleanupTxFee: Balance = compute_fee(
-        Call::Content(content::Call::<Runtime>::delete_channel {
+        RuntimeCall::Content(content::Call::<Runtime>::delete_channel {
             actor: Default::default(),
             channel_id: 0,
             channel_bag_witness: content::ChannelBagWitness {
@@ -835,7 +850,7 @@ parameter_types! {
 
     // Video bloat bond related:
     pub VideoCleanupTxFee: Balance = compute_fee(
-        Call::Content(content::Call::<Runtime>::delete_video {
+        RuntimeCall::Content(content::Call::<Runtime>::delete_video {
             actor: Default::default(),
             video_id: 0,
             num_objects_to_delete: 1,
@@ -856,7 +871,7 @@ parameter_types! {
 }
 
 impl content::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type VideoId = VideoId;
     type OpenAuctionId = OpenAuctionId;
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
@@ -888,7 +903,7 @@ parameter_types! {
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
     // Account bloat bond related:
     pub ProjectTokenAccountCleanupTxFee: Balance = compute_fee(
-        Call::ProjectToken(project_token::Call::<Runtime>::dust_account {
+        RuntimeCall::ProjectToken(project_token::Call::<Runtime>::dust_account {
             token_id: 0,
             member_id: 0,
         })
@@ -903,7 +918,7 @@ parameter_types! {
 }
 
 impl project_token::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type TokenId = TokenId;
     type BlockNumberToBalance = BlockNumberToBalance;
@@ -927,7 +942,6 @@ pub type CouncilModule = council::Module<Runtime>;
     feature = "staging-runtime",
     feature = "playground-runtime",
     feature = "testing-runtime",
-    feature = "runtime-benchmarks"
 )))]
 parameter_types! {
     // referendum parameters
@@ -947,11 +961,11 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = days!(1);
 }
 
-// Common playground and benchmarking coucil and elections configuration
+// playground council and elections configuration - also recommended for benchmarking
 // Periods are shorter to:
 // - allow easier testing
 // - prevent benchmarks System::events() from accumulating too much data and overflowing the memory
-#[cfg(any(feature = "playground-runtime", feature = "runtime-benchmarks"))]
+#[cfg(feature = "playground-runtime")]
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
@@ -969,14 +983,15 @@ parameter_types! {
     pub const BudgetRefillPeriod: BlockNumber = 33;
 }
 
-#[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
-    pub const CouncilSize: u32 = 3;
-}
-
 #[cfg(feature = "playground-runtime")]
+#[cfg(not(feature = "runtime-benchmarks"))]
 parameter_types! {
     pub const CouncilSize: u32 = 1;
+}
+
+#[cfg(all(feature = "playground-runtime", feature = "runtime-benchmarks"))]
+parameter_types! {
+    pub const CouncilSize: u32 = 3;
 }
 
 // Staging coucil and elections configuration
@@ -1020,10 +1035,11 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = VotingStakingManager;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = Balance;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -1069,7 +1085,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
 }
 
 impl council::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Referendum = ReferendumModule;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -1111,7 +1127,7 @@ parameter_types! {
     // To calculate the cost of removing a data object we substract the cost of removing a video
     // w/ 1 asset from a cost of removing a video w/ 2 assets
     pub DataObjectCleanupTxFee: Balance = compute_fee(
-        Call::Content(content::Call::<Runtime>::delete_video {
+        RuntimeCall::Content(content::Call::<Runtime>::delete_video {
             actor: Default::default(),
             video_id: 0,
             num_objects_to_delete: 2,
@@ -1119,7 +1135,7 @@ parameter_types! {
         })
     ).saturating_sub(
         compute_fee(
-            Call::Content(content::Call::<Runtime>::delete_video {
+            RuntimeCall::Content(content::Call::<Runtime>::delete_video {
                 actor: Default::default(),
                 video_id: 0,
                 num_objects_to_delete: 1,
@@ -1160,7 +1176,7 @@ const_assert!(MinDistributionBucketsPerBag::get() > 0);
 const_assert!(MaxDistributionBucketsPerBag::get() >= MinDistributionBucketsPerBag::get());
 
 impl storage::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = DataObjectId;
     type StorageBucketId = StorageBucketId;
     type DistributionBucketIndex = DistributionBucketIndex;
@@ -1201,7 +1217,7 @@ parameter_types! {
     pub const DefaultMemberInvitesCount: u32 = 2;
     // Candidate stake related:
     pub StakingAccountCleanupTxFee: Balance = compute_fee(
-        Call::Members(membership::Call::<Runtime>::remove_staking_account { member_id: 0 })
+        RuntimeCall::Members(membership::Call::<Runtime>::remove_staking_account { member_id: 0 })
     );
     pub CandidateStake: Balance = stake_with_cleanup(
         MinimumVotingStake::get(),
@@ -1210,7 +1226,7 @@ parameter_types! {
 }
 
 impl membership::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type InvitedMemberStakingHandler = InvitedMemberStakingManager;
@@ -1224,13 +1240,13 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
+    pub const MaxDirectSubcategoriesInCategory: u64 = 10;
     pub const MaxTotalCategories: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 10;
 
     // Thread bloat bond related:
     pub FroumThreadCleanupTxFee: Balance = compute_fee(
-        Call::Forum(forum::Call::<Runtime>::delete_thread {
+        RuntimeCall::Forum(forum::Call::<Runtime>::delete_thread {
             forum_user_id: 0,
             category_id: 0,
             thread_id: 0,
@@ -1246,7 +1262,7 @@ parameter_types! {
 
     // Post bloat bond related:
     pub FroumPostCleanupTxFee: Balance = compute_fee(
-        Call::Forum(forum::Call::<Runtime>::delete_posts {
+        RuntimeCall::Forum(forum::Call::<Runtime>::delete_posts {
             forum_user_id: 0,
             posts: BTreeMap::from_iter(vec![(
                 forum::ExtendedPostId::<Runtime> { category_id: 0, thread_id: 0, post_id: 0 },
@@ -1274,7 +1290,7 @@ impl forum::StorageLimits for MapLimits {
 }
 
 impl forum::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type CategoryId = u64;
@@ -1320,7 +1336,7 @@ impl BondingRestriction<AccountId> for RestrictStakingAccountsFromBonding {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 30;
+    pub const MaxWorkerNumberLimit: u32 = 50;
     pub const MinUnstakingPeriodLimit: u32 = days!(20);
     // FIXME: Periods should be the same, but rewards should start at different blocks
     pub const ForumWorkingGroupRewardPeriod: u32 = days!(1) + 10;
@@ -1399,7 +1415,7 @@ pub type OperationsWorkingGroupInstanceGamma = working_group::Instance8;
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1412,7 +1428,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1425,7 +1441,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = ContentWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1438,7 +1454,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1451,7 +1467,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupAlphaStakingManager;
     type StakingAccountValidator = Members;
@@ -1464,7 +1480,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = AppWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1477,7 +1493,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupBetaStakingManager;
     type StakingAccountValidator = Members;
@@ -1490,7 +1506,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupGammaStakingManager;
     type StakingAccountValidator = Members;
@@ -1503,7 +1519,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = DistributionWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
@@ -1536,7 +1552,7 @@ parameter_types! {
 }
 
 impl proposals_engine::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ProposerOriginValidator = Members;
     type CouncilOriginValidator = Council;
     type TotalVotersCounter = CouncilManager<Self>;
@@ -1547,16 +1563,16 @@ impl proposals_engine::Config for Runtime {
     type TitleMaxLength = ProposalTitleMaxLength;
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
-    type DispatchableCallCode = Call;
+    type DispatchableCallCode = RuntimeCall;
     type ProposalObserver = ProposalsCodex;
     type WeightInfo = proposals_engine::weights::SubstrateWeight<Runtime>;
     type StakingAccountValidator = Members;
     type DispatchableCallCodeMaxLen = DispatchableCallCodeMaxLen;
 }
 
-impl Default for Call {
+impl Default for RuntimeCall {
     fn default() -> Self {
-        panic!("shouldn't call default for Call");
+        panic!("shouldn't call default for RuntimeCall");
     }
 }
 
@@ -1568,7 +1584,7 @@ parameter_types! {
 
     // Proposal discussion post deposit related:
     pub ProposalDiscussionPostCleanupTxFee: Balance = compute_fee(
-        Call::ProposalsDiscussion(proposals_discussion::Call::<Runtime>::delete_post {
+        RuntimeCall::ProposalsDiscussion(proposals_discussion::Call::<Runtime>::delete_post {
             deleter_id: 0,
             post_id: 0,
             thread_id: 0,
@@ -1601,7 +1617,7 @@ macro_rules! call_wg {
 }
 
 impl proposals_discussion::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type AuthorOriginValidator = Members;
     type MembershipInfoProvider = Members;
     type CouncilOriginValidator = Council;
@@ -1615,7 +1631,7 @@ impl proposals_discussion::Config for Runtime {
 }
 
 impl joystream_utility::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type WeightInfo = joystream_utility::weights::SubstrateWeight<Runtime>;
 
@@ -1643,7 +1659,7 @@ const_assert!(
 );
 
 impl proposals_codex::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MembershipOriginValidator = Members;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetMaxValidatorCountProposalParameters = SetMaxValidatorCountProposalParameters;
@@ -1682,7 +1698,7 @@ impl proposals_codex::Config for Runtime {
 }
 
 impl pallet_constitution::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_constitution::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1692,7 +1708,7 @@ parameter_types! {
 
     // Bounty work entry stake related:
     pub BountyWorkEntryCleanupTxFee: Balance = compute_fee(
-        Call::Bounty(bounty::Call::<Runtime>::withdraw_entrant_stake {
+        RuntimeCall::Bounty(bounty::Call::<Runtime>::withdraw_entrant_stake {
             member_id: 0,
             bounty_id: 0,
             entry_id: 0,
@@ -1707,7 +1723,7 @@ parameter_types! {
 
     // Funder bloat bond related:
     pub BountyContributionCleanupTxFee: Balance = compute_fee(
-        Call::Bounty(bounty::Call::<Runtime>::withdraw_funding {
+        RuntimeCall::Bounty(bounty::Call::<Runtime>::withdraw_funding {
             funder: Default::default(),
             bounty_id: 0,
         })
@@ -1722,7 +1738,7 @@ parameter_types! {
 
     // Creator bloat bond related:
     pub BountyCleanupTxFee: Balance = compute_fee(
-        Call::Bounty(bounty::Call::<Runtime>::terminate_bounty {
+        RuntimeCall::Bounty(bounty::Call::<Runtime>::terminate_bounty {
             bounty_id: 0,
         })
     );
@@ -1735,7 +1751,7 @@ parameter_types! {
 }
 
 impl bounty::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ModuleId = BountyModuleId;
     type BountyId = u64;
     type Membership = Members;
@@ -1755,7 +1771,7 @@ parameter_types! {
 }
 
 impl pallet_vesting::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type BlockNumberToBalance = ConvertInto;
     type MinVestedTransfer = MinVestedTransfer;
@@ -1770,12 +1786,9 @@ parameter_types! {
     pub MultisigMapEntryFixedPortionByteSize: u32 = double_map_entry_fixed_byte_size::<
         pallet_multisig::Multisigs::<Runtime>, _, _, _, _, _
     >();
-    pub CallMapEntryFixedPortionByteSize: u32 = map_entry_fixed_byte_size::<
-        pallet_multisig::Calls::<Runtime>, _, _, _
-    >();
     // Deposit for storing one new item in Multisigs/Calls map
     pub DepositBase: Balance = compute_single_bloat_bond(
-        MultisigMapEntryFixedPortionByteSize::get().max(CallMapEntryFixedPortionByteSize::get()),
+        MultisigMapEntryFixedPortionByteSize::get(),
         None
     );
     // Deposit for adding 32 bytes to an already stored item
@@ -1785,8 +1798,8 @@ parameter_types! {
 }
 
 impl pallet_multisig::Config for Runtime {
-    type Event = Event;
-    type Call = Call;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
     type Currency = Balances;
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
@@ -1835,8 +1848,10 @@ construct_runtime!(
         AuthorityDiscovery: pallet_authority_discovery,
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
-        RandomnessCollectiveFlip: pallet_randomness_collective_flip,
-        BagsList: pallet_bags_list,
+        RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
+        BagsList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        // Not renaming BagsList to VoterList until migration test failing can be fixed
+        // VoterList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
         // Joystream
@@ -1866,3 +1881,48 @@ construct_runtime!(
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
     }
 );
+
+#[cfg(all(test, feature = "try-runtime"))]
+mod remote_tests {
+    use super::*;
+    use frame_try_runtime::{runtime_decl_for_TryRuntime::TryRuntime, UpgradeCheckSelect};
+    use remote_externalities::{
+        Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig, Transport,
+    };
+    use std::env::var;
+
+    #[tokio::test]
+    async fn run_migrations() {
+        if var("RUN_MIGRATION_TESTS").is_err() {
+            return;
+        }
+
+        sp_tracing::try_init_simple();
+        let transport: Transport = var("WS")
+            .unwrap_or("wss://rpc.joystream.org:443".to_string())
+            .into();
+        let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
+        let mut ext = Builder::<Block>::default()
+            .mode(if let Some(state_snapshot) = maybe_state_snapshot {
+                Mode::OfflineOrElseOnline(
+                    OfflineConfig {
+                        state_snapshot: state_snapshot.clone(),
+                    },
+                    OnlineConfig {
+                        transport,
+                        state_snapshot: Some(state_snapshot),
+                        ..Default::default()
+                    },
+                )
+            } else {
+                Mode::Online(OnlineConfig {
+                    transport,
+                    ..Default::default()
+                })
+            })
+            .build()
+            .await
+            .unwrap();
+        ext.execute_with(|| Runtime::on_runtime_upgrade(UpgradeCheckSelect::PreAndPost));
+    }
+}

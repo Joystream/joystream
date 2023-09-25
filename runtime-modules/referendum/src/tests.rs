@@ -487,7 +487,7 @@ fn finish_revealing_period() {
                 option_id: option_to_vote_for,
                 vote_power: stake,
             }],
-            MockUtils::transform_results(vec![1 * stake, 0, 0]),
+            MockUtils::transform_results(vec![stake, 0, 0]),
         );
     });
 }
@@ -1220,7 +1220,7 @@ fn opt_out_of_voting_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let root_origin = OriginType::Root;
         let none_origin = OriginType::None;
-        Mocks::opt_out_of_voting(root_origin.clone(), Err(BadOrigin.into()));
-        Mocks::opt_out_of_voting(none_origin.clone(), Err(BadOrigin.into()));
+        Mocks::opt_out_of_voting(root_origin, Err(BadOrigin.into()));
+        Mocks::opt_out_of_voting(none_origin, Err(BadOrigin.into()));
     });
 }

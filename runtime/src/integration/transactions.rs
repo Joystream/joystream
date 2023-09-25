@@ -5,7 +5,7 @@ use sp_runtime::generic::SignedPayload;
 use sp_runtime::SaturatedConversion;
 
 use crate::{AccountId, BlockHashCount, Index, SignedExtra, UncheckedExtrinsic};
-use crate::{Call, Runtime, System};
+use crate::{Runtime, RuntimeCall, System};
 use log;
 
 /// 'Create transaction' default implementation.
@@ -15,12 +15,12 @@ pub(crate) fn create_transaction<
         <Runtime as frame_system::offchain::SigningTypes>::Signature,
     >,
 >(
-    call: Call,
+    call: RuntimeCall,
     public: <<Runtime as frame_system::offchain::SigningTypes>::Signature as sp_runtime::traits::Verify>::Signer,
     account: AccountId,
     nonce: Index,
 ) -> Option<(
-    Call,
+    RuntimeCall,
     <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
 )> {
     // take the biggest period possible.
