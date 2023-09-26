@@ -6,6 +6,17 @@ use frame_support::{parameter_types, traits::OnRuntimeUpgrade, BoundedBTreeMap, 
 #[cfg(feature = "try-runtime")]
 use frame_support::ensure;
 
+// syntactic sugar for logging.
+#[macro_export]
+macro_rules! log {
+	($level:tt, $patter:expr $(, $values:expr)* $(,)?) => {
+		log::$level!(
+			target: $crate::LOG_TARGET,
+			concat!("[{:?}] 📹 ", $patter), <frame_system::Pallet<T>>::block_number() $(, $values)*
+		)
+	};
+}
+
 pub mod nara {
     use super::*;
     use frame_support::pallet_prelude::*;
@@ -116,6 +127,7 @@ pub mod nara {
                         .permissions_by_level
                         .iter()
                         .for_each(|(level, permissions)| {
+                            log!(info, "level: {:?}, permissions: {:?}", level, permissions);
                             let mut permissions_v1 = BTreeSet::new();
                             permissions.iter().for_each(|action| match action {
                                 ContentModerationActionV0::HideVideo => {
