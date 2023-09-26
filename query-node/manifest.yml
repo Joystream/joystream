@@ -95,9 +95,9 @@ typegen:
     - content.VideoUpdated
     - content.VideoDeleted
     - content.ChannelDeleted
-    # Channel,Video deletion by Moderator deprecated in spec 2002 (nara) but keeping here
-    # to be able to process events from older runtime
+      # Deprecated in runtime spec version 2002 (nara), but still required for QN processing from genesis block
     - content.ChannelDeletedByModerator
+      # Deprecated in runtime spec version 2002 (nara), but still required for QN processing from genesis block
     - content.VideoDeletedByModerator
     - content.ChannelAssetsDeletedByModerator
     - content.VideoAssetsDeletedByModerator

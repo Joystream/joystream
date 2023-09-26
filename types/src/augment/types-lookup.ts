@@ -928,8 +928,6 @@ declare module '@polkadot/types/lookup' {
     readonly asChannelAssetsRemoved: ITuple<[PalletContentPermissionsContentActor, u64, BTreeSet<u64>, PalletContentChannelRecord]>;
     readonly isChannelDeleted: boolean;
     readonly asChannelDeleted: ITuple<[PalletContentPermissionsContentActor, u64]>;
-    readonly isChannelDeletedByModerator: boolean;
-    readonly asChannelDeletedByModerator: ITuple<[PalletContentPermissionsContentActor, u64, Bytes]>;
     readonly isChannelVisibilitySetByModerator: boolean;
     readonly asChannelVisibilitySetByModerator: ITuple<[PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     readonly isChannelPausedFeaturesUpdatedByModerator: boolean;
@@ -946,8 +944,6 @@ declare module '@polkadot/types/lookup' {
     readonly asVideoUpdated: ITuple<[PalletContentPermissionsContentActor, u64, PalletContentVideoUpdateParametersRecord, BTreeSet<u64>]>;
     readonly isVideoDeleted: boolean;
     readonly asVideoDeleted: ITuple<[PalletContentPermissionsContentActor, u64]>;
-    readonly isVideoDeletedByModerator: boolean;
-    readonly asVideoDeletedByModerator: ITuple<[PalletContentPermissionsContentActor, u64, Bytes]>;
     readonly isVideoVisibilitySetByModerator: boolean;
     readonly asVideoVisibilitySetByModerator: ITuple<[PalletContentPermissionsContentActor, u64, bool, Bytes]>;
     readonly isVideoAssetsDeletedByModerator: boolean;
@@ -1012,7 +1008,7 @@ declare module '@polkadot/types/lookup' {
     readonly asToggledNftLimits: bool;
     readonly isCreatorTokenIssued: boolean;
     readonly asCreatorTokenIssued: ITuple<[PalletContentPermissionsContentActor, u64, u64]>;
-    readonly type: 'CuratorGroupCreated' | 'CuratorGroupPermissionsUpdated' | 'CuratorGroupStatusSet' | 'CuratorAdded' | 'CuratorRemoved' | 'ChannelCreated' | 'ChannelUpdated' | 'ChannelPrivilegeLevelUpdated' | 'ChannelStateBloatBondValueUpdated' | 'VideoStateBloatBondValueUpdated' | 'ChannelAssetsRemoved' | 'ChannelDeleted' | 'ChannelDeletedByModerator' | 'ChannelVisibilitySetByModerator' | 'ChannelPausedFeaturesUpdatedByModerator' | 'ChannelAssetsDeletedByModerator' | 'ChannelFundsWithdrawn' | 'ChannelRewardClaimedAndWithdrawn' | 'VideoCreated' | 'VideoUpdated' | 'VideoDeleted' | 'VideoDeletedByModerator' | 'VideoVisibilitySetByModerator' | 'VideoAssetsDeletedByModerator' | 'ChannelPayoutsUpdated' | 'ChannelRewardUpdated' | 'EnglishAuctionStarted' | 'OpenAuctionStarted' | 'NftIssued' | 'NftDestroyed' | 'AuctionBidMade' | 'AuctionBidCanceled' | 'AuctionCanceled' | 'EnglishAuctionSettled' | 'BidMadeCompletingAuction' | 'OpenAuctionBidAccepted' | 'OfferStarted' | 'OfferAccepted' | 'OfferCanceled' | 'NftSellOrderMade' | 'NftBought' | 'BuyNowCanceled' | 'BuyNowPriceUpdated' | 'NftSlingedBackToTheOriginalArtist' | 'ChannelOwnerRemarked' | 'ChannelAgentRemarked' | 'NftOwnerRemarked' | 'InitializedChannelTransfer' | 'CancelChannelTransfer' | 'ChannelTransferAccepted' | 'GlobalNftLimitUpdated' | 'ChannelNftLimitUpdated' | 'ToggledNftLimits' | 'CreatorTokenIssued';
+    readonly type: 'CuratorGroupCreated' | 'CuratorGroupPermissionsUpdated' | 'CuratorGroupStatusSet' | 'CuratorAdded' | 'CuratorRemoved' | 'ChannelCreated' | 'ChannelUpdated' | 'ChannelPrivilegeLevelUpdated' | 'ChannelStateBloatBondValueUpdated' | 'VideoStateBloatBondValueUpdated' | 'ChannelAssetsRemoved' | 'ChannelDeleted' | 'ChannelVisibilitySetByModerator' | 'ChannelPausedFeaturesUpdatedByModerator' | 'ChannelAssetsDeletedByModerator' | 'ChannelFundsWithdrawn' | 'ChannelRewardClaimedAndWithdrawn' | 'VideoCreated' | 'VideoUpdated' | 'VideoDeleted' | 'VideoVisibilitySetByModerator' | 'VideoAssetsDeletedByModerator' | 'ChannelPayoutsUpdated' | 'ChannelRewardUpdated' | 'EnglishAuctionStarted' | 'OpenAuctionStarted' | 'NftIssued' | 'NftDestroyed' | 'AuctionBidMade' | 'AuctionBidCanceled' | 'AuctionCanceled' | 'EnglishAuctionSettled' | 'BidMadeCompletingAuction' | 'OpenAuctionBidAccepted' | 'OfferStarted' | 'OfferAccepted' | 'OfferCanceled' | 'NftSellOrderMade' | 'NftBought' | 'BuyNowCanceled' | 'BuyNowPriceUpdated' | 'NftSlingedBackToTheOriginalArtist' | 'ChannelOwnerRemarked' | 'ChannelAgentRemarked' | 'NftOwnerRemarked' | 'InitializedChannelTransfer' | 'CancelChannelTransfer' | 'ChannelTransferAccepted' | 'GlobalNftLimitUpdated' | 'ChannelNftLimitUpdated' | 'ToggledNftLimits' | 'CreatorTokenIssued';
   }
 
   /** @name PalletContentPermissionsContentActor (105) */
@@ -1236,13 +1232,11 @@ declare module '@polkadot/types/lookup' {
     readonly isHideChannel: boolean;
     readonly isChangeChannelFeatureStatus: boolean;
     readonly asChangeChannelFeatureStatus: PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature;
-    readonly isDeprecatedDeleteVideo: boolean;
-    readonly isDeprecatedDeleteChannel: boolean;
     readonly isDeleteVideoAssets: boolean;
     readonly asDeleteVideoAssets: bool;
     readonly isDeleteNonVideoChannelAssets: boolean;
     readonly isUpdateChannelNftLimits: boolean;
-    readonly type: 'HideVideo' | 'HideChannel' | 'ChangeChannelFeatureStatus' | 'DeprecatedDeleteVideo' | 'DeprecatedDeleteChannel' | 'DeleteVideoAssets' | 'DeleteNonVideoChannelAssets' | 'UpdateChannelNftLimits';
+    readonly type: 'HideVideo' | 'HideChannel' | 'ChangeChannelFeatureStatus' | 'DeleteVideoAssets' | 'DeleteNonVideoChannelAssets' | 'UpdateChannelNftLimits';
   }
 
   /** @name PalletContentTransferCommitmentParametersBTreeMap (155) */

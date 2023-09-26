@@ -4739,8 +4739,6 @@ decl_event!(
         VideoStateBloatBondValueUpdated(Balance),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
-        // deprecated but left for QN to handle old events!
-        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
         ChannelVisibilitySetByModerator(
             ContentActor,
             ChannelId,
@@ -4778,8 +4776,6 @@ decl_event!(
             BTreeSet<DataObjectId>,
         ),
         VideoDeleted(ContentActor, VideoId),
-        // deprecated but left for QN to handle old events!
-        VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
         VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),
         VideoAssetsDeletedByModerator(
             ContentActor,
