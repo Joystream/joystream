@@ -44,15 +44,8 @@ import curatorModerationActions from '../flows/content/curatorModerationActions'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-scenario('Full', async ({ job, env }) => {
-  // Runtime upgrade should always be first job
-  // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
-  const councilJob = job('electing council', electCouncil)
-  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
-    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
-    : undefined
-
-  const coreJob = runtimeUpgradeProposalJob || councilJob
+scenario('Full', async ({ job }) => {
+  const coreJob = job('electing council', electCouncil)
 
   // All other jobs should be executed after coreJob
 

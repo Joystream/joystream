@@ -18,7 +18,6 @@ TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
 TREASURY_ACCOUNT=$(docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
-echo >&2 "sudo account from suri: ${SUDO_ACCOUNT}"
 echo >&2 "treasury account from suri: ${TREASURY_ACCOUNT}"
 
 # Default initial balances
@@ -173,17 +172,22 @@ function main {
     echo >&2 "joystream node starting"
 
     # Start a query-node
+    # Its important to remember the query-node processor is starting with an empty state
+    # and not inline with the chain state. This means some integration test scenarios might
+    # not function correctly, but we need it to at least have the council election and runtime upgrade
+    # proposal to be created and passed.
     ../../query-node/start.sh
 
     # Wait for chain and query node to get in sync
     sleep 200
 
-    # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
-    if [ "${NO_STORAGE}" != true ]; then
-        ./start-storage.sh
-        export REUSE_KEYS=true
-        export SKIP_STORAGE_AND_DISTRIBUTION=true
-    fi
+    # 6. Bootstrap storage infra
+    ./start-storage.sh
+    export REUSE_KEYS=true
+    export SKIP_STORAGE_AND_DISTRIBUTION=true
+
+    # Do some setup and checks before the upgrade
+    ./run-test-scenario.sh preRuntimeUpgrade
 
     # We allow this step to fail as the indexer currently has
     # a problem dealing with the runtime upgrade block
@@ -205,8 +209,6 @@ function main {
     sleep 90
 
     ./run-test-scenario.sh postRuntimeUpgrade
-
-    ./run-test-scenario.sh content-directory
 }
 
 # main entrypoint
