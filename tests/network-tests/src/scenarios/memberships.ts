@@ -25,5 +25,5 @@ scenario('Memberships', async ({ job }) => {
   job('transferring invites', transferringInvites)
   job('managing staking accounts', managingStakingAccounts)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('updating member verify account status', updateValidatorAccount)
+  job('updating member verify account', updateValidatorAccount).after(hireLeads)
 })

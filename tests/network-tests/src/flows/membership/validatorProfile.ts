@@ -10,23 +10,21 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
   debug('Started')
   api.enableDebugTxLogs()
 
-  const [account] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
-  const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
-  await new FixtureRunner(buyMembershipHappyCaseFixture).run()
-
-  const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
-  const [verifyAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
-
-  const updateVerifyAccount = new VerifyValidatorAccountFixture(
-    api,
-    query,
+  const VerifyValidator = [
     {
-      account,
-      memberId,
+      memberId: '1',
+      validatorAccount: 'validator address',
     },
-    verifyAccount
-  )
-  await new FixtureRunner(updateVerifyAccount).runWithQueryNodeChecks()
+    {
+      memberId: '2',
+      validatorAccount: '',
+    },
+  ]
+
+  const verifyAccountFixture = new VerifyValidatorAccountFixture(api, query, VerifyValidator)
+  const remarkModerateRunner = new FixtureRunner(verifyAccountFixture)
+  await remarkModerateRunner.run()
+  await remarkModerateRunner.runQueryNodeChecks()
 
   debug('Done')
 }
