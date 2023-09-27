@@ -11,7 +11,7 @@ import { Utils } from '../../utils'
 import { BaseQueryNodeFixture } from '../../Fixture'
 
 export type ValidaotrAccountInput = {
-  memberId: ForumPostId
+  memberId: string
   validatorAccount: string
   asWorker?: WorkerId
 }
