@@ -7,38 +7,24 @@ import { MemberContext, EventDetails } from '../../types'
 import { MembershipFieldsFragment, MemberProfileUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
 import { MembershipMetadata } from '@joystream/metadata-protobuf'
 import { Utils } from '../../utils'
-import { isSet } from '@joystream/metadata-protobuf/utils'
-
-export type ValidatorAccountData = {
-  validatorAccount?: string | null
-}
 
 export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
   private memberContext: MemberContext
-  // Update data
-  private newValues: ValidatorAccountData
-  private oldValues: ValidatorAccountData
-
+  private account: string
   private event?: EventDetails
   private tx?: SubmittableExtrinsic<'promise'>
 
-  public constructor(
-    api: Api,
-    query: QueryNodeApi,
-    memberContext: MemberContext,
-    oldValues: ValidatorAccountData,
-    newValues: ValidatorAccountData
-  ) {
+  public constructor(api: Api, query: QueryNodeApi, memberContext: MemberContext, account: string) {
     super(api, query)
     this.memberContext = memberContext
-    this.oldValues = oldValues
-    this.newValues = newValues
+    this.account = account
   }
 
   private assertProfileUpdateSuccesful(qMember: MembershipFieldsFragment | null) {
     if (!qMember) {
       throw new Error('Query node: Membership not found!')
     }
+
     const { metadata } = qMember
     const expected = this.getExpectedValues()
 
@@ -46,11 +32,9 @@ export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
     assert.equal(metadata.validatorAccount, expected.validatorAccount)
   }
 
-  public getExpectedValues(): ValidatorAccountData {
+  public getExpectedValues() {
     return {
-      validatorAccount: isSet(this.newValues.validatorAccount)
-        ? this.newValues.validatorAccount || null
-        : this.oldValues.validatorAccount,
+      validatorAccount: this.account,
     }
   }
 
@@ -72,12 +56,12 @@ export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
 
   async execute(): Promise<void> {
     const metadata = new MembershipMetadata({
-      validatorAccount: this.newValues.validatorAccount,
+      validatorAccount: this.account,
     })
-    // this.tx = this.api.tx.
-    // this.tx = this.api.tx.members.(
+    // this.tx = this.api.tx
+    // this.tx = this.api.tx.members.update(
     //   this.memberContext.memberId,
-    //   this.newValues.handle || null,
+
     //   Utils.metadataToBytes(MembershipMetadata, metadata)
     // )
   }
