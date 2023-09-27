@@ -8,8 +8,7 @@ import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails } from '../../types'
 import { Utils } from '../../utils'
-import { ForumPostFieldsFragment, PostModeratedEventFieldsFragment } from '../../graphql/generated/queries'
-import { WithForumWorkersFixture } from './WithForumWorkersFixture'
+import { BaseQueryNodeFixture } from '../../Fixture'
 
 export type ValidaotrAccountInput = {
   memberId: ForumPostId
@@ -17,7 +16,7 @@ export type ValidaotrAccountInput = {
   asWorker?: WorkerId
 }
 
-export class VerifyValidatorAccountFixture extends WithForumWorkersFixture {
+export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
   protected verifyValidator: ValidaotrAccountInput[]
 
   public constructor(api: Api, query: QueryNodeApi, verifyValidator: ValidaotrAccountInput[]) {
@@ -44,39 +43,5 @@ export class VerifyValidatorAccountFixture extends WithForumWorkersFixture {
     }
   }
 
-  protected assertQueriedVerifyValidaot(
-    qPosts: ForumPostFieldsFragment[],
-    qEvents: PostModeratedEventFieldsFragment[]
-  ): void {
-    const moderatedSuccessfully = this.verifyValidator.filter((m) => !m.expectFailure).length
-    assert.equal(qEvents.length, moderatedSuccessfully, 'Too many posts were moderated')
-
-    this.events.map((e, i) => {
-      const moderation = this.verifyValidator[i]
-      if (moderation.expectFailure) return
-
-      const qPost = qPosts.find((p) => p.id === moderation.postId.toString())
-      Utils.assert(qPost, 'Query node: Post not found')
-
-      const qEvent = this.findMatchingQueryNodeEvent(e, qEvents)
-      Utils.assert(qPost.status.verifyValidatorEvent, 'Query node: Missing verifyValidatorEvent ref')
-      assert.equal(qPost.status.verifyValidatorEvent.memberId, qEvent.memberId)
-      assert.equal(qPost.isVisible, false)
-    })
-  }
-
-  async runQueryNodeChecks(): Promise<void> {
-    await super.runQueryNodeChecks()
-
-    const expectFailureAtIndexes = this.verifyValidator.flatMap((m, i) => (m.expectFailure ? [i] : []))
-    // Query the events
-    const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getPostModeratedEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents, expectFailureAtIndexes)
-    )
-
-    // Query the threads
-    const qPosts = await this.query.getPostsByIds(this.verifyValidator.map((m) => m.memberId))
-    this.assertQueriedVerifyValidaot(qPosts, qEvents)
-  }
+  async execute(): Promise<void> {}
 }
