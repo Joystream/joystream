@@ -18,7 +18,20 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
   debug('Check workers limit')
   for (const group of ['storageWorkingGroup', 'distributionWorkingGroup']) {
     const workerLimit = (api.consts[group].maxWorkerNumberLimit as u32).toNumber()
-    assert.equal(workerLimit, 50)
+    assert.equal(workerLimit, 50, `${group} invalid limit of workers`)
+  }
+
+  for (const group of [
+    'forumWorkingGroup',
+    'contentWorkingGroup',
+    'membershipWorkingGroup',
+    'appWorkingGroup',
+    'operationsWorkingGroupAlpha',
+    'operationsWorkingGroupBeta',
+    'operationsWorkingGroupGamma',
+  ]) {
+    const workerLimit = (api.consts[group].maxWorkerNumberLimit as u32).toNumber()
+    assert.equal(workerLimit, 30, `${group} invalid limit of workers`)
   }
 
   debug('Done')
