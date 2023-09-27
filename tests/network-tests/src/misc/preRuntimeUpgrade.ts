@@ -26,12 +26,13 @@ export default async function assertValues({ api, query }: FlowProps): Promise<v
   // We used a pre computed call hex for the older runtime, as new runtime types cannot be used
   // without some hacks.
   // Paste the call hex string into: https://polkadot.js.org/apps/#/extrinsics/decode to confirm what it does!
-  const call = '0x1a00010800100002060305010110010204040500'
+  const tx = '0x54041a00010800100002060305010110010204040500'
+  // const call = '0x1a00010800100002060305010110010204040500'
   // we construct a fixture just to re-use a helper function
   const contentLeadAccountId = await new CreateCuratorGroupFixture(api, query, []).getContentWgLeadAccount()
-  await api.signAndSend(api.tx(call), contentLeadAccountId)
-  await api.signAndSend(api.tx(call), contentLeadAccountId)
-  await api.signAndSend(api.tx(call), contentLeadAccountId)
+  await api.signAndSend(api.tx(tx), contentLeadAccountId)
+  await api.signAndSend(api.tx(tx), contentLeadAccountId)
+  await api.signAndSend(api.tx(tx), contentLeadAccountId)
 
   debug('Done')
 }
