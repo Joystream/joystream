@@ -17,7 +17,6 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
   const [memberId] = buyMembershipHappyCaseFixture.getCreatedMembers()
   const [verifyAccount] = (await api.createKeyPairs(2)).map(({ key }) => key.address)
 
-  console.log('metadata ----------  ', verifyAccount)
   const updateVerifyAccount = new VerifyValidatorAccountFixture(
     api,
     query,
