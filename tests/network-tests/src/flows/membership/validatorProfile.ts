@@ -26,7 +26,7 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
     },
     verifyAccount
   )
-  // await new FixtureRunner(updateVerifyAccount).runWithQueryNodeChecks()
+  await new FixtureRunner(updateVerifyAccount).runWithQueryNodeChecks()
 
   debug('Done')
 }
