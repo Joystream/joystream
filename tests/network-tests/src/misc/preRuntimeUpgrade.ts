@@ -2,8 +2,9 @@ import { assert } from 'chai'
 import { FlowProps } from '../Flow'
 import { extendDebug } from '../Debugger'
 import type { u32 } from '@polkadot/types-codec'
+import { CreateCuratorGroupFixture } from '../fixtures/content'
 
-export default async function assertValues({ api }: FlowProps): Promise<void> {
+export default async function assertValues({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:preRuntimeUpdateChecks')
   debug('Started')
 
@@ -21,7 +22,16 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
     assert.equal(workerLimit, 30)
   }
 
-  // TODO: Add curator groups as test cases for the content pallet runtime migration
+  // Add curator groups as test cases for the content pallet runtime migration
+  // We used a pre computed call hex for the older runtime, as new runtime types cannot be used
+  // without some hacks.
+  // Paste the call hex string into: https://polkadot.js.org/apps/#/extrinsics/decode to confirm what it does!
+  const call = '0x1a00010800100002060305010110010204040500'
+  // we construct a fixture just to re-use a helper function
+  const contentLeadAccountId = await new CreateCuratorGroupFixture(api, query, []).getContentWgLeadAccount()
+  await api.signAndSend(api.tx(call), contentLeadAccountId)
+  await api.signAndSend(api.tx(call), contentLeadAccountId)
+  await api.signAndSend(api.tx(call), contentLeadAccountId)
 
   debug('Done')
 }
