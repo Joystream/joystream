@@ -15,14 +15,6 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
   debug('Started')
   api.enableDebugTxLogs()
 
-  // const updates: WorkingGroupMetadata[] = [
-  //   // Partial updates
-  //   // FIXME: Currently handle always need to be provided, see: https://github.com/Joystream/joystream/issues/2503
-  //   {
-  //       about:""
-  //   }
-  // ]
-
   const [account] = (await api.createKeyPairs(1)).map(({ key }) => key.address)
   const buyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(api, query, [account])
   await new FixtureRunner(buyMembershipHappyCaseFixture).run()
