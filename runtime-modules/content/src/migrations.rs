@@ -209,6 +209,10 @@ pub mod nara {
                 pre_upgrade_group_count == group_count,
                 "group counts differ post_upgrade"
             );
+            log!(info, "Curator Groups after migration");
+            CuratorGroupById::<T>::iter().for_each(|group| {
+                log!(info, "{:?}", group);
+            });
             Ok(())
         }
     }
