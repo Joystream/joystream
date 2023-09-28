@@ -1,9 +1,8 @@
-import electCouncil from '../flows/council/elect'
+import electCouncil from '../flows/council/electOnlyIfNoElected'
 import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import { scenario } from '../Scenario'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-scenario('Full', async ({ job }) => {
-  const councilJob = job('electing council', electCouncil)
-  job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
+scenario('Runtime Upgrade', async ({ job }) => {
+  job('Perform runtime upgrade', runtimeUpgradeProposal).requires(job('electing council', electCouncil))
 })
