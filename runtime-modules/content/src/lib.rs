@@ -970,48 +970,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelAssetsDeletedByModerator(actor, channel_id, assets_to_remove, rationale));
         }
 
-        // extrinsics for channel deletion as moderator
-        #[weight = Module::<T>::delete_channel_as_moderator_weight(channel_bag_witness, num_objects_to_delete, rationale)]
-        pub fn delete_channel_as_moderator(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            channel_bag_witness: ChannelBagWitness,
-            num_objects_to_delete: u64,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-
-            let sender = ensure_signed(origin)?;
-
-            // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            // verify channel bag witness
-            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
-
-            // Permissions check
-            let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
-
-            // check that channel videos are 0
-            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
-
-            // ensure channel bag exists and num_objects_to_delete is valid
-            Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
-
-            // try to remove the channel, slash the bloat bond
-            Self::try_to_perform_channel_deletion(&sender, channel_id, channel, true)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // deposit event
-            Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
-
-            Ok(())
-        }
-
         /// Extrinsic for setting channel visibility status (hidden/visible) by moderator
         ///
         /// <weight>
@@ -1432,55 +1390,6 @@ decl_module! {
 
             // emit the event
             Self::deposit_event(RawEvent::VideoAssetsDeletedByModerator(actor, video_id, assets_to_remove, is_nft, rationale));
-        }
-
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (A + B + C)` where:
-        /// - `A` is the value of `num_objects_to_delete`
-        /// - `B` is the value of `storage_buckets_num_witness`
-        /// - `C` is the size of `rationale` in kilobytes
-        /// - DB:
-        ///    - `O(A + B)` - from the the generated weights
-        /// # </weight>
-        #[weight = Module::<T>::delete_video_as_moderator_weight(num_objects_to_delete, storage_buckets_num_witness, rationale)]
-        pub fn delete_video_as_moderator(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            storage_buckets_num_witness: Option<u32>,
-            num_objects_to_delete: u64,
-            rationale: Vec<u8>,
-        ) {
-            let sender = ensure_signed(origin)?;
-
-            // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = Self::get_channel_from_video(&video);
-
-            // Permissions check
-            let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
-
-            // ensure video can be removed
-            Self::ensure_video_can_be_removed(&video)?;
-
-            // ensure provided num_objects_to_delete is valid
-            Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
-
-
-            // Try removing the video, slash the bloat bond
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, true, storage_buckets_num_witness)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
 
         /// Extrinsic for video visibility status (hidden/visible) setting by moderator
@@ -4865,7 +4774,6 @@ decl_event!(
         VideoStateBloatBondValueUpdated(Balance),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
-        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
         ChannelVisibilitySetByModerator(
             ContentActor,
             ChannelId,
@@ -4903,7 +4811,6 @@ decl_event!(
             BTreeSet<DataObjectId>,
         ),
         VideoDeleted(ContentActor, VideoId),
-        VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
         VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),
         VideoAssetsDeletedByModerator(
             ContentActor,

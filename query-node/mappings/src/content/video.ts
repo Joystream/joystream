@@ -2,15 +2,18 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 import { AppAction, AppActionMetadata, ContentMetadata, IAppAction, IVideoMetadata } from '@joystream/metadata-protobuf'
+import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { ChannelId, DataObjectId, VideoId } from '@joystream/types/primitives'
+import { BaseModel } from '@joystream/warthog'
+import { BTreeSet } from '@polkadot/types'
 import {
   PalletContentPermissionsContentActor as ContentActor,
   PalletContentVideoCreationParametersRecord as VideoCreationParameters,
   PalletContentVideoUpdateParametersRecord as VideoUpdateParameters,
 } from '@polkadot/types/lookup'
-import { FindOptionsWhere, In } from 'typeorm'
-import { BaseModel } from '@joystream/warthog'
 import {
   Channel,
   Comment,
@@ -35,16 +38,16 @@ import {
   VideoSubtitle,
   VideoVisibilitySetByModeratorEvent,
 } from 'query-node/dist/model'
+import { FindOptionsWhere, In } from 'typeorm'
 import {
   Content_VideoAssetsDeletedByModeratorEvent_V1001 as VideoAssetsDeletedByModeratorEvent_V1001,
+  Content_VideoCreatedEvent_V1001 as VideoCreatedEvent_V1001,
   Content_VideoDeletedByModeratorEvent_V1001 as VideoDeletedByModeratorEvent_V1001,
   Content_VideoDeletedEvent_V1001 as VideoDeletedEvent_V1001,
   Content_VideoUpdatedEvent_V1001 as VideoUpdatedEvent_V1001,
   Content_VideoVisibilitySetByModeratorEvent_V1001 as VideoVisibilitySetByModeratorEvent_V1001,
-  Content_VideoCreatedEvent_V1001 as VideoCreatedEvent_V1001,
 } from '../../generated/types'
 import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
-import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { createNft } from './nft'
 import {
@@ -56,9 +59,6 @@ import {
   unsetAssetRelations,
   videoRelationsForCounters,
 } from './utils'
-import { BTreeSet } from '@polkadot/types'
-import { integrateMeta } from '@joystream/metadata-protobuf/utils'
-import { generateAppActionCommitment } from '@joystream/js/utils'
 
 interface ContentCreatedEventData {
   contentActor: ContentActor

@@ -1,32 +1,28 @@
 import BN from 'bn.js'
-import {
-  AddCuratorToCuratorGroupFixture,
-  AddCuratorToGroupParams,
-} from '../../fixtures/content/collaboratorAndCurator/addCuratorsToCuratorGroupFixture'
-import { CreateCuratorGroupFixture, CuratorGroupParams } from '../../fixtures/content/createCuratorGroupFixture'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import {
   CreateChannelsAndVideosFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
 } from '../../fixtures/content'
-import { FlowProps } from '../../Flow'
-import { createJoystreamCli } from '../utils'
 import {
-  DeleteVideoAsModeratorFixture,
-  DeleteVideoAsModeratorParams,
-} from '../../fixtures/content/curatorModeration/DeleteVideoByModerator'
+  AddCuratorToCuratorGroupFixture,
+  AddCuratorToGroupParams,
+} from '../../fixtures/content/collaboratorAndCurator/addCuratorsToCuratorGroupFixture'
+import { CreateCuratorGroupFixture, CuratorGroupParams } from '../../fixtures/content/createCuratorGroupFixture'
+import {
+  DeleteChannelAssetsAsModeratorFixture,
+  DeleteChannelAssetsAsModeratorParams,
+} from '../../fixtures/content/curatorModeration/DeleteChannelAssetByModerator'
 import {
   DeleteVideoAssetsAsModeratorFixture,
   DeleteVideoAssetsAsModeratorParams,
 } from '../../fixtures/content/curatorModeration/DeleteVideoAssetsByModerator'
-import {
-  DeleteChannelAsModeratorFixture,
-  DeleteChannelAsModeratorParams,
-} from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
+import { createJoystreamCli } from '../utils'
 
-export default async function curatorModerationActions({ api, query, env }: FlowProps): Promise<void> {
+export default async function curatorModerationActions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:curator-moderation-actions')
   debug('Started')
   api.enableDebugTxLogs()
@@ -85,7 +81,12 @@ export default async function curatorModerationActions({ api, query, env }: Flow
       permissionsByLevel: [
         {
           channelPrivilegeLevel: 0,
-          contentModerationActionSet: ['DeleteChannel', 'DeleteVideo', 'DeleteVideoAssets'],
+          contentModerationActionSet: [
+            'DeleteChannel',
+            'DeleteVideo',
+            'DeleteVideoAssets',
+            'DeleteNonVideoChannelAssets',
+          ],
           permissionToDeleteNftAssets: false,
         },
       ],
@@ -111,34 +112,40 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   // test curator moderation actions
 
   /**
-   * delete video as moderator
+   * delete channel assets as moderator
    */
 
-  const numOfVideoObjectsToDelete = (await query.dataObjectsByVideoId(videosData[0].videoId.toString())).length
-  const deleteVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
+  const channelAssetsToRemove = (await query.dataObjectsByChannelId(channelIds[0].toString())).map(({ id }) =>
+    Number(id)
+  )
+  const deleteChannelAssetsAsModeratorParams: DeleteChannelAssetsAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
-      videoId: videosData[0].videoId, // first video
-      numOfObjectsToDelete: numOfVideoObjectsToDelete,
-      rationale: 'Deleted video due to offensive content',
+      channelId: channelIds[0], // first channel
+      assetsToRemove: channelAssetsToRemove,
+      rationale: 'Deleted channel assets due to pirated content',
     },
   ]
 
-  const deleteVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(api, query, deleteVideoAsModeratorParams)
-  await new FixtureRunner(deleteVideoAsModeratorFixture).runWithQueryNodeChecks()
+  const deleteChannelAssetsAsModeratorFixture = new DeleteChannelAssetsAsModeratorFixture(
+    api,
+    query,
+    deleteChannelAssetsAsModeratorParams
+  )
+  await new FixtureRunner(deleteChannelAssetsAsModeratorFixture).runWithQueryNodeChecks()
 
   /**
    * delete video assets as moderator
    */
 
-  const assetsToRemove = (await query.dataObjectsByVideoId(videosData[1].videoId.toString())).map(({ id }) =>
+  const videoAssetsToRemove = (await query.dataObjectsByVideoId(videosData[1].videoId.toString())).map(({ id }) =>
     Number(id)
   )
   const deleteVideoAssetsAsModeratorParams: DeleteVideoAssetsAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
       videoId: videosData[1].videoId, // second video
-      assetsToRemove,
+      assetsToRemove: videoAssetsToRemove,
       rationale: 'Deleted video assets due to pirated content',
     },
   ]
@@ -149,43 +156,6 @@ export default async function curatorModerationActions({ api, query, env }: Flow
     deleteVideoAssetsAsModeratorParams
   )
   await new FixtureRunner(deleteVideoAssetsAsModeratorFixture).runWithQueryNodeChecks()
-
-  /**
-   * delete channel as moderator
-   */
-
-  // delete other video as well because for channel to be deleted, it should have no video
-  const deleteSecondVideoAsModeratorParams: DeleteVideoAsModeratorParams[] = [
-    {
-      asCurator: [curatorGroupId, curatorId],
-      videoId: videosData[1].videoId, // second video
-      numOfObjectsToDelete: 0,
-      rationale: 'Deleted 2nd video',
-    },
-  ]
-
-  const deleteSecondVideoAsModeratorFixture = new DeleteVideoAsModeratorFixture(
-    api,
-    query,
-    deleteSecondVideoAsModeratorParams
-  )
-  await new FixtureRunner(deleteSecondVideoAsModeratorFixture).runWithQueryNodeChecks()
-
-  const deleteChannelAsModeratorParams: DeleteChannelAsModeratorParams[] = [
-    {
-      asCurator: [curatorGroupId, curatorId],
-      channelId: channelIds[0],
-      numOfObjectsToDelete: 2,
-      rationale: 'Deleted channel due to repeated violations of ToS',
-    },
-  ]
-
-  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(
-    api,
-    query,
-    deleteChannelAsModeratorParams
-  )
-  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }
