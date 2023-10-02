@@ -19,7 +19,7 @@ export type ScenarioProps = {
   job: (label: string, flows: Flow[] | Flow) => Job
 }
 
-const OUTPUT_FILE_PATH = 'output.json'
+const OUTPUT_FILE_PATH = 'keys.json'
 
 type TestsOutput = {
   accounts: { [k: string]: number }
@@ -56,6 +56,8 @@ export async function scenario(label: string, scene: (props: ScenarioProps) => P
 
   const env = process.env
 
+  const debug = extendDebug('scenario')
+
   // Connect api to the chain
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
   const provider = new WsProvider(nodeUrl)
@@ -64,16 +66,13 @@ export async function scenario(label: string, scene: (props: ScenarioProps) => P
 
   const api = apiFactory.getApi('Key Generation')
 
-  // Generate all key ids based on REUSE_KEYS or START_KEY_ID (if provided)
-  const reuseKeys = Boolean(env.REUSE_KEYS)
-  let startKeyId: number
+  let startKeyId = 0
   let customKeys: string[] = []
-  if (reuseKeys && existsSync(OUTPUT_FILE_PATH)) {
+  if (existsSync(OUTPUT_FILE_PATH)) {
+    debug(`Found existing ${OUTPUT_FILE_PATH}, will re-use existing keys.`)
     const output = JSON.parse(readFileSync(OUTPUT_FILE_PATH).toString()) as TestsOutput
     startKeyId = output.keyIds.final
     customKeys = output.keyIds.custom
-  } else {
-    startKeyId = parseInt(env.START_KEY_ID || '0')
   }
 
   await api.createKeyPairs(startKeyId, false)
@@ -88,8 +87,6 @@ export async function scenario(label: string, scene: (props: ScenarioProps) => P
   })
 
   const query = new QueryNodeApi(queryNodeProvider)
-
-  const debug = extendDebug('scenario')
 
   debug(label)
 

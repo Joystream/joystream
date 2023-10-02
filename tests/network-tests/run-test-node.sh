@@ -4,6 +4,8 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
+rm ./keys.json || :
+
 # Location used to store chain data, generated spec file and initial members
 # and balances for the test chain.
 DATA_PATH=./data

@@ -1,6 +1,6 @@
+import '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
-import '@joystream/types'
 
 async function main() {
   const endpoint = process.env.WS_URI || 'ws://127.0.0.1:9944'
@@ -8,7 +8,7 @@ async function main() {
 
   // Create the API and wait until ready
   let api: ApiPromise
-  let retry = 6
+  let retry = 15
   while (true) {
     try {
       api = new ApiPromise({ provider })

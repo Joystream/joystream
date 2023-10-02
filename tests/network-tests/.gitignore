@@ -1,3 +1,4 @@
 output.json
 data/
 **/generated/*
+keys.json

@@ -4,6 +4,8 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
+rm ./keys.json || :
+
 # Log only to stderr
 # Only output from this script should be the container id of the node at the very end
 

@@ -12,7 +12,6 @@ import {
 import { QueryNodeApi } from '../../../QueryNodeApi'
 import { EventDetails, EventType } from '../../../types'
 import { ClaimChannelRewardParams, getExpectedClaims } from './ClaimChannelRewardFixture'
-import { BN } from 'bn.js'
 
 type ClaimAndWithdrawChannelRewardEventDetails = EventDetails<EventType<'content', 'ChannelRewardClaimedAndWithdrawn'>>
 

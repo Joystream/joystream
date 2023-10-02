@@ -4,6 +4,8 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
+rm ./keys.json || :
+
 # Custom sudo and treasury accounts - export them before start new chain
 # will be used to configre chainspec and override test framework defaults.
 export TREASURY_ACCOUNT_URI=//Bob

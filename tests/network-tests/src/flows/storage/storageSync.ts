@@ -1,17 +1,17 @@
-import { FlowProps } from '../../Flow'
-import { extendDebug } from '../../Debugger'
-import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
-import { FixtureRunner } from '../../Fixture'
+import { ChannelCreationInputParameters } from '@joystream/cli/src/Types'
 import { createType } from '@joystream/types'
-import { createJoystreamCli } from '../utils'
 import { BN } from 'bn.js'
 import { assert } from 'chai'
-import { ChannelCreationInputParameters } from '@joystream/cli/src/Types'
-import { Utils } from '../../utils'
-import { ColossusApi } from '../../../ColossusApi'
-import { doubleBucketConfig } from './initStorage'
 import { readFileSync } from 'fs'
 import urljoin from 'url-join'
+import { ColossusApi } from '../../../ColossusApi'
+import { extendDebug } from '../../Debugger'
+import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
+import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
+import { Utils } from '../../utils'
+import { createJoystreamCli } from '../utils'
+import { doubleStorageBucketConfig } from './config'
 
 export async function storageSync({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:storageSync')
@@ -102,8 +102,8 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
     (r) => Utils.assert(r, `Cannot find channel ${channelId}`)
   )
 
-  const colossus1Endpoint = doubleBucketConfig.buckets[0].metadata.endpoint
-  const colossus2Endpoint = doubleBucketConfig.buckets[1].metadata.endpoint
+  const colossus1Endpoint = doubleStorageBucketConfig.buckets[0].metadata.endpoint
+  const colossus2Endpoint = doubleStorageBucketConfig.buckets[1].metadata.endpoint
   Utils.assert(channel && channel.coverPhoto && channel.avatarPhoto, `Channel ${channelId} has missing assets`)
   Utils.assert(colossus1Endpoint && colossus2Endpoint, `Colossus endpoints not set`)
 
