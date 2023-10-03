@@ -1,24 +1,28 @@
 import BN from 'bn.js'
-import {
-  AddCuratorToCuratorGroupFixture,
-  AddCuratorToGroupParams,
-} from '../../fixtures/content/collaboratorAndCurator/addCuratorsToCuratorGroupFixture'
-import { CreateCuratorGroupFixture, CuratorGroupParams } from '../../fixtures/content/createCuratorGroupFixture'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import {
   CreateChannelsAndVideosFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
 } from '../../fixtures/content'
-import { FlowProps } from '../../Flow'
-import { createJoystreamCli } from '../utils'
+import {
+  AddCuratorToCuratorGroupFixture,
+  AddCuratorToGroupParams,
+} from '../../fixtures/content/collaboratorAndCurator/addCuratorsToCuratorGroupFixture'
+import { CreateCuratorGroupFixture, CuratorGroupParams } from '../../fixtures/content/createCuratorGroupFixture'
+import {
+  DeleteChannelAssetsAsModeratorFixture,
+  DeleteChannelAssetsAsModeratorParams,
+} from '../../fixtures/content/curatorModeration/DeleteChannelAssetByModerator'
 import {
   DeleteVideoAssetsAsModeratorFixture,
   DeleteVideoAssetsAsModeratorParams,
 } from '../../fixtures/content/curatorModeration/DeleteVideoAssetsByModerator'
+import { createJoystreamCli } from '../utils'
 
-export default async function curatorModerationActions({ api, query, env }: FlowProps): Promise<void> {
+export default async function curatorModerationActions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:curator-moderation-actions')
   debug('Started')
   api.enableDebugTxLogs()
@@ -67,7 +71,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   )
   await new FixtureRunner(createChannelsAndVideos).run()
 
-  const { videosData } = createChannelsAndVideos.getCreatedItems()
+  const { videosData, channelIds } = createChannelsAndVideos.getCreatedItems()
 
   // create curator & curator group
 
@@ -77,7 +81,7 @@ export default async function curatorModerationActions({ api, query, env }: Flow
       permissionsByLevel: [
         {
           channelPrivilegeLevel: 0,
-          contentModerationActionSet: ['HideChannel', 'DeleteVideoAssets'],
+          contentModerationActionSet: ['DeleteVideoAssets', 'DeleteNonVideoChannelAssets'],
           permissionToDeleteNftAssets: false,
         },
       ],
@@ -103,17 +107,40 @@ export default async function curatorModerationActions({ api, query, env }: Flow
   // test curator moderation actions
 
   /**
+   * delete channel assets as moderator
+   */
+
+  const channelAssetsToRemove = (await query.dataObjectsByChannelId(channelIds[0].toString())).map(({ id }) =>
+    Number(id)
+  )
+  const deleteChannelAssetsAsModeratorParams: DeleteChannelAssetsAsModeratorParams[] = [
+    {
+      asCurator: [curatorGroupId, curatorId],
+      channelId: channelIds[0], // first channel
+      assetsToRemove: channelAssetsToRemove,
+      rationale: 'Deleted channel assets due to pirated content',
+    },
+  ]
+
+  const deleteChannelAssetsAsModeratorFixture = new DeleteChannelAssetsAsModeratorFixture(
+    api,
+    query,
+    deleteChannelAssetsAsModeratorParams
+  )
+  await new FixtureRunner(deleteChannelAssetsAsModeratorFixture).runWithQueryNodeChecks()
+
+  /**
    * delete video assets as moderator
    */
 
-  const assetsToRemove = (await query.dataObjectsByVideoId(videosData[1].videoId.toString())).map(({ id }) =>
+  const videoAssetsToRemove = (await query.dataObjectsByVideoId(videosData[1].videoId.toString())).map(({ id }) =>
     Number(id)
   )
   const deleteVideoAssetsAsModeratorParams: DeleteVideoAssetsAsModeratorParams[] = [
     {
       asCurator: [curatorGroupId, curatorId],
       videoId: videosData[1].videoId, // second video
-      assetsToRemove,
+      assetsToRemove: videoAssetsToRemove,
       rationale: 'Deleted video assets due to pirated content',
     },
   ]

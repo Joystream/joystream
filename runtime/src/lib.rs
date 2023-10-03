@@ -144,7 +144,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 2003,
+    spec_version: 2002,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -939,15 +939,15 @@ pub type CouncilModule = council::Module<Runtime>;
 parameter_types! {
     // referendum parameters
     pub const MaxSaltLength: u64 = 32;
-    pub const VoteStageDuration: BlockNumber = days!(3);
-    pub const RevealStageDuration: BlockNumber = days!(3);
+    pub const VoteStageDuration: BlockNumber = days!(4);
+    pub const RevealStageDuration: BlockNumber = days!(4);
     pub const MinimumVotingStake: Balance = dollars!(10);
     pub const MaxWinnerTargetCount: u32 = CouncilSize::get();
 
     // council parameteres
     pub const MinNumberOfExtraCandidates: u32 = 0;
-    pub const AnnouncingPeriodDuration: BlockNumber = days!(9);
-    pub const IdlePeriodDuration: BlockNumber = 1; // 1 block
+    pub const AnnouncingPeriodDuration: BlockNumber = days!(6);
+    pub const IdlePeriodDuration: BlockNumber = days!(14);
     pub const CouncilSize: u32 = 3;
     pub const MinCandidateStake: Balance = dollars!(10_000);
     pub const ElectedMemberRewardPeriod: BlockNumber = days!(1);
@@ -1233,7 +1233,7 @@ impl membership::Config for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 6;
-    pub const MaxDirectSubcategoriesInCategory: u64 = 5;
+    pub const MaxDirectSubcategoriesInCategory: u64 = 10;
     pub const MaxTotalCategories: u64 = 40;
     pub const MaxModeratorsForCategory: u64 = 10;
 
@@ -1329,7 +1329,16 @@ impl BondingRestriction<AccountId> for RestrictStakingAccountsFromBonding {
 }
 
 parameter_types! {
-    pub const MaxWorkerNumberLimit: u32 = 30;
+    pub const ForumMaxWorkerNumberLimit: u32 = 30;
+    pub const StorageMaxWorkerNumberLimit: u32 = 50;
+    pub const ContentMaxWorkerNumberLimit: u32 = 30;
+    pub const MembershipMaxWorkerNumberLimit: u32 = 30;
+    pub const AppMaxWorkerNumberLimit: u32 = 30;
+    pub const OperationsAlphaMaxWorkerNumberLimit: u32 = 30;
+    pub const OperationsBetaMaxWorkerNumberLimit: u32 = 30;
+    pub const OperationsGammaMaxWorkerNumberLimit: u32 = 30;
+    pub const DistributionMaxWorkerNumberLimit: u32 = 50;
+
     pub const MinUnstakingPeriodLimit: u32 = days!(20);
     // FIXME: Periods should be the same, but rewards should start at different blocks
     pub const ForumWorkingGroupRewardPeriod: u32 = days!(1) + 10;
@@ -1409,7 +1418,7 @@ pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = ForumMaxWorkerNumberLimit;
     type StakingHandler = ForumWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1422,7 +1431,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = StorageMaxWorkerNumberLimit;
     type StakingHandler = StorageWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1435,7 +1444,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = ContentMaxWorkerNumberLimit;
     type StakingHandler = ContentWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1448,7 +1457,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = MembershipMaxWorkerNumberLimit;
     type StakingHandler = MembershipWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1461,7 +1470,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = OperationsAlphaMaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupAlphaStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1474,7 +1483,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = AppMaxWorkerNumberLimit;
     type StakingHandler = AppWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1487,7 +1496,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = OperationsBetaMaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupBetaStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1500,7 +1509,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = OperationsGammaMaxWorkerNumberLimit;
     type StakingHandler = OperationsWorkingGroupGammaStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;
@@ -1513,7 +1522,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type MaxWorkerNumberLimit = DistributionMaxWorkerNumberLimit;
     type StakingHandler = DistributionWorkingGroupStakingManager;
     type StakingAccountValidator = Members;
     type MemberOriginValidator = Members;

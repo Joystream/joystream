@@ -3,27 +3,27 @@ import BN from 'bn.js'
 import Long from 'long'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import {
+  BanOrUnbanMemberParams,
+  BanOrUnbanMembersFixture,
   CreateChannelsAndVideosFixture,
   CreateCommentParams,
   CreateCommentsFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
+  DeleteChannelWithVideosFixture,
   DeleteCommentParams,
   DeleteCommentsFixture,
-  ReactCommentParams,
-  ReactToCommentsFixture,
-  ReactToVideosFixture,
-  ReactVideoParams,
   EditCommentParams,
   EditCommentsFixture,
   ModerateCommentParams,
   ModerateCommentsFixture,
-  DeleteChannelWithVideosFixture,
-  BanOrUnbanMemberParams,
-  BanOrUnbanMembersFixture,
+  ReactCommentParams,
+  ReactToCommentsFixture,
+  ReactToVideosFixture,
+  ReactVideoParams,
 } from '../../fixtures/content'
-import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 
 export default async function commentsAndReactions({ api, query }: FlowProps): Promise<void> {
