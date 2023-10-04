@@ -33,7 +33,7 @@ const DEFAULT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 const DEFAULT_SPLIT_ALLOCATION: u32 = 4_000_000; // DEFAULT_REVENUE_SPLIT_RATE * DEFAULT_SPLIT_REVENUE
 const DEFAULT_SPLIT_PAYOUT: u32 = 2_000_000;
 const DEFAULT_SPLIT_PARTICIPATION: u32 =
-    DEFAULT_SPLIT_PAYOUT * ((DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION) as u32);
+    DEFAULT_SPLIT_PAYOUT * (DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION);
 
 // Amm
 const DEFAULT_AMM_AMOUNT: u32 = 1000;
@@ -265,7 +265,7 @@ benchmarks! {
     // - bloat_bond is non-zero
     transfer {
         let o in 1 .. (<T as Config>::MaxOutputs::get());
-        let m in 1 .. (MAX_KILOBYTES_METADATA as u32);
+        let m in 1 .. MAX_KILOBYTES_METADATA;
 
         let (owner_member_id, owner_account) = create_owner::<T>();
         let _outputs =
@@ -312,7 +312,7 @@ benchmarks! {
                 Transfers(
                     outputs
                         .iter()
-                        .map(|(m, p)| (Validated::NonExisting(*m), ValidatedPayment::from(PaymentWithVesting::from(p.clone()))))
+                        .map(|(m, p)| (Validated::NonExisting(*m), ValidatedPayment::from(PaymentWithVesting::from(*p))))
                         .collect()
                 ),
                 metadata

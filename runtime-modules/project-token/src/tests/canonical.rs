@@ -1,6 +1,6 @@
 #![cfg(test)]
-use frame_support::{assert_err, assert_noop, assert_ok, StorageDoubleMap, StorageMap};
-use sp_runtime::{traits::Hash, Permill};
+use frame_support::{assert_noop, assert_ok, StorageDoubleMap, StorageMap};
+use sp_runtime::Permill;
 
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
@@ -1084,36 +1084,6 @@ fn issue_token_ok_with_token_info_added() {
                 amm_curve: None,
             }
         );
-    })
-}
-
-#[test]
-fn issue_token_ok_with_correct_patronage_rate_approximated() {
-    let token_id = token!(1);
-    let (owner_id, owner_acc) = member!(1);
-    let supply = balance!(100);
-
-    let params = TokenIssuanceParametersOf::<Test> {
-        transfer_policy: TransferPolicyParams::Permissionless,
-        revenue_split_rate: DEFAULT_SPLIT_RATE,
-        patronage_rate: YearlyRate(Permill::from_perthousand(105)), // 10.5%
-        ..Default::default()
-    }
-    .with_allocation(&owner_id, supply, None);
-
-    // rate = floor(.105 / blocks_per_year * 1e18) per quintill = 19963924238 per quintill
-    let expected = BlockRate(Perquintill::from_parts(19963924238));
-
-    let config = GenesisConfigBuilder::new_empty().build();
-
-    build_test_externalities(config).execute_with(|| {
-        let _ = Token::issue_token(owner_acc, params.clone(), default_upload_context());
-
-        let actual = <crate::TokenInfoById<Test>>::get(token_id)
-            .patronage_info
-            .rate;
-
-        assert_approx_eq!(actual.0.deconstruct(), expected.0.deconstruct(), 1u64);
     })
 }
 

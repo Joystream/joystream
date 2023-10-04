@@ -717,7 +717,7 @@ fn amm_sell_fails_with_amm_treasury_not_having_sufficient_usable_joy_required() 
         AmmBuyFixture::default().execute_call().unwrap();
         // setting the balance of teh amm_buy curve reserve to 0
         Balances::set_balance(
-            Origin::root(),
+            RuntimeOrigin::root(),
             Token::amm_treasury_account(token_id),
             Balance::zero(),
             Balance::zero(),

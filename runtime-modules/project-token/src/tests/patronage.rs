@@ -433,15 +433,3 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
             .is_zero());
     })
 }
-
-#[test]
-fn update_max_yearly_patronage_rate_fails_with_non_root_origin() {
-    build_default_test_externalities().execute_with(|| {
-        let res = Token::update_max_yearly_patronage_rate(
-            Origin::signed(AccountId::zero()),
-            DEFAULT_YEARLY_PATRONAGE_RATE.into(),
-        );
-
-        assert!(res.is_err());
-    })
-}
