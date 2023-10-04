@@ -1077,8 +1077,6 @@ export default {
       HideVideo: 'Null',
       HideChannel: 'Null',
       ChangeChannelFeatureStatus: 'PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature',
-      DeleteVideo: 'Null',
-      DeleteChannel: 'Null',
       DeleteVideoAssets: 'bool',
       DeleteNonVideoChannelAssets: 'Null',
       UpdateChannelNftLimits: 'Null'

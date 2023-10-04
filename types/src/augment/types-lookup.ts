@@ -1232,13 +1232,11 @@ declare module '@polkadot/types/lookup' {
     readonly isHideChannel: boolean;
     readonly isChangeChannelFeatureStatus: boolean;
     readonly asChangeChannelFeatureStatus: PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature;
-    readonly isDeleteVideo: boolean;
-    readonly isDeleteChannel: boolean;
     readonly isDeleteVideoAssets: boolean;
     readonly asDeleteVideoAssets: bool;
     readonly isDeleteNonVideoChannelAssets: boolean;
     readonly isUpdateChannelNftLimits: boolean;
-    readonly type: 'HideVideo' | 'HideChannel' | 'ChangeChannelFeatureStatus' | 'DeleteVideo' | 'DeleteChannel' | 'DeleteVideoAssets' | 'DeleteNonVideoChannelAssets' | 'UpdateChannelNftLimits';
+    readonly type: 'HideVideo' | 'HideChannel' | 'ChangeChannelFeatureStatus' | 'DeleteVideoAssets' | 'DeleteNonVideoChannelAssets' | 'UpdateChannelNftLimits';
   }
 
   /** @name PalletContentTransferCommitmentParametersBTreeMap (155) */

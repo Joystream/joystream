@@ -424,49 +424,6 @@ benchmarks! {
                 ).into());
         }
 
-    delete_channel_as_moderator{
-
-        let a in 1 .. T::MaxNumberOfAssetsPerChannel::get(); //max objs number
-
-        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-
-        let c in (T::MinDistributionBucketsPerBag::get()) .. (T::MaxDistributionBucketsPerBag::get());
-
-        let d in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
-
-        let (
-            channel_id,
-            group_id,
-            lead_account_id,
-            curator_id,
-            curator_account_id
-        ) =
-            setup_worst_case_scenario_curator_channel::<T>(a, b, c, true).unwrap();
-
-        let origin = RawOrigin::Signed(curator_account_id);
-        let actor = ContentActor::Curator(group_id, curator_id);
-        let channel_bag_witness = channel_bag_witness::<T>(channel_id)?;
-        let rationale = vec![1u8].repeat((d * 1000) as usize);
-
-        set_all_channel_paused_features::<T>(channel_id);
-    }: _ (origin,
-          actor,
-          channel_id,
-          channel_bag_witness,
-          a.into(),
-          rationale.clone())
-        verify {
-
-            assert_last_event::<T>(
-                <T as Config>::RuntimeEvent::from(
-                    Event::<T>::ChannelDeletedByModerator(
-                        actor,
-                        channel_id,
-                        rationale
-                    )
-                ).into());
-        }
-
     set_channel_visibility_as_moderator{
 
         let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
@@ -548,69 +505,6 @@ benchmarks! {
                         video_id,
                         assets_to_remove,
                         true,
-                        rationale,
-                    )
-                ).into());
-        }
-
-    delete_video_as_moderator_with_assets {
-
-        let a in 1 .. T::MaxNumberOfAssetsPerVideo::get(); //max objs number
-
-        let b in (T::MinStorageBucketsPerBag::get()) .. (T::MaxStorageBucketsPerBag::get());
-
-        let c in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
-
-        let rationale = vec![1u8].repeat((c * 1000) as usize);
-        let (video_id, (curator_acc_id, actor, channel_id, _)) =
-            setup_worst_case_scenario_mutable_video::<T>(Some(a), b)?;
-
-        set_all_channel_paused_features::<T>(channel_id);
-    }: delete_video_as_moderator (
-        RawOrigin::Signed(curator_acc_id),
-        actor,
-        video_id,
-        Some(b),
-        a.into(),
-        rationale.clone())
-        verify {
-
-            assert_last_event::<T>(
-                <T as Config>::RuntimeEvent::from(
-                    Event::<T>::VideoDeletedByModerator(
-                        actor,
-                        video_id,
-                        rationale,
-                    )
-                ).into());
-        }
-
-    delete_video_as_moderator_without_assets {
-        let a in 1 .. MAX_KILOBYTES_METADATA; //max kilobytes for rationale
-
-        let (video_id, (curator_acc_id, actor, channel_id, _)) =
-            setup_worst_case_scenario_mutable_video::<T>(
-                None,
-                T::MaxStorageBucketsPerBag::get()
-            )?;
-
-        let rationale = vec![1u8].repeat((a * 1000) as usize);
-
-        set_all_channel_paused_features::<T>(channel_id);
-    }: delete_video_as_moderator (
-        RawOrigin::Signed(curator_acc_id),
-        actor,
-        video_id,
-        None,
-        0,
-        rationale.clone())
-        verify {
-
-            assert_last_event::<T>(
-                <T as Config>::RuntimeEvent::from(
-                    Event::<T>::VideoDeletedByModerator(
-                        actor,
-                        video_id,
                         rationale,
                     )
                 ).into());
@@ -3473,13 +3367,6 @@ pub mod tests {
     }
 
     #[test]
-    fn delete_channel_as_moderator() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_channel_as_moderator());
-        });
-    }
-
-    #[test]
     fn set_channel_visibility_as_moderator() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_set_channel_visibility_as_moderator());
@@ -3490,20 +3377,6 @@ pub mod tests {
     fn delete_video_assets_as_moderator() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_delete_video_assets_as_moderator());
-        });
-    }
-
-    #[test]
-    fn delete_video_as_moderator_with_assets() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_video_as_moderator_with_assets());
-        });
-    }
-
-    #[test]
-    fn delete_video_as_moderator_without_assets() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_delete_video_as_moderator_without_assets());
         });
     }
 

@@ -51,11 +51,8 @@ pub trait WeightInfo {
 	fn update_channel_privilege_level() -> Weight;
 	fn set_channel_paused_features_as_moderator(_a: u32, ) -> Weight;
 	fn delete_channel_assets_as_moderator(_a: u32, _b: u32, _c: u32, ) -> Weight;
-	fn delete_channel_as_moderator(_a: u32, _b: u32, _c: u32, _d: u32, ) -> Weight;
 	fn set_channel_visibility_as_moderator(_a: u32, ) -> Weight;
 	fn delete_video_assets_as_moderator(_a: u32, _b: u32, _c: u32, ) -> Weight;
-	fn delete_video_as_moderator_with_assets(_a: u32, _b: u32, _c: u32, ) -> Weight;
-	fn delete_video_as_moderator_without_assets(_a: u32, ) -> Weight;
 	fn set_video_visibility_as_moderator(_a: u32, ) -> Weight;
 	fn create_curator_group(_a: u32, ) -> Weight;
 	fn update_curator_group_permissions(_a: u32, ) -> Weight;
@@ -403,53 +400,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_proof_size(5233).saturating_mul(a.into()))
 			.saturating_add(Weight::from_proof_size(2581).saturating_mul(b.into()))
 	}
-	// Storage: Content ChannelById (r:1 w:1)
-	// Proof: Content ChannelById (max_values: None, max_size: Some(889), added: 3364, mode: MaxEncodedLen)
-	// Storage: Storage Bags (r:1 w:1)
-	// Proof: Storage Bags (max_values: None, max_size: Some(964), added: 3439, mode: MaxEncodedLen)
-	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
-	// Proof: Instance3WorkingGroup WorkerById (max_values: None, max_size: Some(175), added: 2650, mode: MaxEncodedLen)
-	// Storage: Content CuratorGroupById (r:1 w:0)
-	// Proof: Content CuratorGroupById (max_values: None, max_size: Some(1127), added: 3602, mode: MaxEncodedLen)
-	// Storage: Storage DataObjectsById (r:11 w:10)
-	// Proof: Storage DataObjectsById (max_values: None, max_size: Some(155), added: 2630, mode: MaxEncodedLen)
-	// Storage: Storage StorageBucketById (r:13 w:13)
-	// Proof: Storage StorageBucketById (max_values: None, max_size: Some(106), added: 2581, mode: MaxEncodedLen)
-	// Storage: Storage DistributionBucketByFamilyIdById (r:51 w:51)
-	// Proof: Storage DistributionBucketByFamilyIdById (max_values: None, max_size: Some(380), added: 2855, mode: MaxEncodedLen)
-	// Storage: System Account (r:12 w:12)
-	// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
-	/// The range of component `a` is `[1, 10]`.
-	/// The range of component `b` is `[1, 13]`.
-	/// The range of component `c` is `[1, 51]`.
-	/// The range of component `d` is `[1, 100]`.
-	fn delete_channel_as_moderator(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `4018 + a * (408 ±0) + b * (112 ±0) + c * (56 ±0)`
-		//  Estimated: `20891 + b * (2581 ±0) + a * (5233 ±0) + c * (2855 ±0)`
-		// Minimum execution time: 542_000 nanoseconds.
-		Weight::from_parts(194_596_616, 0u64)
-			.saturating_add(Weight::from_proof_size(20891))
-			// Standard Error: 45_509
-			.saturating_add(Weight::from_parts(21_211_482, 0u64).saturating_mul(a.into()))
-			// Standard Error: 34_478
-			.saturating_add(Weight::from_parts(7_768_746, 0u64).saturating_mul(b.into()))
-			// Standard Error: 8_694
-			.saturating_add(Weight::from_parts(6_141_443, 0u64).saturating_mul(c.into()))
-			// Standard Error: 4_403
-			.saturating_add(Weight::from_parts(442_504, 0u64).saturating_mul(d.into()))
-			.saturating_add(T::DbWeight::get().reads(7_u64))
-			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(c.into())))
-			.saturating_add(T::DbWeight::get().writes(4_u64))
-			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
-			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
-			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(c.into())))
-			.saturating_add(Weight::from_proof_size(2581).saturating_mul(b.into()))
-			.saturating_add(Weight::from_proof_size(5233).saturating_mul(a.into()))
-			.saturating_add(Weight::from_proof_size(2855).saturating_mul(c.into()))
-	}
 	// Storage: Content ChannelById (r:1 w:0)
 	// Proof: Content ChannelById (max_values: None, max_size: Some(889), added: 3364, mode: MaxEncodedLen)
 	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
@@ -512,74 +462,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 			.saturating_add(Weight::from_proof_size(5233).saturating_mul(a.into()))
 			.saturating_add(Weight::from_proof_size(2581).saturating_mul(b.into()))
-	}
-	// Storage: Content VideoById (r:1 w:1)
-	// Proof: Content VideoById (max_values: None, max_size: Some(513), added: 2988, mode: MaxEncodedLen)
-	// Storage: Content ChannelById (r:1 w:1)
-	// Proof: Content ChannelById (max_values: None, max_size: Some(889), added: 3364, mode: MaxEncodedLen)
-	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
-	// Proof: Instance3WorkingGroup WorkerById (max_values: None, max_size: Some(175), added: 2650, mode: MaxEncodedLen)
-	// Storage: Content CuratorGroupById (r:1 w:0)
-	// Proof: Content CuratorGroupById (max_values: None, max_size: Some(1127), added: 3602, mode: MaxEncodedLen)
-	// Storage: Storage Bags (r:1 w:1)
-	// Proof: Storage Bags (max_values: None, max_size: Some(964), added: 3439, mode: MaxEncodedLen)
-	// Storage: Storage DataObjectStateBloatBondValue (r:1 w:0)
-	// Proof: Storage DataObjectStateBloatBondValue (max_values: Some(1), max_size: Some(16), added: 511, mode: MaxEncodedLen)
-	// Storage: Storage DataObjectsById (r:20 w:20)
-	// Proof: Storage DataObjectsById (max_values: None, max_size: Some(155), added: 2630, mode: MaxEncodedLen)
-	// Storage: Storage DataObjectPerMegabyteFee (r:1 w:0)
-	// Proof: Storage DataObjectPerMegabyteFee (max_values: Some(1), max_size: Some(16), added: 511, mode: MaxEncodedLen)
-	// Storage: Storage StorageBucketById (r:13 w:13)
-	// Proof: Storage StorageBucketById (max_values: None, max_size: Some(106), added: 2581, mode: MaxEncodedLen)
-	// Storage: System Account (r:22 w:22)
-	// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
-	/// The range of component `a` is `[1, 20]`.
-	/// The range of component `b` is `[1, 13]`.
-	/// The range of component `c` is `[1, 100]`.
-	fn delete_video_as_moderator_with_assets(a: u32, b: u32, c: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `5031 + a * (386 ±0) + b * (112 ±0)`
-		//  Estimated: `22271 + a * (5233 ±0) + b * (2581 ±0)`
-		// Minimum execution time: 362_000 nanoseconds.
-		Weight::from_parts(195_352_122, 0u64)
-			.saturating_add(Weight::from_proof_size(22271))
-			// Standard Error: 23_267
-			.saturating_add(Weight::from_parts(20_859_238, 0u64).saturating_mul(a.into()))
-			// Standard Error: 36_019
-			.saturating_add(Weight::from_parts(8_014_016, 0u64).saturating_mul(b.into()))
-			// Standard Error: 4_597
-			.saturating_add(Weight::from_parts(430_616, 0u64).saturating_mul(c.into()))
-			.saturating_add(T::DbWeight::get().reads(9_u64))
-			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(a.into())))
-			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(b.into())))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
-			.saturating_add(T::DbWeight::get().writes((2_u64).saturating_mul(a.into())))
-			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
-			.saturating_add(Weight::from_proof_size(5233).saturating_mul(a.into()))
-			.saturating_add(Weight::from_proof_size(2581).saturating_mul(b.into()))
-	}
-	// Storage: Content VideoById (r:1 w:1)
-	// Proof: Content VideoById (max_values: None, max_size: Some(513), added: 2988, mode: MaxEncodedLen)
-	// Storage: Content ChannelById (r:1 w:1)
-	// Proof: Content ChannelById (max_values: None, max_size: Some(889), added: 3364, mode: MaxEncodedLen)
-	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
-	// Proof: Instance3WorkingGroup WorkerById (max_values: None, max_size: Some(175), added: 2650, mode: MaxEncodedLen)
-	// Storage: Content CuratorGroupById (r:1 w:0)
-	// Proof: Content CuratorGroupById (max_values: None, max_size: Some(1127), added: 3602, mode: MaxEncodedLen)
-	// Storage: System Account (r:1 w:1)
-	// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
-	/// The range of component `a` is `[1, 100]`.
-	fn delete_video_as_moderator_without_assets(a: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `3099`
-		//  Estimated: `15207`
-		// Minimum execution time: 159_000 nanoseconds.
-		Weight::from_parts(161_510_228, 0u64)
-			.saturating_add(Weight::from_proof_size(15207))
-			// Standard Error: 4_331
-			.saturating_add(Weight::from_parts(413_949, 0u64).saturating_mul(a.into()))
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 	// Storage: Content VideoById (r:1 w:0)
 	// Proof: Content VideoById (max_values: None, max_size: Some(513), added: 2988, mode: MaxEncodedLen)
@@ -2267,19 +2149,10 @@ impl WeightInfo for () {
 	fn delete_channel_assets_as_moderator(a: u32, b: u32, c: u32, ) -> Weight {
 		Weight::from_parts(0, 0)
 	}
-	fn delete_channel_as_moderator(a: u32, b: u32, c: u32, d: u32, ) -> Weight {
-		Weight::from_parts(0, 0)
-	}
 	fn set_channel_visibility_as_moderator(a: u32, ) -> Weight {
 		Weight::from_parts(0, 0)
 	}
 	fn delete_video_assets_as_moderator(a: u32, b: u32, c: u32, ) -> Weight {
-		Weight::from_parts(0, 0)
-	}
-	fn delete_video_as_moderator_with_assets(a: u32, b: u32, c: u32, ) -> Weight {
-		Weight::from_parts(0, 0)
-	}
-	fn delete_video_as_moderator_without_assets(a: u32, ) -> Weight {
 		Weight::from_parts(0, 0)
 	}
 	fn set_video_visibility_as_moderator(a: u32, ) -> Weight {

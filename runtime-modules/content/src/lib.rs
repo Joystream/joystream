@@ -27,6 +27,7 @@ mod tests;
 mod benchmarks;
 
 mod errors;
+pub mod migrations;
 mod nft;
 mod permissions;
 mod types;
@@ -71,7 +72,7 @@ use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, StorageVersion},
     PalletId, Parameter,
 };
 
@@ -89,6 +90,14 @@ use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, M
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 type WeightInfoContent<T> = <T as Config>::WeightInfo;
+
+/// The log target of this pallet.
+pub const LOG_TARGET: &str = "runtime::content";
+
+// Nara release. enum variants removed:
+// - ContentModerationAction::DeleteVideo
+// - ContentModerationAction::DeleteChannel
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 /// Module configuration trait for Content Directory Module
 pub trait Config:
@@ -294,7 +303,6 @@ decl_storage! { generate_storage_info
         /// NFT limits enabled or not
         /// Can be updated in flight by the Council
         pub NftLimitsEnabled get(fn nft_limits_enabled) config(): bool;
-
     }
     add_extra_genesis {
         build(|_| {
@@ -3666,6 +3674,8 @@ decl_module! {
                 channel.creator_token_id = None;
             });
         }
+
+        type StorageVersion = CURRENT_STORAGE_VERSION;
     }
 }
 
@@ -4630,26 +4640,6 @@ impl<T: Config> Module<T> {
         WeightInfoContent::<T>::delete_channel_assets_as_moderator(a, b, c)
     }
 
-    // Calculates weight for delete_channel_as_moderator extrinsic.
-    fn delete_channel_as_moderator_weight(
-        channel_bag_witness: &ChannelBagWitness,
-        num_objects_to_delete: &u64,
-        rationale: &Vec<u8>,
-    ) -> Weight {
-        //num_objects_to_delete
-        let a = (*num_objects_to_delete) as u32;
-
-        //channel_bag_witness storage_buckets_num
-        let b = channel_bag_witness.storage_buckets_num;
-
-        //channel_bag_witness distribution_buckets_num
-        let c = channel_bag_witness.distribution_buckets_num;
-
-        //rationale
-        let d = to_kb((*rationale).len() as u32);
-        WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
-    }
-
     // Calculates weight for set_channel_visibility_as_moderator extrinsic.
     fn set_channel_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
         let a = to_kb((*rationale).len() as u32);
@@ -4680,31 +4670,6 @@ impl<T: Config> Module<T> {
         let c = to_kb((*rationale).len() as u32);
 
         WeightInfoContent::<T>::delete_video_assets_as_moderator(a, b, c)
-    }
-
-    // Calculates weight for delete_video_as_moderator extrinsic.
-    fn delete_video_as_moderator_weight(
-        num_objects_to_delete: &u64,
-        storage_buckets_num_witness: &Option<u32>,
-        rationale: &Vec<u8>,
-    ) -> Weight {
-        if (*num_objects_to_delete) > 0 {
-            //assets_to_remove
-            let a = (*num_objects_to_delete) as u32;
-
-            //storage_buckets_num_witness storage_buckets_num
-            let b = storage_buckets_num_witness.map_or(0, |v| v);
-
-            //rationale
-            let c = to_kb((*rationale).len() as u32);
-
-            WeightInfoContent::<T>::delete_video_as_moderator_with_assets(a, b, c)
-        } else {
-            //rationale
-            let a = to_kb((*rationale).len() as u32);
-
-            WeightInfoContent::<T>::delete_video_as_moderator_without_assets(a)
-        }
     }
 
     // Calculates weight for accept_channel_transfer extrinsic.

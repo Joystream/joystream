@@ -77,7 +77,7 @@ fn curator_group_management() {
                 0,
                 BTreeSet::from_iter(vec![
                     ContentModerationAction::HideVideo,
-                    ContentModerationAction::DeleteVideo,
+                    ContentModerationAction::HideChannel,
                 ]),
             ),
             (
@@ -98,8 +98,6 @@ fn curator_group_management() {
             (
                 2,
                 BTreeSet::from_iter(vec![
-                    ContentModerationAction::DeleteVideo,
-                    ContentModerationAction::DeleteChannel,
                     ContentModerationAction::HideChannel,
                     ContentModerationAction::HideVideo,
                     ContentModerationAction::ChangeChannelFeatureStatus(
