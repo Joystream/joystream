@@ -111,7 +111,7 @@ const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
     ChannelActionPermission::DeissueCreatorToken,
 ];
 
-const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
+const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 13] = [
     ContentModerationAction::HideVideo,
     ContentModerationAction::HideChannel,
     ContentModerationAction::ChangeChannelFeatureStatus(
@@ -125,8 +125,6 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::ChangeChannelFeatureStatus(
         PausableChannelFeature::CreatorTokenIssuance,
     ),
-    ContentModerationAction::DeleteVideo,
-    ContentModerationAction::DeleteChannel,
     ContentModerationAction::DeleteVideoAssets(true),
     ContentModerationAction::DeleteVideoAssets(false),
     ContentModerationAction::DeleteNonVideoChannelAssets,

@@ -27,6 +27,9 @@ frame-benchmarking = { package = 'frame-benchmarking', default-features = false,
 working-group = { package = 'pallet-working-group', default-features = false, path = '../working-group', optional = true}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 
+# util
+log = { version = "0.4.17", default-features = false }
+
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
 pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}

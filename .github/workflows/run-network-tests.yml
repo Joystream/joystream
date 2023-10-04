@@ -47,6 +47,13 @@ jobs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
       runtime: ${{ steps.compute_shasum.outputs.shasum }}
     steps:
+      - name: Make some space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:

@@ -81,12 +81,7 @@ export default async function curatorModerationActions({ api, query }: FlowProps
       permissionsByLevel: [
         {
           channelPrivilegeLevel: 0,
-          contentModerationActionSet: [
-            'DeleteChannel',
-            'DeleteVideo',
-            'DeleteVideoAssets',
-            'DeleteNonVideoChannelAssets',
-          ],
+          contentModerationActionSet: ['DeleteVideoAssets', 'DeleteNonVideoChannelAssets'],
           permissionToDeleteNftAssets: false,
         },
       ],

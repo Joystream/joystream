@@ -27,6 +27,13 @@ jobs:
       RUNTIME_PROFILE: ${{ matrix.runtime_profile }}
 
     steps:
+      - name: Make some space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - name: Checkout sources
         uses: actions/checkout@v3
       - id: compute_shasum
@@ -47,8 +54,9 @@ jobs:
           export IMAGE_EXISTS=$(docker manifest inspect ${{ env.REPOSITORY }}:${{ steps.compute_shasum.outputs.shasum }} > /dev/null ; echo $?)
           echo "::set-output name=image_exists::${IMAGE_EXISTS}"
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+      # Emulation only needed if cross compiling
+      # - name: Set up QEMU
+      #   uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         # uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v1.7
