@@ -5,18 +5,21 @@ use frame_support::{
     traits::{Currency, OnFinalize, OnInitialize},
 };
 
-use common::locks::{BoundStakingAccountLockId, InvitedMemberLockId};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
+use common::{
+    locks::{BoundStakingAccountLockId, InvitedMemberLockId},
+    numerical::one_plus_interest_pow_fixed,
+};
 use frame_support::{
     ensure,
     traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons},
     PalletId,
 };
 use frame_system::ensure_signed;
-use sp_arithmetic::Perbill;
+use sp_arithmetic::{FixedPointNumber, Perbill};
 use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
-use sp_runtime::traits::{BlakeTwo256, Convert, IdentityLookup};
+use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_runtime::{DispatchError, DispatchResult, PerThing, Permill};
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::{LockComparator, StakingHandler};
@@ -50,6 +53,7 @@ pub type JoyBalance = JoyBalanceOf<Test>;
 pub type Policy = TransferPolicyOf<Test>;
 pub type Hashing = <Test as frame_system::Config>::Hashing;
 pub type VestingSchedule = VestingScheduleOf<Test>;
+pub type AmmParams = AmmParamsOf<Test>;
 pub type MemberId = u64;
 
 #[macro_export]
@@ -81,6 +85,7 @@ parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
     // --------- balances::Config parameters ---------------------------
     pub const ExistentialDeposit: u128 = 10;
     // constants for storage::Config
@@ -172,7 +177,6 @@ impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Balance = u128;
     type TokenId = u64;
-    type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
@@ -181,6 +185,7 @@ impl Config for Test {
     type WeightInfo = ();
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type MaxOutputs = MaxOutputs;
 }
 
 // Working group integration
@@ -512,6 +517,8 @@ pub struct GenesisConfigBuilder {
     pub(crate) amm_deactivation_threshold: Permill,
     pub(crate) bond_tx_fees: Permill,
     pub(crate) unbond_tx_fees: Permill,
+    pub(crate) max_yearly_patronage_rate: YearlyRate,
+    pub(crate) min_amm_slope_parameter: Balance,
 }
 
 /// test externalities + initial balances allocation
@@ -540,6 +547,11 @@ pub fn build_test_externalities_with_balances(
 /// test externalities
 pub fn build_test_externalities(config: token::GenesisConfig<Test>) -> TestExternalities {
     build_test_externalities_with_balances(config, vec![])
+}
+
+/// test externalities
+pub fn build_default_test_externalities() -> TestExternalities {
+    build_default_test_externalities_with_balances(vec![])
 }
 
 /// test externalities with empty Chain State and specified balance allocation
@@ -623,10 +635,18 @@ macro_rules! block {
 }
 
 // ------ General constants ---------------
+pub const DEFAULT_TOKEN_ID: u64 = 1;
+pub const DEFAULT_ISSUER_ACCOUNT_ID: u64 = 1001;
+pub const DEFAULT_ISSUER_MEMBER_ID: u64 = 1;
 pub const DEFAULT_BLOAT_BOND: u128 = 0;
-pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000;
+pub const DEFAULT_INITIAL_ISSUANCE: u128 = 1_000_000_000;
 pub const MIN_REVENUE_SPLIT_DURATION: u64 = 10;
 pub const MIN_REVENUE_SPLIT_TIME_TO_START: u64 = 10;
+
+// ------ Patronage Constants ----------------
+pub const DEFAULT_MAX_YEARLY_PATRONAGE_RATE: Permill = Permill::from_percent(15);
+pub const DEFAULT_YEARLY_PATRONAGE_RATE: Permill = Permill::from_percent(10);
+pub const DEFAULT_BLOCK_INTERVAL: u64 = 10;
 
 // ------ Sale Constants ---------------------
 pub const DEFAULT_SALE_UNIT_PRICE: u128 = 10;
@@ -634,17 +654,16 @@ pub const DEFAULT_SALE_DURATION: u64 = 100;
 
 // ------ Revenue Split constants ------------
 pub const DEFAULT_SALE_PURCHASE_AMOUNT: u128 = 1000;
-pub const DEFAULT_SPLIT_REVENUE: u128 = 1000;
+pub const DEFAULT_SPLIT_REVENUE: u128 = DEFAULT_INITIAL_ISSUANCE / 10;
 pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 pub const DEFAULT_SPLIT_DURATION: u64 = 100;
-pub const DEFAULT_SPLIT_PARTICIPATION: u128 = 100_000;
-pub const DEFAULT_SPLIT_JOY_DIVIDEND: u128 = 10; // (participation / issuance) * revenue * rate
+pub const DEFAULT_SPLIT_PARTICIPATION: u128 = DEFAULT_SPLIT_REVENUE / 100;
 
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
 pub const DEFAULT_AMM_SELL_AMOUNT: u128 = 100;
-pub const AMM_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
-pub const AMM_CURVE_INTERCEPT: Permill = Permill::from_perthousand(1);
+pub const AMM_CURVE_SLOPE: u128 = 10;
+pub const AMM_CURVE_INTERCEPT: u128 = 1000;
 pub const DEFAULT_AMM_BUY_FEES: Permill = Permill::from_percent(1);
 pub const DEFAULT_AMM_SELL_FEES: Permill = Permill::from_percent(10);
 
@@ -672,6 +691,16 @@ macro_rules! merkle_proof {
 
 #[macro_export]
 #[cfg(feature = "std")]
+macro_rules! assert_approx {
+    ($value: expr, $target: expr,) => {
+        let abs_diff = $value.max($target).saturating_sub($value.min($target));
+        assert!(abs_diff < 1_000_000)
+        // accuracy up to 1 million HAPI accuracy -> .0001 $JOY
+    };
+}
+
+#[macro_export]
+#[cfg(feature = "std")]
 macro_rules! assert_approx_eq {
     ($x: expr, $y: expr, $eps: expr) => {
         let abs_diff = $x.max($y).saturating_sub($x.min($y));
@@ -679,17 +708,12 @@ macro_rules! assert_approx_eq {
     };
 }
 
-// utility types
-pub struct Block2Balance {}
-
-impl Convert<BlockNumber, Balance> for Block2Balance {
-    fn convert(block: BlockNumber) -> Balance {
-        block as u128
-    }
-}
-
 pub fn increase_account_balance(account_id: &AccountId, balance: Balance) {
     let _ = Balances::deposit_creating(account_id, balance);
+}
+
+pub fn make_free_balance_be(account_id: &AccountId, balance: Balance) {
+    let _ = Balances::make_free_balance_be(account_id, balance);
 }
 
 pub fn ed() -> Balance {
@@ -711,15 +735,15 @@ pub fn set_staking_candidate_lock(
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
 
+pub(crate) fn amm_function_buy_values(amount: Balance, supply: Balance) -> JoyBalance {
+    amm_function_values(amount, supply, AmmOperation::Buy)
+}
+
 pub(crate) fn amm_function_values(
     amount: Balance,
-    token_id: TokenId,
+    supply: Balance,
     bond_operation: AmmOperation,
 ) -> JoyBalance {
-    let supply = Token::token_info_by_id(token_id)
-        .amm_curve
-        .unwrap()
-        .provided_supply;
     let supply2 = supply * supply;
     let sq_coeff = AMM_CURVE_SLOPE / 2;
     let res = match bond_operation {
@@ -737,4 +761,24 @@ pub(crate) fn amm_function_values(
         AmmOperation::Buy => res + DEFAULT_AMM_BUY_FEES.mul_floor(res),
         AmmOperation::Sell => DEFAULT_AMM_SELL_FEES.left_from_one().mul_floor(res),
     }
+}
+
+pub fn default_joy_dividend() -> Balance {
+    // (participation / issuance) * revenue * rate
+    let net_split_revenue = DEFAULT_SPLIT_RATE.mul_floor(DEFAULT_SPLIT_REVENUE);
+    Permill::from_rational(DEFAULT_SPLIT_PARTICIPATION, DEFAULT_INITIAL_ISSUANCE)
+        .mul_floor(net_split_revenue)
+}
+
+pub fn compute_correct_patronage_amount(
+    supply: Balance,
+    patronage_rate: Permill,
+    blocks: BlockNumber,
+) -> Balance {
+    let supply_post_patronage = one_plus_interest_pow_fixed(
+        patronage_rate,
+        FixedPointNumber::saturating_from_rational(blocks, BlocksPerYear::get()),
+    )
+    .saturating_mul_int(supply);
+    supply_post_patronage.saturating_sub(supply)
 }

@@ -2,11 +2,10 @@
 
 use crate::types::{
     AmmCurveOf, JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf, ValidatedTransfersOf,
+    TransferPolicyOf, ValidatedTransfersOf, YearlyRate,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
-use sp_runtime::Perquintill;
 use sp_std::vec::Vec;
 
 decl_event! {
@@ -47,7 +46,7 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - new patronage rate
-        PatronageRateDecreasedTo(TokenId, Perquintill),
+        PatronageRateDecreasedTo(TokenId, YearlyRate),
 
         /// Patronage credit claimed by creator
         /// Params:

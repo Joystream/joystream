@@ -1,17 +1,19 @@
+use frame_support::BoundedVec;
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, Saturating};
-use sp_runtime::{Permill, Perquintill};
+use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryFrom;
 
-use crate::types::VestingScheduleOf;
 use crate::{
     balance,
     tests::mock::*,
     types::{
-        AccountData, BlockRate, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
-        Payment, PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
+        AccountData, ConfigAccountDataOf, MerkleProof, MerkleSide, PatronageData,
+        PaymentWithVesting, RevenueSplitState, StakingStatus, TokenAllocation,
         TokenIssuanceParameters, TokenSaleId, TokenSaleOf, TransferPolicy, TransferPolicyOf,
-        Transfers, Validated, ValidatedPayment, VestingSchedule, VestingSource,
+        Transfers, Validated, ValidatedPayment, VestingSchedule, VestingScheduleOf, VestingSource,
+        YearlyRate,
     },
     Config, GenesisConfig,
 };
@@ -72,17 +74,6 @@ impl TokenDataBuilder {
         }
     }
 
-    pub fn with_patronage_rate(self, rate: BlockRate) -> Self {
-        Self {
-            patronage_info: PatronageData::<_, _> {
-                unclaimed_patronage_tally_amount: Balance::zero(),
-                rate,
-                last_unclaimed_patronage_tally_block: BlockNumber::one(),
-            },
-            ..self
-        }
-    }
-
     pub fn new_empty() -> Self {
         Self {
             tokens_issued: Balance::zero(),
@@ -92,7 +83,7 @@ impl TokenDataBuilder {
             next_sale_id: 0,
             transfer_policy: TransferPolicy::Permissionless,
             patronage_info: PatronageData::<Balance, BlockNumber> {
-                rate: BlockRate(Perquintill::zero()),
+                rate: YearlyRate::zero(),
                 unclaimed_patronage_tally_amount: Balance::zero(),
                 last_unclaimed_patronage_tally_block: BlockNumber::one(),
             },
@@ -116,6 +107,8 @@ impl GenesisConfigBuilder {
             amm_deactivation_threshold: Permill::from_percent(5),
             bond_tx_fees: DEFAULT_AMM_BUY_FEES,
             unbond_tx_fees: DEFAULT_AMM_SELL_FEES,
+            max_yearly_patronage_rate: DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into(),
+            min_amm_slope_parameter: 10u32.into(),
         }
     }
 
@@ -190,6 +183,8 @@ impl GenesisConfigBuilder {
             amm_deactivation_threshold: self.amm_deactivation_threshold,
             amm_buy_tx_fees: self.bond_tx_fees,
             amm_sell_tx_fees: self.unbond_tx_fees,
+            max_yearly_patronage_rate: self.max_yearly_patronage_rate,
+            min_amm_slope_parameter: self.min_amm_slope_parameter,
         }
     }
 }
@@ -277,34 +272,36 @@ impl<Hasher: Hash> MerkleProof<Hasher> {
     }
 }
 
-impl<Balance, Account: Ord> Transfers<Account, Payment<Balance>> {
-    pub fn new(v: Vec<(Account, Balance)>) -> Self {
-        Transfers::<_, _>(
+impl From<Vec<(MemberId, Balance)>> for Transfers<MemberId, Balance> {
+    fn from(v: Vec<(MemberId, Balance)>) -> Self {
+        Self(
             v.into_iter()
-                .map(|(acc, amount)| (acc, Payment::<Balance> { amount }))
+                .map(|(member_id, amount)| (member_id, amount))
                 .collect::<BTreeMap<_, _>>(),
         )
     }
 }
 
-impl<Balance, MemberId: Ord, VestingScheduleParams>
-    Transfers<MemberId, PaymentWithVesting<Balance, VestingScheduleParams>>
-{
-    pub fn new_issuer(v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>) -> Self {
-        Transfers::<_, _>(
-            v.into_iter()
-                .map(|(member_id, amount, vesting_schedule)| {
-                    (
-                        member_id,
-                        PaymentWithVesting {
-                            amount,
-                            vesting_schedule,
-                        },
-                    )
-                })
-                .collect::<BTreeMap<_, _>>(),
-        )
-    }
+pub fn new_transfers(v: Vec<(MemberId, Balance)>) -> BoundedVec<(MemberId, Balance), MaxOutputs> {
+    BoundedVec::<_, _>::try_from(v).ok().unwrap()
+}
+
+pub fn new_issuer_transfers(
+    v: Vec<(MemberId, Balance, Option<VestingScheduleParams>)>,
+) -> BoundedVec<(MemberId, PaymentWithVesting<Balance, VestingScheduleParams>), MaxOutputs> {
+    let tmp = v
+        .into_iter()
+        .map(|(member_id, amount, vesting_schedule)| {
+            (
+                member_id,
+                PaymentWithVesting {
+                    amount,
+                    vesting_schedule,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+    BoundedVec::<_, _>::try_from(tmp).ok().unwrap()
 }
 
 impl<Balance, VestingScheduleParams, MemberId>

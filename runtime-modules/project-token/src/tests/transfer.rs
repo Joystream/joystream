@@ -2,7 +2,9 @@
 use frame_support::{assert_noop, assert_ok};
 
 use crate::tests::mock::*;
-use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
+use crate::tests::test_utils::{
+    default_vesting_schedule, new_issuer_transfers, new_transfers, TokenDataBuilder,
+};
 use crate::traits::PalletToken;
 use crate::types::{TransferPolicyOf, Transfers, Validated, VestingSource};
 use crate::Config;
@@ -16,13 +18,13 @@ use sp_std::{collections::btree_map::BTreeMap, convert::TryInto};
 // some helpers
 macro_rules! outputs {
     [$(($a:expr, $b: expr)),*] => {
-        Transfers::<_,_>::new(vec![$(($a, $b),)*])
+        new_transfers(vec![$(($a, $b),)*])
     };
 }
 
 macro_rules! issuer_outputs {
     [$(($a:expr, $b: expr, $c: expr)),*] => {
-        Transfers::<_,_>::new_issuer(vec![$(($a, $b, $c),)*])
+        new_issuer_transfers(vec![$(($a, $b, $c),)*])
     };
 }
 

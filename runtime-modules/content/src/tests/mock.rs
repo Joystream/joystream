@@ -11,7 +11,7 @@ pub use membership::WeightInfo;
 use sp_core::{H256, U256};
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, Convert, IdentityLookup},
+    traits::{BlakeTwo256, IdentityLookup},
     Perbill, Permill,
 };
 use sp_std::cell::RefCell;
@@ -131,7 +131,7 @@ pub const DEFAULT_CREATOR_TOKEN_ISSUANCE: u64 = 1_000_000_000;
 pub const DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE: u64 = 10;
 pub const DEFAULT_CREATOR_TOKEN_SALE_DURATION: u64 = 100;
 pub const DEFAULT_ISSUER_TRANSFER_AMOUNT: u64 = 1_000_000;
-pub const DEFAULT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(1));
+pub const DEFAULT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
 pub const DEFAULT_REVENUE_SPLIT_DURATION: u64 = 1000;
 pub const DEFAULT_SPLIT_RATE: Permill = Permill::from_percent(10);
 
@@ -1065,13 +1065,13 @@ parameter_types! {
     pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
     pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
 }
 
 impl project_token::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Balance = u64;
     type TokenId = u64;
-    type BlockNumberToBalance = Block2Balance;
     type DataObjectStorage = storage::Module<Self>;
     type ModuleId = TokenModuleId;
     type JoyExistentialDeposit = ExistentialDeposit;
@@ -1079,15 +1079,8 @@ impl project_token::Config for Test {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = TestMemberships;
     type MembershipInfoProvider = TestMemberships;
+    type MaxOutputs = MaxOutputs;
     type WeightInfo = ();
-}
-
-pub struct Block2Balance {}
-
-impl Convert<u64, u64> for Block2Balance {
-    fn convert(block: u64) -> u64 {
-        block
-    }
 }
 
 pub(crate) fn set_default_nft_limits() {

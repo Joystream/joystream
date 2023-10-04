@@ -79,7 +79,6 @@ const MAX_KILOBYTES_METADATA: u32 = 100;
 
 // Creator tokens
 const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
-const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
 const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
@@ -87,7 +86,7 @@ const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
 const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 22] = [
     ChannelActionPermission::UpdateChannelMetadata,
     ChannelActionPermission::ManageNonVideoChannelAssets,
     ChannelActionPermission::ManageChannelCollaborators,
@@ -109,6 +108,7 @@ const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
     ChannelActionPermission::ReduceCreatorTokenPatronageRate,
     ChannelActionPermission::ManageRevenueSplits,
     ChannelActionPermission::DeissueCreatorToken,
+    ChannelActionPermission::AmmControl,
 ];
 
 const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 13] = [
@@ -218,26 +218,10 @@ fn assert_past_event<T: Config>(
     assert_eq!(event, &expected_event);
 }
 
-fn get_byte(num: u64, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
-}
-
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Config>(id: u64) -> Vec<u8> {
-    let min_handle_length = 1;
-
-    let mut handle = vec![];
-
-    for i in 0..16 {
-        handle.push(get_byte(id, i));
-    }
-
-    while handle.len() < (min_handle_length as usize) {
-        handle.push(0u8);
-    }
-
-    handle
+    id.to_be_bytes().to_vec()
 }
 
 fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
@@ -1363,22 +1347,21 @@ fn worst_case_scenario_token_sale_params<T: Config>(
 
 fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
     num: u32,
-) -> TransfersWithVestingOf<T>
+) -> TransferWithVestingOutputsOf<T>
 where
     T::AccountId: CreateAccountId,
 {
-    Transfers(
-        (0..num)
-            .map(|_| {
-                let (_, member_id) = member_funded_account::<T>();
-                let payment = PaymentWithVestingOf::<T> {
-                    amount: 100u32.into(),
-                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
-                };
-                (member_id, payment)
-            })
-            .collect(),
-    )
+    let _outputs = (0..num)
+        .map(|_| {
+            let (_, member_id) = member_funded_account::<T>();
+            let payment = PaymentWithVestingOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, payment)
+        })
+        .collect::<Vec<_>>();
+    _outputs.try_into().unwrap()
 }
 
 pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
@@ -1674,4 +1657,16 @@ where
     T::AccountId: CreateAccountId,
 {
     set_all_channel_paused_features_except::<T>(channel_id, vec![]);
+}
+
+fn call_activate_amm<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) {
+    let params = AmmParams {
+        slope: 10u32.into(),
+        intercept: 100u32.into(),
+    };
+    Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params).unwrap()
 }

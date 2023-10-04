@@ -115,6 +115,8 @@ pub trait WeightInfo {
 	fn nft_owner_remark(_b: u32, ) -> Weight;
 	fn update_channel_state_bloat_bond() -> Weight;
 	fn update_video_state_bloat_bond() -> Weight;
+	fn activate_amm() -> Weight;
+	fn deactivate_amm() -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -2062,6 +2064,28 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+
+	// Storage: Content ChannelById (r:1 w:0)
+	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
+	// Storage: Content CuratorGroupById (r:1 w:0)
+	// Storage: Token TokenInfoById (r:1 w:1)
+	// Storage: System Account (r:1 w:1)
+	fn activate_amm() -> Weight {
+		Weight::from_parts(165_415_000, 0_u64)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+	}
+	// Storage: Content ChannelById (r:1 w:0)
+	// Storage: Instance3WorkingGroup WorkerById (r:1 w:0)
+	// Storage: Content CuratorGroupById (r:1 w:0)
+	// Storage: Token TokenInfoById (r:1 w:1)
+	// Storage: Token AmmDeactivationThreshold (r:1 w:0)
+	// Storage: System Account (r:1 w:0)
+	fn deactivate_amm() -> Weight {
+		Weight::from_parts(143_856_000 , 0_u64)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // Default implementation for tests
@@ -2169,6 +2193,12 @@ impl WeightInfo for () {
 		Weight::from_parts(0, 0)
 	}
 	fn finalize_creator_token_sale() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn activate_amm() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn deactivate_amm() -> Weight {
 		Weight::from_parts(0, 0)
 	}
 	fn issue_revenue_split() -> Weight {

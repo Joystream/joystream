@@ -36,12 +36,11 @@ use frame_system::ensure_signed;
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, CheckedAdd, Convert, UniqueSaturatedInto},
+    traits::{AccountIdConversion, CheckedAdd},
     PerThing, Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
-use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
 use storage::UploadParameters;
@@ -78,17 +77,8 @@ pub trait Config:
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned
-        + FullCodec
-        + Copy
-        + Default
-        + Debug
-        + Saturating
-        + Sum
-        + From<u64>
-        + UniqueSaturatedInto<u64>
-        + Into<JoyBalanceOf<Self>>
-        + TypeInfo
+    type Balance: types::TokenBalanceTrait
+        + Into<<Self as balances::Config>::Balance>
         + MaxEncodedLen;
 
     /// The token identifier used
@@ -99,9 +89,6 @@ pub trait Config:
         + Debug
         + TypeInfo
         + MaxEncodedLen;
-
-    /// Block number to balance converter used for interest calculation
-    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
@@ -130,6 +117,9 @@ pub trait Config:
 
     /// Membership info provider
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
+
+    /// Max outputs number for a transfer
+    type MaxOutputs: Get<u32>;
 }
 
 decl_storage! { generate_storage_info
@@ -156,6 +146,7 @@ decl_storage! { generate_storage_info
 
         /// Minimum revenue split duration constraint
         pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
+
         /// Minimum revenue split time to start constraint
         pub MinRevenueSplitTimeToStart get(fn min_revenue_split_time_to_start) config(): T::BlockNumber;
 
@@ -170,6 +161,12 @@ decl_storage! { generate_storage_info
 
         /// AMM sell transaction fee percentage
         pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
+
+        /// Max patronage rate allowed
+        pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate = YearlyRate(Permill::from_percent(15));
+
+        /// Minimum slope parameters allowed for AMM curve
+        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T>;
     }
 
     add_extra_genesis {
@@ -241,14 +238,15 @@ decl_module! {
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, to_kb(metadata.len() as u32))]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.len() as u32, to_kb(metadata.len() as u32))]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
-            outputs: TransfersOf<T>,
+            outputs: TransferOutputsOf<T>,
             metadata: Vec<u8>
         ) -> DispatchResult {
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 src_member_id
@@ -820,7 +818,7 @@ decl_module! {
         /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
         /// - respective JOY amount transferred from user balance to amm treasury account
         /// - event deposited
-        #[weight = 100_000_000] // TODO: adjust weight
+        #[weight = WeightInfoToken::<T>::buy_on_amm_with_existing_account()]
         fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
                 return Ok(()); // noop
@@ -838,7 +836,7 @@ decl_module! {
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
             let amm_treasury_account = Self::amm_treasury_account(token_id);
-            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Buy)?;
+            let price = curve.eval::<T>(amount, AmmOperation::Buy)?.into();
             let bloat_bond = Self::bloat_bond();
             let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
@@ -858,7 +856,7 @@ decl_module! {
             // == MUTATION SAFE ==
 
             if !user_account_data_exists {
-               let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
+                let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
                             amount,
                             // No restrictions on repayable bloat bond,
                             // since only usable balance is allowed
@@ -900,10 +898,10 @@ decl_module! {
         /// - total supply decreased by amount
         /// - respective JOY amount transferred from amm treasury account to user account
         /// - event deposited
-        #[weight = 100_000_000] // TODO: adjust weight
+        #[weight = WeightInfoToken::<T>::sell_on_amm()]
         fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
             if amount.is_zero() {
-                return Ok(()); // noop
+               return Ok(()); // noop
             }
 
             let sender = ensure_signed(origin.clone())?;
@@ -924,9 +922,9 @@ decl_module! {
 
             let amm_treasury_account = Self::amm_treasury_account(token_id);
 
-            let price = curve.eval::<T>(amount, curve.provided_supply, AmmOperation::Sell)?;
+            let price = curve.eval::<T>(amount, AmmOperation::Sell)?.into();
 
-            // slippage tolerance check
+            // slippage tolerance ccurve.eval::<T>heck
             if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
                 ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
@@ -953,7 +951,6 @@ decl_module! {
 
             Ok(())
         }
-
     }
 }
 
@@ -967,8 +964,8 @@ impl<T: Config>
         T::BlockNumber,
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
-        TransfersWithVestingOf<T>,
-        AmmParams,
+        TransferWithVestingOutputsOf<T>,
+        AmmParamsOf<T>,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -1019,22 +1016,20 @@ impl<T: Config>
     /// Reduce patronage rate by amount
     /// Preconditions:
     /// - token by `token_id` must exists
-    /// - `decrement` must be less or equal than current patronage rate for `token_id`
+    /// - `target_rate` must be less or equal than current patronage rate for `token_id`
     ///
     /// Postconditions:
-    /// - patronage rate for `token_id` reduced by `decrement`
+    /// - patronage rate for `token_id` reduced to `target_rate`
     /// - no-op if `target_rate` is equal to the current patronage rate
     fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
         let token_info = Self::ensure_token_exists(token_id)?;
-        let target_rate_per_block =
-            BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
 
-        if token_info.patronage_info.rate == target_rate_per_block {
+        if token_info.patronage_info.rate == target_rate {
             return Ok(());
         }
 
         ensure!(
-            token_info.patronage_info.rate > target_rate_per_block,
+            token_info.patronage_info.rate > target_rate,
             Error::<T>::TargetPatronageRateIsHigherThanCurrentRate,
         );
 
@@ -1042,15 +1037,10 @@ impl<T: Config>
 
         let now = Self::current_block();
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block(target_rate_per_block, now);
+            token_info.set_new_patronage_rate_at_block::<T::BlocksPerYear>(target_rate, now);
         });
 
-        let new_yearly_rate =
-            target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
-        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
-            token_id,
-            new_yearly_rate,
-        ));
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, target_rate));
 
         Ok(())
     }
@@ -1073,7 +1063,7 @@ impl<T: Config>
         Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage_at_block::<T::BlocksPerYear>(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());
@@ -1183,12 +1173,17 @@ impl<T: Config>
         token_id: T::TokenId,
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
-        outputs: TransfersWithVestingOf<T>,
+        outputs: TransferWithVestingOutputsOf<T>,
         metadata: Vec<u8>,
     ) -> DispatchResult {
         // Currency transfer preconditions
-        let validated_transfers =
-            Self::ensure_can_transfer(token_id, &bloat_bond_payer, &src_member_id, outputs, true)?;
+        let validated_transfers = Self::ensure_can_transfer(
+            token_id,
+            &bloat_bond_payer,
+            &src_member_id,
+            outputs.into(),
+            true,
+        )?;
 
         // == MUTATION SAFE ==
 
@@ -1521,7 +1516,7 @@ impl<T: Config>
     fn activate_amm(
         token_id: T::TokenId,
         member_id: T::MemberId,
-        params: AmmParams,
+        params: AmmParamsOf<T>,
     ) -> DispatchResult {
         let token_data = Self::ensure_token_exists(token_id)?;
 
@@ -1530,9 +1525,14 @@ impl<T: Config>
             Error::<T>::TokenIssuanceNotInIdleState
         );
 
+        ensure!(
+            params.slope >= Self::min_amm_slope_parameter(),
+            Error::<T>::CurveSlopeParametersTooLow
+        );
+        let curve = AmmCurveOf::<T>::from_params::<T>(params);
+
         // == MUTATION SAFE ==
 
-        let curve = AmmCurveOf::<T>::from_params(params);
         TokenInfoById::<T>::mutate(token_id, |token_data| {
             token_data.amm_curve = Some(curve.clone())
         });
@@ -1619,7 +1619,7 @@ impl<T: Config> Module<T> {
         token_id: T::TokenId,
         bloat_bond_payer: &T::AccountId,
         src_member_id: &T::MemberId,
-        transfers: TransfersWithVestingOf<T>,
+        transfers: TransfersOf<T>,
         is_issuer: bool,
     ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
         // ensure token validity
@@ -1912,7 +1912,7 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn validate_transfers(
         token_id: T::TokenId,
-        transfers: TransfersWithVestingOf<T>,
+        transfers: TransfersOf<T>,
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
     ) -> Result<ValidatedTransfersOf<T>, DispatchError> {

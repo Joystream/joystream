@@ -1,7 +1,8 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{AmmParams, Joy, Payment, Transfers, TransfersOf};
+use crate::tests::test_utils::new_transfers;
+use crate::types::{Joy, TransferOutputsOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
@@ -99,6 +100,13 @@ impl IssueTokenFixture {
             }
             .with_allocation(&member!(1).0, DEFAULT_INITIAL_ISSUANCE, None),
             upload_context: default_upload_context(),
+        }
+    }
+
+    pub fn with_supply(self, allocation: Balance) -> Self {
+        Self {
+            params: self.params.with_allocation(&member!(1).0, allocation, None),
+            ..self
         }
     }
 
@@ -943,22 +951,13 @@ pub struct TransferFixture {
     sender: AccountId,
     token_id: TokenId,
     src_member_id: MemberId,
-    outputs: TransfersOf<Test>,
+    outputs: TransferOutputsOf<Test>,
     metadata: Vec<u8>,
 }
 
 impl TransferFixture {
     pub fn default() -> Self {
-        let outputs = Transfers::<_, _>(
-            vec![(
-                member!(2).0,
-                Payment::<Balance> {
-                    amount: DEFAULT_SPLIT_PARTICIPATION,
-                },
-            )]
-            .into_iter()
-            .collect(),
-        );
+        let outputs = new_transfers(vec![(member!(2).0, DEFAULT_SPLIT_PARTICIPATION)]);
         Self {
             sender: member!(1).1,
             token_id: 1u64.into(),
@@ -1067,7 +1066,7 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_linear_function_params(self, a: Permill, b: Permill) -> Self {
+    pub fn with_linear_function_params(self, a: Balance, b: Balance) -> Self {
         let params = AmmParams {
             slope: a,
             intercept: b,
@@ -1239,6 +1238,74 @@ impl DeactivateAmmFixture {
     pub fn execute_call(self) -> DispatchResult {
         let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
         let result = Token::deactivate_amm(self.token_id, self.member_id);
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ClaimPatronageCreditFixture {
+    token_id: TokenId,
+    member_id: MemberId,
+}
+
+impl ClaimPatronageCreditFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: One::one(),
+            member_id: One::one(),
+        }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::claim_patronage_credit(self.token_id, self.member_id);
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ReducePatronageRateToFixture {
+    token_id: TokenId,
+    rate: YearlyRate,
+}
+
+impl ReducePatronageRateToFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: One::one(),
+            rate: DEFAULT_YEARLY_PATRONAGE_RATE.into(),
+        }
+    }
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn with_target_rate(self, rate: YearlyRate) -> Self {
+        Self { rate, ..self }
+    }
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::reduce_patronage_rate_to(self.token_id, self.rate);
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error

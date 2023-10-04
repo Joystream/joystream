@@ -22,9 +22,6 @@ decl_error! {
         /// Merkle proof verification failed
         MerkleProofVerificationFailure,
 
-        /// Target Rate is higher than current patronage rate
-        TargetPatronageRateIsHigherThanCurrentRate,
-
         /// Symbol already in use
         TokenSymbolAlreadyInUse,
 
@@ -33,6 +30,9 @@ decl_error! {
 
         /// Account Already exists
         AccountAlreadyExists,
+
+        /// Transfer destination member id invalid
+        TooManyTransferOutputs,
 
         /// Token's current offering state is not Idle
         TokenIssuanceNotInIdleState,
@@ -182,5 +182,17 @@ decl_error! {
 
         /// Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
         OutstandingAmmProvidedSupplyTooLarge,
+
+        /// Curve slope parameters below minimum allowed
+        CurveSlopeParametersTooLow,
+
+        /// -------- Patronage --------------------------------------------------
+
+        /// Target Rate is higher than current patronage rate
+        TargetPatronageRateIsHigherThanCurrentRate,
+
+        /// Provided value for patronage is too big (yearly format)
+        YearlyPatronageRateLimitExceeded,
+
     }
 }

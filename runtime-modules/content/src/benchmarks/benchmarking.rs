@@ -1367,7 +1367,7 @@ benchmarks! {
                 sale: None,
                 transfer_policy: params.transfer_policy.into(),
                 patronage_info: PatronageData::<TokenBalanceOf<T>, T::BlockNumber> {
-                    rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
+                    rate: params.patronage_rate,
                     unclaimed_patronage_tally_amount: Zero::zero(),
                     last_unclaimed_patronage_tally_block: execution_block
                 },
@@ -1389,7 +1389,7 @@ benchmarks! {
         }
 
     creator_token_issuer_transfer {
-        let a in 1 .. MAX_CRT_ISSUER_TRANSFER_OUTPUTS;
+        let a in 1 .. <T as project_token::Config>::MaxOutputs::get();
         let b in 1 .. MAX_KILOBYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
@@ -1441,7 +1441,7 @@ benchmarks! {
                     project_token::Event::<T>::TokenAmountTransferredByIssuer(
                         token_id,
                         curator_member_id,
-                        Transfers(outputs.0
+                        Transfers(outputs
                                   .iter()
                                   .map(|(member_id, payment)|
                                        (Validated::NonExisting(*member_id), payment.clone().into())
@@ -1669,6 +1669,70 @@ benchmarks! {
             );
         }
 
+    activate_amm {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let slope = 10u32.into();
+        let intercept = 100u32.into();
+        let params = AmmParams{ slope, intercept };
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _(
+        origin,
+        actor,
+        channel_id,
+        params
+    )
+        verify {
+            let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+           assert_eq!(
+                token.amm_curve.unwrap(),
+                AmmCurve {
+                    slope,
+                    intercept,
+                    provided_supply: 0u32.into(),
+                }
+           )
+        }
+
+    deactivate_amm {
+        let (channel_id, group_id, _, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        // No pausable feature prevents this
+        call_activate_amm::<T>(curator_acc_id, actor, channel_id);
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _(
+        origin,
+        actor,
+        channel_id
+    )
+        verify {
+            let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+           assert!(
+                token.amm_curve.is_none(),
+           )
+        }
+
     issue_revenue_split {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1873,7 +1937,7 @@ benchmarks! {
     }: _(origin, actor, channel_id, target_rate)
         verify {
             let current_block = frame_system::Pallet::<T>::block_number();
-            let new_block_rate = BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
+            let new_block_rate = target_rate;
             assert!(TokenInfoById::<T>::contains_key(token_id));
             let token = project_token::Pallet::<T>::token_info_by_id(token_id);
             assert_eq!(token.patronage_info.rate, new_block_rate);
@@ -1888,7 +1952,7 @@ benchmarks! {
                 <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::PatronageRateDecreasedTo(
                         token_id,
-                        new_block_rate.to_yearly_rate_representation(T::BlocksPerYear::get())
+                        new_block_rate
                     ),
                 ).into(),
             );
@@ -3723,6 +3787,20 @@ pub mod tests {
     fn claim_creator_token_patronage_credit() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_claim_creator_token_patronage_credit());
+        });
+    }
+
+    #[test]
+    fn activate_amm() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_activate_amm());
+        });
+    }
+
+    #[test]
+    fn deactivate_amm() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_deactivate_amm());
         });
     }
 }

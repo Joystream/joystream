@@ -337,7 +337,10 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
     )])
     .execute_with(|| {
         let treasury_account = Token::module_treasury_account();
-        IssueTokenFixture::default().execute_call().unwrap();
+        IssueTokenFixture::default()
+            .with_supply(DEFAULT_INITIAL_ISSUANCE)
+            .execute_call()
+            .unwrap();
         TransferFixture::default().execute_call().unwrap(); // send participation to other acc
         IssueRevenueSplitFixture::default().execute_call().unwrap();
         increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START);
@@ -356,7 +359,7 @@ fn finalize_split_ok_with_leftover_joys_transferred_to_account() {
         // account id balance increased by DEFAULT_SPLIT_REVENUE - DEFAULT_SPLIT_JOY_DIVIDEND
         assert_eq!(
             Joy::<Test>::usable_balance(member!(1).1),
-            DEFAULT_SPLIT_REVENUE - DEFAULT_SPLIT_JOY_DIVIDEND + ExistentialDeposit::get()
+            DEFAULT_SPLIT_REVENUE - default_joy_dividend() + ed()
         );
     })
 }
@@ -538,7 +541,7 @@ fn participate_in_split_ok_with_event_deposit() {
             1u64,
             member!(2).0,
             DEFAULT_SPLIT_PARTICIPATION,
-            DEFAULT_SPLIT_JOY_DIVIDEND,
+            default_joy_dividend(),
             0u32, // participate in split @ 0
         ));
     })
@@ -652,12 +655,12 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
         // dividend transferred from treasury to claimer account
         assert_eq!(
             Joy::<Test>::usable_balance(member!(2).1),
-            DEFAULT_SPLIT_JOY_DIVIDEND,
+            default_joy_dividend(),
         );
         // split treasury account decreased
         assert_eq!(
             Joy::<Test>::usable_balance(Token::module_treasury_account()),
-            DEFAULT_SPLIT_RATE * DEFAULT_SPLIT_REVENUE - DEFAULT_SPLIT_JOY_DIVIDEND
+            DEFAULT_SPLIT_RATE * DEFAULT_SPLIT_REVENUE - default_joy_dividend()
                 + ExistentialDeposit::get()
         );
         assert_eq!(
@@ -668,7 +671,7 @@ fn participate_in_split_ok_with_dividends_transferred_to_claimer_joy_balance() {
                     start: 1u64 + MIN_REVENUE_SPLIT_TIME_TO_START, // effective start
                     duration: DEFAULT_SPLIT_DURATION,
                 },
-                dividends_claimed: DEFAULT_SPLIT_JOY_DIVIDEND,
+                dividends_claimed: default_joy_dividend(),
             })
         );
     })
