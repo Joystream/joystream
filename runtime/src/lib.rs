@@ -240,6 +240,12 @@ impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
             RuntimeCall::Content(content::Call::<Runtime>::update_channel_privilege_level {
                 ..
             }) => false,
+            RuntimeCall::Content(content::Call::<Runtime>::update_channel_nft_limit { .. }) => {
+                false
+            }
+            RuntimeCall::Content(
+                content::Call::<Runtime>::set_channel_paused_features_as_moderator { .. },
+            ) => false,
             RuntimeCall::Content(content::Call::<Runtime>::initialize_channel_transfer {
                 ..
             }) => false,

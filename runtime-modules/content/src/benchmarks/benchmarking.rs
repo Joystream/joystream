@@ -1677,7 +1677,7 @@ benchmarks! {
         let actor = ContentActor::Curator(group_id, curator_id);
         let token_id =
             issue_creator_token_with_worst_case_scenario_owner::<T>(
-                curator_acc_id.clone(),
+                curator_acc_id,
                 actor,
                 channel_id,
                 curator_member_id

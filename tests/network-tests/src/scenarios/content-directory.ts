@@ -33,6 +33,5 @@ scenario('Content directory', async ({ job }) => {
     'curators and collaborators permissions',
     collaboratorAndCuratorPermissions
   ).after(videoCommentsAndReactionsJob)
-  // TODO fix: https://github.com/Joystream/joystream/issues/4756
-  // job('direct channel payment by members', directChannelPayment).after(collaboratorAndCuratorPermissionsJob)
+  job('direct channel payment by members', directChannelPayment).after(collaboratorAndCuratorPermissionsJob)
 })
