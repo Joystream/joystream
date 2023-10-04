@@ -88,7 +88,7 @@ jobs:
         if: env.GIT_DIFF
       - name: run_migrations test
         run: |
-          RUN_MIGRATION_TESTS=true RUST_LOG=info cargo +nightly-2022-11-15 test --release --features try-runtime
+          RUN_MIGRATION_TESTS=true RUST_LOG=info cargo +nightly-2022-11-15 test remote_tests::run_migrations --release --features try-runtime
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:

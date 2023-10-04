@@ -19,7 +19,6 @@ import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
 import electCouncil from '../flows/council/elect'
 import failToElect from '../flows/council/failToElect'
-import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
@@ -44,15 +43,8 @@ import curatorModerationActions from '../flows/content/curatorModerationActions'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-scenario('Full', async ({ job, env }) => {
-  // Runtime upgrade should always be first job
-  // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
-  const councilJob = job('electing council', electCouncil)
-  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
-    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
-    : undefined
-
-  const coreJob = runtimeUpgradeProposalJob || councilJob
+scenario('Full', async ({ job }) => {
+  const coreJob = job('electing council', electCouncil)
 
   // All other jobs should be executed after coreJob
 

@@ -1,8 +1,8 @@
 import { scenario } from '../Scenario'
-import postRuntimeUpdateChecks from '../misc/postRuntimeUpdateChecks'
+import post from '../misc/postRuntimeUpgrade'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-scenario('Full', async ({ job, env, debug }) => {
+scenario('Post-RuntimeUpgrade', async ({ job }) => {
   // Runtime checks
-  job('Run Post Upgrade Checks', postRuntimeUpdateChecks)
+  job('Post-Upgrade Checks', post)
 })

@@ -72,7 +72,7 @@ use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, StorageVersion},
     PalletId, Parameter,
 };
 
@@ -90,6 +90,14 @@ use sp_runtime::traits::{AccountIdConversion, Hash, MaybeSerializeDeserialize, M
 use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 type WeightInfoContent<T> = <T as Config>::WeightInfo;
+
+/// The log target of this pallet.
+pub const LOG_TARGET: &str = "runtime::content";
+
+// Nara release. enum variants removed:
+// - ContentModerationAction::DeleteVideo
+// - ContentModerationAction::DeleteChannel
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 /// Module configuration trait for Content Directory Module
 pub trait Config:
@@ -3718,6 +3726,9 @@ decl_module! {
             ));
         }
     }
+
+    type StorageVersion = CURRENT_STORAGE_VERSION;
+
 }
 
 impl<T: Config> Module<T> {

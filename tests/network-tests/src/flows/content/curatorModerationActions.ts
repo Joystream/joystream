@@ -71,7 +71,7 @@ export default async function curatorModerationActions({ api, query }: FlowProps
   )
   await new FixtureRunner(createChannelsAndVideos).run()
 
-  const { videosData, channelIds } = createChannelsAndVideos.getCreatedItems()
+  const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
 
   // create curator & curator group
 
