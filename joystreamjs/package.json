@@ -41,23 +41,23 @@
     "generate:all": "yarn generate:schema-typings"
   },
   "dependencies": {
-    "@joystream/metadata-protobuf": "^2.8.1",
-    "@joystream/types": "^2.0.0",
-    "@polkadot/util-crypto": "9.5.1",
-    "axios": "^1.2.1",
+    "@joystream/metadata-protobuf": "^2.9.0",
+    "@joystream/types": "^2.1.0",
+    "@polkadot/util-crypto": "12.5.1",
+    "axios": "^1.5.1",
     "buffer": "^6.0.3",
     "lodash": "^4.17.21",
-    "long": "^5.2.1",
-    "merkletreejs": "^0.3.9",
-    "protobufjs": "^6.11.3"
+    "long": "^5.2.3",
+    "merkletreejs": "^0.3.10",
+    "protobufjs": "^7.2.5"
   },
   "devDependencies": {
     "@joystream/eslint-config": "^1.0.0",
     "@types/long": "^5.0.0",
-    "eslint": "^7.25.0",
-    "json-schema-to-typescript": "^10.1.4",
-    "prettier": "^2.2.1",
-    "typescript": "^4.4.3"
+    "eslint": "^8.50.0",
+    "json-schema-to-typescript": "^13.1.1",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
   },
   "husky": {
     "hooks": {

@@ -39,9 +39,9 @@
   "license": "ISC",
   "dependencies": {
     "@joystream/hydra-processor": "5.0.0-alpha.4",
-    "@types/bn.js": "^5.1.0",
+    "@types/bn.js": "^5.1.2",
     "bn.js": "^5.2.1",
-    "tslib": "^2.0.0"
+    "tslib": "^2.6.2"
   },
   "volta": {
     "extends": "../package.json"
