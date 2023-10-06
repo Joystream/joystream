@@ -3725,6 +3725,7 @@ decl_module! {
                 remark,
             ));
         }
+
         type StorageVersion = CURRENT_STORAGE_VERSION;
     }
 }

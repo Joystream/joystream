@@ -114,6 +114,7 @@ pub type Migrations = (
     pallet_election_provider_multi_phase::migrations::v1::MigrateToV1<Runtime>,
     pallet_grandpa::migrations::CleanupSetIdSessionMap<Runtime>,
     content::migrations::nara::MigrateToV1<Runtime>,
+    project_token::migrations::nara::MigrateToV1<Runtime>, // init treasury account
 );
 
 /// Executive: handles dispatch to the various modules with Migrations.

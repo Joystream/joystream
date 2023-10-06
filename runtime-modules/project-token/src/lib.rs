@@ -29,7 +29,7 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, StorageVersion},
     PalletId,
 };
 use frame_system::ensure_signed;
@@ -49,6 +49,7 @@ use storage::UploadParameters;
 mod benchmarking;
 mod errors;
 mod events;
+pub mod migrations;
 mod tests;
 pub mod traits;
 pub mod types;
@@ -68,6 +69,9 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
+
+// Nara release. module treasury account initialized
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 /// Pallet Configuration
 pub trait Config:
@@ -154,19 +158,19 @@ decl_storage! { generate_storage_info
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
 
         /// Percentage threshold for deactivating the amm functionality
-        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill;
+        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill = Permill::from_percent(1_u32);
 
         /// AMM buy transaction fee percentage
-        pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill;
+        pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill = Permill::from_perthousand(3_u32);
 
         /// AMM sell transaction fee percentage
-        pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill;
+        pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill = Permill::from_perthousand(3_u32);
 
         /// Max patronage rate allowed
         pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate = YearlyRate(Permill::from_percent(15));
 
         /// Minimum slope parameters allowed for AMM curve
-        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T>;
+        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T> = TokenBalanceOf::<T>::from(1_000_000_u32);
     }
 
     add_extra_genesis {
@@ -1538,6 +1542,7 @@ impl<T: Config>
         });
 
         // deposit existential deposit if the account is newly created
+        // the account is not meant to have reserved balance so usable is ok, also we don't care about locks so even free_balance should be correct
         let amm_treasury_account = Self::amm_treasury_account(token_id);
         if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
             let _ =
@@ -1583,6 +1588,8 @@ impl<T: Config>
 
         Ok(())
     }
+
+    type StorageVersion = CURRENT_STORAGE_VERSION;
 }
 
 /// Module implementation
