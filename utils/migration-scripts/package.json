@@ -24,7 +24,7 @@
     "url-join": "^5.0.0",
     "@types/url-join": "^4.0.1",
     "axios": "^1.5.1",
-    "blake3": "^3.0.0",
+    "blake3": "^2.1.7",
     "multihashes": "^4.0.3",
     "moment": "^2.29.4",
     "sharp": "^0.32.6",
