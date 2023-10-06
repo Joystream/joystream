@@ -22,25 +22,25 @@ use sp_std::vec::Vec;
 /// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
 
 // Normal 6s block interval
-#[cfg(not(feature = "testing-runtime"))]
+#[cfg(not(feature = "fast-block-production"))]
 pub const MILLISECS_PER_BLOCK: Moment = 6000;
-#[cfg(not(feature = "testing-runtime"))]
+#[cfg(not(feature = "fast-block-production"))]
 pub const SLOT_DURATION: Moment = 6000;
 
 // 1s block interval for integration testing
-#[cfg(feature = "testing-runtime")]
+#[cfg(feature = "fast-block-production")]
 pub const MILLISECS_PER_BLOCK: Moment = 1000;
-#[cfg(feature = "testing-runtime")]
+#[cfg(feature = "fast-block-production")]
 pub const SLOT_DURATION: Moment = 1000;
 
-pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-pub const BONDING_DURATION: u32 = 4 * 28; // 4 * 28 eras = 28 days (since 1 era = 6h)
-pub const SLASH_DEFER_DURATION: u32 = BONDING_DURATION - 1;
+const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
+const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
 
-#[cfg(feature = "testing-runtime")] // 30 seconds sessions for faster tests
+// Short epoch for faster tests related to bonding/unbonding
+#[cfg(feature = "testing-runtime")]
 pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES / 2;
 #[cfg(not(feature = "testing-runtime"))]
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = HOURS;
+pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = MINUTES * 60;
 
 pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
@@ -48,11 +48,10 @@ pub const EPOCH_DURATION_IN_SLOTS: u64 = {
     (EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
 };
 
-// These time units are defined in number of blocks.
-pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
-pub const WEEKS: BlockNumber = DAYS * 7;
+// Session (aka Epoch) in BABE
+pub const SESSIONS_PER_ERA: u32 = 6;
+pub const BONDING_DURATION: u32 = 4 * 28; // 4 * 28 Eras (for 1h epoch this equals 6 * 4 * 28 -> 28 Days)
+pub const SLASH_DEFER_DURATION: u32 = BONDING_DURATION - 1;
 
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
