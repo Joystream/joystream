@@ -208,7 +208,8 @@ mod tests {
 
         let full_block_cost: Balance =
             WeightToFee::weight_to_fee(&max_normal_dispatch_block_weight);
-        let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
+        let day_of_full_blocks_cost =
+            full_block_cost.saturating_mul(Balance::from(super::MINUTES * 60 * 24));
 
         println!(
             "weight per block: {}, block cost: {}¢, cost/day: ${}",
@@ -238,7 +239,8 @@ mod tests {
             <Runtime as pallet_transaction_payment::Config>::LengthToFee::weight_to_fee(
                 &Weight::from_parts(max_normal_dispatch_block_length, 0),
             );
-        let day_of_full_blocks_cost = full_block_cost.saturating_mul(Balance::from(super::DAYS));
+        let day_of_full_blocks_cost =
+            full_block_cost.saturating_mul(Balance::from(super::MINUTES * 60 * 24));
 
         println!(
             "bytes per block: {}, block cost: {}¢, cost/day: ${}",
