@@ -2659,7 +2659,7 @@ impl ActivateAmmFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             params: AmmParamsOf::<Test> {
-                slope: 10u32.into(),
+                slope: 10_000_000u32.into(),
                 intercept: Zero::zero(),
             },
         }

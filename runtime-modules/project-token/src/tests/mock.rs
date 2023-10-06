@@ -662,7 +662,7 @@ pub const DEFAULT_SPLIT_PARTICIPATION: u128 = DEFAULT_SPLIT_REVENUE / 100;
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
 pub const DEFAULT_AMM_SELL_AMOUNT: u128 = 100;
-pub const AMM_CURVE_SLOPE: u128 = 10;
+pub const AMM_CURVE_SLOPE: u128 = 10_000_000;
 pub const AMM_CURVE_INTERCEPT: u128 = 1000;
 pub const DEFAULT_AMM_BUY_FEES: Permill = Permill::from_percent(1);
 pub const DEFAULT_AMM_SELL_FEES: Permill = Permill::from_percent(10);

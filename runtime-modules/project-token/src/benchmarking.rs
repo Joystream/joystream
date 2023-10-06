@@ -36,8 +36,8 @@ const DEFAULT_SPLIT_PARTICIPATION: u32 =
     DEFAULT_SPLIT_PAYOUT * (DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION);
 
 // Amm
-const DEFAULT_AMM_AMOUNT: u32 = 1000;
-const DEFAULT_AMM_JOY_AMOUNT: u32 = 5_100_000; // (a = 10) * amount^2 /2 + (b = 100) * amount, amount = 1000
+const DEFAULT_AMM_AMOUNT: u32 = 1;
+const DEFAULT_AMM_JOY_AMOUNT: u32 = 5_000_100; // (a = 10_000_000) * amount^2 /2 + (b = 100) * amount, amount = 1
 
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(15));
@@ -161,7 +161,7 @@ fn init_token_sale<T: Config>(token_id: T::TokenId) -> Result<TokenSaleId, Dispa
 
 fn activate_amm<T: Config>(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
     let params = AmmParams {
-        slope: 10u32.into(),
+        slope: 10_000_000u32.into(),
         intercept: 100u32.into(),
     };
     Token::<T>::activate_amm(token_id, member_id, params)
@@ -620,7 +620,7 @@ benchmarks! {
         let participant_acc = account::<T::AccountId>("participant", 0, SEED);
         let participant_id = create_member::<T>(&participant_acc, b"participant");
         let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + tx_fee_amount);
-        let slippage_tolerance = (Permill::from_percent(10), desired_price);
+        let slippage_tolerance = (Permill::from_perthousand(5), desired_price);
         activate_amm::<T>(token_id, owner_member_id)?;
     }: buy_on_amm(
         RawOrigin::Signed(participant_acc.clone()),
@@ -653,7 +653,7 @@ benchmarks! {
         let participant_id = create_member::<T>(&participant_acc, b"participant");
         activate_amm::<T>(token_id, owner_member_id)?;
         let _ = Joy::<T>::deposit_creating(&participant_acc, desired_price + bloat_bond + tx_fee_amount);
-        let slippage_tolerance = (Permill::from_percent(10), desired_price);
+        let slippage_tolerance = (Permill::from_perthousand(5), desired_price);
     }: buy_on_amm(
         RawOrigin::Signed(participant_acc.clone()),
         token_id,

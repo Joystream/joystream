@@ -3698,7 +3698,7 @@ decl_module! {
         }
 
         /// Allow crt issuer to update metadata for an existing token
-        #[weight = 100_000_000] // TODO: Adjust weight
+        #[weight = WeightInfoContent::<T>::creator_token_issuer_remark(to_kb(remark.len() as u32))]
         pub fn creator_token_issuer_remark(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,

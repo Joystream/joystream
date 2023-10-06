@@ -3286,6 +3286,50 @@ benchmarks! {
                 new_video_bloat_bond
             );
         }
+
+    // ================================================================================
+    // ============================== PROJECT TOKEN ISSUER REMARKS =================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // INPUT COMPLEXITY
+    // - remark message byte-length: b
+    creator_token_issuer_remark {
+        let b in 1 .. MAX_KILOBYTES_METADATA;
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let msg = vec![1u8].repeat((b * 1000) as usize);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id,
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+    }: _(origin, actor, channel_id, msg.clone())
+        verify {
+            assert_last_event::<T>(
+                <T as Config>::RuntimeEvent::from(
+                    Event::<T>::CreatorTokenIssuerRemarked(
+                        channel_id,
+                        token_id,
+                        msg
+                    )
+                ).into()
+            );
+        }
 }
 
 #[cfg(test)]
@@ -3801,6 +3845,13 @@ pub mod tests {
     fn deactivate_amm() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_deactivate_amm());
+        });
+    }
+
+    #[test]
+    fn creator_token_issuer_remark() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_creator_token_issuer_remark());
         });
     }
 }

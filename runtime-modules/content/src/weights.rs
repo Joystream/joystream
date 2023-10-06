@@ -117,6 +117,7 @@ pub trait WeightInfo {
 	fn update_video_state_bloat_bond() -> Weight;
 	fn activate_amm() -> Weight;
 	fn deactivate_amm() -> Weight;
+	fn creator_token_issuer_remark(_b: u32,) -> Weight;
 }
 
 /// Weights for content using the Substrate node and recommended hardware.
@@ -2086,6 +2087,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn creator_token_issuer_remark(b: u32,) -> Weight {
+		Weight::from_parts(0,0)
+	}
 }
 
 // Default implementation for tests
@@ -2308,5 +2312,8 @@ impl WeightInfo for () {
 	}
 	fn update_video_state_bloat_bond() -> Weight {
 		Weight::from_parts(0, 0)
+	}
+	fn creator_token_issuer_remark(b: u32,) -> Weight {
+		Weight::from_parts(0,0)
 	}
 }

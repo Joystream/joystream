@@ -1665,7 +1665,7 @@ fn call_activate_amm<T: Config>(
     channel_id: T::ChannelId,
 ) {
     let params = AmmParams {
-        slope: 10u32.into(),
+        slope: 10_000_000u32.into(),
         intercept: 100u32.into(),
     };
     Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params).unwrap()

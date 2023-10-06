@@ -955,6 +955,8 @@ decl_module! {
 
             Ok(())
         }
+
+        type StorageVersion = CURRENT_STORAGE_VERSION;
     }
 }
 
@@ -1588,8 +1590,6 @@ impl<T: Config>
 
         Ok(())
     }
-
-    type StorageVersion = CURRENT_STORAGE_VERSION;
 }
 
 /// Module implementation

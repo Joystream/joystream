@@ -617,7 +617,7 @@ fn amm_sell_fails_with_token_not_in_amm_state() {
 
 #[test]
 fn amm_sell_failed_with_slippage_constraint_violated() {
-    let slippage_tolerance = (Permill::zero(), joy!(1_000_000_000));
+    let slippage_tolerance = (Permill::zero(), joy!(1000_000_000_000));
     let amm_joy_variation = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
     let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(
