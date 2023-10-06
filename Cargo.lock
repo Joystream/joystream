@@ -954,7 +954,7 @@ dependencies = [
 
 [[package]]
 name = "chain-spec-builder"
-version = "8.3.0"
+version = "8.4.0"
 dependencies = [
  "async-std",
  "clap 3.2.23",

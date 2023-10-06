@@ -45,8 +45,8 @@ const TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 enum ChainDeployment {
     dev,
     local,
-    staging,
-    live,
+    testnet,
+    mainnet,
 }
 
 #[allow(clippy::from_over_into)]
@@ -55,8 +55,8 @@ impl Into<ChainType> for ChainDeployment {
         match self {
             ChainDeployment::dev => ChainType::Development,
             ChainDeployment::local => ChainType::Local,
-            ChainDeployment::staging => ChainType::Live,
-            ChainDeployment::live => ChainType::Live,
+            ChainDeployment::testnet => ChainType::Live,
+            ChainDeployment::mainnet => ChainType::Live,
         }
     }
 }
@@ -93,8 +93,8 @@ enum ChainSpecBuilder {
         /// The path to an initial balances file
         #[structopt(long)]
         initial_balances_path: Option<PathBuf>,
-        /// Deployment type: dev, local, staging, live
-        #[structopt(long, short, default_value = "live")]
+        /// Deployment type: dev, local, testnet, mainnet
+        #[structopt(long, short, default_value = "mainnet")]
         deployment: String,
         /// Endow authorities, and nominators. Initial balances
         /// overrides endowed amount.
@@ -128,8 +128,8 @@ enum ChainSpecBuilder {
         /// The path to an initial balances file
         #[clap(long)]
         initial_balances_path: Option<PathBuf>,
-        /// Deployment type: dev, local, staging, live
-        #[clap(long, short, default_value = "live")]
+        /// Deployment type: dev, local, testnet, mainnet
+        #[clap(long, short, default_value = "mainnet")]
         deployment: String,
     },
 }
@@ -184,6 +184,23 @@ impl ChainSpecBuilder {
             ChainSpecBuilder::Generate { .. } => true,
         }
     }
+
+    fn valid_number_of_authorities(&self) -> bool {
+        match self {
+            ChainSpecBuilder::New { authorities, .. } => match self.chain_deployment() {
+                ChainDeployment::dev => authorities.len().eq(&1),
+                ChainDeployment::local => authorities.len().eq(&2),
+                ChainDeployment::testnet => authorities.len().gt(&1),
+                ChainDeployment::mainnet => authorities.len().gt(&1),
+            },
+            ChainSpecBuilder::Generate { authorities, .. } => match self.chain_deployment() {
+                ChainDeployment::dev => authorities.eq(&1),
+                ChainDeployment::local => authorities.eq(&2),
+                ChainDeployment::testnet => authorities.gt(&1),
+                ChainDeployment::mainnet => authorities.gt(&1),
+            },
+        }
+    }
 }
 
 fn authorities_from_seeds(
@@ -230,17 +247,17 @@ fn genesis_constructor(
         .unwrap_or_else(Vec::new);
 
     let content_cfg = match deployment {
-        ChainDeployment::live => content_config::production_config(),
+        ChainDeployment::mainnet => content_config::production_config(),
         _ => content_config::testing_config(),
     };
 
     let storage_cfg = match deployment {
-        ChainDeployment::live => storage_config::production_config(),
+        ChainDeployment::mainnet => storage_config::production_config(),
         _ => storage_config::testing_config(),
     };
 
     let project_token_cfg = match deployment {
-        ChainDeployment::live => project_token_config::production_config(),
+        ChainDeployment::mainnet => project_token_config::production_config(),
         _ => project_token_config::testing_config(),
     };
 
@@ -413,6 +430,10 @@ async fn main() -> Result<(), String> {
     let initial_balances_path = builder.initial_balances_path().clone();
     let deployment = builder.chain_deployment();
     let fund_accounts = builder.fund_accounts();
+    if !builder.valid_number_of_authorities() {
+        println!("Incorrect number of authorities for the deployment type chosen.");
+        std::process::exit(1);
+    }
 
     let (authorities, nominator_accounts, endowed_accounts) = match builder {
         ChainSpecBuilder::Generate {
