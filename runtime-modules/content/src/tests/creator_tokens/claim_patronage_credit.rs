@@ -1,4 +1,7 @@
 #![cfg(test)]
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
@@ -91,5 +94,20 @@ fn claim_creator_token_patronage_credit_fails_during_trasfer() {
             .call_and_assert(Ok(()));
         ClaimCreatorTokenPatronageCreditFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
+fn claim_member_channel_creator_token_patronage_credit_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        ClaimCreatorTokenPatronageCreditFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        ClaimCreatorTokenPatronageCreditFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -3,6 +3,8 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
 use project_token::types::{PaymentWithVestingOf, Transfers};
 
 #[test]
@@ -150,5 +152,20 @@ fn unsuccessful_curator_channel_creator_token_issuer_transfer_during_transfer() 
             ),
             Error::<Test>::InvalidChannelTransferStatus,
         );
+    })
+}
+
+#[test]
+fn member_channel_creator_token_issuer_transfer_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        CreatorTokenIssuerTransferFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        CreatorTokenIssuerTransferFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -155,5 +155,10 @@ decl_event! {
         /// - member id
         /// - number of tokens burned
         TokensBurned(TokenId, MemberId, Balance),
+
+        /// Pallet Frozen status toggled
+        /// Params:
+        /// - new frozen status (true | false)
+        FrozenStatusUpdated(bool)
     }
 }

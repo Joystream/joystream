@@ -555,6 +555,14 @@ benchmarks! {
             ).into()
         );
     }
+    set_frozen_status {
+        let pallet_frozen = true;
+    }: _(RawOrigin::Root, pallet_frozen)
+    verify {
+        assert_eq!(Module::<T>::pallet_frozen(), pallet_frozen);
+
+        assert_last_event::<T>(RawEvent::FrozenStatusUpdated(pallet_frozen).into());
+    }
 
     // Worst case scenario:
     // - account has max number of vesting_schedules

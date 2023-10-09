@@ -159,5 +159,8 @@ decl_error! {
 
         /// Amount of tokens to burn exceeds total amount of tokens owned by the account
         BurnAmountGreaterThanAccountTokensAmount,
+
+        /// Attempt to perform an action when pallet is frozen
+        PalletFrozen
     }
 }

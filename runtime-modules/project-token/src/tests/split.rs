@@ -11,6 +11,8 @@ use crate::types::{
     AccountDataOf, Joy, RevenueSplitInfo, RevenueSplitState, StakingStatus, Timeline,
 };
 use crate::{last_event_eq, Error, RawEvent};
+use frame_support::{assert_noop, assert_ok};
+use frame_system::RawOrigin;
 
 #[test]
 fn issue_split_fails_with_invalid_token_id() {
@@ -952,5 +954,68 @@ fn issue_revenue_split_ok_with_revenue_leftovers_retained_by_issuer() {
             .unwrap();
 
         assert_eq!(Joy::<Test>::usable_balance(member!(1).1), leftovers,);
+    })
+}
+
+#[test]
+fn participate_in_split_fails_on_frozen_pallet() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START);
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            ParticipateInSplitFixture::default().execute_call(),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(ParticipateInSplitFixture::default().execute_call());
+        last_event_eq!(RawEvent::UserParticipatedInSplit(
+            1u64,
+            member!(2).0,
+            DEFAULT_SPLIT_PARTICIPATION,
+            DEFAULT_SPLIT_JOY_DIVIDEND,
+            0u32, // participate in split @ 0
+        ));
+    })
+}
+
+#[test]
+fn exit_revenue_split_fails_on_frozen_pallet() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(MIN_REVENUE_SPLIT_TIME_TO_START);
+        ParticipateInSplitFixture::default().execute_call().unwrap();
+        increase_block_number_by(DEFAULT_SPLIT_DURATION);
+        FinalizeRevenueSplitFixture::default()
+            .execute_call()
+            .unwrap();
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            ExitRevenueSplitFixture::default().execute_call(),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(ExitRevenueSplitFixture::default().execute_call());
+        last_event_eq!(RawEvent::RevenueSplitLeft(
+            1u64,
+            member!(2).0,
+            DEFAULT_SPLIT_PARTICIPATION
+        ));
     })
 }
