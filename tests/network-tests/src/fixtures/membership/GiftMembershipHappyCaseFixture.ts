@@ -58,7 +58,7 @@ export class GiftMembershipHappyCaseFixture extends StandardizedFixture {
         handle,
         rootAccount,
         controllerAccount,
-        metadata: { name, about, avatar, externalResources, validatorAccount },
+        metadata: { name, about, avatar, externalResources },
         isVerified,
         isFoundingMember,
         entry,
@@ -81,7 +81,6 @@ export class GiftMembershipHappyCaseFixture extends StandardizedFixture {
       Utils.assert(entry.__typename === 'MembershipEntryGifted', 'Query node: Invalid membership entry method')
       Utils.assert(entry.membershipGiftedEvent)
       assert.equal(entry.membershipGiftedEvent.id, qEvent.id)
-      assert.equal(validatorAccount, metadata.validatorAccount)
     })
   }
 

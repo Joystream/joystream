@@ -332,13 +332,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     }
   }
 
-  if (
-    typeof metadata?.validatorAccount === 'string' &&
-    metadata.validatorAccount !== member.metadata.validatorAccount
-  ) {
-    member.metadata.validatorAccount = (metadata.validatorAccount || null) as string | undefined
-    member.metadata.isVerifiedValidator = false
-  }
+  member.metadata.isVerifiedValidator = false
 
   if (newHandle.isSome) {
     member.handle = bytesToString(newHandle.unwrap())

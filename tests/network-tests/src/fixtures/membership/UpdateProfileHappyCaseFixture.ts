@@ -16,7 +16,6 @@ export type MemberProfileData = {
   about?: string | null
   avatarUri?: string | null
   externalResources?: MembershipMetadata.IExternalResource[] | null
-  validatorAccount?: string | null
 }
 
 export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
@@ -56,8 +55,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       expected.externalResources?.map(asMembershipExternalResource) ?? []
     )
     assert.isFalse(Utils.hasDuplicates(metadata.externalResources?.map(({ type }) => type)))
-    assert.equal(metadata.isVerifiedValidator, false)
-    assert.equal(metadata.validatorAccount, expected.validatorAccount)
   }
 
   public getExpectedValues(): MemberProfileData {
@@ -69,9 +66,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       externalResources: isSet(this.newValues.externalResources)
         ? this.newValues.externalResources || null
         : this.oldValues.externalResources,
-      validatorAccount: isSet(this.newValues.validatorAccount)
-        ? this.newValues.validatorAccount || null
-        : this.oldValues.validatorAccount,
     }
   }
 

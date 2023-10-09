@@ -28,7 +28,6 @@ message MembershipMetadata {
   
   repeated ExternalResource externalResources = 5;
   
-  optional string validatorAccount = 6;
 }
 
 
