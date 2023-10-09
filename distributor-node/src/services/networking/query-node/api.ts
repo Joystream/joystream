@@ -17,24 +17,28 @@ import ws from 'ws'
 import { LoggingService } from '../../logging'
 import {
   DataObjectDetailsFragment,
-  DistirubtionBucketWithObjectsFragment,
   GetActiveStorageBucketOperatorsData,
   GetActiveStorageBucketOperatorsDataQuery,
   GetActiveStorageBucketOperatorsDataQueryVariables,
   GetDataObjectDetails,
   GetDataObjectDetailsQuery,
   GetDataObjectDetailsQueryVariables,
-  GetDistributionBucketsWithObjectsByIds,
-  GetDistributionBucketsWithObjectsByIdsQuery,
-  GetDistributionBucketsWithObjectsByIdsQueryVariables,
-  GetDistributionBucketsWithObjectsByWorkerId,
-  GetDistributionBucketsWithObjectsByWorkerIdQuery,
-  GetDistributionBucketsWithObjectsByWorkerIdQueryVariables,
+  GetDataObjectsWithBagsByIds,
+  GetDataObjectsWithBagsByIdsQuery,
+  GetDataObjectsWithBagsByIdsQueryVariables,
+  GetDistributionBucketsWithBagsByIds,
+  GetDistributionBucketsWithBagsByIdsQuery,
+  GetDistributionBucketsWithBagsByIdsQueryVariables,
+  GetDistributionBucketsWithBagsByWorkerId,
+  GetDistributionBucketsWithBagsByWorkerIdQuery,
+  GetDistributionBucketsWithBagsByWorkerIdQueryVariables,
+  MinimalDataObjectFragment,
   QueryNodeState,
   QueryNodeStateFields,
   QueryNodeStateFieldsFragment,
   QueryNodeStateSubscription,
   QueryNodeStateSubscriptionVariables,
+  StorageBagWithObjectsFragment,
   StorageBucketOperatorFieldsFragment,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
@@ -180,20 +184,48 @@ export class QueryNodeApi {
     )
   }
 
-  public getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<DistirubtionBucketWithObjectsFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetDistributionBucketsWithObjectsByIdsQuery,
-      GetDistributionBucketsWithObjectsByIdsQueryVariables
-    >(GetDistributionBucketsWithObjectsByIds, { ids }, 'distributionBuckets')
+  private async getDataObjectsByBagIds(bagIds: string[]): Promise<MinimalDataObjectFragment[]> {
+    const allBagIds = [...bagIds] // Copy to avoid modifying the original array
+    const fullResult: StorageBagWithObjectsFragment[] = []
+    while (allBagIds.length) {
+      const bagIdsBatch = allBagIds.splice(0, 1000)
+      fullResult.push(
+        ...(await this.multipleEntitiesQuery<
+          GetDataObjectsWithBagsByIdsQuery,
+          GetDataObjectsWithBagsByIdsQueryVariables
+        >(GetDataObjectsWithBagsByIds, { bagIds: bagIdsBatch, limit: bagIdsBatch.length }, 'storageBags'))
+      )
+    }
+
+    return fullResult.map((bag) => bag.objects).flat()
   }
 
-  public getDistributionBucketsWithObjectsByWorkerId(
-    workerId: number
-  ): Promise<DistirubtionBucketWithObjectsFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetDistributionBucketsWithObjectsByWorkerIdQuery,
-      GetDistributionBucketsWithObjectsByWorkerIdQueryVariables
-    >(GetDistributionBucketsWithObjectsByWorkerId, { workerId }, 'distributionBuckets')
+  public async getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<MinimalDataObjectFragment[]> {
+    const distributionBucketsWithBags = await this.multipleEntitiesQuery<
+      GetDistributionBucketsWithBagsByIdsQuery,
+      GetDistributionBucketsWithBagsByIdsQueryVariables
+    >(GetDistributionBucketsWithBagsByIds, { ids }, 'distributionBuckets')
+
+    const bagIds = distributionBucketsWithBags
+      .map((bucket) => bucket.bags)
+      .flat()
+      .map((bag) => bag.id)
+
+    return this.getDataObjectsByBagIds(bagIds)
+  }
+
+  public async getDistributionBucketsWithObjectsByWorkerId(workerId: number): Promise<MinimalDataObjectFragment[]> {
+    const distributionBucketsWithBags = await this.multipleEntitiesQuery<
+      GetDistributionBucketsWithBagsByWorkerIdQuery,
+      GetDistributionBucketsWithBagsByWorkerIdQueryVariables
+    >(GetDistributionBucketsWithBagsByWorkerId, { workerId }, 'distributionBuckets')
+
+    const bagIds = distributionBucketsWithBags
+      .map((bucket) => bucket.bags)
+      .flat()
+      .map((bag) => bag.id)
+
+    return this.getDataObjectsByBagIds(bagIds)
   }
 
   public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
