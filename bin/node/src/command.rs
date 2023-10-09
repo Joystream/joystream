@@ -63,8 +63,8 @@ impl SubstrateCli for Cli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         let spec = match id {
             "" => {
-                return Err("Please specify which chain you want to run,
-                    e.g. --chain=joy-mainnet --dev or --chain=local or --chain=prod-test"
+                return Err("Please specify which chain you want to run, eg. --dev or
+                    --chain=joy-mainnet or --chain=local or --chain=prod-test"
                     .into())
             }
             "joy-mainnet" => Box::new(chain_spec::joystream_mainnet_config()?),
