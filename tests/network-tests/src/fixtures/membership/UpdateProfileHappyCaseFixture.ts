@@ -101,7 +101,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       about: this.newValues.about,
       avatarUri: this.newValues.avatarUri,
       externalResources: this.newValues.externalResources,
-      validatorAccount: this.newValues.validatorAccount,
     })
     this.tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
