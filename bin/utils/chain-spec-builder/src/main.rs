@@ -43,9 +43,15 @@ const TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, enum_utils::FromStr)]
 enum ChainDeployment {
+    /// Single node chain with testing genesis config.
+    /// Private IP and local network discovery enabled.
     dev,
+    /// Two nodes (on same machine) chain with testing genesis config.
+    /// Private IP and local network discovery enabled
     local,
+    /// Two or more public nodes chain with testing genesis config.
     testnet,
+    /// Two or more public nodes chain with production genesis config.
     mainnet,
 }
 
@@ -326,10 +332,13 @@ fn generate_chain_spec(
         .map(parse_account)
         .collect::<Result<Vec<_>, String>>()?;
 
-    let telemetry_endpoints = Some(
-        TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
-            .expect("Staging telemetry url is valid; qed"),
-    );
+    let telemetry_endpoints = match deployment {
+        ChainDeployment::mainnet => Some(
+            TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
+                .expect("Telemetry url is invalid; qed"),
+        ),
+        _ => None,
+    };
 
     let chain_spec = chain_spec::ChainSpec::from_genesis(
         "Joystream Testnet",
