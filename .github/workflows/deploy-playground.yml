@@ -12,7 +12,7 @@ on:
         required: false
         default: 'master'
       runtimeProfile:
-        description: 'STAGING | PLAYGROUND | TESTING - leave balnk for production'
+        description: 'PLAYGROUND | TESTING'
         default: 'PLAYGROUND'
         required: false
       sshPubKey:

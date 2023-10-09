@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        runtime_profile: ['STAGING', 'PLAYGROUND', 'TESTING']
+        runtime_profile: ['FAST-PROD', 'PLAYGROUND', 'TESTING']
         include:
-          - runtime_profile: 'STAGING'
-            cargo_features: 'staging-runtime'
+          - runtime_profile: 'FAST-PROD'
+            cargo_features: 'warp-time'
           - runtime_profile: 'PLAYGROUND'
             cargo_features: 'playground-runtime'
           - runtime_profile: 'TESTING'

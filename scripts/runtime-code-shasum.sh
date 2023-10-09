@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
+set -e
 
 # Compute a hash over files related to building joystream/node docker image
 
 # Assuming cargo workspace root is same as the git repo root
-cd $(git rev-parse --show-toplevel)
+cd `git rev-parse --show-toplevel`
+
+# Make sure a recognized RUNTIME_PROFILE is used
+_=`./scripts/features.sh`
 
 TAR=tar
 SED=sed

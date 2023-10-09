@@ -17,14 +17,14 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
       sudo apt-get install -y docker.io containerd runc
     fi
     # Install latest version of docker-compose
-    COMPOSE_VERSION=$(curl -sL https://api.github.com/repos/docker/compose/releases/latest | jq -r ".tag_name")
+    COMPOSE_VERSION=`curl -sL https://api.github.com/repos/docker/compose/releases/latest | jq -r ".tag_name"`
     sudo curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # install brew package manager
     if ! which brew >/dev/null 2>&1; then
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+      bash -c "`curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh`"
     fi
     # install additional packages
     brew update

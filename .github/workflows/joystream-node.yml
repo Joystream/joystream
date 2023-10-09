@@ -108,3 +108,9 @@ jobs:
         run: |
           yarn cargo-checks && yarn cargo-build
         if: env.GIT_DIFF
+      - name: Fast Production Runtime
+        env:
+          RUNTIME_PROFILE: "FAST-PROD"
+        run: |
+          yarn cargo-checks && yarn cargo-build
+        if: env.GIT_DIFF

@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
+set -e
 
 # The script computes the b2sum of the wasm blob in a pre-built joystream/node image
 # Specifically amd64 architecture image, as that is what we use as the "reference" images
 # for deterministic builds.
 # Assumes b2sum is already instally on the host machine.
 
-SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_PATH=`$(dirname "${BASH_SOURCE[0]}")`
 cd $SCRIPT_PATH
-
-source ./features.sh
 
 CODE_SHASUM=`./runtime-code-shasum.sh`
 IMAGE=joystream/node:${CODE_SHASUM}
 
-IMG_ARCH=$(docker inspect ${IMAGE} --format='{{.Architecture}}')
+IMG_ARCH=`docker inspect ${IMAGE} --format='{{.Architecture}}'`
 
 if [ "$IMG_ARCH" != "amd64" ]; then
     echo "You must fetch the amd64 architecture image with following command:"

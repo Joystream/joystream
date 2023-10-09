@@ -4,16 +4,17 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-CONTAINER_ID=$(./run-test-node-docker.sh)
-
 function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-    docker-compose -f ../../docker-compose.yml down -v
+    docker logs joystream-node --tail 15 || :
+    docker stop joystream-node || :
+    docker rm joystream-node || :
+    docker-compose -f ../../docker-compose.yml down -v || :
 }
 
-trap cleanup EXIT
+trap cleanup EXIT ERR SIGINT SIGTERM
+
+export JOYSTREAM_NODE_TAG=`RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh`
+CHAIN=dev docker compose -f ../../docker-compose.yml up -d joystream-node
 
 sleep 30
 

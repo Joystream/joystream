@@ -7,7 +7,9 @@ services:
     container_name: joystream-node
     volumes:
       - chain-data:/data
-    command: "--dev --alice --validator --pruning=archive --unsafe-ws-external --unsafe-rpc-external
+    environment:
+      - CHAIN=${CHAIN}
+    command: "--chain ${CHAIN:-dev} --alice --validator --pruning=archive --unsafe-ws-external --unsafe-rpc-external
       --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data --no-hardware-benchmarks"
     ports:
       - 9944:9944
@@ -242,10 +244,11 @@ services:
       - .env
     environment:
       - DB_NAME=${INDEXER_DB_NAME}
-      - INDEXER_WORKERS=5
+      - WORKERS_NUMBER=5
       - REDIS_URI=redis://redis:6379/0
       - WS_PROVIDER_ENDPOINT_URI=${JOYSTREAM_NODE_WS}
       - DB_HOST=db
+      - PGSSLMODE=disable
     depends_on:
       - db
       - redis
@@ -270,6 +273,7 @@ services:
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0
       - WARTHOG_APP_PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
+      - PGSSLMODE=disable
     ports:
       - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
     depends_on:
