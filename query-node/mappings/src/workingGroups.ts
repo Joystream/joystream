@@ -52,6 +52,7 @@ import {
   getWorkingGroupByName,
   getWorkingGroupLead,
   invalidMetadata,
+  getMemberById,
 } from './common'
 import BN from 'bn.js'
 import {
@@ -744,7 +745,7 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     const actor = await getWorker(store, group.name, workerId)
 
     await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
-  }else if (metadata?.verifyValidator) {
+  } else if (metadata?.verifyValidator) {
     if (group.name !== 'membershipWorkingGroup') {
       return invalidMetadata(`The ${group.name} cannot verify validator accounts`)
     }
@@ -757,13 +758,9 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     const memberId = createType('u64', Number(metadata.verifyValidator.memberId))
     const member = await getMemberById(store, memberId, ['metadata'])
 
-    if (metadata.verifyValidator.validatorAccount !== member.metadata.validatorAccount) {
-      return invalidMetadata(`${metadata.verifyValidator.validatorAccount} is not the validator account`)
-    }
-
     member.metadata.isVerifiedValidator = true
-    await store.save<Membership>(member) 
-  }else {
+    await store.save<Membership>(member)
+  } else {
     return invalidMetadata('Unrecognized remarked action')
   }
 }
