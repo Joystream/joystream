@@ -20,6 +20,7 @@ COPY Cargo.lock .
 COPY bin ./bin
 COPY runtime ./runtime
 COPY runtime-modules ./runtime-modules
+COPY joy-mainnet.json .
 RUN cargo chef prepare --recipe-path /joystream/recipe.json
 
 FROM rust AS cacher
@@ -38,6 +39,7 @@ COPY Cargo.lock .
 COPY bin ./bin
 COPY runtime ./runtime
 COPY runtime-modules ./runtime-modules
+COPY joy-mainnet.json .
 # Copy over the cached dependencies
 COPY --from=cacher /joystream/target target
 COPY --from=cacher $CARGO_HOME $CARGO_HOME
