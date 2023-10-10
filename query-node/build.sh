@@ -41,7 +41,7 @@ cp ./generated/graphql-server/generated/schema.graphql ../distributor-node/src/s
 # Add command to run Query Node's Graphql server with Opentelemetry instrumentation
 sed -i -e '/"start:prod": "WARTHOG_ENV=production yarn dotenv:generate && node dist\/src\/index.js"/a \
    "start:prod:with-instrumentation": "export OTEL_APPLICATION=query-node; WARTHOG_ENV=production yarn dotenv:generate && node --require @joystream/opentelemetry dist/src/index.js", \
-   "start:prod:pm2": "WARTHOG_ENV=production yarn dotenv:generate && yarn pm2-runtime start dist/src/index.js -i 1",' ./generated/graphql-server/package.json
+   "start:prod:pm2": "WARTHOG_ENV=production yarn dotenv:generate && yarn pm2-runtime start dist/src/index.js -i 1 --name graphql-server",' ./generated/graphql-server/package.json
 
 # Add @joystream/opentelemetry dependency symlink, as it is not specified in generated/graphql-server/package.json dependencies
 mkdir -p ./generated/graphql-server/node_modules/@joystream
