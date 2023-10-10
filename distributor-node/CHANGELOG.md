@@ -1,5 +1,9 @@
 ##
 
+### 1.3.1
+
+- Batch fetching of objects details from query-node [#4921](https://github.com/Joystream/joystream/pull/4921)
+
 ### 1.3.0
 
 - Adds support for TTL based caching of `StorageDataObject` QN entity for `HEAD /assets` requests. The TTL is configurable using `interval.queryNodeCacheTTL` flag.
