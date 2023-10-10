@@ -219,7 +219,7 @@ export class PublicApiController {
 
   public async assetHead(req: express.Request<AssetRouteParams>, res: express.Response): Promise<void> {
     const { objectId } = req.params
-    const objectStatus = await this.content.objectStatus(objectId)
+    const objectStatus = await this.content.objectStatus(objectId, 'cache-first')
 
     res.setHeader('timing-allow-origin', '*')
     res.setHeader('accept-ranges', 'bytes')
