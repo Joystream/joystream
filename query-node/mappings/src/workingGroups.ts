@@ -745,21 +745,6 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     const actor = await getWorker(store, group.name, workerId)
 
     await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
-  } else if (metadata?.verifyValidator) {
-    if (group.name !== 'membershipWorkingGroup') {
-      return invalidMetadata(`The ${group.name} cannot verify validator accounts`)
-    }
-
-    const actor = await getWorker(store, group.name, workerId)
-    if (actor === undefined) {
-      return invalidMetadata(`${actor} is not an membership account`)
-    }
-
-    const memberId = createType('u64', Number(metadata.verifyValidator.memberId))
-    const member = await getMemberById(store, memberId, ['metadata'])
-
-    member.metadata.isVerifiedValidator = true
-    await store.save<Membership>(member)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
