@@ -277,6 +277,7 @@ Supported values: warn, error, debug, info. Default:debug`,
  * @param syncWorkersNumber - defines a number of the async processes for sync
  * @param syncWorkersTimeout - downloading asset timeout
  * @param syncIntervalMinutes - defines an interval between sync runs
+ * @param syncRetryIntervalMinutes - defines an interval before retrying sync run after critical error
  *
  * @returns void promise.
  */
