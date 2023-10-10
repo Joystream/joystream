@@ -43,5 +43,7 @@ export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
     }
   }
 
-  async execute(): Promise<void> {}
+  async execute(): Promise<void> {
+    this.debug('Checking verify validator account')
+  }
 }
