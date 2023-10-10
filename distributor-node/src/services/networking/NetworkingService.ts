@@ -370,23 +370,19 @@ export class NetworkingService {
   }
 
   async fetchSupportedDataObjects(): Promise<Map<string, DataObjectData>> {
-    const data = this.config.buckets
+    const objects = this.config.buckets
       ? await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
       : typeof this.config.workerId === 'number'
       ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
       : []
     const objectsData = new Map<string, DataObjectData>()
-    data.forEach((bucket) => {
-      bucket.bags.forEach((bag) => {
-        bag.objects.forEach((object) => {
-          const { ipfsHash, id, size, type } = object
-          objectsData.set(id, {
-            contentHash: ipfsHash,
-            objectId: id,
-            size: parseInt(size),
-            fallbackMimeType: this.parseUserProvidedMimeType(type.subtitle?.mimeType),
-          })
-        })
+    objects.forEach((object) => {
+      const { ipfsHash, id, size, type } = object
+      objectsData.set(id, {
+        contentHash: ipfsHash,
+        objectId: id,
+        size: parseInt(size),
+        fallbackMimeType: this.parseUserProvidedMimeType(type.subtitle?.mimeType),
       })
     })
 
