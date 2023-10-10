@@ -60,7 +60,11 @@ export default class Server extends ApiCommandBase {
     syncInterval: flags.integer({
       char: 'i',
       description: 'Interval between synchronizations (in minutes)',
-      default: 1,
+      default: 20,
+    }),
+    syncRetryInterval: flags.integer({
+      description: 'Interval before retrying failed synchronization run (in minutes)',
+      default: 3,
     }),
     queryNodeEndpoint: flags.string({
       char: 'q',
@@ -221,7 +225,8 @@ Supported values: warn, error, debug, info. Default:debug`,
             TempDirName,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
-            flags.syncInterval
+            flags.syncInterval,
+            flags.syncRetryInterval
           ),
         0
       )
@@ -284,12 +289,12 @@ async function runSyncWithInterval(
   tempDirectory: string,
   syncWorkersNumber: number,
   syncWorkersTimeout: number,
-  syncIntervalMinutes: number
+  syncIntervalMinutes: number,
+  syncRetryIntervalMinutes: number
 ) {
   const sleepInteval = syncIntervalMinutes * 60 * 1000
+  const retrySleepInterval = syncRetryIntervalMinutes * 60 * 1000
   while (true) {
-    logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
-    await sleep(sleepInteval)
     try {
       logger.info(`Resume syncing....`)
       await performSync(
@@ -302,8 +307,12 @@ async function runSyncWithInterval(
         uploadsDirectory,
         tempDirectory
       )
+      logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
+      await sleep(sleepInteval)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
+      logger.info(`Will retry in ${syncRetryIntervalMinutes} minute(s)`)
+      await sleep(retrySleepInterval)
     }
   }
 }
