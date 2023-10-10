@@ -1,39 +1,39 @@
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
   PalletStorageBagIdType as BagId,
+  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
+  PalletStorageDistributionBucketIdRecord as DistributionBucketId,
   PalletStorageDynamicBagIdType as DynamicBagId,
   PalletStorageStaticBagId as StaticBagId,
-  PalletStorageDistributionBucketIdRecord as DistributionBucketId,
-  PalletStorageDataObjectCreationParameters as DataObjectCreationParameters,
 } from '@polkadot/types/lookup'
+import BN from 'bn.js'
 import {
   DataObjectTypeUnknown,
+  DistributionBucketFamily,
+  DistributionBucketOperator,
   StorageBag,
-  StorageDataObject,
   StorageBagOwner,
   StorageBagOwnerChannel,
   StorageBagOwnerCouncil,
   StorageBagOwnerMember,
   StorageBagOwnerWorkingGroup,
   StorageBucket,
-  DistributionBucketOperator,
-  DistributionBucketFamily,
+  StorageDataObject,
 } from 'query-node/dist/model'
-import BN from 'bn.js'
-import { bytesToString, inconsistentState, getById, RelationsArr } from '../common'
 import { In } from 'typeorm'
+import { RelationsArr, bytesToString, getById, inconsistentState } from '../common'
 
-import { BTreeSet } from '@polkadot/types'
-import _ from 'lodash'
 import {
-  WorkerId,
   DataObjectId,
   DistributionBucketFamilyId,
   DistributionBucketIndex,
+  WorkerId,
 } from '@joystream/types/primitives'
+import { BTreeSet } from '@polkadot/types'
 import { Balance } from '@polkadot/types/interfaces'
+import _ from 'lodash'
+import { unsetAssetRelations, videoRelationsForCounters } from '../content/utils'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
-import { videoRelationsForCounters, unsetAssetRelations } from '../content/utils'
 
 export type StorageDataObjectParams = {
   storageBagOrId: StorageBag | BagId
@@ -155,6 +155,7 @@ export async function getStaticBag(
     console.log(`Creating new static bag: ${id}`)
     const newBag = new StorageBag({
       id,
+      objectsSize: new BN(0),
       owner: getStaticBagOwner(bagId),
     })
     await store.save<StorageBag>(newBag)
@@ -234,6 +235,11 @@ export async function createDataObjects(
 
   await Promise.all(dataObjects.map((o) => store.save<StorageDataObject>(o)))
 
+  // Update bag size
+  const createdDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  storageBag.objectsSize = storageBag.objectsSize.add(createdDataObjectsSize)
+  await store.save<StorageBag>(storageBag)
+
   return dataObjects
 }
 
@@ -242,6 +248,7 @@ export async function deleteDataObjects(
   bagId: BagId,
   dataObjectIds: BTreeSet<DataObjectId>
 ): Promise<void> {
+  const storageBag = await getBag(store, bagId)
   const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
     'videoThumbnail',
     ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
@@ -255,6 +262,11 @@ export async function deleteDataObjects(
 
     await unsetAssetRelations(store, dataObject)
   }
+
+  // Update bag size
+  const deletedDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  storageBag.objectsSize = storageBag.objectsSize.sub(deletedDataObjectsSize)
+  await store.save<StorageBag>(storageBag)
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {

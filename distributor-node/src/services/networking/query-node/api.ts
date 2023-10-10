@@ -1,45 +1,53 @@
 import {
   ApolloClient,
   DocumentNode,
+  FetchPolicy,
   HttpLink,
-  InMemoryCache,
   NormalizedCacheObject,
-  defaultDataIdFromObject,
   from,
   split,
 } from '@apollo/client/core'
 import { onError } from '@apollo/client/link/error'
 import { WebSocketLink } from '@apollo/client/link/ws'
 import { getMainDefinition } from '@apollo/client/utilities'
+import { InvalidationPolicyCache } from '@nerdwallet/apollo-cache-policies'
 import fetch from 'cross-fetch'
+import { FragmentDefinitionNode } from 'graphql'
 import { Logger } from 'winston'
 import ws from 'ws'
+import { ReadonlyConfig } from '../../../types'
 import { LoggingService } from '../../logging'
 import {
   DataObjectDetailsFragment,
-  DistirubtionBucketWithObjectsFragment,
   GetActiveStorageBucketOperatorsData,
   GetActiveStorageBucketOperatorsDataQuery,
   GetActiveStorageBucketOperatorsDataQueryVariables,
   GetDataObjectDetails,
   GetDataObjectDetailsQuery,
   GetDataObjectDetailsQueryVariables,
-  GetDistributionBucketsWithObjectsByIds,
-  GetDistributionBucketsWithObjectsByIdsQuery,
-  GetDistributionBucketsWithObjectsByIdsQueryVariables,
-  GetDistributionBucketsWithObjectsByWorkerId,
-  GetDistributionBucketsWithObjectsByWorkerIdQuery,
-  GetDistributionBucketsWithObjectsByWorkerIdQueryVariables,
+  GetDataObjectsWithBagsByIds,
+  GetDataObjectsWithBagsByIdsQuery,
+  GetDataObjectsWithBagsByIdsQueryVariables,
+  GetDistributionBucketsWithBagsByIds,
+  GetDistributionBucketsWithBagsByIdsQuery,
+  GetDistributionBucketsWithBagsByIdsQueryVariables,
+  GetDistributionBucketsWithBagsByWorkerId,
+  GetDistributionBucketsWithBagsByWorkerIdQuery,
+  GetDistributionBucketsWithBagsByWorkerIdQueryVariables,
+  MinimalDataObjectFragment,
   QueryNodeState,
   QueryNodeStateFields,
   QueryNodeStateFieldsFragment,
   QueryNodeStateSubscription,
   QueryNodeStateSubscriptionVariables,
+  StorageBagWithObjectsFragment,
   StorageBucketOperatorFieldsFragment,
 } from './generated/queries'
 import { Maybe } from './generated/schema'
 
 const MAX_RESULTS_PER_QUERY = 1000
+
+export type QueryFetchPolicy = Extract<FetchPolicy, 'cache-first' | 'no-cache'>
 
 type PaginationQueryVariables = {
   limit: number
@@ -57,10 +65,13 @@ type PaginationQueryResult<T = unknown> = {
 type CustomVariables<T> = Omit<T, keyof PaginationQueryVariables>
 
 export class QueryNodeApi {
+  private config: ReadonlyConfig
   private apolloClient: ApolloClient<NormalizedCacheObject>
   private logger: Logger
 
-  public constructor(endpoint: string, logging: LoggingService, exitOnError = false) {
+  public constructor(config: ReadonlyConfig, logging: LoggingService, exitOnError = false) {
+    this.config = config
+
     this.logger = logging.createLogger('QueryNodeApi')
     const errorLink = onError(({ graphQLErrors, networkError }) => {
       const message = networkError?.message || 'Graphql syntax errors found'
@@ -68,9 +79,9 @@ export class QueryNodeApi {
       exitOnError && process.exit(-1)
     })
 
-    const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
+    const queryLink = from([errorLink, new HttpLink({ uri: this.config.endpoints.queryNode, fetch })])
     const wsLink = new WebSocketLink({
-      uri: endpoint,
+      uri: this.config.endpoints.queryNode,
       options: {
         reconnect: true,
       },
@@ -87,13 +98,20 @@ export class QueryNodeApi {
 
     this.apolloClient = new ApolloClient({
       link: splitLink,
-      cache: new InMemoryCache({
-        dataIdFromObject: (object) => {
-          // setup cache object id for ProcessorState entity type
-          if (object.__typename === 'ProcessorState') {
-            return object.__typename
-          }
-          return defaultDataIdFromObject(object)
+      // Ref: https://www.apollographql.com/docs/react/api/core/ApolloClient/#assumeimmutableresults
+      assumeImmutableResults: true,
+      cache: new InvalidationPolicyCache({
+        typePolicies: {
+          ProcessorState: {
+            keyFields: (object) => object.__typename,
+          },
+        },
+        invalidationPolicies: {
+          types: {
+            StorageDataObject: {
+              timeToLive: (this.config.limits.queryNodeCacheTTL || 60) * 1000, // in MS,
+            },
+          },
         },
       }),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
@@ -107,9 +125,12 @@ export class QueryNodeApi {
   >(
     query: DocumentNode,
     variables: VariablesT,
-    resultKey: keyof QueryT
+    resultKey: keyof QueryT,
+    fetchPolicy: QueryFetchPolicy
   ): Promise<Required<QueryT>[keyof QueryT] | null> {
-    return (await this.apolloClient.query<QueryT, VariablesT>({ query, variables })).data[resultKey] || null
+    return (
+      (await this.apolloClient.query<QueryT, VariablesT>({ query, variables, fetchPolicy })).data[resultKey] || null
+    )
   }
 
   // Get entities by "non-unique" input and return first result
@@ -172,28 +193,74 @@ export class QueryNodeApi {
     })
   }
 
-  public getDataObjectDetails(objectId: string): Promise<DataObjectDetailsFragment | null> {
-    return this.uniqueEntityQuery<GetDataObjectDetailsQuery, GetDataObjectDetailsQueryVariables>(
+  protected readFragment<FragmentT, VariablesT extends Record<string, unknown>>(
+    id: string,
+    fragment: DocumentNode
+  ): FragmentT | null {
+    // Get the fragment name, usually first element of the definitions array is the name of the top level fragment
+    const fragmentName = (fragment.definitions[0] as FragmentDefinitionNode).name.value
+    if (!fragmentName) {
+      throw new Error('Unable to extract fragment name from provided DocumentNode.')
+    }
+    return this.apolloClient.cache.readFragment<FragmentT, VariablesT>({ id, fragment, fragmentName })
+  }
+
+  public async getDataObjectDetails(
+    objectId: string,
+    fetchPolicy: QueryFetchPolicy
+  ): Promise<DataObjectDetailsFragment | null> {
+    const result = await this.uniqueEntityQuery<GetDataObjectDetailsQuery, GetDataObjectDetailsQueryVariables>(
       GetDataObjectDetails,
       { id: objectId },
-      'storageDataObjectByUniqueInput'
+      'storageDataObjectByUniqueInput',
+      fetchPolicy
     )
+
+    return result
   }
 
-  public getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<DistirubtionBucketWithObjectsFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetDistributionBucketsWithObjectsByIdsQuery,
-      GetDistributionBucketsWithObjectsByIdsQueryVariables
-    >(GetDistributionBucketsWithObjectsByIds, { ids }, 'distributionBuckets')
+  private async getDataObjectsByBagIds(bagIds: string[]): Promise<MinimalDataObjectFragment[]> {
+    const allBagIds = [...bagIds] // Copy to avoid modifying the original array
+    const fullResult: StorageBagWithObjectsFragment[] = []
+    while (allBagIds.length) {
+      const bagIdsBatch = allBagIds.splice(0, 1000)
+      fullResult.push(
+        ...(await this.multipleEntitiesQuery<
+          GetDataObjectsWithBagsByIdsQuery,
+          GetDataObjectsWithBagsByIdsQueryVariables
+        >(GetDataObjectsWithBagsByIds, { bagIds: bagIdsBatch, limit: bagIdsBatch.length }, 'storageBags'))
+      )
+    }
+
+    return fullResult.map((bag) => bag.objects).flat()
   }
 
-  public getDistributionBucketsWithObjectsByWorkerId(
-    workerId: number
-  ): Promise<DistirubtionBucketWithObjectsFragment[]> {
-    return this.multipleEntitiesQuery<
-      GetDistributionBucketsWithObjectsByWorkerIdQuery,
-      GetDistributionBucketsWithObjectsByWorkerIdQueryVariables
-    >(GetDistributionBucketsWithObjectsByWorkerId, { workerId }, 'distributionBuckets')
+  public async getDistributionBucketsWithObjectsByIds(ids: string[]): Promise<MinimalDataObjectFragment[]> {
+    const distributionBucketsWithBags = await this.multipleEntitiesQuery<
+      GetDistributionBucketsWithBagsByIdsQuery,
+      GetDistributionBucketsWithBagsByIdsQueryVariables
+    >(GetDistributionBucketsWithBagsByIds, { ids }, 'distributionBuckets')
+
+    const bagIds = distributionBucketsWithBags
+      .map((bucket) => bucket.bags)
+      .flat()
+      .map((bag) => bag.id)
+
+    return this.getDataObjectsByBagIds(bagIds)
+  }
+
+  public async getDistributionBucketsWithObjectsByWorkerId(workerId: number): Promise<MinimalDataObjectFragment[]> {
+    const distributionBucketsWithBags = await this.multipleEntitiesQuery<
+      GetDistributionBucketsWithBagsByWorkerIdQuery,
+      GetDistributionBucketsWithBagsByWorkerIdQueryVariables
+    >(GetDistributionBucketsWithBagsByWorkerId, { workerId }, 'distributionBuckets')
+
+    const bagIds = distributionBucketsWithBags
+      .map((bucket) => bucket.bags)
+      .flat()
+      .map((bag) => bag.id)
+
+    return this.getDataObjectsByBagIds(bagIds)
   }
 
   public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
@@ -206,13 +273,10 @@ export class QueryNodeApi {
 
   public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
     // fetch cached state
-    const cachedState = this.apolloClient.readFragment<
-      QueryNodeStateSubscription['stateSubscription'],
-      QueryNodeStateSubscriptionVariables
-    >({
-      id: 'ProcessorState',
-      fragment: QueryNodeStateFields,
-    })
+    const cachedState = this.readFragment<QueryNodeStateFieldsFragment, QueryNodeStateSubscriptionVariables>(
+      'ProcessorState',
+      QueryNodeStateFields
+    )
 
     // If we have the state in cache, return it
     if (cachedState) {

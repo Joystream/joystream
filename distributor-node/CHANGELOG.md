@@ -1,9 +1,13 @@
+##
+
+### 1.3.2
+
+- Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should improve response times when serving assets.
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+
 ### 1.3.0
 
-Pickup correct NODE_ENV setting.
-
-- Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should dramatically improve response times when serving assets.
-- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+- Adds support for TTL based caching of `StorageDataObject` QN entity for `HEAD /assets` requests. The TTL is configurable using `interval.queryNodeCacheTTL` flag.
 
 ### 1.2.2
 

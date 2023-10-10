@@ -13,6 +13,7 @@
 | [pendingDownloadTimeoutSec](#pendingdownloadtimeoutsec)                 | `integer` | Required | cannot be null | [Distributor node configuration](definition-properties-limits-properties-pendingdownloadtimeoutsec.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/pendingDownloadTimeoutSec")                 |
 | [maxCachedItemSize](#maxcacheditemsize)                                 | `string`  | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-maxcacheditemsize.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/maxCachedItemSize")                                 |
 | [dataObjectSourceByObjectIdTTL](#dataobjectsourcebyobjectidttl)         | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-dataobjectsourcebyobjectidttl.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/dataObjectSourceByObjectIdTTL")         |
+| [queryNodeCacheTTL](#querynodecachettl)                                 | `integer` | Optional | cannot be null | [Distributor node configuration](definition-properties-limits-properties-querynodecachettl.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/queryNodeCacheTTL")                                 |
 
 ## storage
 
@@ -181,6 +182,36 @@ TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects
 **minimum**: the value of this number must greater than or equal to: `1`
 
 ### dataObjectSourceByObjectIdTTL Default Value
+
+The default value is:
+
+```json
+60
+```
+
+## queryNodeCacheTTL
+
+TTL (in seconds) for the Apollo's InMemoryCache, to cache the data fetched from the query node.
+
+`queryNodeCacheTTL`
+
+*   is optional
+
+*   Type: `integer`
+
+*   cannot be null
+
+*   defined in: [Distributor node configuration](definition-properties-limits-properties-querynodecachettl.md "https://joystream.org/schemas/argus/config#/properties/limits/properties/queryNodeCacheTTL")
+
+### queryNodeCacheTTL Type
+
+`integer`
+
+### queryNodeCacheTTL Constraints
+
+**minimum**: the value of this number must greater than or equal to: `1`
+
+### queryNodeCacheTTL Default Value
 
 The default value is:
 
