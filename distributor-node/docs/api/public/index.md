@@ -85,6 +85,7 @@ Returns json object describing current node status.
   "storageUsed": 0,
   "uptime": 0,
   "downloadsInProgress": 0,
+  "nodeEnv": "string",
   "queryNodeStatus": {
     "url": "string",
     "chainHead": 0,
@@ -340,6 +341,7 @@ This operation does not require authentication
   "storageUsed": 0,
   "uptime": 0,
   "downloadsInProgress": 0,
+  "nodeEnv": "string",
   "queryNodeStatus": {
     "url": "string",
     "chainHead": 0,
@@ -361,6 +363,7 @@ This operation does not require authentication
 |storageUsed|integer|true|none|none|
 |uptime|integer|true|none|none|
 |downloadsInProgress|integer|true|none|none|
+|nodeEnv|string|true|none|none|
 |queryNodeStatus|object|true|none|none|
 |» url|string|true|none|none|
 |» chainHead|integer|true|none|none|
