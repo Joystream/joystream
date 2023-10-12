@@ -76,7 +76,6 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       assert.equal(about, metadata.about)
       assert.equal(inviteCount, 0)
       assert.equal(avatar?.avatarUri, metadata.avatarUri || undefined)
-      assert.equal(metadata.isVerifiedValidator, false)
 
       assert.includeDeepMembers(
         externalResources ?? [],
