@@ -52,7 +52,6 @@ import {
   getWorkingGroupByName,
   getWorkingGroupLead,
   invalidMetadata,
-  getMemberById,
 } from './common'
 import BN from 'bn.js'
 import {
