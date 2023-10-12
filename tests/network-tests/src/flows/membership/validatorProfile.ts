@@ -13,11 +13,12 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
   const VerifyValidator = [
     {
       memberId: '1',
-      validatorAccount: 'validator address',
+      isVerified: true,
     },
     {
       memberId: '2',
-      validatorAccount: '',
+      isVerified: true,
+      asWorker: 'j4VEC6FcJtBrwYQKhBAoB6Rj83jDeVua6azuHBrri1zoksBkz',
     },
   ]
 
