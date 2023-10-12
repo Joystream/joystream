@@ -68,6 +68,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
         inviteCount,
       } = qMember
       const metadata = Utils.metadataFromBytes(MembershipMetadata, txParams.metadata)
+
       assert.equal(handle, txParams.handle)
       assert.equal(rootAccount, txParams.root_account)
       assert.equal(controllerAccount, txParams.controller_account)
@@ -75,6 +76,8 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       assert.equal(about, metadata.about)
       assert.equal(inviteCount, 0)
       assert.equal(avatar?.avatarUri, metadata.avatarUri || undefined)
+      assert.equal(metadata.isVerifiedValidator, false)
+
       assert.includeDeepMembers(
         externalResources ?? [],
         metadata.externalResources?.map(asMembershipExternalResource) ?? []

@@ -55,6 +55,7 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       expected.externalResources?.map(asMembershipExternalResource) ?? []
     )
     assert.isFalse(Utils.hasDuplicates(metadata.externalResources?.map(({ type }) => type)))
+    assert.equal(metadata.isVerifiedValidator, false)
   }
 
   public getExpectedValues(): MemberProfileData {

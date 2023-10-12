@@ -19,6 +19,7 @@ type MemberCreationParams = {
   externalResources?: MembershipMetadata.IExternalResource[] | null
   metadata: Bytes
   is_founding_member: boolean
+  isVerifiedValidator: boolean
 }
 
 // Common code for Membership fixtures
@@ -33,13 +34,14 @@ export function generateParamsFromAccountId(accountId: string, isFoundingMember 
       value: `https://${affix}.com`,
     },
   ]
+  const isVerifiedValidator = false
+
   const metadataBytes = Utils.metadataToBytes(MembershipMetadata, {
     name,
     about,
     avatarUri,
     externalResources,
   })
-
   return {
     root_account: accountId,
     controller_account: accountId,
@@ -50,6 +52,7 @@ export function generateParamsFromAccountId(accountId: string, isFoundingMember 
     externalResources,
     metadata: metadataBytes,
     is_founding_member: isFoundingMember,
+    isVerifiedValidator,
   }
 }
 
