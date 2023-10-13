@@ -31,8 +31,8 @@ use node_runtime::RuntimeApi;
 use overrides::DEFAULT_HEAP_PAGES;
 use sc_client_api::BlockBackend;
 use sc_consensus_babe::{self, SlotProportion};
+use sc_consensus_grandpa as grandpa;
 use sc_executor::NativeElseWasmExecutor;
-use sc_finality_grandpa as grandpa;
 use sc_network::NetworkService;
 use sc_network_common::{
     protocol::event::Event, service::NetworkEventStream, sync::warp::WarpSyncParams,
