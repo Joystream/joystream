@@ -12,8 +12,8 @@ import { BaseQueryNodeFixture } from '../../Fixture'
 
 export type ValidaotrAccountInput = {
   memberId: string
-  validatorAccount: string
-  asWorker?: WorkerId
+  isVerifiedValidator?: boolean
+  asWorker?: string
 }
 
 export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
@@ -22,17 +22,6 @@ export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
   public constructor(api: Api, query: QueryNodeApi, verifyValidator: ValidaotrAccountInput[]) {
     super(api, query)
     this.verifyValidator = verifyValidator
-  }
-
-  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.verifyValidator.map((u) => {
-      const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
-        verifyValidator: { memberId: Long.fromString(String(u.memberId)), validatorAccount: u.validatorAccount },
-      })
-      return u.asWorker
-        ? this.api.tx.operationsWorkingGroupBeta.workerRemark(u.asWorker, metadata)
-        : this.api.tx.operationsWorkingGroupBeta.leadRemark(metadata)
-    })
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
