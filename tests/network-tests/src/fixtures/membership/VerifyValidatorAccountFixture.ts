@@ -1,35 +1,32 @@
 import { assert } from 'chai'
 import Long from 'long'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { ISubmittableResult } from '@polkadot/types/types/'
-import { WorkerId, ForumPostId } from '@joystream/types/primitives'
-import { RemarkMetadataAction } from '@joystream/metadata-protobuf'
+import { MemberId } from '@joystream/types/primitives'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { EventDetails } from '../../types'
-import { Utils } from '../../utils'
 import { BaseQueryNodeFixture } from '../../Fixture'
+import BN from 'bn.js'
 
-export type ValidaotrAccountInput = {
-  memberId: string
-  isVerifiedValidator?: boolean
-  asWorker?: string
+type AddStakingAccountInput = {
+  asMember: MemberId
+  account: string
+  stakeAmount?: BN
 }
 
 export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
-  protected verifyValidator: ValidaotrAccountInput[]
+  protected inputs: AddStakingAccountInput[]
 
-  public constructor(api: Api, query: QueryNodeApi, verifyValidator: ValidaotrAccountInput[]) {
+  public constructor(api: Api, query: QueryNodeApi, inputs: AddStakingAccountInput[]) {
     super(api, query)
-    this.verifyValidator = verifyValidator
+    this.inputs = inputs
   }
 
-  protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    if (this.api.findEvent(result, 'operationsWorkingGroupBeta', 'WorkerRemarked')) {
-      return this.api.getEventDetails(result, 'operationsWorkingGroupBeta', 'WorkerRemarked')
-    } else {
-      return this.api.getEventDetails(result, 'operationsWorkingGroupBeta', 'LeadRemarked')
-    }
+  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[][]> {
+    const addExtrinsics = this.inputs.map(({ asMember }) => this.api.tx.members.addStakingAccountCandidate(asMember))
+    const confirmExtrinsics = this.inputs.map(({ asMember, account }) =>
+      this.api.tx.members.confirmStakingAccount(asMember, account)
+    )
+    return [addExtrinsics, confirmExtrinsics]
   }
 
   async execute(): Promise<void> {
