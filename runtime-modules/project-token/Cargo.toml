@@ -5,28 +5,28 @@ authors = ['Joystream contributors']
 edition = '2018'
 
 [dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
 storage = { package = 'pallet-storage', default-features = false, path = '../storage'}
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = ['derive'] }
 serde = {version = '1.0.101', features = ['derive'], optional = true}
 scale-info = { version = "2.1.1", default-features = false, features = ["derive"] }
 
 # Benchmarking dependencies
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e', optional = true}
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438', optional = true}
 
 [dev-dependencies]
-randomness-collective-flip = { package = 'pallet-insecure-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+randomness-collective-flip = { package = 'pallet-insecure-randomness-collective-flip', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler'}
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
-sp-storage = { package = 'sp-storage', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
+sp-storage = { package = 'sp-storage', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = 'b32efd5dcc829a03ac0dc76b69e39e1c64299438'}
 
 [features]
 default = ['std']
