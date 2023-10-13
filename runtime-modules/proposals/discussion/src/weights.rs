@@ -72,7 +72,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `11802`
 		// Minimum execution time: 61_000 nanoseconds.
 		Weight::from_parts(61_923_658, 0u64)
-			.saturating_add(Weight::from_proof_size(11802))
+			.saturating_add(Weight::from_parts(0, 11802))
 			// Standard Error: 2_659
 			.saturating_add(Weight::from_parts(487_769, 0u64).saturating_mul(j.into()))
 			.saturating_add(T::DbWeight::get().reads(6_u64))
@@ -91,7 +91,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `7857`
 		// Minimum execution time: 22_000 nanoseconds.
 		Weight::from_parts(23_071_268, 0u64)
-			.saturating_add(Weight::from_proof_size(7857))
+			.saturating_add(Weight::from_parts(0, 7857))
 			// Standard Error: 810
 			.saturating_add(Weight::from_parts(472_429, 0u64).saturating_mul(j.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
@@ -111,7 +111,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `13063`
 		// Minimum execution time: 38_000 nanoseconds.
 		Weight::from_parts(39_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(13063))
+			.saturating_add(Weight::from_parts(0, 13063))
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -128,13 +128,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3493 + i * (2600 ±0)`
 		// Minimum execution time: 27_000 nanoseconds.
 		Weight::from_parts(25_527_774, 0u64)
-			.saturating_add(Weight::from_proof_size(3493))
+			.saturating_add(Weight::from_parts(0, 3493))
 			// Standard Error: 9_195
 			.saturating_add(Weight::from_parts(2_946_729, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(Weight::from_proof_size(2600).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 2600).saturating_mul(i.into()))
 	}
 }
 

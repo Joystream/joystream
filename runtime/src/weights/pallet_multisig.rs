@@ -54,7 +54,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 9_000 nanoseconds.
 		Weight::from_parts(9_607_663, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 5
 			.saturating_add(Weight::from_parts(330, 0u64).saturating_mul(z.into()))
 	}
@@ -68,7 +68,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `5821`
 		// Minimum execution time: 30_000 nanoseconds.
 		Weight::from_parts(23_745_595, 0u64)
-			.saturating_add(Weight::from_proof_size(5821))
+			.saturating_add(Weight::from_parts(0, 5821))
 			// Standard Error: 869
 			.saturating_add(Weight::from_parts(68_128, 0u64).saturating_mul(s.into()))
 			// Standard Error: 8
@@ -86,7 +86,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `5821`
 		// Minimum execution time: 20_000 nanoseconds.
 		Weight::from_parts(15_605_320, 0u64)
-			.saturating_add(Weight::from_proof_size(5821))
+			.saturating_add(Weight::from_parts(0, 5821))
 			// Standard Error: 522
 			.saturating_add(Weight::from_parts(58_555, 0u64).saturating_mul(s.into()))
 			// Standard Error: 5
@@ -106,7 +106,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `8424`
 		// Minimum execution time: 33_000 nanoseconds.
 		Weight::from_parts(26_655_717, 0u64)
-			.saturating_add(Weight::from_proof_size(8424))
+			.saturating_add(Weight::from_parts(0, 8424))
 			// Standard Error: 951
 			.saturating_add(Weight::from_parts(75_112, 0u64).saturating_mul(s.into()))
 			// Standard Error: 9
@@ -123,7 +123,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `5821`
 		// Minimum execution time: 22_000 nanoseconds.
 		Weight::from_parts(23_193_142, 0u64)
-			.saturating_add(Weight::from_proof_size(5821))
+			.saturating_add(Weight::from_parts(0, 5821))
 			// Standard Error: 576
 			.saturating_add(Weight::from_parts(65_546, 0u64).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
@@ -138,7 +138,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `5821`
 		// Minimum execution time: 14_000 nanoseconds.
 		Weight::from_parts(14_890_938, 0u64)
-			.saturating_add(Weight::from_proof_size(5821))
+			.saturating_add(Weight::from_parts(0, 5821))
 			// Standard Error: 755
 			.saturating_add(Weight::from_parts(57_236, 0u64).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
@@ -153,7 +153,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `5821`
 		// Minimum execution time: 23_000 nanoseconds.
 		Weight::from_parts(23_872_244, 0u64)
-			.saturating_add(Weight::from_proof_size(5821))
+			.saturating_add(Weight::from_parts(0, 5821))
 			// Standard Error: 660
 			.saturating_add(Weight::from_parts(61_289, 0u64).saturating_mul(s.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))

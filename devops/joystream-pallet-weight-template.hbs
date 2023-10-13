@@ -65,7 +65,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `{{benchmark.base_calculated_proof_size}}{{#each benchmark.component_calculated_proof_size as |cp|}} + {{cp.name}} * ({{cp.slope}} ±{{underscore cp.error}}){{/each}}`
 		// Minimum execution time: {{underscore benchmark.min_execution_time}} nanoseconds.
 		Weight::from_parts({{underscore benchmark.base_weight}}, 0u64)
-			.saturating_add(Weight::from_proof_size({{benchmark.base_calculated_proof_size}}))
+			.saturating_add(Weight::from_parts(0, {{benchmark.base_calculated_proof_size}}))
 			{{#each benchmark.component_weight as |cw|}}
 			// Standard Error: {{underscore cw.error}}
 			.saturating_add(Weight::from_parts({{underscore cw.slope}}, 0u64).saturating_mul({{cw.name}}.into()))
@@ -83,7 +83,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(({{cw.slope}}_u64).saturating_mul({{cw.name}}.into())))
 			{{/each}}
 			{{#each benchmark.component_calculated_proof_size as |cp|}}
-			.saturating_add(Weight::from_proof_size({{cp.slope}}).saturating_mul({{cp.name}}.into()))
+			.saturating_add(Weight::from_parts(0, {{cp.slope}}).saturating_mul({{cp.name}}.into()))
 			{{/each}}
 	}
 	{{/each}}

@@ -69,7 +69,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `6834`
 		// Minimum execution time: 17_000 nanoseconds.
 		Weight::from_parts(17_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(6834))
+			.saturating_add(Weight::from_parts(0, 6834))
 			.saturating_add(T::DbWeight::get().reads(8_u64))
 	}
 	// Storage: ElectionProviderMultiPhase Round (r:1 w:0)
@@ -82,7 +82,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `1074`
 		// Minimum execution time: 9_000 nanoseconds.
 		Weight::from_parts(10_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(1074))
+			.saturating_add(Weight::from_parts(0, 1074))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -96,7 +96,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `1074`
 		// Minimum execution time: 10_000 nanoseconds.
 		Weight::from_parts(11_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(1074))
+			.saturating_add(Weight::from_parts(0, 1074))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -110,7 +110,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `2809`
 		// Minimum execution time: 22_000 nanoseconds.
 		Weight::from_parts(23_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(2809))
+			.saturating_add(Weight::from_parts(0, 2809))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
@@ -122,7 +122,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `2603`
 		// Minimum execution time: 14_000 nanoseconds.
 		Weight::from_parts(15_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(2603))
+			.saturating_add(Weight::from_parts(0, 2603))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -140,7 +140,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 189_000 nanoseconds.
 		Weight::from_parts(2_711_599, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 3_592
 			.saturating_add(Weight::from_parts(130_970, 0u64).saturating_mul(v.into()))
 			// Standard Error: 7_181
@@ -173,15 +173,15 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `8892 + a * (6912 ±0) + d * (441 ±0)`
 		// Minimum execution time: 220_000 nanoseconds.
 		Weight::from_parts(112_585_273, 0u64)
-			.saturating_add(Weight::from_proof_size(8892))
+			.saturating_add(Weight::from_parts(0, 8892))
 			// Standard Error: 6_599
 			.saturating_add(Weight::from_parts(170_099, 0u64).saturating_mul(a.into()))
 			// Standard Error: 9_892
 			.saturating_add(Weight::from_parts(126_482, 0u64).saturating_mul(d.into()))
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(8_u64))
-			.saturating_add(Weight::from_proof_size(6912).saturating_mul(a.into()))
-			.saturating_add(Weight::from_proof_size(441).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(0, 6912).saturating_mul(a.into()))
+			.saturating_add(Weight::from_parts(0, 441).saturating_mul(d.into()))
 	}
 	// Storage: ElectionProviderMultiPhase CurrentPhase (r:1 w:0)
 	// Proof Skipped: ElectionProviderMultiPhase CurrentPhase (max_values: Some(1), max_size: None, mode: Measured)
@@ -201,7 +201,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `8436`
 		// Minimum execution time: 36_000 nanoseconds.
 		Weight::from_parts(37_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(8436))
+			.saturating_add(Weight::from_parts(0, 8436))
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
@@ -229,13 +229,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `4718 + v * (3871 ±0) + t * (224 ±0)`
 		// Minimum execution time: 4_345_000 nanoseconds.
 		Weight::from_parts(4_368_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(4718))
+			.saturating_add(Weight::from_parts(0, 4718))
 			// Standard Error: 35_120
 			.saturating_add(Weight::from_parts(4_358_273, 0u64).saturating_mul(a.into()))
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(Weight::from_proof_size(3871).saturating_mul(v.into()))
-			.saturating_add(Weight::from_proof_size(224).saturating_mul(t.into()))
+			.saturating_add(Weight::from_parts(0, 3871).saturating_mul(v.into()))
+			.saturating_add(Weight::from_parts(0, 224).saturating_mul(t.into()))
 	}
 	// Storage: ElectionProviderMultiPhase Round (r:1 w:0)
 	// Proof Skipped: ElectionProviderMultiPhase Round (max_values: Some(1), max_size: None, mode: Measured)
@@ -255,13 +255,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `2596 + v * (2212 ±0) + t * (128 ±0)`
 		// Minimum execution time: 3_630_000 nanoseconds.
 		Weight::from_parts(3_673_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(2596))
+			.saturating_add(Weight::from_parts(0, 2596))
 			// Standard Error: 10_071
 			.saturating_add(Weight::from_parts(3_087, 0u64).saturating_mul(v.into()))
 			// Standard Error: 29_846
 			.saturating_add(Weight::from_parts(3_331_792, 0u64).saturating_mul(a.into()))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(Weight::from_proof_size(2212).saturating_mul(v.into()))
-			.saturating_add(Weight::from_proof_size(128).saturating_mul(t.into()))
+			.saturating_add(Weight::from_parts(0, 2212).saturating_mul(v.into()))
+			.saturating_add(Weight::from_parts(0, 128).saturating_mul(t.into()))
 	}
 }

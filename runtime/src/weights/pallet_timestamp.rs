@@ -57,7 +57,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `1006`
 		// Minimum execution time: 8_000 nanoseconds.
 		Weight::from_parts(9_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(1006))
+			.saturating_add(Weight::from_parts(0, 1006))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -67,6 +67,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 4_000 nanoseconds.
 		Weight::from_parts(4_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 	}
 }

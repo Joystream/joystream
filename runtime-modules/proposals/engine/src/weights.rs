@@ -74,7 +74,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `8555`
 		// Minimum execution time: 28_000 nanoseconds.
 		Weight::from_parts(29_658_228, 0u64)
-			.saturating_add(Weight::from_proof_size(8555))
+			.saturating_add(Weight::from_parts(0, 8555))
 			// Standard Error: 1_410
 			.saturating_add(Weight::from_parts(422_047, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
@@ -102,7 +102,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `12091`
 		// Minimum execution time: 65_000 nanoseconds.
 		Weight::from_parts(65_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(12091))
+			.saturating_add(Weight::from_parts(0, 12091))
 			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
@@ -126,7 +126,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `9491`
 		// Minimum execution time: 34_000 nanoseconds.
 		Weight::from_parts(35_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(9491))
+			.saturating_add(Weight::from_parts(0, 9491))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
@@ -140,7 +140,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `5215`
 		// Minimum execution time: 16_000 nanoseconds.
 		Weight::from_parts(17_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(5215))
+			.saturating_add(Weight::from_parts(0, 5215))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
 	// Storage: ProposalEngine Proposals (r:21 w:20)
@@ -168,14 +168,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3934 + i * (3159739 ±0)`
 		// Minimum execution time: 55_000 nanoseconds.
 		Weight::from_parts(16_636_477, 0u64)
-			.saturating_add(Weight::from_proof_size(3934))
+			.saturating_add(Weight::from_parts(0, 3934))
 			// Standard Error: 39_540
 			.saturating_add(Weight::from_parts(39_931_688, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().reads((5_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes((6_u64).saturating_mul(i.into())))
-			.saturating_add(Weight::from_proof_size(3159739).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 3159739).saturating_mul(i.into()))
 	}
 	// Storage: ProposalEngine Proposals (r:21 w:20)
 	// Proof: ProposalEngine Proposals (max_values: None, max_size: Some(140), added: 2615, mode: MaxEncodedLen)
@@ -196,14 +196,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3114 + i * (3153362 ±0)`
 		// Minimum execution time: 28_000 nanoseconds.
 		Weight::from_parts(8_021_374, 0u64)
-			.saturating_add(Weight::from_proof_size(3114))
+			.saturating_add(Weight::from_parts(0, 3114))
 			// Standard Error: 23_933
 			.saturating_add(Weight::from_parts(21_501_060, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes((4_u64).saturating_mul(i.into())))
-			.saturating_add(Weight::from_proof_size(3153362).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 3153362).saturating_mul(i.into()))
 	}
 	// Storage: ProposalEngine Proposals (r:21 w:20)
 	// Proof: ProposalEngine Proposals (max_values: None, max_size: Some(140), added: 2615, mode: MaxEncodedLen)
@@ -216,13 +216,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3435 + i * (2615 ±0)`
 		// Minimum execution time: 27_000 nanoseconds.
 		Weight::from_parts(13_739_505, 0u64)
-			.saturating_add(Weight::from_proof_size(3435))
+			.saturating_add(Weight::from_parts(0, 3435))
 			// Standard Error: 16_043
 			.saturating_add(Weight::from_parts(15_009_829, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((1_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(i.into())))
-			.saturating_add(Weight::from_proof_size(2615).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 2615).saturating_mul(i.into()))
 	}
 	// Storage: ProposalEngine Proposals (r:21 w:20)
 	// Proof: ProposalEngine Proposals (max_values: None, max_size: Some(140), added: 2615, mode: MaxEncodedLen)
@@ -249,14 +249,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3934 + i * (16552 ±0)`
 		// Minimum execution time: 72_000 nanoseconds.
 		Weight::from_parts(15_934_067, 0u64)
-			.saturating_add(Weight::from_proof_size(3934))
+			.saturating_add(Weight::from_parts(0, 3934))
 			// Standard Error: 34_225
 			.saturating_add(Weight::from_parts(56_520_951, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().reads((6_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes((8_u64).saturating_mul(i.into())))
-			.saturating_add(Weight::from_proof_size(16552).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 16552).saturating_mul(i.into()))
 	}
 	// Storage: ProposalEngine Proposals (r:21 w:20)
 	// Proof: ProposalEngine Proposals (max_values: None, max_size: Some(140), added: 2615, mode: MaxEncodedLen)
@@ -283,14 +283,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3934 + i * (16552 ±0)`
 		// Minimum execution time: 65_000 nanoseconds.
 		Weight::from_parts(16_687_064, 0u64)
-			.saturating_add(Weight::from_proof_size(3934))
+			.saturating_add(Weight::from_parts(0, 3934))
 			// Standard Error: 28_943
 			.saturating_add(Weight::from_parts(49_543_406, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().reads((6_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes((8_u64).saturating_mul(i.into())))
-			.saturating_add(Weight::from_proof_size(16552).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 16552).saturating_mul(i.into()))
 	}
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
 	// Proof: ProposalEngine ActiveProposalCount (max_values: Some(1), max_size: Some(4), added: 499, mode: MaxEncodedLen)
@@ -315,14 +315,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `3114 + i * (16552 ±0)`
 		// Minimum execution time: 40_000 nanoseconds.
 		Weight::from_parts(10_273_766, 0u64)
-			.saturating_add(Weight::from_proof_size(3114))
+			.saturating_add(Weight::from_parts(0, 3114))
 			// Standard Error: 18_389
 			.saturating_add(Weight::from_parts(31_441_141, 0u64).saturating_mul(i.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((6_u64).saturating_mul(i.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(T::DbWeight::get().writes((8_u64).saturating_mul(i.into())))
-			.saturating_add(Weight::from_proof_size(16552).saturating_mul(i.into()))
+			.saturating_add(Weight::from_parts(0, 16552).saturating_mul(i.into()))
 	}
 }
 

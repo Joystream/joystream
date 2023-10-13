@@ -65,14 +65,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `10345712 + k * (64 ±0) + e * (25 ±0)`
 		// Minimum execution time: 78_000 nanoseconds.
 		Weight::from_parts(45_808_559, 0u64)
-			.saturating_add(Weight::from_proof_size(10345712))
+			.saturating_add(Weight::from_parts(0, 10345712))
 			// Standard Error: 1_668
 			.saturating_add(Weight::from_parts(74_644, 0u64).saturating_mul(k.into()))
 			// Standard Error: 16_808
 			.saturating_add(Weight::from_parts(593_796, 0u64).saturating_mul(e.into()))
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
-			.saturating_add(Weight::from_proof_size(64).saturating_mul(k.into()))
-			.saturating_add(Weight::from_proof_size(25).saturating_mul(e.into()))
+			.saturating_add(Weight::from_parts(0, 64).saturating_mul(k.into()))
+			.saturating_add(Weight::from_parts(0, 25).saturating_mul(e.into()))
 	}
 }

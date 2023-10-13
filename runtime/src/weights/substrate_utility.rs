@@ -54,7 +54,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 4_000 nanoseconds.
 		Weight::from_parts(14_052_962, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 3_085
 			.saturating_add(Weight::from_parts(4_153_493, 0u64).saturating_mul(c.into()))
 	}
@@ -64,7 +64,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 3_000 nanoseconds.
 		Weight::from_parts(4_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 	}
 	/// The range of component `c` is `[0, 1000]`.
 	fn batch_all(c: u32, ) -> Weight {
@@ -73,7 +73,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 4_000 nanoseconds.
 		Weight::from_parts(5_758_930, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 5_449
 			.saturating_add(Weight::from_parts(4_378_485, 0u64).saturating_mul(c.into()))
 	}
@@ -83,7 +83,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 6_000 nanoseconds.
 		Weight::from_parts(7_000_000, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 	}
 	/// The range of component `c` is `[0, 1000]`.
 	fn force_batch(c: u32, ) -> Weight {
@@ -92,7 +92,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 5_000 nanoseconds.
 		Weight::from_parts(2_036_692, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 3_804
 			.saturating_add(Weight::from_parts(4_177_593, 0u64).saturating_mul(c.into()))
 	}

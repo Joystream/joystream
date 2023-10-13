@@ -55,12 +55,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 5_413_000 nanoseconds.
-		Weight::from_ref_time(5_413_000_000)
-			.saturating_add(Weight::from_proof_size(0))
+		Weight::from_parts(5_413_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 1_826_275
-			.saturating_add(Weight::from_ref_time(4_576_023).saturating_mul(v.into()))
+			.saturating_add(Weight::from_parts(4_576_023, 0).saturating_mul(v.into()))
 			// Standard Error: 193_190_520
-			.saturating_add(Weight::from_ref_time(930_362_548).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(930_362_548, 0).saturating_mul(d.into()))
 	}
 	/// The range of component `v` is `[1000, 2000]`.
 	/// The range of component `t` is `[500, 1000]`.
@@ -70,11 +70,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 3_688_000 nanoseconds.
-		Weight::from_ref_time(3_688_000_000)
-			.saturating_add(Weight::from_proof_size(0))
+		Weight::from_parts(3_688_000_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
 			// Standard Error: 1_567_672
-			.saturating_add(Weight::from_ref_time(3_777_978).saturating_mul(v.into()))
+			.saturating_add(Weight::from_parts(3_777_978, 0).saturating_mul(v.into()))
 			// Standard Error: 165_834_471
-			.saturating_add(Weight::from_ref_time(860_747_576).saturating_mul(d.into()))
+			.saturating_add(Weight::from_parts(860_747_576, 0).saturating_mul(d.into()))
 	}
 }
