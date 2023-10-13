@@ -40,6 +40,7 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
+import updateValidatorAccount from '../flows/membership/validatorProfile'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -126,4 +127,5 @@ scenario('Full', async ({ job, env }) => {
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
     contentDirectoryJob
   )
+  job('updating member verify account', updateValidatorAccount).after(hireLeads)
 })

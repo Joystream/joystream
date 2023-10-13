@@ -20,6 +20,11 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
       isVerified: true,
       asWorker: 'j4VEC6FcJtBrwYQKhBAoB6Rj83jDeVua6azuHBrri1zoksBkz',
     },
+    {
+      memberId: '3',
+      isVerified: false,
+      asWorker: 'j4VEC6FcJtBrwYQKhBAoB6Rj83jDeVua6azuHBrri1zoksBkz',
+    },
   ]
 
   const verifyAccountFixture = new VerifyValidatorAccountFixture(api, query, VerifyValidator)

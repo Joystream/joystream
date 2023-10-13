@@ -12,7 +12,7 @@ import { BaseQueryNodeFixture } from '../../Fixture'
 
 export type ValidaotrAccountInput = {
   memberId: string
-  isVerifiedValidator?: boolean
+  isVerified?: boolean
   asWorker?: string
 }
 
@@ -32,6 +32,16 @@ export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
     }
   }
 
+  protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
+    return this.verifyValidator.map((u) => {
+      const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
+        isVerified: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerified },
+      })
+      return u.asWorker
+        ? this.api.tx.operationsWorkingGroupBeta.workerRemark(u.asWorker, metadata)
+        : this.api.tx.operationsWorkingGroupBeta.leadRemark(metadata)
+    })
+  }
   async execute(): Promise<void> {
     this.debug('Checking verify validator account')
   }
