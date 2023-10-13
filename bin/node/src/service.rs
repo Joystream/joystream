@@ -124,13 +124,14 @@ pub fn create_extrinsic(
 
     node_runtime::UncheckedExtrinsic::new_signed(
         function,
-        sp_runtime::AccountId32::from(sender.public()).into(),
+        sp_runtime::AccountId32::from(sender.public()),
         node_runtime::Signature::Sr25519(signature),
         extra,
     )
 }
 
 /// Creates a new partial node.
+#[allow(clippy::type_complexity)]
 pub fn new_partial(
     config: &Configuration,
 ) -> Result<
@@ -201,6 +202,7 @@ pub fn new_partial(
 
     let (grandpa_block_import, grandpa_link) = grandpa::block_import(
         client.clone(),
+        #[allow(clippy::redundant_clone)]
         &(client.clone() as Arc<_>),
         select_chain.clone(),
         telemetry.as_ref().map(|x| x.handle()),
@@ -327,7 +329,7 @@ pub fn new_full_base(
 ) -> Result<NewFullBase, ServiceError> {
     let hwbench = (!disable_hardware_benchmarks)
         .then_some(config.database.path().map(|database_path| {
-            let _ = std::fs::create_dir_all(&database_path);
+            let _ = std::fs::create_dir_all(database_path);
             sc_sysinfo::gather_hwbench(Some(database_path))
         }))
         .flatten();
@@ -621,6 +623,7 @@ mod tests {
         RuntimeAppPublic,
     };
     use sp_timestamp;
+    use std::convert::TryInto;
     use std::sync::Arc;
 
     type AccountPublic = <Signature as Verify>::Signer;
