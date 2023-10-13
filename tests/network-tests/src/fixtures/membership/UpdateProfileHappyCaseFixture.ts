@@ -57,7 +57,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     )
     assert.isFalse(Utils.hasDuplicates(metadata.externalResources?.map(({ type }) => type)))
     assert.equal(metadata.isVerifiedValidator, false)
-    assert.equal(metadata.validatorAccount, expected.validatorAccount)
   }
 
   public getExpectedValues(): MemberProfileData {
@@ -107,7 +106,6 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
       about: this.newValues.about,
       avatarUri: this.newValues.avatarUri,
       externalResources: this.newValues.externalResources,
-      validatorAccount: this.newValues.validatorAccount,
     })
     this.tx = this.api.tx.members.updateProfile(
       this.memberContext.memberId,
