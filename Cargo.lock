@@ -3351,7 +3351,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "8.4.0"
+version = "8.5.0"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -3401,6 +3401,7 @@ dependencies = [
  "sc-keystore",
  "sc-network",
  "sc-network-common",
+ "sc-network-sync",
  "sc-rpc",
  "sc-rpc-api",
  "sc-rpc-spec-v2",

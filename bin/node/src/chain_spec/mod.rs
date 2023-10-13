@@ -495,6 +495,7 @@ pub(crate) mod tests {
                 task_manager,
                 client,
                 network,
+                sync,
                 transaction_pool,
                 ..
             } = new_full_base(config, false, |_, _| ())?;
@@ -502,6 +503,7 @@ pub(crate) mod tests {
                 task_manager,
                 client,
                 network,
+                sync,
                 transaction_pool,
             ))
         });
