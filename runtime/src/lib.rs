@@ -578,15 +578,13 @@ impl pallet_staking::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type AdminOrigin = EnsureRoot<AccountId>;
     type SessionInterface = Self;
-    // TODO (Mainnet): enable normal curve
-    // type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
     type EraPayout = NoInflationIfNoEras;
     type NextNewSession = Session;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
-    type VoterList = BagsList;
+    type VoterList = VoterList;
     // type VoterList = VoterList; // not renaming for now
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
@@ -1854,9 +1852,7 @@ construct_runtime!(
         ImOnline: pallet_im_online,
         Offences: pallet_offences,
         RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
-        BagsList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
-        // Not renaming BagsList to VoterList until migration test failing can be fixed
-        // VoterList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
+        VoterList: pallet_bags_list::<Instance1>::{Pallet, Call, Storage, Event<T>},
         Vesting: pallet_vesting,
         Multisig: pallet_multisig,
         // Joystream
@@ -1890,7 +1886,7 @@ construct_runtime!(
 #[cfg(all(test, feature = "try-runtime"))]
 mod remote_tests {
     use super::*;
-    use frame_try_runtime::{runtime_decl_for_TryRuntime::TryRuntime, UpgradeCheckSelect};
+    use frame_try_runtime::{runtime_decl_for_try_runtime::TryRuntimeV1, UpgradeCheckSelect};
     use remote_externalities::{
         Builder, Mode, OfflineConfig, OnlineConfig, SnapshotConfig, Transport,
     };
