@@ -35,7 +35,7 @@ export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.verifyValidator.map((u) => {
       const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
-        verifyValidator: { memberId: Long.fromString(String(u.memberId)), validatorAccount: u.validatorAccount },
+        verifyValidator: { memberId: Long.fromString(String(u.memberId)), validatorAccount: u.asWorker },
       })
       return u.asWorker
         ? this.api.tx.operationsWorkingGroupBeta.workerRemark(u.asWorker, metadata)
