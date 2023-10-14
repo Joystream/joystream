@@ -4868,7 +4868,6 @@ enum MembershipExternalResourceType {
   IRC
   WECHAT
   WHATSAPP
-  LINKEDIN
 }
 
 input MemberInvitedEventWhereInput {

@@ -13110,7 +13110,6 @@ export enum MembershipExternalResourceType {
   Irc = 'IRC',
   Wechat = 'WECHAT',
   Whatsapp = 'WHATSAPP',
-  Linkedin = 'LINKEDIN'
 }
 
 export type MembershipExternalResourceUpdateInput = {
