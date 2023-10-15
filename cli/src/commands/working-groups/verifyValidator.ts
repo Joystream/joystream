@@ -26,13 +26,13 @@ export default class MembershipValidatorAccountCommand extends WorkingGroupsComm
     )
 
     if (lead) {
-      memberIsLead = pairs.find((p) => p.address === lead.roleAccount.toString()) ? true : false
+      memberIsLead = pairs.find((p) => p.address === lead.roleAccount.toString())
     }
 
     if (!membersRows || membersRows.length === 0) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      if (memberIsLead) {
+      if (!memberIsLead === memberIsLead.length === 0 ) {
         this.getOriginalApi().tx.membershipWorkingGroup.leadRemark(message)
       } else {
         this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(membersRows[0]), message!)
