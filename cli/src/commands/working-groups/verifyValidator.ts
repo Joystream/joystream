@@ -22,7 +22,7 @@ export default class MembershipValidatorAccountCommand extends WorkingGroupsComm
 
     const pairs = this.getPairs()
     const membersRows = members.filter((m) =>
-      pairs.find((p) => p.address === m.roleAccount.toString()) ? m.memberId.toString() : false
+      pairs.find((p) => p.address === m.roleAccount.toString()) ? m.memberId.toString() : 0
     )
 
     if (lead) {
