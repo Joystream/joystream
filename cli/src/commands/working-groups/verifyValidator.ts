@@ -18,21 +18,17 @@ export default class MembershipValidatorAccountCommand extends WorkingGroupsComm
 
     const members = await this.getApi().groupMembers(WorkingGroups.Membership)
     const lead = await this.getApi().groupLead(WorkingGroups.Membership)
-    let memberIsLead:NamedKeyringPair | undefined;
-
+    // const lead = await this.getRequiredLeadContext()
     const pairs = this.getPairs()
+
     const membersRows = members.filter((m) =>
       pairs.find((p) => p.address === m.roleAccount.toString()) ? m.memberId.toString() : undefined
     )
 
-    if (lead) {
-      memberIsLead = pairs.find((p) => p.address === lead.roleAccount.toString())
-    }
-
     if (!membersRows || membersRows.length === 0) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      if (!memberIsLead || memberIsLead.length === 0 ) {
+      if (!lead) {
         this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(membersRows[0]), message!)
       } else {
         this.getOriginalApi().tx.membershipWorkingGroup.leadRemark(message)
