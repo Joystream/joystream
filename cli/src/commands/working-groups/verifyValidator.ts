@@ -18,7 +18,7 @@ export default class MembershipValidatorAccountCommand extends WorkingGroupsComm
 
     const members = await this.getApi().groupMembers(WorkingGroups.Membership)
     const lead = await this.getApi().groupLead(WorkingGroups.Membership)
-    let memberIsLead;
+    let memberIsLead:NamedKeyringPair | undefined;
 
     const pairs = this.getPairs()
     const membersRows = members.filter((m) =>
