@@ -70,6 +70,9 @@ pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
 
+/// The log target of this pallet.
+pub const LOG_TARGET: &str = "runtime::project_token";
+
 // Nara release. module treasury account initialized
 const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 

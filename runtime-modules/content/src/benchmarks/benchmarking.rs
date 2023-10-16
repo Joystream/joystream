@@ -1682,7 +1682,7 @@ benchmarks! {
                 channel_id,
                 curator_member_id
             )?;
-        let slope = 10u32.into();
+        let slope = 10_000_000u32.into();
         let intercept = 100u32.into();
         let params = AmmParams{ slope, intercept };
         // No pausable feature prevents this

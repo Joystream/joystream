@@ -28,7 +28,10 @@ pub mod nara {
             let deposit = T::JoyExistentialDeposit::get();
             let treasury_free_balance = Joy::<T>::free_balance(&module_account_id);
 
-            ensure!(treasury_free_balance >= Joy::<T>::existential_deposit());
+            ensure!(
+                treasury_free_balance.is_zero(),
+                "module treasury account is not zero"
+            );
             log!(
                 info,
                 "treasury_free_balance pre migration: {:?}",
