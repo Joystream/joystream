@@ -226,12 +226,26 @@ runtime-benchmarks = [
     "project-token/runtime-benchmarks",
 ]
 
-# Staging and testing configurations
-# configuration suitable for staging networks and playground
+# Configuration suitable for staging networks and playground
 staging-runtime = []
 playground-runtime = []
-# configuration suitable for integration testing
-testing-runtime = []
+# Configuration suitable for automated integration testing only
+testing-runtime = [
+    "fast-block-production"
+]
+
+# Default block production interval is 6s. Enabling this feature will configure chain for 1s interval instead.
+fast-block-production = []
+
+# Configures 1s block interval for the chain, but changes behaviour of `minutes!`, `hours!`, `days!` util macros
+# to compute periods (in blocks) based on 6s block interval.
+# This configuration is meant for QA (manual testing) of production runtime configuration.
+# that has long time periods for things like council elections, proposals voting periods etc.
+# Enabling warp-time with playground-runtime, staging-runtime or testing-runtime will most likely result in time periods to be too
+# short (in real time sense) and beyond practicality.
+warp-time = [
+    "fast-block-production"
+]
 
 try-runtime = [
     "frame-try-runtime",
