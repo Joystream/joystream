@@ -29,6 +29,7 @@ export default class MembershipValidatorAccountCommand extends WorkingGroupsComm
       this.error('Only membership WG lead/worker can perform this command')
     } else {
       if (!lead) {
+        this.log("You are lead");
         this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(membersRows[0]), message!)
       } else {
         this.getOriginalApi().tx.membershipWorkingGroup.leadRemark(message)
