@@ -224,7 +224,7 @@ export class PublicApiController {
     res.setHeader('timing-allow-origin', '*')
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('content-disposition', 'inline')
-    res.setHeader('access-control-expose-headers', ['x-cache', 'x-data-source'])
+    res.setHeader('access-control-expose-headers', 'x-cache, x-data-source')
 
     switch (objectStatus.type) {
       case ObjectStatusType.Available:
@@ -272,7 +272,7 @@ export class PublicApiController {
     })
 
     res.setHeader('timing-allow-origin', '*')
-    res.setHeader('access-control-expose-headers', ['x-cache', 'x-data-source'])
+    res.setHeader('access-control-expose-headers', 'x-cache, x-data-source')
 
     switch (objectStatus.type) {
       case ObjectStatusType.Available:
