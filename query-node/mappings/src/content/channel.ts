@@ -77,8 +77,7 @@ import {
   Content_ChannelAgentRemarkedEvent_V1001 as ChannelAgentRemarkedEvent_V1001,
   Content_ChannelAssetsDeletedByModeratorEvent_V1001 as ChannelAssetsDeletedByModeratorEvent_V1001,
   Content_ChannelAssetsRemovedEvent_V1001 as ChannelAssetsRemovedEvent_V1001,
-  Content_ChannelCreatedEvent_V1001 as ChannelCreatedEvent_V1001,
-  Content_ChannelCreatedEvent_V2002 as ChannelCreatedEvent_V2002,
+  Content_ChannelCreatedEvent_V1001 as ChannelCreatedEvent,
   Content_ChannelDeletedByModeratorEvent_V1001 as ChannelDeletedByModeratorEvent_V1001,
   Content_ChannelDeletedEvent_V1001 as ChannelDeletedEvent_V1001,
   Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
@@ -86,8 +85,7 @@ import {
   Content_ChannelPayoutsUpdatedEvent_V2001 as ChannelPayoutsUpdatedEvent_V2001,
   Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
   Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
-  Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent_V1001,
-  Content_ChannelUpdatedEvent_V2002 as ChannelUpdatedEvent_V2002,
+  Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent,
   Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
 } from '../../generated/types'
 
@@ -97,7 +95,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
   // read event data
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
-    specVersion < 2002 ? new ChannelCreatedEvent_V1001(event).params : new ChannelCreatedEvent_V2002(event).params
+    new ChannelCreatedEvent(event).params
 
   // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
   const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
@@ -165,11 +163,9 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event, block } = ctx
-  const { specVersion } = block.runtimeVersion
 
   // read event data
-  const [, channelId, channelUpdateParameters, newDataObjects] =
-    specVersion < 2002 ? new ChannelUpdatedEvent_V1001(event).params : new ChannelUpdatedEvent_V2002(event).params
+  const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent(event).params
 
   // load channel
   const channel = await store.get(Channel, {
