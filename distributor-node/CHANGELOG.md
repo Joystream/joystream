@@ -1,8 +1,14 @@
 ##
 
+### 1.4.0
+
+- Add 1s delay between fetching pages for QN state sync. This will allow QN to have some breathing space and process other requests that may have been stuck because of heavy processing.
+- Add `Access-Control-Expose-Headers` response header to allow web clients checking cache status of downloaded file.
+- Include response headers in `http` logs
+
 ### 1.3.1
 
-- Batch fetching of objects details from query-node [#4921](https://github.com/Joystream/joystream/pull/4921)
+- **FIX** QN state sync: The QN state sync that runs on startup and on interval, has been split to multiple paginated queries so that it doesn't crash QN's GraphQL server because of huge payload: [#4921](https://github.com/Joystream/joystream/pull/4921)
 
 ### 1.3.0
 
