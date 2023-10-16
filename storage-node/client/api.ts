@@ -98,6 +98,12 @@ export interface StatusResponse {
     'version': string;
     /**
      * 
+     * @type {string}
+     * @memberof StatusResponse
+     */
+    'nodeEnv'?: string;
+    /**
+     * 
      * @type {StatusResponseQueryNodeStatus}
      * @memberof StatusResponse
      */

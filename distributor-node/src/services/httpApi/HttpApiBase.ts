@@ -63,7 +63,10 @@ export abstract class HttpApiBase {
       winstonInstance: this.logger,
       level: 'http',
       dynamicMeta: (req, res) => {
-        return { prematurelyClosed: res.locals.prematurelyClosed ?? false }
+        return {
+          prematurelyClosed: res.locals.prematurelyClosed ?? false,
+          res: { headers: res.getHeaders(), statusCode: res.statusCode },
+        }
       },
     }
   }
