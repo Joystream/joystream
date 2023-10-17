@@ -25,18 +25,19 @@ pub mod nara {
             ensure!(onchain < 1, "this migration can be deleted");
 
             let module_account_id = Module::<T>::module_treasury_account();
-            let deposit = T::JoyExistentialDeposit::get();
             let treasury_free_balance = Joy::<T>::free_balance(&module_account_id);
 
-            ensure!(
-                treasury_free_balance.is_zero(),
-                "module treasury account is not zero"
-            );
             log!(
                 info,
                 "treasury_free_balance pre migration: {:?}",
                 treasury_free_balance
             );
+
+            ensure!(
+                treasury_free_balance.is_zero(),
+                "module treasury account is not zero"
+            );
+            Ok(vec![])
         }
 
         fn on_runtime_upgrade() -> Weight {
@@ -56,15 +57,18 @@ pub mod nara {
         }
 
         #[cfg(feature = "try-runtime")]
-        fn post_upgrade() -> Result<Vec<u8>, &'static str> {
+        fn post_upgrade(_state: Vec<u8>) -> Result<(), &'static str> {
             let onchain = Pallet::<T>::on_chain_storage_version();
 
             ensure!(onchain < 1, "this migration can be deleted");
 
             let module_account_id = Module::<T>::module_treasury_account();
-            let deposit = T::JoyExistentialDeposit::get();
+            let ed = T::JoyExistentialDeposit::get();
             let treasury_free_balance = Joy::<T>::free_balance(&module_account_id);
-            ensure!(treasury_free_balance >= Joy::<T>::existential_deposit());
+            ensure!(
+                treasury_free_balance >= ed,
+                "module treasury account not above existential deposit"
+            );
             log!(
                 info,
                 "treasury_free_balance post migration: {:?}",
@@ -75,7 +79,8 @@ pub mod nara {
             ensure!(
                 next_token_id == One::one(),
                 "Next token id is not correctly initialized"
-            )
+            );
+            Ok(())
         }
     }
 }
