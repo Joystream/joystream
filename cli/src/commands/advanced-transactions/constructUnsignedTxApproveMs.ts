@@ -68,6 +68,16 @@ export default class ConstructUnsignedTxApproveMsCommand extends AdvancedTransac
       description:
         'If you are preparing multiple transactions from the samme account, before broadcasting them, you need to increase the nonce by 1 for each. This value will be added to the nonce read from the chain.',
     }),
+    refTime: flags.integer({
+      required: false,
+      default: 0,
+      description: 'reftime',
+    }),
+    proofSize: flags.integer({
+      required: false,
+      default: 0,
+      description: 'proofsize',
+    }),
   }
 
   async run(): Promise<void> {
@@ -85,6 +95,8 @@ export default class ConstructUnsignedTxApproveMsCommand extends AdvancedTransac
       nonceIncrement,
       lifetime,
       tip,
+      refTime,
+      proofSize,
     } = this.parse(ConstructUnsignedTxApproveMsCommand).flags
 
     ensureOutputFileIsWriteable(output)
@@ -92,7 +104,7 @@ export default class ConstructUnsignedTxApproveMsCommand extends AdvancedTransac
     const call = await this.getCallInput(inputCall, inputCallFile)
 
     const decodedCall: Call = this.createType('Call', call)
-    const fetchedWeight = await this.getWeight(decodedCall)
+    const fetchedWeight = await this.getWeight(refTime, proofSize)
     const callHash: string = blake2AsHex(call)
 
     const args = await this.getApproveMsInputs(
