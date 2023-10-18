@@ -100,6 +100,7 @@ jobs:
           RUNTIME_PROFILE: "FAST-PROD"
         run: |
           yarn cargo-checks && yarn cargo-build
+        if: env.GIT_DIFF
 
   # Test runtime upgrade with "try-runtime" feature
   runtime_upgrade:
