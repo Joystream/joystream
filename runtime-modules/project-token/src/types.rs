@@ -587,7 +587,7 @@ impl<
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
 pub struct AmmParams<Balance> {
     /// Slope parameter : a
-    pub slope: Permill,
+    pub slope: Balance,
 
     /// Intercept : b
     pub intercept: Balance,
@@ -598,7 +598,7 @@ pub struct AmmParams<Balance> {
 #[derive(Default, Encode, Decode, TypeInfo, Clone, Debug, Eq, PartialEq, MaxEncodedLen)]
 pub struct AmmCurve<Balance> {
     /// Slope parameter : a
-    pub slope: Permill,
+    pub slope: Balance,
 
     /// Intercept : b
     pub intercept: Balance,
@@ -637,12 +637,12 @@ impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
         let amount_sq = amount
             .checked_mul(&amount)
             .ok_or(Error::<T>::ArithmeticError)?;
-        let first_term = self.slope.mul_floor(amount_sq).div(2u32.into());
+        let first_term = self.slope.saturating_mul(amount_sq).div(2u32.into());
         let second_term = self.intercept.saturating_mul(amount);
         let mixed = amount
             .checked_mul(&self.provided_supply)
             .ok_or(Error::<T>::ArithmeticError)?;
-        let third_term = self.slope.mul_floor(mixed);
+        let third_term = self.slope.saturating_mul(mixed);
         let res = match bond_operation {
             AmmOperation::Buy => first_term
                 .checked_add(&second_term)

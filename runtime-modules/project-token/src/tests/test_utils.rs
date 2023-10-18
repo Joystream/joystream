@@ -108,7 +108,7 @@ impl GenesisConfigBuilder {
             bond_tx_fees: DEFAULT_AMM_BUY_FEES,
             unbond_tx_fees: DEFAULT_AMM_SELL_FEES,
             max_yearly_patronage_rate: DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into(),
-            min_amm_slope_parameter: AMM_CURVE_SLOPE.into(),
+            min_amm_slope_parameter: 10u32.into(),
         }
     }
 

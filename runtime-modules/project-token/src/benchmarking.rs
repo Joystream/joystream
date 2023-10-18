@@ -36,8 +36,8 @@ const DEFAULT_SPLIT_PARTICIPATION: u32 =
     DEFAULT_SPLIT_PAYOUT * (DEFAULT_TOKEN_ISSUANCE / DEFAULT_SPLIT_ALLOCATION);
 
 // Amm
-const DEFAULT_AMM_AMOUNT: u32 = 1000;
-const DEFAULT_AMM_JOY_AMOUNT: u32 = 100500; // (a = 1 perthousand) * amount^2 /2 + (b = 100) * amount, amount = 1000
+const DEFAULT_AMM_AMOUNT: u32 = 1;
+const DEFAULT_AMM_JOY_AMOUNT: u32 = 5_000_100; // (a = 10_000_000) * amount^2 /2 + (b = 100) * amount, amount = 1
 
 // Patronage
 const DEFAULT_PATRONAGE: YearlyRate = YearlyRate(Permill::from_percent(15));
@@ -161,7 +161,7 @@ fn init_token_sale<T: Config>(token_id: T::TokenId) -> Result<TokenSaleId, Dispa
 
 fn activate_amm<T: Config>(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
     let params = AmmParams {
-        slope: Permill::from_perthousand(1),
+        slope: 10_000_000u32.into(),
         intercept: 100u32.into(),
     };
     Token::<T>::activate_amm(token_id, member_id, params)

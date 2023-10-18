@@ -976,7 +976,7 @@ declare module '@polkadot/api-base/types/storage' {
       /**
        * Minimum slope parameters allowed for AMM curve
        **/
-      minAmmSlopeParameter: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      minAmmSlopeParameter: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
        * Minimum revenue split duration constraint
        **/
