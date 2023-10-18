@@ -1066,7 +1066,7 @@ impl ActivateAmmFixture {
         Self { member_id, ..self }
     }
 
-    pub fn with_linear_function_params(self, a: Balance, b: Balance) -> Self {
+    pub fn with_linear_function_params(self, a: Permill, b: Balance) -> Self {
         let params = AmmParams {
             slope: a,
             intercept: b,

@@ -166,7 +166,7 @@ decl_storage! { generate_storage_info
         pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate = YearlyRate(Permill::from_percent(15));
 
         /// Minimum slope parameters allowed for AMM curve
-        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T> = TokenBalanceOf::<T>::from(1_000_000_u32);
+        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): Permill = Permill::from_rational(1_u32, 1_000_000u32);
     }
 
     add_extra_genesis {

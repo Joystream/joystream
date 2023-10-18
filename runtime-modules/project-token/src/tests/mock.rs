@@ -518,7 +518,7 @@ pub struct GenesisConfigBuilder {
     pub(crate) bond_tx_fees: Permill,
     pub(crate) unbond_tx_fees: Permill,
     pub(crate) max_yearly_patronage_rate: YearlyRate,
-    pub(crate) min_amm_slope_parameter: Balance,
+    pub(crate) min_amm_slope_parameter: Permill,
 }
 
 /// test externalities + initial balances allocation
@@ -662,7 +662,7 @@ pub const DEFAULT_SPLIT_PARTICIPATION: u128 = DEFAULT_SPLIT_REVENUE / 100;
 // ------ Bonding Curve Constants ------------
 pub const DEFAULT_AMM_BUY_AMOUNT: u128 = 1000;
 pub const DEFAULT_AMM_SELL_AMOUNT: u128 = 100;
-pub const AMM_CURVE_SLOPE: u128 = 10_000_000;
+pub const AMM_CURVE_SLOPE: Permill = Permill::from_perthousand(1);
 pub const AMM_CURVE_INTERCEPT: u128 = 1000;
 pub const DEFAULT_AMM_BUY_FEES: Permill = Permill::from_percent(1);
 pub const DEFAULT_AMM_SELL_FEES: Permill = Permill::from_percent(10);
@@ -748,11 +748,11 @@ pub(crate) fn amm_function_values(
     let sq_coeff = AMM_CURVE_SLOPE / 2;
     let res = match bond_operation {
         AmmOperation::Buy => {
-            sq_coeff * ((supply + amount) * (supply + amount) - supply2)
+            sq_coeff.mul_floor((supply + amount) * (supply + amount) - supply2)
                 + AMM_CURVE_INTERCEPT * amount
         }
         AmmOperation::Sell => {
-            sq_coeff * (supply2 - (supply - amount) * (supply - amount))
+            sq_coeff.mul_floor(supply2 - (supply - amount) * (supply - amount))
                 + AMM_CURVE_INTERCEPT * amount
         }
     };

@@ -1380,7 +1380,7 @@ export default {
    * Lookup201: pallet_project_token::types::AmmCurve<Balance>
    **/
   PalletProjectTokenAmmCurve: {
-    slope: 'u128',
+    slope: 'Permill',
     intercept: 'u128',
     providedSupply: 'u128'
   },
@@ -3298,7 +3298,7 @@ export default {
    * Lookup396: pallet_project_token::types::AmmParams<Balance>
    **/
   PalletProjectTokenAmmParams: {
-    slope: 'u128',
+    slope: 'Permill',
     intercept: 'u128'
   },
   /**

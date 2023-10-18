@@ -1580,7 +1580,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProjectTokenAmmCurve (201) */
   export interface PalletProjectTokenAmmCurve extends Struct {
-    readonly slope: u128;
+    readonly slope: Permill;
     readonly intercept: u128;
     readonly providedSupply: u128;
   }
@@ -3811,7 +3811,7 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProjectTokenAmmParams (396) */
   export interface PalletProjectTokenAmmParams extends Struct {
-    readonly slope: u128;
+    readonly slope: Permill;
     readonly intercept: u128;
   }
 
