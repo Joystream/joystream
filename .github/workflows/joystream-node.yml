@@ -77,19 +77,6 @@ jobs:
           yarn cargo-checks && yarn cargo-build
           ./target/release/call-sizes
         if: env.GIT_DIFF
-      - name: OnRuntimeUpgrade (try-runtime)
-        run: |
-          cargo +nightly-2022-11-15 build --release --features try-runtime
-          RUST_LOG=info,runtime=debug ./target/release/joystream-node try-runtime \
-            --runtime ./target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.compressed.wasm \
-            on-runtime-upgrade \
-            live \
-            --uri wss://rpc.joystream.org:9944/
-        if: env.GIT_DIFF
-      - name: run_migrations test
-        run: |
-          RUN_MIGRATION_TESTS=true RUST_LOG=info cargo +nightly-2022-11-15 test remote_tests::run_migrations --release --features try-runtime
-        if: env.GIT_DIFF
       - name: Staging Runtime
         env:
           RUNTIME_PROFILE: "STAGING"
@@ -107,4 +94,42 @@ jobs:
           RUNTIME_PROFILE: "TESTING"
         run: |
           yarn cargo-checks && yarn cargo-build
+        if: env.GIT_DIFF
+
+  # Test runtime upgrade with "try-runtime" feature
+  runtime_upgrade:
+    name: Runtime Upgrade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - uses: technote-space/get-diff-action@v3
+        with:
+          PREFIX_FILTER: |
+            bin
+            runtime
+            runtime-modules
+          SUFFIX_FILTER: |
+            .rs
+          FILES: |
+            Cargo.lock
+            Cargo.toml
+      - name: Toolchains
+        run: |
+          ./setup.sh
+        if: env.GIT_DIFF
+      - name: OnRuntimeUpgrade (try-runtime)
+        run: |
+          cargo +nightly-2022-11-15 build --release --features try-runtime
+          RUST_LOG=info,runtime=debug ./target/release/joystream-node try-runtime \
+            --runtime ./target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.compressed.wasm \
+            on-runtime-upgrade \
+            live \
+            --uri wss://rpc.joystream.org:9944/
+        if: env.GIT_DIFF
+      - name: run_migrations test
+        run: |
+          RUN_MIGRATION_TESTS=true RUST_LOG=info cargo +nightly-2022-11-15 test remote_tests::run_migrations --release --features try-runtime
         if: env.GIT_DIFF
