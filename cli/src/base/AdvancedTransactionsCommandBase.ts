@@ -8,7 +8,7 @@ import {
   UnsignedTransaction,
 } from '@substrate/txwrapper-core'
 import { createSigningPayload } from '@substrate/txwrapper-core/lib/core/construct'
-import { Call } from '@polkadot/types/interfaces'
+// import { Call,  } from '@polkadot/types/interfaces'
 import { JOYSTREAM_ADDRESS_PREFIX, registry } from '@joystream/types'
 import chalk from 'chalk'
 import { getInputJson, saveOutputJsonToFile } from '../helpers/InputOutput'
@@ -19,6 +19,10 @@ import { createKeyMulti, encodeAddress, sortAddresses } from '@polkadot/util-cry
 import ExitCodes from '../ExitCodes'
 import fs from 'fs'
 
+export type maxWidthType = {
+  refTime: string | number
+  proofSize: string | number
+}
 export default abstract class AdvancedTransactionsCommandBase extends AccountsCommandBase {
   async getApproveAsMultiInputFromFile(filePath: string): Promise<MultiSigApproveAsMulti> {
     return getInputJson<MultiSigApproveAsMulti>(filePath)
@@ -58,7 +62,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     threshold: number | undefined,
     others: string | undefined,
     callHash: string,
-    maxWeight: number
+    maxWeight: maxWidthType
   ): Promise<MultiSigApproveAsMulti> {
     let argsInput: MultiSigApproveAsMulti
     let otherSignatories: string[] = []
@@ -104,7 +108,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     timepointIndex: number | undefined,
     others: string | undefined,
     callHash: string,
-    maxWeight: number
+    maxWeight: maxWidthType
   ): Promise<MultiSigApproveAsMulti> {
     let argsInput: MultiSigApproveAsMulti
     let otherSignatories: string[] = []
@@ -154,14 +158,14 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     timepointIndex: number | undefined,
     others: string | undefined,
     call: string,
-    maxWeight: number
+    maxWeight: maxWidthType
   ): Promise<MultisigAsMulti> {
     if (input) {
       const args = await this.getAsMultiInputFromFile(input)
       const otherSignatories = args.otherSignatories as string[]
       const otherSignatoriesSorted = sortAddresses(otherSignatories, JOYSTREAM_ADDRESS_PREFIX)
       args.otherSignatories = otherSignatoriesSorted
-      const maxWeightChanged = maxWeight !== (args.maxWeight as number)
+      const maxWeightChanged = maxWeight
       if (maxWeightChanged) {
         this.warn(`"maxWeight" changed from ${args.maxWeight} to ${maxWeight}.`)
       }
@@ -266,10 +270,18 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     return unsigned
   }
 
-  async getWeight(call: Call): Promise<number> {
-    const callData = this.getOriginalApi().tx(call)
-    const paymentWeight = await this.getOriginalApi().rpc.payment.queryInfo(callData.toHex())
-    return paymentWeight.weight.toNumber()
+  async getWeight(
+    // call: Call,
+    refTime: string | number,
+    proofSize: string | number
+  ): Promise<maxWidthType> {
+    // const callData = this.getOriginalApi().tx(call)
+    // const paymentWeight = await this.getOriginalApi().rpc.payment.queryInfo(callData.toHex())
+    const value = {
+      refTime,
+      proofSize,
+    }
+    return value
   }
 
   createTransactionReadyForSigning(

@@ -3244,7 +3244,7 @@
     "@polkadot/util-crypto" "^9.5.1"
     rxjs "^7.5.5"
 
-"@polkadot/api@8.9.1":
+"@polkadot/api@8.9.1", "@polkadot/api@^10.9.1":
   version "8.9.1"
   resolved "https://registry.yarnpkg.com/@polkadot/api/-/api-8.9.1.tgz#c35c5d583845a5d67edfa8c3579bad143f65bcd6"
   integrity sha512-UwQ5hWPHruqnBO2hriaPhGaOwaWZx9MVECWFJzVs0ZuhKDge9jyBp+JXud/Ly/+8VbeokYUB0DSZG/gTAO5+vg==
@@ -3267,7 +3267,7 @@
     eventemitter3 "^4.0.7"
     rxjs "^7.5.5"
 
-"@polkadot/keyring@9.5.1", "@polkadot/keyring@^9.5.1":
+"@polkadot/keyring@9.5.1", "@polkadot/keyring@^12.3.2", "@polkadot/keyring@^9.5.1":
   version "9.5.1"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-9.5.1.tgz#3b0851f8fffe489f1b6020e69dc9a3a8e5696172"
   integrity sha512-ixv2lq1zNzYa+GqZQTzcraNw5ZrTTK+2/sqfeMOIr7gBGk0UCALuK0NCvTRAUtQK1RT2psBkkm2lr/rrNCeK+A==
@@ -3751,35 +3751,29 @@
   resolved "https://registry.yarnpkg.com/@substrate/ss58-registry/-/ss58-registry-1.22.0.tgz#d115bc5dcab8c0f5800e05e4ef265949042b13ec"
   integrity sha512-IKqrPY0B3AeIXEc5/JGgEhPZLy+SmVyQf+k0SIGcNSTqt1GLI3gQFEOFwSScJdem+iYZQUrn6YPPxC3TpdSC3A==
 
-"@substrate/txwrapper-core@3.1.3", "@substrate/txwrapper-core@=3.1.3", "@substrate/txwrapper-core@^3.1.3", "@substrate/txwrapper-core@^3.2.2":
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-3.1.3.tgz#ec790e332dd09ee5021b3824b43f11b0fc70f36a"
-  integrity sha512-8QV5wp+V1/KXu/f2K9uTfbBrEXiu86z1N/O6+4858hYGihypZuO2YT0pChfsnj0Uic4K2T2QDzTCj8VJ70yORA==
+"@substrate/txwrapper-core@7.1.0", "@substrate/txwrapper-core@^7.1.0":
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-core/-/txwrapper-core-7.1.0.tgz#b5906e333e0d42833eb458aec952d4da83357fc6"
+  integrity sha512-lBDbriItWo+wyc2Nu33kcJS8vA6kkIY4HaWv8XfbdFaTS1oMHPIkSQW+SohhySBdK5Ky0SYSOSBL7TPT7LYxBw==
   dependencies:
-    "@polkadot/api" "8.9.1"
+    "@polkadot/api" "^10.9.1"
+    "@polkadot/keyring" "^12.3.2"
     memoizee "0.4.15"
 
-"@substrate/txwrapper-polkadot@3.1.3":
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-polkadot/-/txwrapper-polkadot-3.1.3.tgz#34c4ad1eaba72f829a8935846503ab15a412f011"
-  integrity sha512-uP48AuHlKjTz6EZzvlIVe7WnKu3xhacJFrVO0pAHZcnFxm/IVLhAItqN8KLd3xZmbIpy4Zlw9nITM+iaDU/ljA==
+"@substrate/txwrapper-polkadot@7.1.0":
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-polkadot/-/txwrapper-polkadot-7.1.0.tgz#a536cb057012b51d8d6b6a5a074276522010a65d"
+  integrity sha512-GDyccLWBagSjJMDIgHLM5k12arn+H0OqhiCu6up1XhSJqrxFXGnCXFY80/SdGSasL+t6Bg7FCY/HU3s3iSw2SA==
   dependencies:
-    "@substrate/txwrapper-core" "^3.1.3"
-    "@substrate/txwrapper-substrate" "^3.1.3"
+    "@substrate/txwrapper-core" "^7.1.0"
+    "@substrate/txwrapper-substrate" "^7.1.0"
 
-"@substrate/txwrapper-substrate@3.1.3":
-  version "3.1.3"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-substrate/-/txwrapper-substrate-3.1.3.tgz#81dd8a9a9780f291c3cf111a49c370829f75e975"
-  integrity sha512-v8skSLC40axHJN/dg51wLEAnQxk/5tk/EWr6rBKLFM4T8Kmjirj83lLyzVhRNRVYWdgCAr6Maoe+v1CWNXKoXw==
+"@substrate/txwrapper-substrate@7.1.0", "@substrate/txwrapper-substrate@^7.1.0":
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-substrate/-/txwrapper-substrate-7.1.0.tgz#94ccaacc75744d7c1fc272dc790410d614a9883f"
+  integrity sha512-Atfssdwd8GLvEWYeU5alqT4ADz85YhNELl9+OhUN9gtOrRhnkFsPszt/q2OCjDGPQVzHsWH7hPpXcFTFSMDadA==
   dependencies:
-    "@substrate/txwrapper-core" "^3.1.3"
-
-"@substrate/txwrapper-substrate@^3.1.3":
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-substrate/-/txwrapper-substrate-3.2.2.tgz#ac736d2f617736231609fcf6f19b7393051cb00b"
-  integrity sha512-kTLgw3TeKVVxfL6eQgPm3ltlcxxxBH9u8CfuEQHa1EmGuL5RyW11JYHDJU5jFbK+8euADZK8Oo7Uo1txXocIUw==
-  dependencies:
-    "@substrate/txwrapper-core" "^3.2.2"
+    "@substrate/txwrapper-core" "^7.1.0"
 
 "@szmarczak/http-timer@^1.1.2":
   version "1.1.2"
