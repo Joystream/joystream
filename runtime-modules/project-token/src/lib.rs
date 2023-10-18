@@ -29,7 +29,7 @@ use frame_support::{
     decl_module, decl_storage,
     dispatch::{fmt::Debug, marker::Copy, DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get, StorageVersion},
+    traits::{Currency, ExistenceRequirement, Get},
     PalletId,
 };
 use frame_system::ensure_signed;
@@ -49,7 +49,6 @@ use storage::UploadParameters;
 mod benchmarking;
 mod errors;
 mod events;
-pub mod migrations;
 mod tests;
 pub mod traits;
 pub mod types;
@@ -69,12 +68,6 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
-
-/// The log target of this pallet.
-pub const LOG_TARGET: &str = "runtime::project_token";
-
-// Nara release. module treasury account initialized
-const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
 
 /// Pallet Configuration
 pub trait Config:
@@ -958,8 +951,6 @@ decl_module! {
 
             Ok(())
         }
-
-        type StorageVersion = CURRENT_STORAGE_VERSION;
     }
 }
 
