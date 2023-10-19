@@ -147,7 +147,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 2002,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
-    transaction_version: 1,
+    transaction_version: 2,
     state_version: 1,
 };
 
@@ -551,7 +551,7 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+    pub const SessionsPerEra: sp_staking::SessionIndex = SESSIONS_PER_ERA;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
     pub const SlashDeferDuration: sp_staking::EraIndex = SLASH_DEFER_DURATION;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
@@ -809,19 +809,19 @@ parameter_types! {
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: DAYS,
+        block_number_period: days!(1),
         limit: 100,
     };
     pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: WEEKS,
+        block_number_period: days!(7),
         limit: 400,
     };
     pub const DefaultChannelDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: DAYS,
+        block_number_period: days!(1),
         limit: 10,
     };
     pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: WEEKS,
+        block_number_period: days!(7),
         limit: 40,
     };
     pub const MinimumCashoutAllowedLimit: Balance = dollars!(10);
