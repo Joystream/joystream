@@ -19,10 +19,6 @@ import { createKeyMulti, encodeAddress, sortAddresses } from '@polkadot/util-cry
 import ExitCodes from '../ExitCodes'
 import fs from 'fs'
 
-export type maxWidthType = {
-  refTime: string | number
-  proofSize: string | number
-}
 export default abstract class AdvancedTransactionsCommandBase extends AccountsCommandBase {
   async getApproveAsMultiInputFromFile(filePath: string): Promise<MultiSigApproveAsMulti> {
     return getInputJson<MultiSigApproveAsMulti>(filePath)
@@ -62,7 +58,10 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     threshold: number | undefined,
     others: string | undefined,
     callHash: string,
-    maxWeight: maxWidthType
+    maxWeight: {
+      refTime: string | number
+      proofSize: string | number
+    }
   ): Promise<MultiSigApproveAsMulti> {
     let argsInput: MultiSigApproveAsMulti
     let otherSignatories: string[] = []
@@ -108,7 +107,10 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     timepointIndex: number | undefined,
     others: string | undefined,
     callHash: string,
-    maxWeight: maxWidthType
+    maxWeight: {
+      refTime: string | number
+      proofSize: string | number
+    }
   ): Promise<MultiSigApproveAsMulti> {
     let argsInput: MultiSigApproveAsMulti
     let otherSignatories: string[] = []
@@ -158,7 +160,10 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     timepointIndex: number | undefined,
     others: string | undefined,
     call: string,
-    maxWeight: maxWidthType
+    maxWeight: {
+      refTime: string | number
+      proofSize: string | number
+    }
   ): Promise<MultisigAsMulti> {
     if (input) {
       const args = await this.getAsMultiInputFromFile(input)
@@ -274,7 +279,10 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     // call: Call,
     refTime: string | number,
     proofSize: string | number
-  ): Promise<maxWidthType> {
+  ): Promise<{
+    refTime: string | number
+    proofSize: string | number
+  }> {
     // const callData = this.getOriginalApi().tx(call)
     // const paymentWeight = await this.getOriginalApi().rpc.payment.queryInfo(callData.toHex())
     const value = {
