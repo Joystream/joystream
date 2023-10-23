@@ -232,6 +232,7 @@ export async function storage_DynamicBagCreated({ event, store }: EventContext &
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
+    objectsSize: new BN(0),
     storageBuckets: Array.from(storageBuckets).map((id) => new StorageBucket({ id: id.toString() })),
     distributionBuckets: Array.from(distributionBuckets).map(
       (id) => new DistributionBucket({ id: distributionBucketId(id) })
@@ -363,6 +364,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
   const [srcBagId, destBagId, dataObjectIds] = new DataObjectsMovedEvent_V1001(event).params
   const dataObjects = await getDataObjectsInBag(store, srcBagId, dataObjectIds)
+  const srcBag = await getBag(store, srcBagId)
   const destBag = await getBag(store, destBagId)
   await Promise.all(
     dataObjects.map(async (dataObject) => {
@@ -370,6 +372,13 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
       await store.save<StorageDataObject>(dataObject)
     })
   )
+
+  // Update source & destination bags size
+  const movedDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  srcBag.objectsSize = srcBag.objectsSize.sub(movedDataObjectsSize)
+  destBag.objectsSize = destBag.objectsSize.add(movedDataObjectsSize)
+  await store.save<StorageBag>(srcBag)
+  await store.save<StorageBag>(destBag)
 }
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {

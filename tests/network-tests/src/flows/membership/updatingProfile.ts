@@ -18,15 +18,27 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
   const updates: MemberProfileData[] = [
     // Partial updates
     // FIXME: Currently handle always need to be provided, see: https://github.com/Joystream/joystream/issues/2503
-    { handle: 'New handle 1', name: 'New name' },
-    { handle: 'New handle 2' },
+    {
+      handle: 'New handle 1',
+      name: 'New name',
+      validatorAccount: 'validator address',
+    },
+    {
+      handle: 'New handle 2',
+    },
     // Setting metadata to null
     {
       handle: 'New handle 3',
       name: '',
       about: '',
       avatarUri: '',
-      externalResources: [{ type: MembershipMetadata.ExternalResource.ResourceType.EMAIL, value: 'A@example.com' }],
+      externalResources: [
+        {
+          type: MembershipMetadata.ExternalResource.ResourceType.EMAIL,
+          value: 'A@example.com',
+        },
+      ],
+      validatorAccount: '',
     },
     // Full update
     {
@@ -35,8 +47,14 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
       about: 'Updated about',
       avatarUri: 'https://example.com/updated-avatar.jpg',
       externalResources: [
-        { type: MembershipMetadata.ExternalResource.ResourceType.EMAIL, value: 'B@example.com' },
-        { type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK, value: 'example.com' },
+        {
+          type: MembershipMetadata.ExternalResource.ResourceType.EMAIL,
+          value: 'B@example.com',
+        },
+        {
+          type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK,
+          value: 'example.com',
+        },
       ],
     },
   ]
@@ -50,6 +68,7 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
   for (const newValues of updates) {
     const context = { account, memberId }
     const updateProfileHappyCaseFixture = new UpdateProfileHappyCaseFixture(api, query, context, oldValues, newValues)
+
     await new FixtureRunner(updateProfileHappyCaseFixture).runWithQueryNodeChecks()
     oldValues = updateProfileHappyCaseFixture.getExpectedValues()
   }

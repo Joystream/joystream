@@ -19,7 +19,6 @@ import {
   StorageDataObject,
 } from 'query-node/dist/model'
 import { RelationsArr, bytesToString, getByIdOrFail, getManyByOrFail } from '../common'
-
 import {
   DataObjectId,
   DistributionBucketFamilyId,
@@ -121,6 +120,7 @@ export async function getStaticBag(
     console.log(`Creating new static bag: ${id}`)
     const newBag = new StorageBag({
       id,
+      objectsSize: new BN(0),
       owner: getStaticBagOwner(bagId),
     })
     await store.save<StorageBag>(newBag)
@@ -172,6 +172,11 @@ export async function createDataObjects(
 
   await Promise.all(dataObjects.map((o) => store.save<StorageDataObject>(o)))
 
+  // Update bag size
+  const createdDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  storageBag.objectsSize = storageBag.objectsSize.add(createdDataObjectsSize)
+  await store.save<StorageBag>(storageBag)
+
   return dataObjects
 }
 
@@ -180,6 +185,7 @@ export async function deleteDataObjects(
   bagId: BagId,
   dataObjectIds: BTreeSet<DataObjectId>
 ): Promise<void> {
+  const storageBag = await getBag(store, bagId)
   const dataObjects = await getDataObjectsInBag(store, bagId, dataObjectIds, [
     'videoThumbnail',
     ...videoRelationsForCounters.map((item) => `videoThumbnail.${item}`),
@@ -193,6 +199,11 @@ export async function deleteDataObjects(
 
     await unsetAssetRelations(store, dataObject)
   }
+
+  // Update bag size
+  const deletedDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  storageBag.objectsSize = storageBag.objectsSize.sub(deletedDataObjectsSize)
+  await store.save<StorageBag>(storageBag)
 }
 
 export function distributionBucketId(runtimeBucketId: DistributionBucketId): string {

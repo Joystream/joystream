@@ -298,6 +298,8 @@ components:
       properties:
         version:
           type: string
+        nodeEnv:
+          type: string
         queryNodeStatus:
           type: object
           required:
