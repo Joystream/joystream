@@ -16,7 +16,7 @@ export type ValidaotrAccountInput = {
   asWorker?: string
 }
 
-export class VerifyValidatorAccountFixture extends BaseQueryNodeFixture {
+export class VerifyValidatorProfileFixture  extends BaseQueryNodeFixture {
   protected verifyValidator: ValidaotrAccountInput[]
 
   public constructor(api: Api, query: QueryNodeApi, verifyValidator: ValidaotrAccountInput[]) {
