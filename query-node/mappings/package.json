@@ -20,7 +20,7 @@
     "@joystream/hydra-common": "5.0.0-alpha.4",
     "@joystream/hydra-db-utils": "5.0.0-alpha.4",
     "@joystream/warthog": "^2.41.9",
-    "@joystream/js": "^1.4.0",
+    "@joystream/js": "^1.5.0",
     "@apollo/client": "^3.2.5"
   },
   "devDependencies": {
