@@ -1,3 +1,8 @@
+### 1.5.0
+
+- Add add linked-in to membership external resource [#4927](https://github.com/Joystream/joystream/pull/4927)
+- Schema updated, processor needs to be re-synced.
+
 ### 1.4.0
 
 - Adds `StorageBag.objectsSize` field to `StorageBag` entity schema. This enables to query the total size of all objects in a storage bag. [#4818](https://github.com/Joystream/joystream/pull/4818)
@@ -6,7 +11,7 @@
 
 ### 1.3.0
 
-- Fix external resources mapping of membership metadata to ignore unrecognized type.
+- Fix external resources mapping of membership metadata to ignore unrecognized type. [#4838](https://github.com/Joystream/joystream/pull/4838)
 
 ### 1.2.2
 
