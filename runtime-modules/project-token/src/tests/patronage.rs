@@ -8,6 +8,7 @@ use crate::tests::test_utils::TokenDataBuilder;
 use crate::traits::PalletToken;
 use crate::types::{BlockRate, TokenIssuanceParametersOf, YearlyRate};
 use crate::{balance, block, last_event_eq, member, rate, token, yearly_rate, Error, RawEvent};
+use frame_system::RawOrigin;
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
@@ -530,5 +531,58 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
                 .unclaimed_patronage_tally_amount,
             balance!(0)
         );
+    })
+}
+
+#[test]
+fn decrease_patronage_fails_on_frozen_palle() {
+    let rate = rate!(50);
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let owner_id = member!(1).0;
+    let decrement = yearly_rate!(20);
+
+    let token_info = TokenDataBuilder::new_empty()
+        .with_patronage_rate(rate)
+        .build();
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_info, owner_id, init_supply)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::reduce_patronage_rate_to(token_id, decrement),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(Token::reduce_patronage_rate_to(token_id, decrement));
+    })
+}
+
+#[test]
+fn claim_patronage_fails_on_frozen_pallet() {
+    let token_id = token!(1);
+    let owner_id = member!(1).0;
+    let (rate, blocks) = (rate!(10), block!(10));
+
+    let params = TokenDataBuilder::new_empty().with_patronage_rate(rate);
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, params.build())
+        .with_account(owner_id, ConfigAccountData::default())
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_block_number_by(blocks);
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::claim_patronage_credit(token_id, owner_id),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(Token::claim_patronage_credit(token_id, owner_id));
     })
 }

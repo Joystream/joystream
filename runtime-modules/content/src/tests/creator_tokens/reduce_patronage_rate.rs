@@ -2,6 +2,9 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+use project_token::Error as ProjectTokenError;
 
 #[test]
 fn unsuccessful_reduce_creator_token_patronage_rate_non_existing_channel() {
@@ -129,5 +132,20 @@ fn reduce_creator_token_patronage_rate_fails_during_transfer() {
             .call_and_assert(Ok(()));
         ReduceCreatorTokenPatronageRateFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
+fn reduce_member_channel_creator_token_patronage_rate_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        ReduceCreatorTokenPatronageRateFixture::default()
+            .call_and_assert(Err(ProjectTokenError::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        ReduceCreatorTokenPatronageRateFixture::default().call_and_assert(Ok(()));
     })
 }

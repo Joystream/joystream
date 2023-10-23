@@ -974,6 +974,10 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       nextTokenId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
+       * Current frozen state.
+       **/
+      palletFrozen: AugmentedQuery<ApiType, () => Observable<bool>, []>;
+      /**
        * Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
        **/
       salePlatformFee: AugmentedQuery<ApiType, () => Observable<Permill>, []>;

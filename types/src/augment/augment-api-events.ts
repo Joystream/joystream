@@ -2069,6 +2069,12 @@ declare module '@polkadot/api-base/types/events' {
        **/
       AccountDustedBy: AugmentedEvent<ApiType, [u64, u64, AccountId32, PalletProjectTokenTransferPolicy]>;
       /**
+       * Pallet Frozen status toggled
+       * Params:
+       * - new frozen status (true | false)
+       **/
+      FrozenStatusUpdated: AugmentedEvent<ApiType, [bool]>;
+      /**
        * Member joined whitelist
        * Params:
        * - token identifier

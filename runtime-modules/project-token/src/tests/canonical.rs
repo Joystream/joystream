@@ -16,6 +16,7 @@ use crate::{
     TokenDataOf,
 };
 use frame_support::traits::Currency;
+use frame_system::RawOrigin;
 use sp_runtime::DispatchError;
 
 #[test]
@@ -1925,5 +1926,103 @@ fn burn_ok_with_partially_burned_vesting_schedule_amounts_working_as_expected() 
             account_data.transferrable::<Test>(System::block_number()),
             300
         );
+    })
+}
+
+#[test]
+fn burn_fails_on_frozen_pallet() {
+    let (token_id, burn_amount, (member_id, account)) = (token!(1), balance!(100), member!(1));
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token(token_id, token_data)
+        .with_account(member_id, ConfigAccountData::new_with_amount(burn_amount))
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::burn(origin!(account), token_id, member_id, burn_amount),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(Token::burn(
+            origin!(account),
+            token_id,
+            member_id,
+            burn_amount
+        ));
+    })
+}
+
+#[test]
+fn dust_account_fails_on_frozen_pallet() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+        (member!(1), member!(2), member!(3));
+
+    let token_data = TokenDataBuilder::new_empty().build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
+        .with_account(user_id, ConfigAccountData::default())
+        .with_account(other_user_id, ConfigAccountData::default())
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::dust_account(origin!(user_acc), token_id, other_user_id),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(Token::dust_account(
+            origin!(user_acc),
+            token_id,
+            other_user_id
+        ));
+    })
+}
+
+#[test]
+fn join_whitelist_fails_on_frozen_pallet() {
+    let (token_id, init_supply) = (token!(1), balance!(100));
+    let ((owner_id, _), (user_id, user_acc), (other_user_id, _)) =
+        (member!(1), member!(2), member!(3));
+    let commit = merkle_root![user_id, other_user_id];
+    let bloat_bond = joy!(100);
+
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissioned(commit))
+        .build();
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_bloat_bond(bloat_bond)
+        .with_token_and_owner(token_id, token_data, owner_id, init_supply)
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&user_acc, bloat_bond + ExistentialDeposit::get());
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::join_whitelist(
+                origin!(user_acc),
+                user_id,
+                token_id,
+                merkle_proof!(0, [user_id, other_user_id])
+            ),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(Token::join_whitelist(
+            origin!(user_acc),
+            user_id,
+            token_id,
+            merkle_proof!(0, [user_id, other_user_id])
+        ));
     })
 }

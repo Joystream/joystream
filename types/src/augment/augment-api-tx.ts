@@ -4156,6 +4156,18 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       purchaseTokensOnSale: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
+       * Allows to freeze or unfreeze this pallet. Requires root origin.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setFrozenStatus: AugmentedSubmittable<(freeze: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
+      /**
        * Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
        * in the specified amounts.
        * 
