@@ -69,7 +69,6 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
-pub use frame_support::weights::Weight;
 
 /// Pallet Configuration
 pub trait Config:
