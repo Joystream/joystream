@@ -2,7 +2,6 @@ import { assert } from 'chai'
 import Long from 'long'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { WorkerId, ForumPostId, MemberId } from '@joystream/types/primitives'
 import { RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
@@ -27,10 +26,10 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    if (this.api.findEvent(result, 'operationsWorkingGroupBeta', 'WorkerRemarked')) {
-      return this.api.getEventDetails(result, 'operationsWorkingGroupBeta', 'WorkerRemarked')
+    if (this.api.findEvent(result, 'membershipWorkingGroup', 'WorkerRemarked')) {
+      return this.api.getEventDetails(result, 'membershipWorkingGroup', 'WorkerRemarked')
     } else {
-      return this.api.getEventDetails(result, 'operationsWorkingGroupBeta', 'LeadRemarked')
+      return this.api.getEventDetails(result, 'membershipWorkingGroup', 'LeadRemarked')
     }
   }
 
@@ -40,12 +39,12 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         verifyValidator: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerified },
       })
       return u.asWorker
-        ? this.api.tx.operationsWorkingGroupBeta.workerRemark(u.asWorker, metadata)
-        : this.api.tx.operationsWorkingGroupBeta.leadRemark(metadata)
+        ? this.api.tx.membershipWorkingGroup.workerRemark(u.asWorker, metadata)
+        : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
   }
 
-  private VerifyValidatorTest(qMember: MembershipFieldsFragment[] | null): void {
+  private assetVerifyValidatorTest(qMember: MembershipFieldsFragment[] | null): void {
     if (!qMember) {
       throw new Error('Query node: Membership not found!')
     }
@@ -62,6 +61,6 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         return createType('u64', Number(m.memberId))
       })
     )
-    this.VerifyValidatorTest(qmember)
+    this.assetVerifyValidatorTest(qmember)
   }
 }
