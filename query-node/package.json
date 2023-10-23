@@ -45,5 +45,8 @@
   },
   "volta": {
     "extends": "../package.json"
+  },
+  "devDependencies": {
+    "node-gyp": "^9.4.0"
   }
 }
