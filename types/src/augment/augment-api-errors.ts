@@ -2324,6 +2324,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
       /**
+       * Attempt to perform action when pallet is frozen
+       **/
+      PalletFrozen: AugmentedError<ApiType>;
+      /**
        * Previous sale was still not finalized, finalize it first.
        **/
       PreviousSaleNotFinalized: AugmentedError<ApiType>;
