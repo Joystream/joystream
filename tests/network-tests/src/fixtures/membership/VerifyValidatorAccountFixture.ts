@@ -10,7 +10,7 @@ import { EventDetails } from '../../types'
 import { Utils } from '../../utils'
 import { BaseQueryNodeFixture } from '../../Fixture'
 import { MembershipFieldsFragment } from 'src/graphql/generated/queries'
-import {  createType  } from '@joystream/types';
+import { createType } from '@joystream/types'
 
 export type ValidaotrAccountInput = {
   memberId: string
@@ -19,7 +19,7 @@ export type ValidaotrAccountInput = {
 }
 
 export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
-  protected verifyValidator: ValidaotrAccountInput[];
+  protected verifyValidator: ValidaotrAccountInput[]
 
   public constructor(api: Api, query: QueryNodeApi, verifyValidator: ValidaotrAccountInput[]) {
     super(api, query)
@@ -45,21 +45,23 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
     })
   }
 
-  private VerifyValidatorTest(qMember: MembershipFieldsFragment[] | null):void {
+  private VerifyValidatorTest(qMember: MembershipFieldsFragment[] | null): void {
     if (!qMember) {
       throw new Error('Query node: Membership not found!')
     }
-    this.verifyValidator.map((d)=>{
-      const data = qMember.find((k)=>k.id === d.memberId)?.metadata
-      assert.equal(data?.isVerifiedValidator,d.isVerified);
+    this.verifyValidator.map((d) => {
+      const data = qMember.find((k) => k.id === d.memberId)?.metadata
+      assert.equal(data?.isVerifiedValidator, d.isVerified)
     })
-
   }
 
   async execute(): Promise<void> {
-    await super.runQueryNodeChecks();
-    const  qmember=await this.query.getMembersByIds(this.verifyValidator.map((m)=>{
-      return createType('u64', Number(m.memberId))}))     
-    this.VerifyValidatorTest(qmember);
+    await super.runQueryNodeChecks()
+    const qmember = await this.query.getMembersByIds(
+      this.verifyValidator.map((m) => {
+        return createType('u64', Number(m.memberId))
+      })
+    )
+    this.VerifyValidatorTest(qmember)
   }
 }
