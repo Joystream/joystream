@@ -12,7 +12,7 @@ trap cleanup EXIT
 
 export RUNTIME_PROFILE=TESTING
 
-TAG=$(./runtime-code-shasum.sh)
+TAG=`./runtime-code-shasum.sh`
 
 #./scripts/cargo-build.sh
 

@@ -16,7 +16,7 @@ TARGET_RUNTIME=${TARGET_RUNTIME:=target}
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=$(docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=`docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r`
 
 echo >&2 "treasury account from suri: ${TREASURY_ACCOUNT}"
 

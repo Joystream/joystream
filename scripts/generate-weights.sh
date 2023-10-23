@@ -2,7 +2,7 @@
 
 # Executes and replaces all benchmarks with the new weights
 
-SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+SCRIPT_DIR=`dirname "${BASH_SOURCE[0]}"`
 
 STEPS=${1:-50}
 REPEAT=${2:-20}

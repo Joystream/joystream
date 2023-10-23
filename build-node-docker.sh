@@ -4,11 +4,10 @@ set -e
 # Looks for a cached joystream/node image matching code shasum.
 # Search order: local repo then dockerhub. If no cached image is found we build it.
 
-SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_PATH=`dirname "${BASH_SOURCE[0]}"`
 cd $SCRIPT_PATH
 
-source scripts/features.sh
-
+FEATURES=`scripts/features.sh`
 CODE_SHASUM=`scripts/runtime-code-shasum.sh`
 IMAGE=joystream/node:${CODE_SHASUM}
 
@@ -34,8 +33,8 @@ else
   # Not guaranteed it has the correct architecture so just log image and local system architecures
 fi
 
-IMG_ARCH=$(docker inspect ${IMAGE} --format='{{.Architecture}}')
-SYS_ARCH=$(uname -m)
+IMG_ARCH=`docker inspect ${IMAGE} --format='{{.Architecture}}'`
+SYS_ARCH=`uname -m`
 if [ "$IMG_ARCH" != "$SYS_ARCH" ]; then
     echo "WARNING: The local image's platform ${IMG_ARCH} does not match the detected host platform ${SYS_ARCH}"
 fi
