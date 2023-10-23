@@ -108,8 +108,7 @@ export function unimplementedError(extraInfo: string, data?: unknown): never {
   // log error
   logger.error(errorMessage, data)
 
-  // eslint-disable-next-line local-rules/no-throw
-  throw errorMessage
+  process.exit(1)
 }
 
 /*
