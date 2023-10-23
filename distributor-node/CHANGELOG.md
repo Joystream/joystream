@@ -5,6 +5,8 @@
 - Add 1s delay between fetching pages for QN state sync. This will allow QN to have some breathing space and process other requests that may have been stuck because of heavy processing.
 - Add `Access-Control-Expose-Headers` response header to allow web clients checking cache status of downloaded file.
 - Include response headers in `http` logs
+- Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should improve response times when serving assets.
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
 
 ### 1.3.1
 
