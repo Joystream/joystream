@@ -333,7 +333,7 @@ export class NetworkingService {
 
       objectDownloadQueue.on('error', (err) => {
         this.logger.error('Download attempt from storage node failed after availability was confirmed:', {
-          err: parseAxiosError(err),
+          err: axios.isAxiosError(err) ? parseAxiosError(err) : err,
         })
       })
 
