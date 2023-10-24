@@ -19,7 +19,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const members = await this.getApi().groupMembers(WorkingGroups.Membership)
     const worker = await this.getRequiredWorkerContext()
 
-    const membersRows = members.find(((m) => m === worker))
+    const membersRows = members.find((m) => m === worker)
 
     if (!membersRows) {
       this.error('Only membership WG lead/worker can perform this command')
