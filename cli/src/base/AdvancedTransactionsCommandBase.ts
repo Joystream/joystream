@@ -8,7 +8,7 @@ import {
   UnsignedTransaction,
 } from '@substrate/txwrapper-core'
 import { createSigningPayload } from '@substrate/txwrapper-core/lib/core/construct'
-// import { Call,  } from '@polkadot/types/interfaces'
+import { Call } from '@polkadot/types/interfaces'
 import { JOYSTREAM_ADDRESS_PREFIX, registry } from '@joystream/types'
 import chalk from 'chalk'
 import { getInputJson, saveOutputJsonToFile } from '../helpers/InputOutput'
@@ -275,20 +275,18 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     return unsigned
   }
 
-  async getWeight(
-    // call: Call,
-    refTime: string | number,
-    proofSize: string | number
-  ): Promise<{
+  async getWeight(call: Call): Promise<{
     refTime: string | number
     proofSize: string | number
   }> {
-    // const callData = this.getOriginalApi().tx(call)
-    // const paymentWeight = await this.getOriginalApi().rpc.payment.queryInfo(callData.toHex())
+    const callData = this.getOriginalApi().tx(call)
+    const paymentWeight = await this.getOriginalApi().rpc.payment.queryInfo(callData.toHex())
+    const proofSize = 0
     const value = {
-      refTime,
-      proofSize,
+      refTime: paymentWeight.weight.toNumber(),
+      proofSize: proofSize,
     }
+
     return value
   }
 
