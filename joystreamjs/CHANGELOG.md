@@ -1,3 +1,7 @@
+### 1.5.0
+
+- Update dependency on metadata protobuf to v2.10.0
+
 ### 1.4.0
 
 - Add `generateAppActionCommitment` to utils
