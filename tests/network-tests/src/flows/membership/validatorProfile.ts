@@ -21,7 +21,7 @@ export default async function validatorAccount({ api, query }: FlowProps): Promi
       asWorker: 'j4VEC6FcJtBrwYQKhBAoB6Rj83jDeVua6azuHBrri1zoksBkz',
     },
     {
-      memberId: '2',
+      memberId: '3',
       isVerified: false,
       asWorker: '5DckbE8f7Zhm8jnPQTA1Z5ciy4ZoiDFVWCHhUB7FdAvTfjf3s',
     },
