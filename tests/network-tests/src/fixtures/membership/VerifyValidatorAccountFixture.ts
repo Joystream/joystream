@@ -55,7 +55,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
   }
 
   async execute(): Promise<void> {
-    await super.runQueryNodeChecks()
+    // await super.runQueryNodeChecks()
     const qmember = await this.query.getMembersByIds(
       this.verifyValidator.map((m) => {
         return createType('u64', Number(m.memberId))

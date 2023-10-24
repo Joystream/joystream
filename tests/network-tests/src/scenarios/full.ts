@@ -127,5 +127,5 @@ scenario('Full', async ({ job, env }) => {
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
     contentDirectoryJob
   )
-  job('updating member verify profile', updateValidatorAccount)
+  job('updating member verify profile', updateValidatorAccount).after(hireLeads)
 })
