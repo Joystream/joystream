@@ -21,7 +21,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const lead = await this.getApi().groupLead(WorkingGroups.Membership)
 
     const membersRows = members.filter((m) => {
-      let arrayValue: u64[] = [m.memberId]
+      const arrayValue: u64[] = [m.memberId]
       return this.getRequiredWorkerContext('MemberController', arrayValue)
     })
 
