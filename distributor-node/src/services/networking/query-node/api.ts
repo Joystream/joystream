@@ -230,6 +230,8 @@ export class QueryNodeApi {
           GetDataObjectsWithBagsByIdsQueryVariables
         >(GetDataObjectsWithBagsByIds, { bagIds: bagIdsBatch, limit: bagIdsBatch.length }, 'storageBags'))
       )
+      // wait 1s between requests to avoid overloading the query node
+      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
 
     return fullResult.map((bag) => bag.objects).flat()

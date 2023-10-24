@@ -48,8 +48,10 @@ export abstract class HttpApiBase {
   protected abstract routes(): HttpApiRoute[]
 
   protected defaultOpenApiValidatorConfig(): Partial<OpenApiValidatorOpts> {
-    const isProd = process.env.NODE_ENV === 'prod'
+    // The convention is 'production' but we allow short form also 'prod'
+    const isProd = process.env.NODE_ENV === 'prod' || process.env.NODE_ENV === 'production'
     return {
+      // Validating responses severely impacts latency when reponses size is large!
       validateResponses: !isProd,
     }
   }
@@ -61,7 +63,10 @@ export abstract class HttpApiBase {
       winstonInstance: this.logger,
       level: 'http',
       dynamicMeta: (req, res) => {
-        return { prematurelyClosed: res.locals.prematurelyClosed ?? false }
+        return {
+          prematurelyClosed: res.locals.prematurelyClosed ?? false,
+          res: { headers: res.getHeaders(), statusCode: res.statusCode },
+        }
       },
     }
   }

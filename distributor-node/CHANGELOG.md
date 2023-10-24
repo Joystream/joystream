@@ -1,5 +1,18 @@
 ##
 
+### 1.4.0
+
+- Add 1s delay between fetching pages for QN state sync. This will allow QN to have some breathing space and process other requests that may have been stuck because of heavy processing.
+- Add `Access-Control-Expose-Headers` response header to allow web clients checking cache status of downloaded file.
+- Include response headers in `http` logs
+- Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should improve response times when serving assets.
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+- **FIX** Axios Error Logging: Logging the error, when asset download from storage-node time outs, has been fixed to include the _only_ error message, response, status code and bunch of other fields. Previously, logging error object (which includes axios client instance), failed with `Converting circular structure to JSON` error and causing the distributor-node to crash.
+
+### 1.3.1
+
+- **FIX** QN state sync: The QN state sync that runs on startup and on interval, has been split to multiple paginated queries so that it doesn't crash QN's GraphQL server because of huge payload: [#4921](https://github.com/Joystream/joystream/pull/4921)
+
 ### 1.3.0
 
 - Adds support for TTL based caching of `StorageDataObject` QN entity for `HEAD /assets` requests. The TTL is configurable using `interval.queryNodeCacheTTL` flag.
