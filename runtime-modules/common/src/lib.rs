@@ -69,6 +69,27 @@ pub trait StorageOwnership {
         + PartialEq;
 }
 
+// Proc macro (EnumIter) clippy::integer_arithmetic disable hack
+#[allow(clippy::integer_arithmetic)]
+pub mod iterable_enums {
+    use codec::{Decode, Encode, MaxEncodedLen};
+    use scale_info::TypeInfo;
+    #[cfg(feature = "std")]
+    use serde::{Deserialize, Serialize};
+    #[cfg(feature = "std")]
+    use strum_macros::EnumIter;
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize, EnumIter))]
+    #[derive(
+        Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
+    )]
+    pub enum FrezablePallet {
+        ProjectToken,
+    }
+}
+
+pub use iterable_enums::FrezablePallet;
+
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug, Default)]

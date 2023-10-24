@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
+use common::FrezablePallet;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -118,6 +119,9 @@ pub enum ProposalDetails<
 
     /// `Update Channel Payouts` proposal
     UpdateChannelPayouts(UpdateChannelPayoutsParameters),
+
+    /// `Freeze Palet` proposal
+    FreezePallet(bool, FrezablePallet),
 }
 
 impl<

@@ -343,3 +343,16 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
         constitutionality: 1,
     }
 }
+// Proposal parameters for the 'Freeze Pallet' proposal
+pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: minutes!(5),
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}

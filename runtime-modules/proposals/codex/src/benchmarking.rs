@@ -9,6 +9,7 @@ use balances::Pallet as Balances;
 use common::to_kb;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
+use common::FrezablePallet;
 use content::NftLimitPeriod;
 use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_support::sp_runtime::traits::Bounded;
@@ -893,6 +894,28 @@ benchmarks! {
             account_id,
             member_id,
             general_proposal_parameters,
+            proposal_details
+        );
+    }
+
+    create_proposal_freeze_pallet {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::FreezePallet(true, FrezablePallet::ProjectToken);
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
             proposal_details
         );
     }

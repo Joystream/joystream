@@ -274,6 +274,9 @@ pub trait Config:
 
     /// Max allowed number of validators in set max validator count proposal
     type SetMaxValidatorCountProposalMaxValidators: Get<u32>;
+
+    /// `Freeze Pallet` proposal parameters
+    type FreezePalletProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -866,6 +869,9 @@ impl<T: Config> Module<T> {
                     );
                 }
             }
+            ProposalDetails::FreezePallet(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -933,6 +939,7 @@ impl<T: Config> Module<T> {
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
             }
+            ProposalDetails::FreezePallet(..) => T::SetInvitationCountProposalParameters::get(),
         }
     }
 
@@ -1093,6 +1100,12 @@ impl<T: Config> Module<T> {
                     to_kb(description_length.saturated_into()),
                 )
                 .saturated_into()
+            }
+            ProposalDetails::FreezePallet(..) => {
+                WeightInfoCodex::<T>::create_proposal_freeze_pallet(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
             }
         }
     }

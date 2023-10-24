@@ -2584,3 +2584,70 @@ fn create_update_channel_payouts_proposal_fails_when_min_cashout_exceeds_max_cas
         );
     });
 }
+
+#[test]
+fn create_frozen_proposal_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let general_proposal_parameters_no_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: None,
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(1),
+            exact_execution_block: None,
+        };
+
+        let general_proposal_parameters_incorrect_staking = GeneralProposalParameters::<Test> {
+            member_id: 1,
+            title: b"title".to_vec(),
+            description: b"body".to_vec(),
+            staking_account_id: Some(STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER),
+            exact_execution_block: None,
+        };
+
+        let proposal_details =
+            ProposalDetails::FreezePallet(true, common::FrezablePallet::ProjectToken);
+
+        let proposal_fixture = ProposalTestFixture {
+            general_proposal_parameters: general_proposal_parameters.clone(),
+            proposal_details: proposal_details.clone(),
+            insufficient_rights_call: || {
+                ProposalsCodex::create_proposal(
+                    RawOrigin::None.into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            invalid_stake_account_call: || {
+                ProposalsCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_incorrect_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalsCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters_no_staking.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalsCodex::create_proposal(
+                    RawOrigin::Signed(1).into(),
+                    general_proposal_parameters.clone(),
+                    proposal_details.clone(),
+                )
+            },
+            proposal_parameters: <Test as crate::Config>::FreezePalletProposalParameters::get(),
+        };
+        proposal_fixture.check_all();
+    });
+}
