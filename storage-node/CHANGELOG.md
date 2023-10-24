@@ -1,6 +1,10 @@
+### 3.8.0
+
+- Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
+
 ### 3.7.1
 
-- Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets.
+- Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets. [#4810](https://github.com/Joystream/joystream/pull/4810)
 - Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
 
 ### 3.7.0
