@@ -6,7 +6,7 @@ import { u64 } from '@polkadot/types'
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
   static flags = {
-    message: flags.string({
+    memberId: flags.string({
       required: true,
       description: 'Membership ID of the validator to verify',
     }),
@@ -15,7 +15,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
   }
 
   async run(): Promise<void> {
-    const { message } = this.parse(VerifyValidatorAccountCommand).flags
+    const { memberId } = this.parse(VerifyValidatorAccountCommand).flags
 
     const members = await this.getApi().groupMembers(WorkingGroups.Membership)
     const lead = await this.getApi().groupLead(WorkingGroups.Membership)
@@ -29,9 +29,9 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
       this.error('Only membership WG lead/worker can perform this command')
     } else {
       if (!lead) {
-        this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(membersRows[0]), message!)
+        this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(membersRows[0]), memberId!)
       } else {
-        this.getOriginalApi().tx.membershipWorkingGroup.leadRemark(message)
+        this.getOriginalApi().tx.membershipWorkingGroup.leadRemark(memberId)
       }
     }
   }
