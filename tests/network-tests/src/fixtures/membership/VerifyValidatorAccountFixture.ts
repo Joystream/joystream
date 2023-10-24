@@ -50,6 +50,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
     }
     this.verifyValidator.map((d) => {
       const data = qMember.find((k) => k.id === d.memberId)?.metadata
+      console.log(data?.isVerifiedValidator, d.isVerified);
       assert.equal(data?.isVerifiedValidator, d.isVerified)
     })
   }
