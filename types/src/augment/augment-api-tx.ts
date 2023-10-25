@@ -4170,6 +4170,7 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       purchaseTokensOnSale: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
+<<<<<<< HEAD
        * Burn desired `token_id` amount from user account and get JOY from treasury account
        * Preconditions
        * - origin, member_id pair must be a valid authentication pair
@@ -4188,6 +4189,21 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       sellOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<ITuple<[Permill, u128]>>]>;
       /**
+||||||| 8fb3ea7deb
+=======
+       * Allows to freeze or unfreeze this pallet. Requires root origin.
+       * 
+       * <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      setFrozenStatus: AugmentedSubmittable<(freeze: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
+      /**
+>>>>>>> nara
        * Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
        * in the specified amounts.
        * 

@@ -1,5 +1,6 @@
 use core::assert_eq;
 
+use frame_support::assert_noop;
 #[cfg(test)]
 use frame_support::{assert_err, assert_ok};
 use sp_runtime::traits::Zero;
@@ -8,10 +9,12 @@ use sp_runtime::SaturatedConversion;
 use crate::tests::fixtures::{ClaimPatronageCreditFixture, Fixture, IssueTokenFixture};
 use crate::tests::fixtures::{IssueRevenueSplitFixture, ReducePatronageRateToFixture};
 use crate::tests::mock::*;
+use crate::traits::PalletToken;
 use crate::types::YearlyRate;
 use crate::{balance, last_event_eq, Error, RawEvent};
 
 // compute correct patronage amount given rate%, blocks and supply: (1 + rate/100%)^{blocks/BlocksPerYear}
+use frame_system::RawOrigin;
 
 #[test]
 fn issue_token_ok_with_patronage_tally_count_zero() {
@@ -431,5 +434,43 @@ fn claim_patronage_ok_with_tally_amount_set_to_zero() {
             .patronage_info
             .unclaimed_patronage_tally_amount
             .is_zero());
+    })
+}
+
+#[test]
+fn decrease_patronage_fails_on_frozen_pallet() {
+    let rate = DEFAULT_YEARLY_PATRONAGE_RATE.into();
+    let token_id = DEFAULT_TOKEN_ID;
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(100u64.into())
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::reduce_patronage_rate_to(token_id, rate),
+            Error::<Test>::PalletFrozen
+        );
+    })
+}
+
+#[test]
+fn claim_patronage_fails_on_frozen_pallet() {
+    let token_id = DEFAULT_TOKEN_ID;
+    let member_id = DEFAULT_ISSUER_MEMBER_ID;
+    build_default_test_externalities().execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(100u64.into())
+            .with_patronage_rate(DEFAULT_MAX_YEARLY_PATRONAGE_RATE.into())
+            .execute_call()
+            .unwrap();
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::claim_patronage_credit(token_id, member_id),
+            Error::<Test>::PalletFrozen
+        );
     })
 }

@@ -2070,6 +2070,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       AccountDustedBy: AugmentedEvent<ApiType, [u64, u64, AccountId32, PalletProjectTokenTransferPolicy]>;
       /**
+<<<<<<< HEAD
        * AMM activated
        * Params:
        * - token id
@@ -2086,6 +2087,15 @@ declare module '@polkadot/api-base/types/events' {
        **/
       AmmDeactivated: AugmentedEvent<ApiType, [u64, u64, u128]>;
       /**
+||||||| 8fb3ea7deb
+=======
+       * Pallet Frozen status toggled
+       * Params:
+       * - new frozen status (true | false)
+       **/
+      FrozenStatusUpdated: AugmentedEvent<ApiType, [bool]>;
+      /**
+>>>>>>> nara
        * Member joined whitelist
        * Params:
        * - token identifier

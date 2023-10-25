@@ -185,5 +185,10 @@ decl_event! {
         /// - member id
         /// - amm treasury amount burned upon deactivation
         AmmDeactivated(TokenId, MemberId, JoyBalance),
+
+        /// Pallet Frozen status toggled
+        /// Params:
+        /// - new frozen status (true | false)
+        FrozenStatusUpdated(bool)
     }
 }

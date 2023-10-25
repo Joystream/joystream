@@ -194,5 +194,9 @@ decl_error! {
         /// Provided value for patronage is too big (yearly format)
         YearlyPatronageRateLimitExceeded,
 
+        // ------ Pallet Errors ------------------------------------------------------
+
+        /// Attempt to perform an action when pallet is frozen
+        PalletFrozen
     }
 }

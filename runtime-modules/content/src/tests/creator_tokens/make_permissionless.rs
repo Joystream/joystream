@@ -3,6 +3,8 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
 use project_token::types::{TransferPolicyParamsOf, WhitelistParamsOf};
 
 #[test]
@@ -163,5 +165,27 @@ fn make_creator_token_permissionless_fails_during_transfer() {
             ),
             Error::<Test>::InvalidChannelTransferStatus,
         );
+    })
+}
+
+#[test]
+fn make_member_channel_creator_token_permissionless_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default()
+            .with_transfer_policy(TransferPolicyParamsOf::<Test>::Permissioned(
+                WhitelistParamsOf::<Test> {
+                    commitment: Hashing::hash(b"commitment"),
+                    payload: None,
+                },
+            ))
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        MakeCreatorTokenPermissionlessFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        MakeCreatorTokenPermissionlessFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -3,6 +3,10 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+
+use project_token::Error as ProjectTokenError;
 
 #[test]
 fn unsuccessful_issue_creator_token_non_existing_channel() {
@@ -131,5 +135,19 @@ fn issue_token_fails_with_creator_token_issuance_feature_paused() {
 
         IssueCreatorTokenFixture::default()
             .call_and_assert(Err(Error::<Test>::ChannelFeaturePaused.into()));
+    })
+}
+
+#[test]
+fn issue_token_fails_with_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        IssueCreatorTokenFixture::default()
+            .call_and_assert(Err(ProjectTokenError::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -32,7 +32,7 @@ use frame_support::{
     traits::{Currency, ExistenceRequirement, Get},
     PalletId,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
@@ -167,6 +167,9 @@ decl_storage! { generate_storage_info
 
         /// Minimum slope parameters allowed for AMM curve
         pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T> = TokenBalanceOf::<T>::from(1_000_000_u32);
+
+        /// Current frozen state.
+        pub PalletFrozen get(fn pallet_frozen) : bool;
     }
 
     add_extra_genesis {
@@ -246,6 +249,7 @@ decl_module! {
             outputs: TransferOutputsOf<T>,
             metadata: Vec<u8>
         ) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
 
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -300,6 +304,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoToken::<T>::burn()]
         pub fn burn(origin, token_id: T::TokenId, member_id: T::MemberId, amount: TokenBalanceOf<T>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             // Ensure burn amount is non-zero
             ensure!(
                 !amount.is_zero(),
@@ -368,6 +374,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoToken::<T>::dust_account()]
         pub fn dust_account(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
             let account_to_remove_info = Self::ensure_account_data_exists(token_id, &member_id)?;
@@ -419,6 +427,8 @@ decl_module! {
             proof.0.len() as u32
         )]
         pub fn join_whitelist(origin, member_id: T::MemberId, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -527,6 +537,8 @@ decl_module! {
             member_id: T::MemberId,
             amount: TokenBalanceOf<T>,
         ) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             // Ensure non-zero amount
             ensure!(!amount.is_zero(), Error::<T>::SalePurchaseAmountIsZero);
 
@@ -686,6 +698,8 @@ decl_module! {
             member_id: T::MemberId,
             amount: TokenBalanceOf<T>,
         ) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -773,6 +787,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoToken::<T>::exit_revenue_split()]
         pub fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -951,6 +967,27 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Allows to freeze or unfreeze this pallet. Requires root origin.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::set_frozen_status()]
+        pub fn set_frozen_status(origin, freeze: bool) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            PalletFrozen::put(freeze);
+            Self::deposit_event(RawEvent::FrozenStatusUpdated(freeze));
+        }
     }
 }
 
@@ -1001,6 +1038,8 @@ impl<T: Config>
     /// Postconditions
     /// - transfer policy of `token_id` changed to permissionless
     fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // == MUTATION SAFE ==
@@ -1022,6 +1061,8 @@ impl<T: Config>
     /// - patronage rate for `token_id` reduced to `target_rate`
     /// - no-op if `target_rate` is equal to the current patronage rate
     fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
 
         if token_info.patronage_info.rate == target_rate {
@@ -1057,6 +1098,8 @@ impl<T: Config>
     /// - outstanding patronage credit subsequently set to 0
     /// no-op if outstanding credit is zero
     fn claim_patronage_credit(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.ensure_can_modify_supply::<T>()?;
 
@@ -1105,6 +1148,8 @@ impl<T: Config>
         issuance_parameters: TokenIssuanceParametersOf<T>,
         upload_context: UploadContextOf<T>,
     ) -> Result<T::TokenId, DispatchError> {
+        Self::ensure_unfrozen_state()?;
+
         let token_id = Self::next_token_id();
         let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
@@ -1176,6 +1221,8 @@ impl<T: Config>
         outputs: TransferWithVestingOutputsOf<T>,
         metadata: Vec<u8>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         // Currency transfer preconditions
         let validated_transfers = Self::ensure_can_transfer(
             token_id,
@@ -1226,6 +1273,8 @@ impl<T: Config>
         auto_finalize: bool,
         sale_params: TokenSaleParamsOf<T>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let current_block = Self::current_block();
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale_id = token_data.next_sale_id;
@@ -1283,6 +1332,8 @@ impl<T: Config>
         new_start_block: Option<T::BlockNumber>,
         new_duration: Option<T::BlockNumber>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
         let sale_id = token_data
@@ -1334,6 +1385,8 @@ impl<T: Config>
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let _ = Self::ensure_token_exists(token_id)?;
         Self::ensure_can_deissue_token(token_id)?;
 
@@ -1369,6 +1422,8 @@ impl<T: Config>
         revenue_source_account: T::AccountId,
         revenue_amount: JoyBalanceOf<T>,
     ) -> Result<JoyBalanceOf<T>, DispatchError> {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.revenue_split.ensure_inactive::<T>()?;
 
@@ -1435,6 +1490,8 @@ impl<T: Config>
     /// - `token.revenue_split.leftovers()` of JOYs transferred to `account_id`
     /// - `token.revenue_split` status set to Inactive
     fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
 
         let split_info = token_info.revenue_split.ensure_active::<T>()?;
@@ -1478,6 +1535,8 @@ impl<T: Config>
     ///   `token_data.last_sale.quantity_left`
     /// - `token_data.sale` is set to None
     fn finalize_token_sale(token_id: T::TokenId) -> Result<JoyBalanceOf<T>, DispatchError> {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
         OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
         let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
@@ -1654,6 +1713,8 @@ impl<T: Config> Module<T> {
         src_member_id: &T::MemberId,
         validated_transfers: &ValidatedTransfersOf<T>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let current_block = Self::current_block();
 
         let validated_transfers_with_bloat_bonds =
@@ -1974,6 +2035,8 @@ impl<T: Config> Module<T> {
         targets: &BTreeMap<T::MemberId, TokenAllocationOf<T>>,
         bloat_bond_payer: &T::AccountId,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let current_block = Self::current_block();
         let targets_with_bloat_bonds =
             Self::pay_initial_allocation_bloat_bonds(bloat_bond_payer, targets)?;
@@ -2113,6 +2176,12 @@ impl<T: Config> Module<T> {
             pct_of_issuance_minted <= threshold,
             Error::<T>::OutstandingAmmProvidedSupplyTooLarge,
         );
+        Ok(())
+    }
+
+    fn ensure_unfrozen_state() -> DispatchResult {
+        ensure!(!Self::pallet_frozen(), Error::<T>::PalletFrozen);
+
         Ok(())
     }
 }

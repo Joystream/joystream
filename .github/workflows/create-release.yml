@@ -65,8 +65,8 @@ jobs:
 
           docker run -d --entrypoint tail --name temp-container-joystream-node $IMAGE-amd64 -f /dev/null
 
-          RESULT=$(docker exec temp-container-joystream-node b2sum -l 256 runtime.compact.compressed.wasm | awk '{print $1}')
-          VERSION_AND_COMMIT=$(docker exec temp-container-joystream-node /joystream/node --version | awk '{print $2}' | cut -d- -f -2)
+          RESULT=`docker exec temp-container-joystream-node b2sum -l 256 runtime.compact.compressed.wasm | awk '{print $1}'`
+          VERSION_AND_COMMIT=`docker exec temp-container-joystream-node /joystream/node --version | awk '{print $2}' | cut -d- -f -2`
           echo "::set-output name=blob_hash::${RESULT}"
           echo "::set-output name=version_and_commit::${VERSION_AND_COMMIT}"
 
@@ -76,7 +76,7 @@ jobs:
 
           docker rm --force temp-container-joystream-node
 
-          docker cp $(docker create --rm $IMAGE-arm64):/joystream/node ./joystream-node
+          docker cp `docker create --rm $IMAGE-arm64`:/joystream/node ./joystream-node
           tar -czvf joystream-node-$VERSION_AND_COMMIT-arm64-linux-gnu.tar.gz joystream-node
 
       - name: Retrieve saved MacOS binary
