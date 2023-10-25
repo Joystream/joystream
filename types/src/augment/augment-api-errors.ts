@@ -2324,7 +2324,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
       /**
-       * Attempt to perform action when pallet is frozen
+       * Attempt to perform an action when pallet is frozen
        **/
       PalletFrozen: AugmentedError<ApiType>;
       /**
