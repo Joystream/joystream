@@ -23,8 +23,6 @@ scale-info = { version = "2.1.1", default-features = false, features = [
 	"derive",
 ] }
 
-# util
-log = { version = "0.4.17", default-features = false }
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '50cf239147a6f569e563bcadec6c7a1c5ad5c67e', optional = true }
