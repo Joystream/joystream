@@ -13,8 +13,7 @@ import { createType } from '@joystream/types'
 
 export type ValidaotrAccountInput = {
   memberId: string
-  isVerified: boolean
-  asWorker?: string
+  isVerifiedValidator: boolean
 }
 
 export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
@@ -26,6 +25,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
+    console.log("---------------- start ------------------------------------")
     if (this.api.findEvent(result, 'membershipWorkingGroup', 'WorkerRemarked')) {
       return this.api.getEventDetails(result, 'membershipWorkingGroup', 'WorkerRemarked')
     } else {
@@ -36,10 +36,10 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.verifyValidator.map((u) => {
       const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
-        verifyValidator: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerified },
+        verifyValidator: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerifiedValidator },
       })
-      return u.asWorker
-        ? this.api.tx.membershipWorkingGroup.workerRemark(u.asWorker, metadata)
+      return u.memberId
+        ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
   }
@@ -50,13 +50,22 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
     }
     this.verifyValidator.map((d) => {
       const data = qMember.find((k) => k.id === d.memberId)?.metadata
-      console.log(data?.isVerifiedValidator, d.isVerified)
-      assert.equal(data?.isVerifiedValidator, d.isVerified)
+      console.log(data, d);
+      assert.equal(data?.isVerifiedValidator, d.isVerifiedValidator)
     })
   }
 
   async execute(): Promise<void> {
-    console.log('verify validatory test')
+    this.verifyValidator.map((u) => {
+      const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
+        verifyValidator: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerifiedValidator },
+      })
+
+      console.log(u.memberId, u.isVerifiedValidator)
+      return u.memberId
+        ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
+        : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
+    })
   }
 
   async runQueryNodeChecks(): Promise<void> {

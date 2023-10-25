@@ -13,17 +13,15 @@ export default async function validatorProfile({ api, query }: FlowProps): Promi
   const VerifyValidator = [
     {
       memberId: '1',
-      isVerified: true,
+      isVerifiedValidator: false,
     },
     {
       memberId: '2',
-      isVerified: true,
-      asWorker: 'j4VEC6FcJtBrwYQKhBAoB6Rj83jDeVua6azuHBrri1zoksBkz',
+      isVerifiedValidator: false,
     },
     {
       memberId: '3',
-      isVerified: false,
-      asWorker: '5DckbE8f7Zhm8jnPQTA1Z5ciy4ZoiDFVWCHhUB7FdAvTfjf3s',
+      isVerifiedValidator: true,
     },
   ]
 
