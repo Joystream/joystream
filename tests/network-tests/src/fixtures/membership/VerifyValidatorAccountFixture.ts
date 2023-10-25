@@ -25,7 +25,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
   }
 
   protected async getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    console.log("---------------- start ------------------------------------")
+    console.log('---------------- start ------------------------------------')
     if (this.api.findEvent(result, 'membershipWorkingGroup', 'WorkerRemarked')) {
       return this.api.getEventDetails(result, 'membershipWorkingGroup', 'WorkerRemarked')
     } else {
@@ -50,7 +50,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
     }
     this.verifyValidator.map((d) => {
       const data = qMember.find((k) => k.id === d.memberId)?.metadata
-      console.log(data, d);
+      console.log(data, d)
       assert.equal(data?.isVerifiedValidator, d.isVerifiedValidator)
     })
   }
@@ -61,6 +61,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         verifyValidator: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerifiedValidator },
       })
 
+      console.log(u.isVerifiedValidator, u.memberId)
       u.memberId
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
