@@ -61,7 +61,7 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
         handle,
         rootAccount,
         controllerAccount,
-        metadata: { name, about, avatar, externalResources, validatorAccount },
+        metadata: { name, about, avatar, externalResources },
         isVerified,
         entry,
         invitedBy,
@@ -75,7 +75,6 @@ export class InviteMembersHappyCaseFixture extends StandardizedFixture {
       assert.equal(about, metadata.about)
       assert.equal(inviteCount, 0)
       assert.equal(avatar?.avatarUri, metadata.avatarUri || undefined)
-      assert.equal(validatorAccount, metadata.validatorAccount)
       assert.includeDeepMembers(
         externalResources ?? [],
         metadata.externalResources?.map(asMembershipExternalResource) ?? []
