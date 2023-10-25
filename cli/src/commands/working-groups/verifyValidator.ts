@@ -16,15 +16,13 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
   async run(): Promise<void> {
     const { memberId } = this.parse(VerifyValidatorAccountCommand).flags
 
-    const members = await this.getApi().groupMembers(WorkingGroups.Membership)
+    await this.setPreservedState({ defaultWorkingGroup: WorkingGroups.Membership })
     const worker = await this.getRequiredWorkerContext()
 
-    const membersRows = members.find((m) => m === worker)
-
-    if (!membersRows) {
+    if (!worker) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(membersRows), memberId!)
+      this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(worker), memberId!)
     }
   }
 }
