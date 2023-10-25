@@ -61,8 +61,7 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         verifyValidator: { memberId: Long.fromString(String(u.memberId)), isVerified: u.isVerifiedValidator },
       })
 
-      console.log(u.memberId, u.isVerifiedValidator)
-      return u.memberId
+      u.memberId
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
