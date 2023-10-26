@@ -765,7 +765,7 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     const memberId = createType('u64', Number(metadata.verifyValidator.memberId))
     const member = await getMemberById(store, memberId, ['metadata'])
 
-    member.metadata.isVerifiedValidator = true
+    member.metadata.isVerifiedValidator = metadata.verifyValidator.isVerified;
     await store.save<Membership>(member)
   } else {
     return invalidMetadata('Unrecognized remarked action')
