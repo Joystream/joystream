@@ -8,7 +8,10 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails } from '../../types'
 import { Utils } from '../../utils'
 import { BaseQueryNodeFixture } from '../../Fixture'
-import { MembershipFieldsFragment } from 'src/graphql/generated/queries'
+import {
+  MembershipFieldsFragment,
+  MemberVerificationStatusUpdatedEventFieldsFragment,
+} from 'src/graphql/generated/queries'
 import { createType } from '@joystream/types'
 
 export type ValidaotrAccountInput = {
@@ -49,8 +52,16 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
     }
     this.verifyValidator.map((d) => {
       const data = qMember.find((k) => k.id === d.memberId)?.metadata
+      console.log(data?.isVerifiedValidator, d.isVerifiedValidator)
       assert.equal(data?.isVerifiedValidator, d.isVerifiedValidator)
     })
+  }
+
+  protected assertQueryNodeEventIsValid(qEvent: MemberVerificationStatusUpdatedEventFieldsFragment, i: number): void {
+    console.log(qEvent)
+
+    // assert.equal(qEvent.member.id, this.inputs[i % this.inputs.length].asMember.toString())
+    // assert.equal(qEvent.account, this.inputs[i % this.inputs.length].account.toString())
   }
 
   async execute(): Promise<void> {
@@ -62,6 +73,8 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
+
+    console.log(this.verifyValidator)
   }
 
   async runQueryNodeChecks(): Promise<void> {
