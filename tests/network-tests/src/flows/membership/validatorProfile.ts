@@ -20,7 +20,7 @@ export default async function validatorProfile({ api, query }: FlowProps): Promi
       isVerifiedValidator: false,
     },
     {
-      memberId: '27', ///this is membership id
+      memberId: '27',
       isVerifiedValidator: false,
     },
   ]
