@@ -105,7 +105,7 @@ export class UpdateProfileHappyCaseFixture extends BaseQueryNodeFixture {
     const metadata = new MembershipMetadata({
       name: this.newValues.name,
       about: this.newValues.about,
-      avatarUri: this.newValues.avatarUri, 
+      avatarUri: this.newValues.avatarUri,
       externalResources: this.newValues.externalResources,
       validatorAccount: this.newValues.validatorAccount,
     })
