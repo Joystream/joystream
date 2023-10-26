@@ -62,7 +62,6 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
-
   }
 
   async runQueryNodeChecks(): Promise<void> {
