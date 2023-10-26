@@ -31,6 +31,7 @@ export class UpdateVerificationStatusFixture extends StandardizedFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
+    console.log(this.updates, '================+++++++++++++++++++=================')
     return this.updates.map((u) =>
       this.api.tx.members.updateProfileVerification(this.membershipWgLead[0], u.memberId, u.isVerified)
     )

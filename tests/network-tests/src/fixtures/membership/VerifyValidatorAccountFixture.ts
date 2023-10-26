@@ -21,6 +21,7 @@ export type ValidaotrAccountInput = {
 
 export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
   protected verifyValidator: ValidaotrAccountInput[]
+  private tx?: SubmittableExtrinsic<'promise'>
 
   public constructor(api: Api, query: QueryNodeApi, verifyValidator: ValidaotrAccountInput[]) {
     super(api, query)
@@ -53,12 +54,16 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
     this.verifyValidator.map((d) => {
       const data = qMember.find((k) => k.id === d.memberId)?.metadata
       assert.equal(data?.isVerifiedValidator, d.isVerifiedValidator)
-      console.log(data?.isVerifiedValidator, d.isVerifiedValidator);
+      console.log(data?.isVerifiedValidator, d.isVerifiedValidator)
     })
+
+    // if (this.tx) {
+    //   this.getEventFromResult(this.tx)
+    // }
   }
 
   protected assertQueryNodeEventIsValid(qEvent: MemberVerificationStatusUpdatedEventFieldsFragment, i: number): void {
-    console.log(qEvent,"---------------------------------------------------")
+    console.log(qEvent, '---------------------------------------------------')
 
     // assert.equal(qEvent.member.id, this.inputs[i % this.inputs.length].asMember.toString())
     // assert.equal(qEvent.account, this.inputs[i % this.inputs.length].account.toString())
@@ -73,7 +78,6 @@ export class VerifyValidatorProfileFixture extends BaseQueryNodeFixture {
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
-
   }
 
   async runQueryNodeChecks(): Promise<void> {
