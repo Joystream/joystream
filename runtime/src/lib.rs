@@ -900,7 +900,7 @@ parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 5;
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
-    pub const MaxOutputs: u32 = 256; // TODO(Martin, Ignazio) : find a suitable value
+    pub const MaxOutputs: u32 = 24; // set according to https://github.com/Joystream/joystream/issues/4947#issuecomment-1778893817
     // Account bloat bond related:
     pub ProjectTokenAccountCleanupTxFee: Balance = compute_fee(
         RuntimeCall::ProjectToken(project_token::Call::<Runtime>::dust_account {
