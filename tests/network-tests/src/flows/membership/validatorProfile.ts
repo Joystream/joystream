@@ -31,7 +31,6 @@ export default async function validatorProfile({ api, query }: FlowProps): Promi
     },
   ]
 
-
   const verifyAccountFixture = new VerifyValidatorProfileFixture(api, query, VerifyValidator)
   const remarkModerateRunner = new FixtureRunner(verifyAccountFixture)
   await remarkModerateRunner.run()
