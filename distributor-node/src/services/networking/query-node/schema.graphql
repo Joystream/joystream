@@ -3188,7 +3188,10 @@ type Membership implements BaseGraphQLObject {
   deletedById: ID
   version: Int!
 
-  """The unique handle chosen by member"""
+  """The unique handle chosen by member as raw hex representation"""
+  handleRaw: String!
+
+  """The unique handle chosen by member as utf-8"""
   handle: String!
   metadata: MemberMetadata!
   metadataId: String!
@@ -20790,6 +20793,11 @@ input MembershipWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  handleRaw_eq: String
+  handleRaw_contains: String
+  handleRaw_startsWith: String
+  handleRaw_endsWith: String
+  handleRaw_in: [String!]
   handle_eq: String
   handle_contains: String
   handle_startsWith: String
@@ -21086,10 +21094,11 @@ input MembershipWhereInput {
 
 input MembershipWhereUniqueInput {
   id: ID
-  handle: String
+  handleRaw: String
 }
 
 input MembershipCreateInput {
+  handleRaw: String!
   handle: String!
   metadata: ID!
   controllerAccount: String!
@@ -21106,6 +21115,7 @@ input MembershipCreateInput {
 }
 
 input MembershipUpdateInput {
+  handleRaw: String
   handle: String
   metadata: ID
   controllerAccount: String
@@ -30627,6 +30637,8 @@ enum MembershipOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  handleRaw_ASC
+  handleRaw_DESC
   handle_ASC
   handle_DESC
   metadata_ASC

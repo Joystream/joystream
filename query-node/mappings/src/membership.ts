@@ -187,11 +187,13 @@ async function createNewMemberFromParams(
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
 
+  const memberHandle = 'unwrap' in handle ? handle.unwrap() : handle
   const member = new Membership({
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
-    handle: bytesToString('unwrap' in handle ? handle.unwrap() : handle),
+    handle: bytesToString(memberHandle),
+    handleRaw: memberHandle.toHex(),
     metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
