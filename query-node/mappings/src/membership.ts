@@ -7,6 +7,7 @@ import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { isSet } from '@joystream/metadata-protobuf/utils'
 import { MemberId } from '@joystream/types/primitives'
 import { AccountId32, Balance } from '@polkadot/types/interfaces'
+import { Bytes } from '@polkadot/types'
 import {
   PalletMembershipBuyMembershipParameters as BuyMembershipParameters,
   PalletMembershipCreateMemberParameters as CreateMemberParameters,
@@ -176,6 +177,12 @@ async function saveMembershipMetadata(
   return metadataEntity
 }
 
+function setMemberHandle(member: Membership, handle: Bytes): Membership {
+  member.handle = bytesToString(handle)
+  member.handleRaw = handle.toHex()
+  return member
+}
+
 async function createNewMemberFromParams(
   store: DatabaseManager,
   memberId: MemberId,
@@ -187,11 +194,11 @@ async function createNewMemberFromParams(
   const { rootAccount, controllerAccount, handle, metadata: metadataBytes } = params
   const metadata = deserializeMetadata(MembershipMetadata, metadataBytes)
 
+  const memberHandle = 'unwrap' in handle ? handle.unwrap() : handle
   const member = new Membership({
     id: memberId.toString(),
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
-    handle: bytesToString('unwrap' in handle ? handle.unwrap() : handle),
     metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
@@ -218,6 +225,8 @@ async function createNewMemberFromParams(
     councilCandidacies: [],
     councilMembers: [],
   })
+
+  setMemberHandle(member, memberHandle)
 
   await store.save<Membership>(member)
 
@@ -341,7 +350,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   }
 
   if (newHandle.isSome) {
-    member.handle = bytesToString(newHandle.unwrap())
+    setMemberHandle(member, newHandle.unwrap())
   }
 
   await store.save<MemberMetadata>(member.metadata)
@@ -366,6 +375,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     ...genericEventFields(event),
     member: member,
     newHandle: member.handle,
+    newHandleRaw: member.handleRaw,
     newMetadata: await saveMembershipMetadata(store, member),
   })
 

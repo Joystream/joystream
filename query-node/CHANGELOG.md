@@ -1,3 +1,7 @@
+### 1.6.0
+
+- Store membership handles both as utf-8 string and raw bytes - [#4950](https://github.com/Joystream/joystream/pull/4950)
+
 ### 1.5.0
 
 - Add add linked-in to membership external resource [#4927](https://github.com/Joystream/joystream/pull/4927)
