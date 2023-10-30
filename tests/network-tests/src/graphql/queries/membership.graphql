@@ -11,6 +11,7 @@ fragment MemberMetadataFields on MemberMetadata {
     value
   }
   isVerifiedValidator
+  validatorAccount
 }
 
 fragment MembershipFields on Membership {

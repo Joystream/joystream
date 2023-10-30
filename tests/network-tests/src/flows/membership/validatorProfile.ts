@@ -13,10 +13,16 @@ export default async function validatorProfile({ api, query }: FlowProps): Promi
   const VerifyValidator = [
     {
       memberId: '1',
-      isVerifiedValidator: false,
+      isVerifiedValidator: true,
     },
     {
-      memberId: '2',
+      memberId: '27',
+      isVerifiedValidator: true,
+    },
+  ]
+  const UnVerifyValidator = [
+    {
+      memberId: '1',
       isVerifiedValidator: false,
     },
     {
@@ -25,10 +31,16 @@ export default async function validatorProfile({ api, query }: FlowProps): Promi
     },
   ]
 
+
   const verifyAccountFixture = new VerifyValidatorProfileFixture(api, query, VerifyValidator)
   const remarkModerateRunner = new FixtureRunner(verifyAccountFixture)
   await remarkModerateRunner.run()
   await remarkModerateRunner.runQueryNodeChecks()
+
+  const unVerifyValidatorFixture = new VerifyValidatorProfileFixture(api, query, UnVerifyValidator)
+  const unVerifyValidatorRunner = new FixtureRunner(unVerifyValidatorFixture)
+  await unVerifyValidatorRunner.run()
+  await unVerifyValidatorRunner.runQueryNodeChecks()
 
   debug('Done')
 }
