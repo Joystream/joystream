@@ -193,7 +193,7 @@ async function createNewMemberFromParams(
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
     handle: bytesToString(memberHandle),
-    handleRaw: memberHandle.toHex(),
+    handleRaw: Buffer.from(memberHandle.toU8a(true)).toString('hex'),
     metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
@@ -343,7 +343,9 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
   }
 
   if (newHandle.isSome) {
-    member.handle = bytesToString(newHandle.unwrap())
+    const memberHandle = newHandle.unwrap()
+    member.handle = bytesToString(memberHandle)
+    member.handleRaw = memberHandle.toHex()
   }
 
   await store.save<MemberMetadata>(member.metadata)
@@ -368,6 +370,7 @@ export async function members_MemberProfileUpdated({ store, event }: EventContex
     ...genericEventFields(event),
     member: member,
     newHandle: member.handle,
+    newHandleRaw: member.handleRaw,
     newMetadata: await saveMembershipMetadata(store, member),
   })
 

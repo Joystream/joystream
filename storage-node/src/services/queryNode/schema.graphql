@@ -17564,6 +17564,11 @@ input MemberProfileUpdatedEventWhereInput {
   newHandle_startsWith: String
   newHandle_endsWith: String
   newHandle_in: [String!]
+  newHandleRaw_eq: String
+  newHandleRaw_contains: String
+  newHandleRaw_startsWith: String
+  newHandleRaw_endsWith: String
+  newHandleRaw_in: [String!]
   member: MembershipWhereInput
   newMetadata: MemberMetadataWhereInput
   AND: [MemberProfileUpdatedEventWhereInput!]
@@ -17582,6 +17587,7 @@ input MemberProfileUpdatedEventCreateInput {
   indexInBlock: Float!
   member: ID!
   newHandle: String
+  newHandleRaw: String
   newMetadata: ID!
 }
 
@@ -17592,6 +17598,7 @@ input MemberProfileUpdatedEventUpdateInput {
   indexInBlock: Float
   member: ID
   newHandle: String
+  newHandleRaw: String
   newMetadata: ID
 }
 
@@ -26273,8 +26280,15 @@ type MemberProfileUpdatedEvent implements Event & BaseGraphQLObject {
   member: Membership!
   memberId: String!
 
-  """New member handle. Null means no new value was provided."""
+  """
+  New member handle (utf-8 string). Null means no new value was provided.
+  """
   newHandle: String
+
+  """
+  New member handle (raw hex string). Null means no new value was provided.
+  """
+  newHandleRaw: String
   newMetadata: MemberMetadata!
   newMetadataId: String!
 }
@@ -30511,6 +30525,8 @@ enum MemberProfileUpdatedEventOrderByInput {
   member_DESC
   newHandle_ASC
   newHandle_DESC
+  newHandleRaw_ASC
+  newHandleRaw_DESC
   newMetadata_ASC
   newMetadata_DESC
 }
