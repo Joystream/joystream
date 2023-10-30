@@ -193,7 +193,7 @@ async function createNewMemberFromParams(
     rootAccount: rootAccount.toString(),
     controllerAccount: controllerAccount.toString(),
     handle: bytesToString(memberHandle),
-    handleRaw: Buffer.from(memberHandle.toU8a(true)).toString('hex'),
+    handleRaw: memberHandle.toHex(),
     metadata: await saveMembershipMetadata(store, undefined, metadata),
     entry: entryMethod,
     referredBy:
