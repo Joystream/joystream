@@ -2613,7 +2613,7 @@ fn create_frozen_proposal_proposal_common_checks_succeed() {
         };
 
         let proposal_details =
-            ProposalDetails::FreezePallet(true, common::FrezablePallet::ProjectToken);
+            ProposalDetails::SetPalletFozenStatus(true, common::FreezablePallet::ProjectToken);
 
         let proposal_fixture = ProposalTestFixture {
             general_proposal_parameters: general_proposal_parameters.clone(),
@@ -2646,7 +2646,8 @@ fn create_frozen_proposal_proposal_common_checks_succeed() {
                     proposal_details.clone(),
                 )
             },
-            proposal_parameters: <Test as crate::Config>::FreezePalletProposalParameters::get(),
+            proposal_parameters:
+                <Test as crate::Config>::SetPalletFozenStatusProposalParameters::get(),
         };
         proposal_fixture.check_all();
     });

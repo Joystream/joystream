@@ -83,12 +83,12 @@ pub mod iterable_enums {
     #[derive(
         Encode, Decode, Clone, PartialEq, Eq, Copy, Debug, PartialOrd, Ord, TypeInfo, MaxEncodedLen,
     )]
-    pub enum FrezablePallet {
+    pub enum FreezablePallet {
         ProjectToken,
     }
 }
 
-pub use iterable_enums::FrezablePallet;
+pub use iterable_enums::FreezablePallet;
 
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

@@ -11,7 +11,7 @@ use crate::{
     currency, MembershipWorkingGroupInstance, ProjectToken, ProposalCancellationFee, Runtime,
 };
 use codec::Encode;
-use common::FrezablePallet;
+use common::FreezablePallet;
 use content::NftLimitPeriod;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
@@ -1194,14 +1194,15 @@ fn freeze_pallet_proposal_succeeds() {
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
-                ProposalDetails::FreezePallet(true, FrezablePallet::ProjectToken),
+                ProposalDetails::SetPalletFozenStatus(true, FreezablePallet::ProjectToken),
             )
         })
         .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
-        let params = <Runtime as proposals_codex::Config>::FreezePalletProposalParameters::get();
+        let params =
+            <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get();
         run_to_block(System::block_number() + params.grace_period + 1);
 
         assert_eq!(ProjectToken::pallet_frozen(), true);
@@ -1231,14 +1232,15 @@ fn unfreeze_pallet_proposal_succeeds() {
             ProposalsCodex::create_proposal(
                 RawOrigin::Signed(account_id.clone()).into(),
                 general_proposal_parameters,
-                ProposalDetails::FreezePallet(false, FrezablePallet::ProjectToken),
+                ProposalDetails::SetPalletFozenStatus(false, FreezablePallet::ProjectToken),
             )
         })
         .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
-        let params = <Runtime as proposals_codex::Config>::FreezePalletProposalParameters::get();
+        let params =
+            <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get();
         run_to_block(System::block_number() + params.grace_period + 1);
 
         assert_eq!(ProjectToken::pallet_frozen(), false);
