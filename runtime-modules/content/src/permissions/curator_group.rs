@@ -71,11 +71,9 @@ pub mod iterable_enums {
     pub enum PausableChannelFeature {
         // Affects:
         // -`withdraw_from_channel_balance`
-        // -`claim_and_withdraw_channel_reward`
         ChannelFundsTransfer,
         // Affects:
         // - `claim_channel_reward`
-        // - `claim_and_withdraw_channel_reward`
         CreatorCashout,
         // Affects:
         // - `issue_nft`

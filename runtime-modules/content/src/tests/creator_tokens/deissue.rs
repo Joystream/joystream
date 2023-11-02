@@ -4,6 +4,9 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+use project_token::Error as ProjectTokenError;
 use std::collections::BTreeMap;
 
 #[test]
@@ -137,5 +140,22 @@ fn deissue_token_fails_during_transfer() {
             ),
             Error::<Test>::InvalidChannelTransferStatus,
         );
+    })
+}
+
+#[test]
+fn deissue_member_channel_creator_token_by_owner_fails_with_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default()
+            .with_initial_allocation(BTreeMap::new())
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        DeissueCreatorTokenFixture::default()
+            .call_and_assert(Err(ProjectTokenError::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        DeissueCreatorTokenFixture::default().call_and_assert(Ok(()));
     })
 }

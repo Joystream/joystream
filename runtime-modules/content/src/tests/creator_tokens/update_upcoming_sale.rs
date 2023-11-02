@@ -2,6 +2,8 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
 
 #[test]
 fn unsuccessful_update_creator_token_sale_non_existing_channel() {
@@ -179,5 +181,23 @@ fn successful_update_upcoming_curator_channel_creator_token_sale_by_lead() {
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn update_upcoming_member_channel_creator_token_sale_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default()
+            .with_start_block(100)
+            .call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        UpdateUpcomingCreatorTokenSaleFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        UpdateUpcomingCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
     })
 }

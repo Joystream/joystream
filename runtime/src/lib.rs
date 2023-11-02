@@ -147,7 +147,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 2002,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
-    transaction_version: 1,
+    transaction_version: 2,
     state_version: 1,
 };
 
@@ -249,7 +249,6 @@ impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
             RuntimeCall::Content(content::Call::<Runtime>::initialize_channel_transfer {
                 ..
             }) => false,
-            RuntimeCall::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
             RuntimeCall::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
             RuntimeCall::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
                 general_proposal_parameters: _,
@@ -547,7 +546,7 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+    pub const SessionsPerEra: sp_staking::SessionIndex = SESSIONS_PER_ERA;
     pub const BondingDuration: sp_staking::EraIndex = BONDING_DURATION;
     pub const SlashDeferDuration: sp_staking::EraIndex = SLASH_DEFER_DURATION;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
@@ -804,19 +803,19 @@ parameter_types! {
     pub const ContentModuleId: PalletId = PalletId(*b"mContent"); // module content
     pub const MaxKeysPerCuratorGroupPermissionsByLevelMap: u8 = 25;
     pub const DefaultGlobalDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: DAYS,
+        block_number_period: days!(1),
         limit: 100,
     };
     pub const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: WEEKS,
+        block_number_period: days!(7),
         limit: 400,
     };
     pub const DefaultChannelDailyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: DAYS,
+        block_number_period: days!(1),
         limit: 10,
     };
     pub const DefaultChannelWeeklyNftLimit: LimitPerPeriod<BlockNumber> = LimitPerPeriod {
-        block_number_period: WEEKS,
+        block_number_period: days!(7),
         limit: 40,
     };
     pub const MinimumCashoutAllowedLimit: Balance = dollars!(10);
@@ -895,6 +894,7 @@ parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 5;
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
+    pub const MaxOutputs: u32 = 24; // set according to https://github.com/Joystream/joystream/issues/4947#issuecomment-1778893817
     // Account bloat bond related:
     pub ProjectTokenAccountCleanupTxFee: Balance = compute_fee(
         RuntimeCall::ProjectToken(project_token::Call::<Runtime>::dust_account {
@@ -915,7 +915,6 @@ impl project_token::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type TokenId = TokenId;
-    type BlockNumberToBalance = BlockNumberToBalance;
     type DataObjectStorage = Storage;
     type ModuleId = ProjectTokenModuleId;
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
@@ -923,6 +922,7 @@ impl project_token::Config for Runtime {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = Members;
     type MembershipInfoProvider = Members;
+    type MaxOutputs = MaxOutputs;
     type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 

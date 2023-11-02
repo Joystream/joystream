@@ -1366,16 +1366,16 @@ benchmarks! {
                 next_sale_id: 0,
                 sale: None,
                 transfer_policy: params.transfer_policy.into(),
-                symbol: params.symbol,
                 patronage_info: PatronageData::<TokenBalanceOf<T>, T::BlockNumber> {
-                    rate: BlockRate::from_yearly_rate(params.patronage_rate, T::BlocksPerYear::get()),
+                    rate: params.patronage_rate,
                     unclaimed_patronage_tally_amount: Zero::zero(),
                     last_unclaimed_patronage_tally_block: execution_block
                 },
                 accounts_number: a as u64,
                 revenue_split_rate: params.revenue_split_rate,
                 revenue_split: RevenueSplitStateOf::<T>::Inactive,
-                next_revenue_split_id: 0
+                next_revenue_split_id: 0,
+                amm_curve: None,
             });
             assert_last_event::<T>(
                 <T as Config>::RuntimeEvent::from(
@@ -1389,7 +1389,7 @@ benchmarks! {
         }
 
     creator_token_issuer_transfer {
-        let a in 1 .. MAX_CRT_ISSUER_TRANSFER_OUTPUTS;
+        let a in 1 .. <T as project_token::Config>::MaxOutputs::get();
         let b in 1 .. MAX_KILOBYTES_METADATA;
 
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
@@ -1441,7 +1441,7 @@ benchmarks! {
                     project_token::Event::<T>::TokenAmountTransferredByIssuer(
                         token_id,
                         curator_member_id,
-                        Transfers(outputs.0
+                        Transfers(outputs
                                   .iter()
                                   .map(|(member_id, payment)|
                                        (Validated::NonExisting(*member_id), payment.clone().into())
@@ -1669,6 +1669,70 @@ benchmarks! {
             );
         }
 
+    activate_amm {
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id,
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        let slope = 10_000_000u32.into();
+        let intercept = 100u32.into();
+        let params = AmmParams{ slope, intercept };
+        // No pausable feature prevents this
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _(
+        origin,
+        actor,
+        channel_id,
+        params
+    )
+        verify {
+            let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+           assert_eq!(
+                token.amm_curve.unwrap(),
+                AmmCurve {
+                    slope,
+                    intercept,
+                    provided_supply: 0u32.into(),
+                }
+           )
+        }
+
+    deactivate_amm {
+        let (channel_id, group_id, _, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id.clone(),
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+        // No pausable feature prevents this
+        call_activate_amm::<T>(curator_acc_id, actor, channel_id);
+        set_all_channel_paused_features::<T>(channel_id);
+    }: _(
+        origin,
+        actor,
+        channel_id
+    )
+        verify {
+            let token = project_token::Pallet::<T>::token_info_by_id(token_id);
+           assert!(
+                token.amm_curve.is_none(),
+           )
+        }
+
     issue_revenue_split {
         let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
             setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
@@ -1873,7 +1937,7 @@ benchmarks! {
     }: _(origin, actor, channel_id, target_rate)
         verify {
             let current_block = frame_system::Pallet::<T>::block_number();
-            let new_block_rate = BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
+            let new_block_rate = target_rate;
             assert!(TokenInfoById::<T>::contains_key(token_id));
             let token = project_token::Pallet::<T>::token_info_by_id(token_id);
             assert_eq!(token.patronage_info.rate, new_block_rate);
@@ -1888,7 +1952,7 @@ benchmarks! {
                 <T as project_token::Config>::RuntimeEvent::from(
                     project_token::Event::<T>::PatronageRateDecreasedTo(
                         token_id,
-                        new_block_rate.to_yearly_rate_representation(T::BlocksPerYear::get())
+                        new_block_rate
                     ),
                 ).into(),
             );
@@ -2087,94 +2151,6 @@ benchmarks! {
             assert_eq!(
                 T::CouncilBudgetManager::get_budget(),
                 T::ExistentialDeposit::get(),
-            );
-        }
-
-    // Worst case scenario:
-    // - channel belonging to a member with max number of collaborators and max agent permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_member_channel_reward {
-        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
-
-        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
-        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
-        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
-        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
-        let (channel_id, member_id, member_account_id, lead_account_id) =
-            setup_worst_case_scenario_member_channel_all_max::<T>(false)?;
-        let lead_origin = RawOrigin::Signed(lead_account_id);
-        let origin = RawOrigin::Signed(member_account_id.clone());
-
-        set_all_channel_paused_features_except::<T>(channel_id, vec![
-            PausableChannelFeature::CreatorCashout,
-            PausableChannelFeature::ChannelFundsTransfer,
-        ]);
-
-        Pallet::<T>::update_channel_payouts(
-            RawOrigin::Root.into(),
-            UpdateChannelPayoutsParameters::<T> {
-                commitment: Some(commitment),
-                ..Default::default()
-            },
-            member_account_id.clone()
-        )?;
-
-        let actor = ContentActor::Member(member_id);
-        let balances_pre = Balances::<T>::usable_balance(member_account_id.clone());
-        let item = payments[0];
-        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
-        verify {
-            assert_eq!(
-                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
-                item.cumulative_reward_earned
-            );
-            assert_eq!(
-                Balances::<T>::usable_balance(member_account_id),
-                cumulative_reward_claimed + balances_pre,
-            );
-        }
-
-    // Worst case scenario:
-    // - curator channel belonging to a group with max number curator and max curator permissions
-    // - channel has all feature paused except the necessary for the extr. to succeed to maximize permission validation complexity
-    claim_and_withdraw_curator_channel_reward {
-        let h in 1 .. MAX_MERKLE_PROOF_HASHES;
-
-        let cumulative_reward_claimed: BalanceOf<T> = Pallet::<T>::min_cashout_allowed();
-        let payments = create_pull_payments_with_reward::<T>(2u32.pow(h), cumulative_reward_claimed);
-        let commitment = generate_merkle_root_helper::<T, _>(&payments).pop().unwrap();
-        let proof = build_merkle_path_helper::<T, _>(&payments, 0);
-        let (channel_id, group_id, lead_account_id, _, _) =
-            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
-        let origin = RawOrigin::Signed(lead_account_id.clone());
-
-        set_all_channel_paused_features_except::<T>(channel_id, vec![
-            PausableChannelFeature::CreatorCashout,
-            PausableChannelFeature::ChannelFundsTransfer,
-        ]);
-
-        Pallet::<T>::update_channel_payouts(
-            RawOrigin::Root.into(),
-            UpdateChannelPayoutsParameters::<T> {
-                commitment: Some(commitment),
-                ..Default::default()
-            },
-            lead_account_id
-        )?;
-
-        let actor = ContentActor::Lead;
-        let item = payments[0];
-        T::CouncilBudgetManager::set_budget(cumulative_reward_claimed + T::ExistentialDeposit::get());
-    }: claim_and_withdraw_channel_reward(origin, actor, proof, item)
-        verify {
-            assert_eq!(
-                Pallet::<T>::channel_by_id(channel_id).cumulative_reward_claimed,
-                item.cumulative_reward_earned
-            );
-            assert_eq!(
-                T::CouncilBudgetManager::get_budget(),
-                cumulative_reward_claimed + T::ExistentialDeposit::get(),
             );
         }
 
@@ -3310,6 +3286,50 @@ benchmarks! {
                 new_video_bloat_bond
             );
         }
+
+    // ================================================================================
+    // ============================== PROJECT TOKEN ISSUER REMARKS =================================
+    // ================================================================================
+
+    // WORST CASE SCENARIO
+    // STATE COMPLEXITY
+    // - curator owned channel
+    // - channel-owning curator group has max number of permissions per level
+    // - curator number is max
+    // - curator has max number of agent permissions
+    // - channel has max size:
+    //   - all feature paused (except necessary ones for extr to succeed)
+    //   - max channel assets
+    //   - max collaborators
+    // INPUT COMPLEXITY
+    // - remark message byte-length: b
+    creator_token_issuer_remark {
+        let b in 1 .. MAX_KILOBYTES_METADATA;
+        let (channel_id, group_id, lead_acc_id, curator_id, curator_acc_id) =
+            setup_worst_case_scenario_curator_channel_all_max::<T>(false)?;
+        let curator_member_id = curator_member_id::<T>(curator_id);
+        let origin = RawOrigin::Signed(curator_acc_id.clone());
+        let actor = ContentActor::Curator(group_id, curator_id);
+        let msg = vec![1u8].repeat((b * 1000) as usize);
+        let token_id =
+            issue_creator_token_with_worst_case_scenario_owner::<T>(
+                curator_acc_id,
+                actor,
+                channel_id,
+                curator_member_id
+            )?;
+    }: _(origin, actor, channel_id, msg.clone())
+        verify {
+            assert_last_event::<T>(
+                <T as Config>::RuntimeEvent::from(
+                    Event::<T>::CreatorTokenIssuerRemarked(
+                        channel_id,
+                        token_id,
+                        msg
+                    )
+                ).into()
+            );
+        }
 }
 
 #[cfg(test)]
@@ -3556,23 +3576,9 @@ pub mod tests {
     }
 
     #[test]
-    fn claim_channel_and_withdraw_member_channel_reward() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_claim_and_withdraw_member_channel_reward());
-        })
-    }
-
-    #[test]
     fn issue_nft() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_issue_nft());
-        })
-    }
-
-    #[test]
-    fn claim_channel_and_withdraw_curator_channel_reward() {
-        with_default_mock_builder(|| {
-            assert_ok!(Content::test_benchmark_claim_and_withdraw_curator_channel_reward());
         })
     }
 
@@ -3825,6 +3831,27 @@ pub mod tests {
     fn claim_creator_token_patronage_credit() {
         with_default_mock_builder(|| {
             assert_ok!(Content::test_benchmark_claim_creator_token_patronage_credit());
+        });
+    }
+
+    #[test]
+    fn activate_amm() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_activate_amm());
+        });
+    }
+
+    #[test]
+    fn deactivate_amm() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_deactivate_amm());
+        });
+    }
+
+    #[test]
+    fn creator_token_issuer_remark() {
+        with_default_mock_builder(|| {
+            assert_ok!(Content::test_benchmark_creator_token_issuer_remark());
         });
     }
 }

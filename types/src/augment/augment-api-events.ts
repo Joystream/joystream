@@ -4,8 +4,8 @@
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, H256, Perbill, Perquintill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceStatus, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletElectionProviderMultiPhasePhase, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenValidated, PalletProjectTokenValidatedPayment, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingForcing, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpConsensusGrandpaAppPublic, SpNposElectionsElectionScore, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { AccountId32, H256, Perbill, Permill } from '@polkadot/types/interfaces/runtime';
+import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceStatus, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletElectionProviderMultiPhasePhase, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenAmmCurve, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenTransfers, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingForcing, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpConsensusGrandpaAppPublic, SpNposElectionsElectionScore, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 declare module '@polkadot/api-base/types/events' {
   export interface AugmentedEvents<ApiType extends ApiTypes> {
@@ -458,6 +458,7 @@ declare module '@polkadot/api-base/types/events' {
       ChannelUpdated: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, PalletContentChannelUpdateParametersRecord, BTreeSet<u64>]>;
       ChannelVisibilitySetByModerator: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, bool, Bytes]>;
       CreatorTokenIssued: AugmentedEvent<ApiType, [PalletContentPermissionsContentActor, u64, u64]>;
+      CreatorTokenIssuerRemarked: AugmentedEvent<ApiType, [u64, u64, Bytes]>;
       CuratorAdded: AugmentedEvent<ApiType, [u64, u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>]>;
       CuratorGroupCreated: AugmentedEvent<ApiType, [u64]>;
       CuratorGroupPermissionsUpdated: AugmentedEvent<ApiType, [u64, BTreeMap<u8, BTreeSet<PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction>>]>;
@@ -2059,6 +2060,28 @@ declare module '@polkadot/api-base/types/events' {
        **/
       AccountDustedBy: AugmentedEvent<ApiType, [u64, u64, AccountId32, PalletProjectTokenTransferPolicy]>;
       /**
+       * AMM activated
+       * Params:
+       * - token id
+       * - member id
+       * - params for the bonding curve
+       **/
+      AmmActivated: AugmentedEvent<ApiType, [u64, u64, PalletProjectTokenAmmCurve]>;
+      /**
+       * AMM deactivated
+       * Params:
+       * - token id
+       * - member id
+       * - amm treasury amount burned upon deactivation
+       **/
+      AmmDeactivated: AugmentedEvent<ApiType, [u64, u64, u128]>;
+      /**
+       * Pallet Frozen status toggled
+       * Params:
+       * - new frozen status (true | false)
+       **/
+      FrozenStatusUpdated: AugmentedEvent<ApiType, [bool]>;
+      /**
        * Member joined whitelist
        * Params:
        * - token identifier
@@ -2080,7 +2103,7 @@ declare module '@polkadot/api-base/types/events' {
        * - token identifier
        * - new patronage rate
        **/
-      PatronageRateDecreasedTo: AugmentedEvent<ApiType, [u64, Perquintill]>;
+      PatronageRateDecreasedTo: AugmentedEvent<ApiType, [u64, Permill]>;
       /**
        * Revenue Split finalized
        * Params:
@@ -2114,7 +2137,7 @@ declare module '@polkadot/api-base/types/events' {
        * - map containing validated outputs (amount indexed by (member_id + account existance))
        * - transfer's metadata
        **/
-      TokenAmountTransferred: AugmentedEvent<ApiType, [u64, u64, BTreeMap<PalletProjectTokenValidated, PalletProjectTokenValidatedPayment>, Bytes]>;
+      TokenAmountTransferred: AugmentedEvent<ApiType, [u64, u64, PalletProjectTokenTransfers, Bytes]>;
       /**
        * Token amount transferred by issuer
        * Params:
@@ -2125,7 +2148,7 @@ declare module '@polkadot/api-base/types/events' {
        * (account_id + account existance)
        * - transfer's metadata
        **/
-      TokenAmountTransferredByIssuer: AugmentedEvent<ApiType, [u64, u64, BTreeMap<PalletProjectTokenValidated, PalletProjectTokenValidatedPayment>, Bytes]>;
+      TokenAmountTransferredByIssuer: AugmentedEvent<ApiType, [u64, u64, PalletProjectTokenTransfers, Bytes]>;
       /**
        * Token Deissued
        * Params:
@@ -2158,6 +2181,15 @@ declare module '@polkadot/api-base/types/events' {
        **/
       TokenSaleInitialized: AugmentedEvent<ApiType, [u64, u32, PalletProjectTokenTokenSale, Option<Bytes>]>;
       /**
+       * Tokens Bought on AMM
+       * Params:
+       * - token id
+       * - member id
+       * - amount of CRT minted
+       * - amount of JOY deposited into curve treasury
+       **/
+      TokensBoughtOnAmm: AugmentedEvent<ApiType, [u64, u64, u128, u128]>;
+      /**
        * Tokens Burned
        * Params:
        * - token id
@@ -2174,6 +2206,15 @@ declare module '@polkadot/api-base/types/events' {
        * - buyer's member id
        **/
       TokensPurchasedOnSale: AugmentedEvent<ApiType, [u64, u32, u128, u64]>;
+      /**
+       * Tokens Sold on AMM
+       * Params:
+       * - token id
+       * - member id
+       * - amount of CRT burned
+       * - amount of JOY withdrawn from curve treasury
+       **/
+      TokensSoldOnAmm: AugmentedEvent<ApiType, [u64, u64, u128, u128]>;
       /**
        * Transfer Policy Changed To Permissionless
        * Params:

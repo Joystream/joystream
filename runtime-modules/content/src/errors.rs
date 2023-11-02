@@ -409,5 +409,8 @@ decl_error! {
 
         /// Channel Transfers are blocked during token sales
         ChannelTransfersBlockedDuringTokenSales,
+
+        /// Channel Transfers are blocked during active AMM
+        ChannelTransfersBlockedDuringActiveAmm
     }
 }

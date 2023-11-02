@@ -1,5 +1,3 @@
-SPEC_VERSION=$(curl -H "Content-Type: application/json" \
+curl -H "Content-Type: application/json" \
     -s -d '{"id":"1", "jsonrpc":"2.0", "method": "state_getRuntimeVersion"}' \
-    http://localhost:9933 | jq -r '.result.specVersion')
-
-echo $SPEC_VERSION
+    http://localhost:9933 | jq -r '.result.specVersion'

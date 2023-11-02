@@ -936,9 +936,29 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       accountInfoByTokenAndMember: AugmentedQuery<ApiType, (arg1: u64 | AnyNumber | Uint8Array, arg2: u64 | AnyNumber | Uint8Array) => Observable<PalletProjectTokenAccountData>, [u64, u64]>;
       /**
+       * AMM buy transaction fee percentage
+       **/
+      ammBuyTxFees: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      /**
+       * Percentage threshold for deactivating the amm functionality
+       **/
+      ammDeactivationThreshold: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      /**
+       * AMM sell transaction fee percentage
+       **/
+      ammSellTxFees: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      /**
        * Bloat Bond value used during account creation
        **/
       bloatBond: AugmentedQuery<ApiType, () => Observable<u128>, []>;
+      /**
+       * Max patronage rate allowed
+       **/
+      maxYearlyPatronageRate: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
+      /**
+       * Minimum slope parameters allowed for AMM curve
+       **/
+      minAmmSlopeParameter: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
        * Minimum revenue split duration constraint
        **/
@@ -956,13 +976,13 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       nextTokenId: AugmentedQuery<ApiType, () => Observable<u64>, []>;
       /**
+       * Current frozen state.
+       **/
+      palletFrozen: AugmentedQuery<ApiType, () => Observable<bool>, []>;
+      /**
        * Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
        **/
       salePlatformFee: AugmentedQuery<ApiType, () => Observable<Permill>, []>;
-      /**
-       * Set for the tokens symbols
-       **/
-      symbolsUsed: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<Null>, [H256]>;
       /**
        * map TokenId => TokenData to retrieve token information
        **/
