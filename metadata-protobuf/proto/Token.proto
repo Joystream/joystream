@@ -1,0 +1,35 @@
+syntax = "proto2";
+message CreatorTokenIssuerRemarked {
+    oneof creator_token_issuer_remarked {
+        UpdateTokenMetadata update_token_metadata = 1;
+    }
+}
+
+message UpdateTokenMetadata {
+    optional TokenMetadata new_metadata = 1;
+}
+
+message TokenMetadata {
+  optional string name = 1; // Title
+  optional string symbol = 2; // Symbol
+  optional string description = 3; // token description
+  oneof avatar {
+    uint32 avatar_object = 4; // avatar for token - index into external [assets array](#.Assets)
+    string avatar_uri = 5; // Url to member's avatar
+  }
+  repeated Benefit benefits = 6; // benefits for tokne
+  optional string whitelist_application_note = 7; // note for applicant
+  optional string whitelist_application_apply_link = 8; // link to application process
+  optional uint64 trailer_video_id = 9; // runtime id for video trailer
+}
+
+message Benefit {
+  optional string title = 1;
+  optional string description = 2;
+  optional string emoji = 3;
+  optional uint32 display_order = 4;
+}
+
+message SaleMetadata {
+  optional string terms_and_conditions = 1;
+}

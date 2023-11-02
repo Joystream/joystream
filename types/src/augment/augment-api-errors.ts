@@ -484,6 +484,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
       /**
+       * Channel Transfers are blocked during active AMM
+       **/
+      ChannelTransfersBlockedDuringActiveAmm: AugmentedError<ApiType>;
+      /**
        * Channel Transfers are blocked during revenue splits
        **/
       ChannelTransfersBlockedDuringRevenueSplits: AugmentedError<ApiType>;
@@ -2259,6 +2263,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotDeissueTokenWithOutstandingAccounts: AugmentedError<ApiType>;
       /**
+       * No Sale if Amm is active
+       **/
+      CannotInitSaleIfAmmIsActive: AugmentedError<ApiType>;
+      /**
        * Attempt to issue in a split with zero allocation amount
        **/
       CannotIssueSplitWithZeroAllocationAmount: AugmentedError<ApiType>;
@@ -2274,6 +2282,14 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to participate in a split with zero token to stake
        **/
       CannotParticipateInSplitWithZeroAmount: AugmentedError<ApiType>;
+      /**
+       * Curve slope parameters below minimum allowed
+       **/
+      CurveSlopeParametersTooLow: AugmentedError<ApiType>;
+      /**
+       * Deadline constraint not satisfied
+       **/
+      DeadlineExpired: AugmentedError<ApiType>;
       /**
        * At least one of the members provided as part of InitialAllocation does not exist
        **/
@@ -2291,9 +2307,17 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InsufficientJoyBalance: AugmentedError<ApiType>;
       /**
+       * Creator token balance is insufficient
+       **/
+      InsufficientTokenBalance: AugmentedError<ApiType>;
+      /**
        * Account's transferrable balance is insufficient to perform the transfer or initialize token sale
        **/
       InsufficientTransferrableBalance: AugmentedError<ApiType>;
+      /**
+       * Invalid bonding curve construction parameters
+       **/
+      InvalidCurveParameters: AugmentedError<ApiType>;
       /**
        * The amount of JOY to be transferred is not enough to keep the destination account alive
        **/
@@ -2316,6 +2340,11 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NotEnoughTokensOnSale: AugmentedError<ApiType>;
       /**
+       * ------ AMM ---------------------------------------------------------
+       * not in AMM state
+       **/
+      NotInAmmState: AugmentedError<ApiType>;
+      /**
        * There are no remaining tokes to recover from the previous token sale.
        **/
       NoTokensToRecover: AugmentedError<ApiType>;
@@ -2323,6 +2352,10 @@ declare module '@polkadot/api-base/types/errors' {
        * The token has no upcoming sale
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
+      /**
+       * Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
+       **/
+      OutstandingAmmProvidedSupplyTooLarge: AugmentedError<ApiType>;
       /**
        * Attempt to perform an action when pallet is frozen
        **/
@@ -2402,6 +2435,11 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       SaleUpperBoundQuantityIsZero: AugmentedError<ApiType>;
       /**
+       * Slippage tolerance constraint tolerance not satisfied
+       **/
+      SlippageToleranceExceeded: AugmentedError<ApiType>;
+      /**
+       * -------- Patronage --------------------------------------------------
        * Target Rate is higher than current patronage rate
        **/
       TargetPatronageRateIsHigherThanCurrentRate: AugmentedError<ApiType>;
@@ -2418,6 +2456,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
       /**
+       * Transfer destination member id invalid
+       **/
+      TooManyTransferOutputs: AugmentedError<ApiType>;
+      /**
        * At least one of the transfer destinations is not an existing member id
        **/
       TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
@@ -2429,6 +2471,10 @@ declare module '@polkadot/api-base/types/errors' {
        * User is not participating in any split
        **/
       UserNotParticipantingInAnySplit: AugmentedError<ApiType>;
+      /**
+       * Provided value for patronage is too big (yearly format)
+       **/
+      YearlyPatronageRateLimitExceeded: AugmentedError<ApiType>;
     };
     proposalsCodex: {
       /**

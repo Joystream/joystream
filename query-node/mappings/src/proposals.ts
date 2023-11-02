@@ -83,6 +83,8 @@ import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
 
+type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
+
 async function getProposal(store: DatabaseManager, id: string) {
   const proposal = await store.get(Proposal, { where: { id } })
   if (!proposal) {
@@ -341,9 +343,10 @@ export async function proposalsCodex_ProposalCreated({
   event,
   block,
 }: EventContext & StoreContext): Promise<void> {
-  const { specVersion } = block.runtimeVersion
+  const specVersion = block.runtimeVersion.specVersion
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    specVersion === 1001 ? new ProposalCreatedEvent_V1001(event).params : new ProposalCreatedEvent_V2002(event).params
+    specVersion >= 2002 ? new ProposalCreatedEvent_V2002(event).params : new ProposalCreatedEvent_V1001(event).params
+
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 

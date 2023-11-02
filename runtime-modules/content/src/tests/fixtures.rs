@@ -19,12 +19,11 @@ use frame_support::{
 };
 use frame_system::RawOrigin;
 use project_token::types::TransferPolicyParamsOf;
-use project_token::types::{
-    PaymentWithVestingOf, TokenAllocationOf, TokenIssuanceParametersOf, Transfers,
-};
+use project_token::types::{TokenAllocationOf, TokenIssuanceParametersOf};
 use sp_core::U256;
 use sp_runtime::Permill;
 use sp_std::collections::btree_map::BTreeMap;
+use sp_std::convert::TryFrom;
 use sp_std::iter::FromIterator;
 use sp_std::iter::{IntoIterator, Iterator};
 use staking_handler::StakingHandler;
@@ -2169,130 +2168,6 @@ impl WithdrawFromChannelBalanceFixture {
     }
 }
 
-pub struct ClaimAndWithdrawChannelRewardFixture {
-    sender: AccountId,
-    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
-    payments: Vec<PullPayment<Test>>,
-    item: PullPayment<Test>,
-}
-
-impl ClaimAndWithdrawChannelRewardFixture {
-    pub fn default() -> Self {
-        Self {
-            sender: DEFAULT_MEMBER_ACCOUNT_ID,
-            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
-            payments: create_some_pull_payments_helper(),
-            item: PullPayment::<Test> {
-                channel_id: ChannelId::one(),
-                cumulative_reward_earned: DEFAULT_PAYOUT_CLAIMED,
-                reason: Hashing::hash_of(&b"reason".to_vec()),
-            },
-        }
-    }
-
-    pub fn with_sender(self, sender: AccountId) -> Self {
-        Self { sender, ..self }
-    }
-
-    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
-        Self { actor, ..self }
-    }
-
-    pub fn with_payments(self, payments: Vec<PullPayment<Test>>) -> Self {
-        Self { payments, ..self }
-    }
-
-    pub fn with_item(self, item: PullPayment<Test>) -> Self {
-        Self { item, ..self }
-    }
-
-    fn balance_of(
-        dest: &ChannelFundsDestination<<Test as frame_system::Config>::AccountId>,
-    ) -> BalanceOf<Test> {
-        match dest {
-            ChannelFundsDestination::AccountId(account_id) => {
-                Balances::<Test>::usable_balance(account_id)
-            }
-            ChannelFundsDestination::CouncilBudget => {
-                <Test as Config>::CouncilBudgetManager::get_budget()
-            }
-        }
-    }
-
-    pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let origin = RuntimeOrigin::signed(self.sender);
-        let channel_pre = Content::channel_by_id(&self.item.channel_id);
-        let channel_balance_pre = channel_reward_account_balance(self.item.channel_id);
-        let expected_dest = match channel_pre.owner {
-            ChannelOwner::Member(member_id) => {
-                ChannelFundsDestination::<<Test as frame_system::Config>::AccountId>::AccountId(
-                    TestMemberships::controller_account_id(member_id).unwrap_or_default(),
-                )
-            }
-            ChannelOwner::CuratorGroup(..) => {
-                ChannelFundsDestination::<<Test as frame_system::Config>::AccountId>::CouncilBudget
-            }
-        };
-        let dest_balance_pre = Self::balance_of(&expected_dest);
-        let council_budget_pre = <Test as Config>::CouncilBudgetManager::get_budget();
-
-        let proof = if self.payments.is_empty() {
-            vec![]
-        } else {
-            build_merkle_path_helper::<Test, _>(&self.payments, DEFAULT_PROOF_INDEX)
-        };
-
-        let actual_result =
-            Content::claim_and_withdraw_channel_reward(origin, self.actor, proof, self.item);
-
-        let channel_post = Content::channel_by_id(&self.item.channel_id);
-        let channel_balance_post = channel_reward_account_balance(self.item.channel_id);
-        let dest_balance_post = Self::balance_of(&expected_dest);
-        let council_budget_post = <Test as Config>::CouncilBudgetManager::get_budget();
-
-        assert_eq!(actual_result, expected_result);
-
-        let amount_claimed = self
-            .item
-            .cumulative_reward_earned
-            .saturating_sub(channel_pre.cumulative_reward_claimed);
-
-        if actual_result.is_ok() {
-            assert_eq!(
-                channel_post.cumulative_reward_claimed,
-                self.item.cumulative_reward_earned
-            );
-            assert_eq!(
-                (dest_balance_post, council_budget_post),
-                match expected_dest {
-                    // Funds are first claimed from, then withdrawn into the council budget
-                    ChannelFundsDestination::CouncilBudget =>
-                        (dest_balance_pre, council_budget_pre),
-                    // Funds are taken from council budget and withdrawn into an account
-                    _ => (
-                        dest_balance_pre.saturating_add(amount_claimed),
-                        council_budget_pre.saturating_sub(amount_claimed)
-                    ),
-                }
-            );
-            assert_eq!(
-                System::events().last().unwrap().event,
-                MetaEvent::Content(RawEvent::ChannelRewardClaimedAndWithdrawn(
-                    self.actor,
-                    self.item.channel_id,
-                    amount_claimed,
-                    expected_dest,
-                ))
-            );
-        } else {
-            assert_eq!(council_budget_post, council_budget_pre);
-            assert_eq!(channel_balance_post, channel_balance_pre);
-            assert_eq!(dest_balance_post, dest_balance_pre);
-            assert_eq!(channel_post, channel_pre);
-        }
-    }
-}
-
 pub struct IssueCreatorTokenFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
@@ -2307,7 +2182,6 @@ impl IssueCreatorTokenFixture {
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
             params: TokenIssuanceParametersOf::<Test> {
-                symbol: Hashing::hash_of(b"CRT"),
                 patronage_rate: DEFAULT_PATRONAGE_RATE,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()
@@ -2511,28 +2385,25 @@ pub struct CreatorTokenIssuerTransferFixture {
     sender: AccountId,
     actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
     channel_id: ChannelId,
-    outputs: TransfersWithVestingOf<Test>,
+    outputs: TransferWithVestingOutputsOf<Test>,
     metadata: Vec<u8>,
 }
 
 impl CreatorTokenIssuerTransferFixture {
     pub fn default() -> Self {
+        let outputs = TransferWithVestingOutputsOf::<Test>::try_from(
+            vec![(SECOND_MEMBER_ID, DEFAULT_ISSUER_TRANSFER_AMOUNT)]
+                .into_iter()
+                .map(|(member, amount)| (member, amount.into()))
+                .collect::<Vec<_>>(),
+        )
+        .ok()
+        .unwrap();
         Self {
             sender: DEFAULT_MEMBER_ACCOUNT_ID,
             actor: ContentActor::Member(DEFAULT_MEMBER_ID),
             channel_id: ChannelId::one(),
-            outputs: Transfers(
-                [(
-                    SECOND_MEMBER_ID,
-                    PaymentWithVestingOf::<Test> {
-                        amount: DEFAULT_ISSUER_TRANSFER_AMOUNT,
-                        vesting_schedule: None,
-                    },
-                )]
-                .iter()
-                .cloned()
-                .collect(),
-            ),
+            outputs,
             metadata: b"metadata".to_vec(),
         }
     }
@@ -2765,6 +2636,83 @@ impl FinalizeRevenueSplitFixture {
         let origin = RuntimeOrigin::signed(self.sender);
 
         let actual_result = Content::finalize_revenue_split(origin, self.actor, self.channel_id);
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+
+pub struct ActivateAmmFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+    params: AmmParamsOf<Test>,
+}
+
+impl ActivateAmmFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+            params: AmmParamsOf::<Test> {
+                slope: 10_000_000u32.into(),
+                intercept: Zero::zero(),
+            },
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = RuntimeOrigin::signed(self.sender);
+
+        let actual_result =
+            Content::activate_amm(origin, self.actor, self.channel_id, self.params.clone());
+
+        if expected_result.is_ok() {
+            assert_ok!(actual_result);
+        } else {
+            assert_noop!(actual_result, expected_result.err().unwrap());
+        }
+    }
+}
+pub struct DeactivateAmmFixture {
+    sender: AccountId,
+    actor: ContentActor<CuratorGroupId, CuratorId, MemberId>,
+    channel_id: ChannelId,
+}
+
+impl DeactivateAmmFixture {
+    pub fn default() -> Self {
+        Self {
+            sender: DEFAULT_MEMBER_ACCOUNT_ID,
+            actor: ContentActor::Member(DEFAULT_MEMBER_ID),
+            channel_id: ChannelId::one(),
+        }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_actor(self, actor: ContentActor<CuratorGroupId, CuratorId, MemberId>) -> Self {
+        Self { actor, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let origin = RuntimeOrigin::signed(self.sender);
+
+        let actual_result = Content::deactivate_amm(origin, self.actor, self.channel_id);
 
         if expected_result.is_ok() {
             assert_ok!(actual_result);
@@ -5451,10 +5399,6 @@ pub fn run_all_fixtures_with_contexts(contexts: Vec<ActorContextResult>) {
             .with_actor(actor)
             .call_and_assert(expected_err);
         WithdrawFromChannelBalanceFixture::default()
-            .with_sender(sender)
-            .with_actor(actor)
-            .call_and_assert(expected_err);
-        ClaimAndWithdrawChannelRewardFixture::default()
             .with_sender(sender)
             .with_actor(actor)
             .call_and_assert(expected_err);
