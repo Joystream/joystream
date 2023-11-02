@@ -335,7 +335,7 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
 pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 200,
-        grace_period: 100,
+        grace_period: 0,
         approval_quorum_percentage: 60,
         approval_threshold_percentage: 75,
         slashing_quorum_percentage: 60,
