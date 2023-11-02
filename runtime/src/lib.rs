@@ -249,7 +249,6 @@ impl Contains<<Runtime as frame_system::Config>::RuntimeCall> for CallFilter {
             RuntimeCall::Content(content::Call::<Runtime>::initialize_channel_transfer {
                 ..
             }) => false,
-            RuntimeCall::Content(content::Call::<Runtime>::issue_creator_token { .. }) => false,
             RuntimeCall::Bounty(bounty::Call::<Runtime>::create_bounty { .. }) => false,
             RuntimeCall::ProposalsCodex(proposals_codex::Call::<Runtime>::create_proposal {
                 general_proposal_parameters: _,
@@ -901,6 +900,7 @@ parameter_types! {
     pub const ProjectTokenModuleId: PalletId = PalletId(*b"mo:token"); // module: token
     pub const MaxVestingSchedulesPerAccountPerToken: u32 = 5;
     pub const BlocksPerYear: u32 = 5259600; // 365,25 * 24 * 60 * 60 / 6
+    pub const MaxOutputs: u32 = 24; // set according to https://github.com/Joystream/joystream/issues/4947#issuecomment-1778893817
     // Account bloat bond related:
     pub ProjectTokenAccountCleanupTxFee: Balance = compute_fee(
         RuntimeCall::ProjectToken(project_token::Call::<Runtime>::dust_account {
@@ -921,7 +921,6 @@ impl project_token::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type TokenId = TokenId;
-    type BlockNumberToBalance = BlockNumberToBalance;
     type DataObjectStorage = Storage;
     type ModuleId = ProjectTokenModuleId;
     type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
@@ -929,6 +928,7 @@ impl project_token::Config for Runtime {
     type BlocksPerYear = BlocksPerYear;
     type MemberOriginValidator = Members;
     type MembershipInfoProvider = Members;
+    type MaxOutputs = MaxOutputs;
     type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 

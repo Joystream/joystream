@@ -36,8 +36,8 @@ pub mod weights;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
-    UploadContextOf, YearlyRate,
+    AmmParamsOf, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf,
+    TransferWithVestingOutputsOf, UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
 pub use weights::WeightInfo;
@@ -193,7 +193,8 @@ pub trait Config:
         Self::BlockNumber,
         TokenSaleParamsOf<Self>,
         UploadContextOf<Self>,
-        TransfersWithVestingOf<Self>,
+        TransferWithVestingOutputsOf<Self>,
+        AmmParamsOf<Self>,
     >;
 
     /// Minimum cashout allowed limit
@@ -1666,54 +1667,6 @@ decl_module! {
                     new_video_state_bloat_bond));
         }
 
-        /// Claim and withdraw reward in JOY from channel account
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (H)` where:
-        /// - `H` is the lenght of the provided merkle `proof`
-        /// - DB:
-        ///    - O(1)
-        /// # </weight>
-        #[weight =
-            WeightInfoContent::<T>::claim_and_withdraw_member_channel_reward(proof.len() as u32)
-                .max(WeightInfoContent::<T>::claim_and_withdraw_curator_channel_reward(
-                    proof.len() as u32
-                ))]
-        pub fn claim_and_withdraw_channel_reward(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            proof: Vec<ProofElement<T>>,
-            item: PullPayment<T>
-        ) -> DispatchResult {
-            let (channel, reward_account, amount) =
-                Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
-
-            // Ensure withdrawals are not paused
-            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
-
-            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
-
-            let destination = Self::channel_funds_destination(&channel)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
-            // This call should (and is assumed to) never fail:
-            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?;
-
-            Self::deposit_event(RawEvent::ChannelRewardClaimedAndWithdrawn(
-                actor,
-                item.channel_id,
-                amount,
-                destination,
-            ));
-
-            Ok(())
-        }
-
         /// Issue NFT
         ///
         /// <weight>
@@ -2993,6 +2946,11 @@ decl_module! {
                     T::ProjectToken::is_sale_unscheduled(token_id),
                     Error::<T>::ChannelTransfersBlockedDuringTokenSales,
                 );
+
+                ensure!(
+                    !T::ProjectToken::is_amm_active(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringActiveAmm
+                );
             }
 
             //
@@ -3337,14 +3295,14 @@ decl_module! {
         ///    - `O(A)` - from the the generated weights
         /// # </weight>
         #[weight = WeightInfoContent::<T>::creator_token_issuer_transfer(
-            outputs.0.len() as u32,
+            outputs.len() as u32,
             to_kb(metadata.len() as u32)
         )]
         pub fn creator_token_issuer_transfer(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            outputs: TransfersWithVestingOf<T>,
+            outputs: TransferWithVestingOutputsOf<T>,
             metadata: Vec<u8>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -3673,6 +3631,99 @@ decl_module! {
             ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = None;
             });
+        }
+
+        /// Activate Amm functionality for token
+        #[weight = WeightInfoContent::<T>::activate_amm()]
+        pub fn activate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: AmmParamsOf<T>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_activate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::activate_amm(
+                token_id,
+                member_id,
+                params,
+            )?;
+
+        }
+
+        /// Deactivate Amm functionality for token
+        #[weight = WeightInfoContent::<T>::deactivate_amm()]
+        pub fn deactivate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_deactivate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::deactivate_amm(
+                token_id,
+                member_id,
+            )?;
+
+        }
+
+        /// Allow crt issuer to update metadata for an existing token
+        #[weight = WeightInfoContent::<T>::creator_token_issuer_remark(to_kb(remark.len() as u32))]
+        pub fn creator_token_issuer_remark(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            remark: Vec<u8>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            let _ = ensure_actor_authorized_to_issue_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // == MUTATION SAFE ==
+
+            Self::deposit_event(RawEvent::CreatorTokenIssuerRemarked(
+                channel_id,
+                token_id,
+                remark,
+            ));
         }
 
         type StorageVersion = CURRENT_STORAGE_VERSION;
@@ -4826,8 +4877,10 @@ decl_event!(
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
         ToggledNftLimits(bool),
+
         // Creator tokens
         CreatorTokenIssued(ContentActor, ChannelId, TokenId),
+        CreatorTokenIssuerRemarked(ChannelId, TokenId, Vec<u8>),
     }
 );
 

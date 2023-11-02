@@ -1,16 +1,18 @@
 #![cfg(test)]
 
 use crate::tests::mock::*;
-use crate::types::{Joy, Payment, Transfers, TransfersOf};
+use crate::tests::test_utils::new_transfers;
+use crate::types::{Joy, TransferOutputsOf};
 use crate::{
     last_event_eq, member, yearly_rate, AccountInfoByTokenAndMember, RawEvent, YearlyRate,
 };
-use crate::{traits::PalletToken, types::VestingSource, SymbolsUsed};
+use crate::{traits::PalletToken, types::VestingSource};
 use frame_support::dispatch::DispatchResult;
-use frame_support::storage::{StorageDoubleMap, StorageMap};
+use frame_support::storage::StorageDoubleMap;
 use sp_arithmetic::traits::One;
-use sp_runtime::{traits::Hash, DispatchError, Permill};
+use sp_runtime::{DispatchError, Permill};
 
+use sp_std::collections::btree_map::BTreeMap;
 use sp_std::iter::FromIterator;
 use storage::{BagId, DataObjectCreationParameters, StaticBagId};
 
@@ -92,7 +94,6 @@ impl IssueTokenFixture {
             issuer_account: member!(1).1,
             params: IssuanceParams {
                 patronage_rate: yearly_rate!(0),
-                symbol: Hashing::hash_of(b"ABC"),
                 transfer_policy: TransferPolicyParams::Permissionless,
                 revenue_split_rate: DEFAULT_SPLIT_RATE,
                 ..Default::default()
@@ -102,10 +103,47 @@ impl IssueTokenFixture {
         }
     }
 
+    pub fn with_supply(self, allocation: Balance) -> Self {
+        Self {
+            params: self.params.with_allocation(&member!(1).0, allocation, None),
+            ..self
+        }
+    }
+
     pub fn with_transfer_policy(self, transfer_policy: TransferPolicyParams) -> Self {
         Self {
             params: IssuanceParams {
                 transfer_policy,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_split_rate(self, revenue_split_rate: Permill) -> Self {
+        Self {
+            params: IssuanceParams {
+                revenue_split_rate,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_patronage_rate(self, patronage_rate: YearlyRate) -> Self {
+        Self {
+            params: IssuanceParams {
+                patronage_rate,
+                ..self.params
+            },
+            ..self
+        }
+    }
+
+    pub fn with_empty_allocation(self) -> Self {
+        Self {
+            params: IssuanceParams {
+                initial_allocation: BTreeMap::default(),
                 ..self.params
             },
             ..self
@@ -142,7 +180,6 @@ impl Fixture<IssueTokenFixtureStateSnapshot> for IssueTokenFixture {
                 ..TokenData::from_params::<Test>(self.params.clone()).unwrap()
             }
         );
-        assert!(SymbolsUsed::<Test>::contains_key(self.params.symbol));
         // Event emitted
         last_event_eq!(RawEvent::TokenIssued(
             snapshot_pre.next_token_id,
@@ -914,22 +951,13 @@ pub struct TransferFixture {
     sender: AccountId,
     token_id: TokenId,
     src_member_id: MemberId,
-    outputs: TransfersOf<Test>,
+    outputs: TransferOutputsOf<Test>,
     metadata: Vec<u8>,
 }
 
 impl TransferFixture {
     pub fn default() -> Self {
-        let outputs = Transfers::<_, _>(
-            vec![(
-                member!(2).0,
-                Payment::<Balance> {
-                    amount: DEFAULT_SPLIT_PARTICIPATION,
-                },
-            )]
-            .into_iter()
-            .collect(),
-        );
+        let outputs = new_transfers(vec![(member!(2).0, DEFAULT_SPLIT_PARTICIPATION)]);
         Self {
             sender: member!(1).1,
             token_id: 1u64.into(),
@@ -999,6 +1027,285 @@ impl ExitRevenueSplitFixture {
             self.token_id,
             self.member_id,
         );
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ActivateAmmFixture {
+    token_id: TokenId,
+    member_id: MemberId,
+    params: AmmParams,
+}
+
+impl ActivateAmmFixture {
+    pub fn default() -> Self {
+        let (creator_member_id, _) = member!(1);
+        ActivateAmmFixture {
+            token_id: TokenId::one(),
+            member_id: creator_member_id,
+            params: AmmParams {
+                // like Deso: https://docs.deso.org/about-deso-chain/readme#the-creator-coin-supply-curve
+                slope: AMM_CURVE_SLOPE,
+                intercept: AMM_CURVE_INTERCEPT,
+            },
+        }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_linear_function_params(self, a: Balance, b: Balance) -> Self {
+        let params = AmmParams {
+            slope: a,
+            intercept: b,
+        };
+        Self { params, ..self }
+    }
+
+    pub fn execute_call(&self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::activate_amm(self.token_id, self.member_id, self.params.clone());
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct AmmBuyFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    member_id: MemberId,
+    amount: Balance,
+    slippage_tolerance: Option<(Permill, Balance)>,
+}
+
+impl AmmBuyFixture {
+    pub fn default() -> Self {
+        let (member_id, sender) = member!(2);
+        Self {
+            sender,
+            token_id: One::one(),
+            member_id,
+            amount: Balance::from(DEFAULT_AMM_BUY_AMOUNT),
+            slippage_tolerance: None,
+        }
+    }
+
+    pub fn with_amount(self, amount: Balance) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
+        Self {
+            slippage_tolerance: Some(tolerance),
+            ..self
+        }
+    }
+
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::buy_on_amm(
+            RuntimeOrigin::signed(self.sender),
+            self.token_id,
+            self.member_id,
+            self.amount,
+            self.slippage_tolerance,
+        );
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct AmmSellFixture {
+    sender: AccountId,
+    token_id: TokenId,
+    member_id: MemberId,
+    amount: Balance,
+    slippage_tolerance: Option<(Permill, Balance)>,
+}
+
+impl AmmSellFixture {
+    pub fn default() -> Self {
+        let (member_id, sender) = member!(2);
+        Self {
+            sender,
+            token_id: One::one(),
+            member_id,
+            amount: Balance::from(DEFAULT_AMM_SELL_AMOUNT),
+            slippage_tolerance: None,
+        }
+    }
+
+    pub fn with_amount(self, amount: Balance) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn with_sender(self, sender: AccountId) -> Self {
+        Self { sender, ..self }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_slippage_tolerance(self, tolerance: (Permill, Balance)) -> Self {
+        Self {
+            slippage_tolerance: Some(tolerance),
+            ..self
+        }
+    }
+
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::sell_on_amm(
+            RuntimeOrigin::signed(self.sender),
+            self.token_id,
+            self.member_id,
+            self.amount,
+            self.slippage_tolerance,
+        );
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct DeactivateAmmFixture {
+    token_id: TokenId,
+    member_id: MemberId,
+}
+
+impl DeactivateAmmFixture {
+    pub fn default() -> Self {
+        let (member_id, _) = member!(1);
+        Self {
+            token_id: TokenId::one(),
+            member_id,
+        }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::deactivate_amm(self.token_id, self.member_id);
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ClaimPatronageCreditFixture {
+    token_id: TokenId,
+    member_id: MemberId,
+}
+
+impl ClaimPatronageCreditFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: One::one(),
+            member_id: One::one(),
+        }
+    }
+
+    pub fn with_member_id(self, member_id: MemberId) -> Self {
+        Self { member_id, ..self }
+    }
+
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::claim_patronage_credit(self.token_id, self.member_id);
+        let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
+
+        // no-op in case of error
+        if result.is_err() {
+            assert_eq!(state_pre, state_post)
+        }
+
+        result
+    }
+}
+
+pub struct ReducePatronageRateToFixture {
+    token_id: TokenId,
+    rate: YearlyRate,
+}
+
+impl ReducePatronageRateToFixture {
+    pub fn default() -> Self {
+        Self {
+            token_id: One::one(),
+            rate: DEFAULT_YEARLY_PATRONAGE_RATE.into(),
+        }
+    }
+    pub fn with_token_id(self, token_id: TokenId) -> Self {
+        Self { token_id, ..self }
+    }
+
+    pub fn with_target_rate(self, rate: YearlyRate) -> Self {
+        Self { rate, ..self }
+    }
+    pub fn execute_call(self) -> DispatchResult {
+        let state_pre = sp_io::storage::root(sp_storage::StateVersion::V1);
+        let result = Token::reduce_patronage_rate_to(self.token_id, self.rate);
         let state_post = sp_io::storage::root(sp_storage::StateVersion::V1);
 
         // no-op in case of error

@@ -52,6 +52,9 @@ pub trait WeightInfo {
 	fn exit_revenue_split() -> Weight;
 	fn set_frozen_status() -> Weight;
 	fn burn() -> Weight;
+	fn buy_on_amm_with_account_creation() -> Weight;
+	fn buy_on_amm_with_existing_account() -> Weight;
+	fn sell_on_amm() -> Weight;
 }
 
 /// Weights for project_token using the Substrate node and recommended hardware.
@@ -222,6 +225,42 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+
+	// Storage: Membership MembershipById (r:1 w:0)
+	// Storage: Token TokenInfoById (r:1 w:1)
+	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
+	// Storage: Token BloatBond (r:1 w:0)
+	// Storage: Token AmmBuyTxFees (r:1 w:0)
+	// Storage: System Account (r:2 w:2)
+	// Storage: Timestamp Now (r:1 w:0)
+	fn buy_on_amm_with_account_creation() -> Weight {
+		Weight::from_parts(74_786_000 , 0_u64)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+	// Storage: Membership MembershipById (r:1 w:0)
+	// Storage: Token TokenInfoById (r:1 w:1)
+	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
+	// Storage: Token BloatBond (r:1 w:0)
+	// Storage: Token AmmBuyTxFees (r:1 w:0)
+	// Storage: System Account (r:2 w:2)
+	// Storage: Timestamp Now (r:1 w:0)
+	fn buy_on_amm_with_existing_account() -> Weight {
+		Weight::from_parts(75_190_000, 0_u64)
+			.saturating_add(T::DbWeight::get().reads(8_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
+	// Storage: Membership MembershipById (r:1 w:0)
+	// Storage: Token TokenInfoById (r:1 w:1)
+	// Storage: Token AccountInfoByTokenAndMember (r:1 w:1)
+	// Storage: Timestamp Now (r:1 w:0)
+	// Storage: Token AmmSellTxFees (r:1 w:0)
+	// Storage: System Account (r:2 w:2)
+	fn sell_on_amm() -> Weight {
+		Weight::from_parts(61_192_000, 0_u64)
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+	}
 }
 
 // Default implementation for tests
@@ -248,6 +287,15 @@ impl WeightInfo for () {
 		Weight::from_parts(0, 0)
 	}
 	fn burn() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn buy_on_amm_with_account_creation() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn buy_on_amm_with_existing_account() -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn sell_on_amm() -> Weight {
 		Weight::from_parts(0, 0)
 	}
 }

@@ -56,6 +56,7 @@ import {
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
   UpdateChannelPayoutsProposalDetails,
+  UpdatePalletFrozenStatusProposalDetails,
 } from 'query-node/dist/model'
 import {
   asBN,
@@ -82,6 +83,8 @@ import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } f
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
+
+type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 
 async function getProposal(store: DatabaseManager, id: string) {
   const proposal = await store.get(Proposal, { where: { id } })
@@ -305,6 +308,12 @@ async function parseProposalDetails(
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
     return details
+  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isFreezePallet) {
+    const details = new UpdatePalletFrozenStatusProposalDetails()
+    const specificDetails = (proposalDetails as RuntimeProposalDetails_V2002).asFreezePallet
+    details.frozen = specificDetails[0].isTrue
+    details.pallet = specificDetails[1].type
+    return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
   }
@@ -341,9 +350,10 @@ export async function proposalsCodex_ProposalCreated({
   event,
   block,
 }: EventContext & StoreContext): Promise<void> {
-  const { specVersion } = block.runtimeVersion
+  const specVersion = block.runtimeVersion.specVersion
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    specVersion === 1001 ? new ProposalCreatedEvent_V1001(event).params : new ProposalCreatedEvent_V2002(event).params
+    specVersion >= 2002 ? new ProposalCreatedEvent_V2002(event).params : new ProposalCreatedEvent_V1001(event).params
+
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
