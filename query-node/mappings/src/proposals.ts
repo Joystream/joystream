@@ -308,9 +308,9 @@ async function parseProposalDetails(
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
     return details
-  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isFreezePallet) {
+  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isSetPalletFozenStatus) {
     const details = new UpdatePalletFrozenStatusProposalDetails()
-    const specificDetails = (proposalDetails as RuntimeProposalDetails_V2002).asFreezePallet
+    const specificDetails = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
     details.frozen = specificDetails[0].isTrue
     details.pallet = specificDetails[1].type
     return details
@@ -469,13 +469,13 @@ export async function proposalsEngine_ProposalDecisionMade({
       'ProposalStatusVetoed',
     ].includes(decisionStatus.isTypeOf)
   ) {
-    ;(
+    ; (
       decisionStatus as
-        | ProposalStatusCanceledByRuntime
-        | ProposalStatusExpired
-        | ProposalStatusRejected
-        | ProposalStatusSlashed
-        | ProposalStatusVetoed
+      | ProposalStatusCanceledByRuntime
+      | ProposalStatusExpired
+      | ProposalStatusRejected
+      | ProposalStatusSlashed
+      | ProposalStatusVetoed
     ).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     await setProposalStatus(event, store, proposal, decisionStatus)
   }

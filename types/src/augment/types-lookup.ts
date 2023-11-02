@@ -1739,9 +1739,9 @@ declare module '@polkadot/types/lookup' {
     readonly asUpdateGlobalNftLimit: ITuple<[PalletContentNftLimitPeriod, u64]>;
     readonly isUpdateChannelPayouts: boolean;
     readonly asUpdateChannelPayouts: PalletContentUpdateChannelPayoutsParametersRecord;
-    readonly isFreezePallet: boolean;
-    readonly asFreezePallet: ITuple<[bool, PalletCommonIterableEnumsFrezablePallet]>;
-    readonly type: 'Signal' | 'RuntimeUpgrade' | 'FundingRequest' | 'SetMaxValidatorCount' | 'CreateWorkingGroupLeadOpening' | 'FillWorkingGroupLeadOpening' | 'UpdateWorkingGroupBudget' | 'DecreaseWorkingGroupLeadStake' | 'SlashWorkingGroupLead' | 'SetWorkingGroupLeadReward' | 'TerminateWorkingGroupLead' | 'AmendConstitution' | 'CancelWorkingGroupLeadOpening' | 'SetMembershipPrice' | 'SetCouncilBudgetIncrement' | 'SetCouncilorReward' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'SetMembershipLeadInvitationQuota' | 'SetReferralCut' | 'VetoProposal' | 'UpdateGlobalNftLimit' | 'UpdateChannelPayouts' | 'FreezePallet';
+    readonly isSetPalletFozenStatus: boolean;
+    readonly asSetPalletFozenStatus: ITuple<[bool, PalletCommonIterableEnumsFreezablePallet]>;
+    readonly type: 'Signal' | 'RuntimeUpgrade' | 'FundingRequest' | 'SetMaxValidatorCount' | 'CreateWorkingGroupLeadOpening' | 'FillWorkingGroupLeadOpening' | 'UpdateWorkingGroupBudget' | 'DecreaseWorkingGroupLeadStake' | 'SlashWorkingGroupLead' | 'SetWorkingGroupLeadReward' | 'TerminateWorkingGroupLead' | 'AmendConstitution' | 'CancelWorkingGroupLeadOpening' | 'SetMembershipPrice' | 'SetCouncilBudgetIncrement' | 'SetCouncilorReward' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'SetMembershipLeadInvitationQuota' | 'SetReferralCut' | 'VetoProposal' | 'UpdateGlobalNftLimit' | 'UpdateChannelPayouts' | 'SetPalletFozenStatus';
   }
 
   /** @name PalletCommonFundingRequestParameters (214) */
@@ -1778,8 +1778,8 @@ declare module '@polkadot/types/lookup' {
     readonly group: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
   }
 
-  /** @name PalletCommonIterableEnumsFrezablePallet (219) */
-  export interface PalletCommonIterableEnumsFrezablePallet extends Enum {
+  /** @name PalletCommonIterableEnumsFreezablePallet (219) */
+  export interface PalletCommonIterableEnumsFreezablePallet extends Enum {
     readonly isProjectToken: boolean;
     readonly type: 'ProjectToken';
   }
