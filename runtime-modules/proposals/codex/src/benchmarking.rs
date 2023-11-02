@@ -905,7 +905,7 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        let proposal_details = ProposalDetails::FreezePallet(true, FrezablePallet::ProjectToken);
+        let proposal_details = ProposalDetails::SetPalletFozenStatus(true, FrezablePallet::ProjectToken);
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
