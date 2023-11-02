@@ -56,6 +56,7 @@ import {
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
   UpdateChannelPayoutsProposalDetails,
+  UpdatePalletFrozenStatusProposalDetails,
 } from 'query-node/dist/model'
 import {
   asBN,
@@ -306,6 +307,12 @@ async function parseProposalDetails(
     const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
+    return details
+  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isFreezePallet) {
+    const details = new UpdatePalletFrozenStatusProposalDetails()
+    const specificDetails = (proposalDetails as RuntimeProposalDetails_V2002).asFreezePallet
+    details.frozen = specificDetails[0].isTrue
+    details.pallet = specificDetails[1].type
     return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
