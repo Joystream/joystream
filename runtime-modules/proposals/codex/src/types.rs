@@ -120,7 +120,7 @@ pub enum ProposalDetails<
     /// `Update Channel Payouts` proposal
     UpdateChannelPayouts(UpdateChannelPayoutsParameters),
 
-    /// `Freeze Palet` proposal
+    /// `SetPalletFozenStatus` proposal
     SetPalletFozenStatus(bool, FreezablePallet),
 }
 
