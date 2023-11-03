@@ -1740,7 +1740,7 @@ declare module '@polkadot/types/lookup' {
     readonly isUpdateChannelPayouts: boolean;
     readonly asUpdateChannelPayouts: PalletContentUpdateChannelPayoutsParametersRecord;
     readonly isSetPalletFozenStatus: boolean;
-    readonly asSetPalletFozenStatus: ITuple<[bool, PalletCommonIterableEnumsFreezablePallet]>;
+    readonly asSetPalletFozenStatus: ITuple<[bool, PalletCommonFreezablePallet]>;
     readonly type: 'Signal' | 'RuntimeUpgrade' | 'FundingRequest' | 'SetMaxValidatorCount' | 'CreateWorkingGroupLeadOpening' | 'FillWorkingGroupLeadOpening' | 'UpdateWorkingGroupBudget' | 'DecreaseWorkingGroupLeadStake' | 'SlashWorkingGroupLead' | 'SetWorkingGroupLeadReward' | 'TerminateWorkingGroupLead' | 'AmendConstitution' | 'CancelWorkingGroupLeadOpening' | 'SetMembershipPrice' | 'SetCouncilBudgetIncrement' | 'SetCouncilorReward' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'SetMembershipLeadInvitationQuota' | 'SetReferralCut' | 'VetoProposal' | 'UpdateGlobalNftLimit' | 'UpdateChannelPayouts' | 'SetPalletFozenStatus';
   }
 
@@ -1778,8 +1778,8 @@ declare module '@polkadot/types/lookup' {
     readonly group: PalletCommonWorkingGroupIterableEnumsWorkingGroup;
   }
 
-  /** @name PalletCommonIterableEnumsFreezablePallet (219) */
-  export interface PalletCommonIterableEnumsFreezablePallet extends Enum {
+  /** @name PalletCommonFreezablePallet (219) */
+  export interface PalletCommonFreezablePallet extends Enum {
     readonly isProjectToken: boolean;
     readonly type: 'ProjectToken';
   }

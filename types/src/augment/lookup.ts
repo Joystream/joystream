@@ -1512,7 +1512,7 @@ export default {
       VetoProposal: 'u32',
       UpdateGlobalNftLimit: '(PalletContentNftLimitPeriod,u64)',
       UpdateChannelPayouts: 'PalletContentUpdateChannelPayoutsParametersRecord',
-      SetPalletFozenStatus: '(bool,PalletCommonIterableEnumsFreezablePallet)'
+      SetPalletFozenStatus: '(bool,PalletCommonFreezablePallet)'
     }
   },
   /**
@@ -1555,9 +1555,9 @@ export default {
     group: 'PalletCommonWorkingGroupIterableEnumsWorkingGroup'
   },
   /**
-   * Lookup219: pallet_common::iterable_enums::FreezablePallet
+   * Lookup219: pallet_common::FreezablePallet
    **/
-  PalletCommonIterableEnumsFreezablePallet: {
+  PalletCommonFreezablePallet: {
     _enum: ['ProjectToken']
   },
   /**
