@@ -469,13 +469,13 @@ export async function proposalsEngine_ProposalDecisionMade({
       'ProposalStatusVetoed',
     ].includes(decisionStatus.isTypeOf)
   ) {
-    ; (
+    ;(
       decisionStatus as
-      | ProposalStatusCanceledByRuntime
-      | ProposalStatusExpired
-      | ProposalStatusRejected
-      | ProposalStatusSlashed
-      | ProposalStatusVetoed
+        | ProposalStatusCanceledByRuntime
+        | ProposalStatusExpired
+        | ProposalStatusRejected
+        | ProposalStatusSlashed
+        | ProposalStatusVetoed
     ).proposalDecisionMadeEventId = proposalDecisionMadeEvent.id
     await setProposalStatus(event, store, proposal, decisionStatus)
   }
