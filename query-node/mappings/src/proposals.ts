@@ -2,8 +2,6 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } from '../generated/types/1001/types-lookup'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
 import BN from 'bn.js'
 import {
   Proposal,
@@ -58,6 +56,7 @@ import {
   ProposalDiscussionThreadModeOpen,
   ProposalStatus,
   UpdateChannelPayoutsProposalDetails,
+  UpdatePalletFrozenStatusProposalDetails,
 } from 'query-node/dist/model'
 import {
   asBN,
@@ -78,6 +77,9 @@ import {
   ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
   ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
 } from '../generated/types'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } from '../generated/types/1001/types-lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
+
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import { Bytes } from '@polkadot/types'
@@ -109,7 +111,7 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
 async function parseProposalDetails(
   event: SubstrateEvent,
   store: DatabaseManager,
-  proposalDetails: RuntimeProposalDetails
+  proposalDetails: RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 ): Promise<typeof ProposalDetails> {
   const eventTime = new Date(event.blockTimestamp)
 
@@ -305,6 +307,12 @@ async function parseProposalDetails(
     const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
+    return details
+  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isSetPalletFozenStatus) {
+    const details = new UpdatePalletFrozenStatusProposalDetails()
+    const [frozen, pallet] = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
+    details.frozen = frozen.isTrue
+    details.pallet = pallet.toString()
     return details
   } else {
     throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)

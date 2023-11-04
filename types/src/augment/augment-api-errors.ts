@@ -2353,18 +2353,14 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
       /**
-<<<<<<< HEAD
        * Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
        **/
       OutstandingAmmProvidedSupplyTooLarge: AugmentedError<ApiType>;
       /**
-||||||| 8fb3ea7deb
-=======
-       * Attempt to perform action when pallet is frozen
+       * Attempt to perform an action when pallet is frozen
        **/
       PalletFrozen: AugmentedError<ApiType>;
       /**
->>>>>>> nara
        * Previous sale was still not finalized, finalize it first.
        **/
       PreviousSaleNotFinalized: AugmentedError<ApiType>;

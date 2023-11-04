@@ -4170,7 +4170,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       purchaseTokensOnSale: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128]>;
       /**
-<<<<<<< HEAD
        * Burn desired `token_id` amount from user account and get JOY from treasury account
        * Preconditions
        * - origin, member_id pair must be a valid authentication pair
@@ -4189,8 +4188,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       sellOnAmm: AugmentedSubmittable<(tokenId: u64 | AnyNumber | Uint8Array, memberId: u64 | AnyNumber | Uint8Array, amount: u128 | AnyNumber | Uint8Array, slippageTolerance: Option<ITuple<[Permill, u128]>> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, u64, u128, Option<ITuple<[Permill, u128]>>]>;
       /**
-||||||| 8fb3ea7deb
-=======
        * Allows to freeze or unfreeze this pallet. Requires root origin.
        * 
        * <weight>
@@ -4203,7 +4200,6 @@ declare module '@polkadot/api-base/types/submittable' {
        **/
       setFrozenStatus: AugmentedSubmittable<(freeze: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>, [bool]>;
       /**
->>>>>>> nara
        * Allow to transfer from `src_member_id` account to the various `outputs` beneficiaries
        * in the specified amounts.
        * 
@@ -4249,7 +4245,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | { UpdateGlobalNftLimit: any } | { UpdateChannelPayouts: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
+      createProposal: AugmentedSubmittable<(generalProposalParameters: PalletProposalsCodexGeneralProposalParams | { memberId?: any; title?: any; description?: any; stakingAccountId?: any; exactExecutionBlock?: any } | string | Uint8Array, proposalDetails: PalletProposalsCodexProposalDetails | { Signal: any } | { RuntimeUpgrade: any } | { FundingRequest: any } | { SetMaxValidatorCount: any } | { CreateWorkingGroupLeadOpening: any } | { FillWorkingGroupLeadOpening: any } | { UpdateWorkingGroupBudget: any } | { DecreaseWorkingGroupLeadStake: any } | { SlashWorkingGroupLead: any } | { SetWorkingGroupLeadReward: any } | { TerminateWorkingGroupLead: any } | { AmendConstitution: any } | { CancelWorkingGroupLeadOpening: any } | { SetMembershipPrice: any } | { SetCouncilBudgetIncrement: any } | { SetCouncilorReward: any } | { SetInitialInvitationBalance: any } | { SetInitialInvitationCount: any } | { SetMembershipLeadInvitationQuota: any } | { SetReferralCut: any } | { VetoProposal: any } | { UpdateGlobalNftLimit: any } | { UpdateChannelPayouts: any } | { SetPalletFozenStatus: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails]>;
     };
     proposalsDiscussion: {
       /**

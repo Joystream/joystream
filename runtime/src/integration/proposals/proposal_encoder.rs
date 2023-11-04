@@ -1,5 +1,6 @@
 use crate::{Runtime, RuntimeCall};
 use common::working_group::WorkingGroup;
+use common::FreezablePallet;
 use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
 
@@ -165,6 +166,11 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     uploader_account: member_controller_account,
                 })
             }
+            ProposalDetails::SetPalletFozenStatus(freeze, pallet) => match pallet {
+                FreezablePallet::ProjectToken => {
+                    RuntimeCall::ProjectToken(project_token::Call::set_frozen_status { freeze })
+                }
+            },
         };
 
         call.encode()
