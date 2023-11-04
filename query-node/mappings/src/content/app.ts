@@ -3,32 +3,28 @@ import { ICreateApp, IUpdateApp } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { integrateMeta } from '@joystream/metadata-protobuf/utils'
 import { App, Membership } from 'query-node/dist/model'
-import { logger, unexpectedData } from '../common'
+import { MetaprotocolTxError, getById, getOneBy, logger } from '../common'
 
 export async function processCreateAppMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   metadata: DecodedMetadataObject<ICreateApp>,
-  memberId: string
-): Promise<void> {
+  member: Membership
+): Promise<App | MetaprotocolTxError> {
   const { name, appMetadata } = metadata
 
   const appId = `${event.blockNumber}-${event.indexInBlock}`
 
-  const isAppExists = await store.get(App, {
-    where: {
-      name: metadata.name,
-    },
-  })
+  const isAppExists = await getOneBy(store, App, { name })
 
   if (isAppExists) {
-    unexpectedData('App already exists', { name })
+    return MetaprotocolTxError.AppAlreadyExists
   }
 
   const newApp = new App({
     name,
     id: appId,
-    ownerMember: new Membership({ id: memberId }),
+    ownerMember: member,
     websiteUrl: appMetadata?.websiteUrl || undefined,
     useUri: appMetadata?.useUri || undefined,
     smallIcon: appMetadata?.smallIcon || undefined,
@@ -43,23 +39,25 @@ export async function processCreateAppMessage(
   })
   await store.save<App>(newApp)
   logger.info('App has been created', { name })
+
+  return newApp
 }
 
 export async function processUpdateAppMessage(
   store: DatabaseManager,
   metadata: DecodedMetadataObject<IUpdateApp>,
-  memberId: string
-): Promise<void> {
+  member: Membership
+): Promise<App | MetaprotocolTxError> {
   const { appId, appMetadata } = metadata
 
-  const app = await getAppById(store, appId)
+  const app = await getById(store, App, appId, ['ownerMember'])
 
   if (!app) {
-    unexpectedData("App doesn't exists", { appId })
+    return MetaprotocolTxError.AppNotFound
   }
 
-  if (app.ownerMember.id !== memberId) {
-    unexpectedData("App doesn't belong to the member", { appId, memberId })
+  if (app.ownerMember.id !== member.id) {
+    return MetaprotocolTxError.InvalidAppOwnerMember
   }
 
   if (appMetadata) {
@@ -80,15 +78,5 @@ export async function processUpdateAppMessage(
 
   await store.save<App>(app)
   logger.info('App has been updated', { appId })
-}
-
-export async function getAppById(store: DatabaseManager, appId: string): Promise<App | undefined> {
-  const app = await store.get(App, {
-    where: {
-      id: appId,
-    },
-    relations: ['ownerMember'],
-  })
-
   return app
 }

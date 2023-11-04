@@ -1,6 +1,6 @@
 {
   "name": "query-node-root",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "GraphQL server and mappings. Generated with ♥ by Hydra-CLI",
   "scripts": {
     "build": "./build.sh",
@@ -47,5 +47,8 @@
   },
   "volta": {
     "extends": "../package.json"
+  },
+  "devDependencies": {
+    "node-gyp": "^9.4.0"
   }
 }

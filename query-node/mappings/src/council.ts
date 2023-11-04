@@ -1,14 +1,14 @@
-import {
-  DatabaseManager,
-  EventContext,
-  FindOptionsOrder,
-  FindOptionsWhere,
-  StoreContext,
-  SubstrateEvent,
-} from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, FindOptionsWhere, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import BN from 'bn.js'
-import { FindOneOptions } from 'typeorm'
-import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
+import {
+  CURRENT_NETWORK,
+  RelationsArr,
+  deserializeMetadata,
+  genericEventFields,
+  getMembershipById,
+  getOneByOrFail,
+  inconsistentState,
+} from './common'
 
 import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
 import { isSet } from '@joystream/metadata-protobuf/utils'
@@ -87,19 +87,6 @@ import {
 /// /////////////// Common - Gets //////////////////////////////////////////////
 
 /*
-  Retrieves the member record by its id.
-*/
-async function getMembership(store: DatabaseManager, memberId: string): Promise<Membership | undefined> {
-  const member = await store.get(Membership, { where: { id: memberId } })
-
-  if (!member) {
-    throw new Error(`Membership not found. memberId '${memberId}'`)
-  }
-
-  return member
-}
-
-/*
   Retrieves the council candidate by its member id. Returns the last record for the member
   if the election round isn't explicitly set.
 */
@@ -121,15 +108,14 @@ async function getCandidate(
     where.electionRound = { id: electionRound.id.toString() }
   }
 
-  const event = await store.get(NewCandidateEvent, {
+  const event = await getOneByOrFail(
+    store,
+    NewCandidateEvent,
     where,
-    order: { inBlock: 'DESC', indexInBlock: 'DESC' },
-    relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
-  })
-
-  if (!event) {
-    throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
-  }
+    ['candidate'].concat(relations.map((r) => `candidate.${r}`)) as RelationsArr<NewCandidateEvent>,
+    { inBlock: 'DESC', indexInBlock: 'DESC' },
+    `Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`
+  )
 
   return event.candidate
 }
@@ -138,14 +124,9 @@ async function getCandidate(
   Retrieves the member's last council member record.
 */
 async function getCouncilMember(store: DatabaseManager, memberId: string): Promise<CouncilMember> {
-  const councilMember = await store.get(CouncilMember, {
-    where: { memberId: memberId },
-    order: { createdAt: 'DESC' },
-  } as FindOneOptions<CouncilMember>)
-
-  if (!councilMember) {
-    throw new Error(`Council member not found. memberId '${memberId}'`)
-  }
+  const councilMember = await getOneByOrFail(store, CouncilMember, { member: { id: memberId } }, undefined, {
+    createdAt: 'DESC',
+  })
 
   return councilMember
 }
@@ -153,12 +134,11 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
 /*
   Returns the current election round record.
 */
-async function getCurrentElectionRound(store: DatabaseManager, relations: string[] = []): Promise<ElectionRound> {
-  const electionRound = await store.get(ElectionRound, { order: { cycleId: 'DESC' }, relations: relations })
-
-  if (!electionRound) {
-    throw new Error(`No election round found`)
-  }
+async function getCurrentElectionRound(
+  store: DatabaseManager,
+  relations: RelationsArr<ElectionRound> = []
+): Promise<ElectionRound> {
+  const electionRound = await getOneByOrFail(store, ElectionRound, undefined, relations, { cycleId: 'DESC' })
 
   return electionRound
 }
@@ -167,12 +147,7 @@ async function getCurrentElectionRound(store: DatabaseManager, relations: string
   Returns the last council stage update.
 */
 async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilStageUpdate> {
-  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } as FindOptionsOrder<any> }) // TODO: get rid of `any` typecast
-
-  if (!stageUpdate) {
-    throw new Error('No stage update found.')
-  }
-
+  const stageUpdate = await getOneByOrFail(store, CouncilStageUpdate, undefined, undefined, { changedAt: 'DESC' })
   return stageUpdate
 }
 
@@ -186,10 +161,10 @@ export async function getCurrentElectedCouncil(store: DatabaseManager): Promise<
   return electedCouncil as ElectedCouncil
 }
 
-/*
-  Returns the last vote cast in an election by the given account. Returns the last record for the account
-  if the election round isn't explicitly set.
-*/
+/**
+ * Returns the last vote cast in an election by the given account. Returns the last record for the account
+ * if the election round isn't explicitly set.
+ */
 async function getAccountCastVote(
   store: DatabaseManager,
   account: string,
@@ -201,13 +176,14 @@ async function getAccountCastVote(
     where.electionRound = { id: electionRound.id.toString() }
   }
 
-  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } } as FindOneOptions<CastVote>)
-
-  if (!castVote) {
-    throw new Error(
-      `No vote cast by the given account in the current election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
-    )
-  }
+  const castVote = getOneByOrFail(
+    store,
+    CastVote,
+    where,
+    undefined,
+    { createdAt: 'DESC' },
+    `No vote cast by the given account in the current election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
+  )
 
   return castVote
 }
@@ -445,14 +421,14 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
   // common event processing - init
 
   const [memberId, stakingAccount, rewardAccount, balance] = new NewCandidateEvent_V1001(event).params
-  const member = await getMembership(store, memberId.toString())
+  const member = await getMembershipById(store, memberId)
 
   // specific event processing
 
   // increase candidate count in stage update record
   const lastStageUpdate = await getCurrentStageUpdate(store)
   if (!isCouncilStageAnnouncing(lastStageUpdate.stage)) {
-    throw new Error(`Unexpected council stage "${lastStageUpdate.stage.isTypeOf}"`)
+    inconsistentState(`Unexpected council stage "${lastStageUpdate.stage.isTypeOf}"`)
   }
 
   lastStageUpdate.stage.candidatesCount = new BN(lastStageUpdate.stage.candidatesCount).add(new BN(1))

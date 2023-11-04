@@ -1,3 +1,9 @@
+### 1.7.0
+
+- Refactor of mappings for more better handling of error cases. [#4856](https://github.com/Joystream/joystream/pull/4856)
+- Bug fix [#4855](https://github.com/Joystream/joystream/issues/4855)
+- Add support for UpdateGlobalNftLimit proposal. 
+
 ### 1.6.0
 
 - Store membership handles both as utf-8 string and raw bytes - [#4950](https://github.com/Joystream/joystream/pull/4950)
