@@ -332,6 +332,11 @@ type UpdateChannelPayoutsProposalDetails @variant {
   payloadHash: String
 }
 
+type UpdatePalletFrozenStatusProposalDetails @variant {
+  frozen: Boolean!
+  pallet: String!
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -355,3 +360,4 @@ union ProposalDetails =
   | SetReferralCutProposalDetails
   | VetoProposalDetails
   | UpdateChannelPayoutsProposalDetails
+  | UpdatePalletFrozenStatusProposalDetails

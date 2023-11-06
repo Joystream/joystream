@@ -284,6 +284,7 @@ pub(crate) fn max_proposal_stake() -> Balance {
         <Runtime as proposals_codex::Config>::VetoProposalProposalParameters::get(),
         <Runtime as proposals_codex::Config>::UpdateChannelPayoutsProposalParameters::get(),
         <Runtime as proposals_codex::Config>::UpdateGlobalNftLimitProposalParameters::get(),
+        <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get()
     ];
 
     stakes

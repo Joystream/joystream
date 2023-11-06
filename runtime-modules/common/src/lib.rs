@@ -69,6 +69,13 @@ pub trait StorageOwnership {
         + PartialEq;
 }
 
+/// Defines which pallets can be frozen for the `SetPalletFozenStatus` proposal
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq, TypeInfo)]
+pub enum FreezablePallet {
+    ProjectToken,
+}
+
 /// Defines time in both block number and substrate time abstraction.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug, Default)]

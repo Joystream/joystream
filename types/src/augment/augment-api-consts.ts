@@ -597,6 +597,7 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Set Membership Price' proposal parameters.
        **/
       setMembershipPriceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      setPalletFozenStatusProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       setReferralCutProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Set Working Group Lead Reward' proposal parameters.

@@ -7,8 +7,11 @@ mod working_group_proposals;
 use crate::tests::{
     account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
 };
-use crate::{currency, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use crate::{
+    currency, MembershipWorkingGroupInstance, ProjectToken, ProposalCancellationFee, Runtime,
+};
 use codec::Encode;
+use common::FreezablePallet;
 use content::NftLimitPeriod;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
@@ -19,7 +22,7 @@ use working_group::{StakeParameters, StakePolicy};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::Currency;
-use frame_support::{StorageMap, StorageValue};
+use frame_support::{assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
 use sp_std::collections::btree_set::BTreeSet;
@@ -1167,5 +1170,79 @@ fn update_global_nft_limit_proposal_succeeds() {
             content::GlobalDailyNftLimit::<Runtime>::get().limit,
             new_limit
         );
+    });
+}
+
+#[test]
+fn freeze_pallet_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetPalletFozenStatus(true, FreezablePallet::ProjectToken),
+            )
+        })
+        .with_member_id(member_id);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(ProjectToken::pallet_frozen(), true);
+    });
+}
+
+#[test]
+fn unfreeze_pallet_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+        let freeze_result = ProjectToken::set_frozen_status(RawOrigin::Root.into(), true);
+        assert_ok!(freeze_result);
+
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetPalletFozenStatus(false, FreezablePallet::ProjectToken),
+            )
+        })
+        .with_member_id(member_id);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(ProjectToken::pallet_frozen(), false);
     });
 }

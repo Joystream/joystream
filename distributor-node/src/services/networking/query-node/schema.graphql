@@ -2104,7 +2104,7 @@ type Proposal implements BaseGraphQLObject {
   proposalexecutedeventproposal: [ProposalExecutedEvent!]
 }
 
-union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails
+union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails | UpdatePalletFrozenStatusProposalDetails
 
 union ProposalStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant | ProposalStatusVetoed | ProposalStatusExecuted | ProposalStatusExecutionFailed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
 
@@ -2820,6 +2820,11 @@ type UpdateChannelPayoutsProposalDetails {
 
   """The hash of the channel payout payload file"""
   payloadHash: String
+}
+
+type UpdatePalletFrozenStatusProposalDetails {
+  frozen: Boolean!
+  pallet: String!
 }
 
 type UpdateWorkingGroupBudgetProposalDetails {

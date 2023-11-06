@@ -274,6 +274,11 @@ pub trait Config:
 
     /// Max allowed number of validators in set max validator count proposal
     type SetMaxValidatorCountProposalMaxValidators: Get<u32>;
+
+    /// `Freeze Pallet` proposal parameters
+    type SetPalletFozenStatusProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -497,6 +502,9 @@ decl_module! {
         /// Max allowed number of validators in set max validator count proposal
         const SetMaxValidatorCountProposalMaxValidators: u32 =
             T::SetMaxValidatorCountProposalMaxValidators::get();
+
+        const SetPalletFozenStatusProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -866,6 +874,9 @@ impl<T: Config> Module<T> {
                     );
                 }
             }
+            ProposalDetails::SetPalletFozenStatus(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -932,6 +943,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
+            }
+            ProposalDetails::SetPalletFozenStatus(..) => {
+                T::SetPalletFozenStatusProposalParameters::get()
             }
         }
     }
@@ -1093,6 +1107,12 @@ impl<T: Config> Module<T> {
                     to_kb(description_length.saturated_into()),
                 )
                 .saturated_into()
+            }
+            ProposalDetails::SetPalletFozenStatus(..) => {
+                WeightInfoCodex::<T>::create_proposal_freeze_pallet(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
             }
         }
     }
