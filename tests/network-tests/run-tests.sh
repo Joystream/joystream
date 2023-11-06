@@ -8,6 +8,10 @@ function cleanup() {
     docker logs joystream-node --tail 15 || :
     docker stop joystream-node || :
     docker rm joystream-node || :
+    echo "# Colossus-1 Logs"
+    docker logs colossus-1 --tail 100 || :
+    echo "# Colossus-2 Logs"
+    docker logs colossus-2 --tail 100 || :
     docker-compose -f ../../docker-compose.yml down -v || :
 }
 

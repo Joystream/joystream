@@ -47,7 +47,7 @@ import {
   Content_VideoUpdatedEvent_V1001 as VideoUpdatedEvent_V1001,
   Content_VideoVisibilitySetByModeratorEvent_V1001 as VideoVisibilitySetByModeratorEvent_V1001,
 } from '../../generated/types'
-import { bytesToString, deserializeMetadata, genericEventFields, inconsistentState, logger } from '../common'
+import { RelationsArr, bytesToString, deserializeMetadata, genericEventFields, getByIdOrFail, logger } from '../common'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import { createNft } from './nft'
 import {
@@ -94,15 +94,7 @@ export async function content_ContentCreated(ctx: EventContext & StoreContext): 
   }
 
   // load channel
-  const channel = await store.get(Channel, {
-    where: { id: channelId.toString() },
-    relations: ['ownerMember', 'ownerCuratorGroup'],
-  })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Trying to add video to non-existing channel', channelId)
-  }
+  const channel = await getByIdOrFail(store, Channel, channelId.toString(), ['ownerMember', 'ownerCuratorGroup'])
 
   // deserialize & process metadata
   const appAction = meta.isSome ? deserializeMetadata(AppAction, meta.unwrap(), { skipWarning: true }) : undefined
@@ -207,36 +199,29 @@ export async function content_ContentUpdated(ctx: EventContext & StoreContext): 
     newDataObjectIds,
   }
 
+  // TODO: remove this after we have Playlist feature since
+  // TODO: we would then check if it is a Video or Playlist
+
   // load video
-  const video = await store.get(Video, {
-    where: { id: contentId.toString() },
-    relations: [
-      ...videoRelationsForCounters,
-      'license',
-      'channel.ownerMember',
-      'channel.ownerCuratorGroup',
-      'nft',
-      'mediaMetadata',
-      'mediaMetadata.encoding',
-    ],
-  })
+  const video = await getByIdOrFail(store, Video, contentId.toString(), [
+    ...videoRelationsForCounters,
+    'license',
+    'channel.ownerMember',
+    'channel.ownerCuratorGroup',
+    'nft',
+    'mediaMetadata',
+    'mediaMetadata.encoding',
+  ] as RelationsArr<Video>)
 
-  if (video) {
-    const appAction = newMeta.isSome
-      ? deserializeMetadata(AppAction, newMeta.unwrap(), { skipWarning: true })
-      : undefined
-    if (appAction) {
-      const contentMetadataBytes = u8aToBytes(appAction.rawAction)
-      const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata
-      await processUpdateVideoMessage(ctx, video, videoMetadata ?? undefined, contentUpdatedEventData)
-    } else {
-      const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
-      await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
-    }
-    return
+  const appAction = newMeta.isSome ? deserializeMetadata(AppAction, newMeta.unwrap(), { skipWarning: true }) : undefined
+  if (appAction) {
+    const contentMetadataBytes = u8aToBytes(appAction.rawAction)
+    const videoMetadata = deserializeMetadata(ContentMetadata, contentMetadataBytes)?.videoMetadata
+    await processUpdateVideoMessage(ctx, video, videoMetadata ?? undefined, contentUpdatedEventData)
+  } else {
+    const contentMetadata = newMeta.isSome ? deserializeMetadata(ContentMetadata, newMeta.unwrap()) : undefined
+    await processUpdateVideoMessage(ctx, video, contentMetadata?.videoMetadata || undefined, contentUpdatedEventData)
   }
-
-  inconsistentState('Non-existing content update requested', contentId)
 }
 
 export async function processUpdateVideoMessage(
@@ -364,15 +349,7 @@ export async function content_VideoVisibilitySetByModerator({
   const [actor, videoId, isCensored, rationale] = new VideoVisibilitySetByModeratorEvent_V1001(event).params
 
   // load video
-  const video = await store.get(Video, {
-    where: { id: videoId.toString() },
-    relations: [...videoRelationsForCounters],
-  })
-
-  // ensure video exists
-  if (!video) {
-    return inconsistentState('Non-existing video censoring requested', videoId)
-  }
+  const video = await getByIdOrFail(store, Video, videoId.toString(), [...videoRelationsForCounters])
 
   // update video
   video.isCensored = isCensored.isTrue
@@ -402,15 +379,7 @@ export async function content_VideoVisibilitySetByModerator({
 
 async function deleteVideo(store: DatabaseManager, videoId: VideoId) {
   // load video
-  const video = await store.get(Video, {
-    where: { id: videoId.toString() },
-    relations: [...videoRelationsForCounters],
-  })
-
-  // ensure video exists
-  if (!video) {
-    return inconsistentState('Non-existing video deletion requested', videoId)
-  }
+  const video = await getByIdOrFail(store, Video, videoId.toString(), [...videoRelationsForCounters])
 
   // update video active counters
   await getAllManagers(store).videos.onMainEntityDeletion(video)

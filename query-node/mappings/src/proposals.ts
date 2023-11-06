@@ -1,70 +1,75 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { Bytes } from '@polkadot/types'
+import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import {
-  Proposal,
-  SignalProposalDetails,
-  RuntimeUpgradeProposalDetails,
-  FundingRequestProposalDetails,
-  SetMaxValidatorCountProposalDetails,
-  CreateWorkingGroupLeadOpeningProposalDetails,
-  FillWorkingGroupLeadOpeningProposalDetails,
-  UpdateWorkingGroupBudgetProposalDetails,
-  DecreaseWorkingGroupLeadStakeProposalDetails,
-  SlashWorkingGroupLeadProposalDetails,
-  SetWorkingGroupLeadRewardProposalDetails,
-  TerminateWorkingGroupLeadProposalDetails,
   AmendConstitutionProposalDetails,
   CancelWorkingGroupLeadOpeningProposalDetails,
-  SetMembershipPriceProposalDetails,
+  CreateWorkingGroupLeadOpeningProposalDetails,
+  DecreaseWorkingGroupLeadStakeProposalDetails,
+  FillWorkingGroupLeadOpeningProposalDetails,
+  FundingRequestDestination,
+  FundingRequestDestinationsList,
+  FundingRequestProposalDetails,
+  Membership,
+  Proposal,
+  ProposalCancelledEvent,
+  ProposalCreatedEvent,
+  ProposalDecisionMadeEvent,
+  ProposalDecisionStatus,
+  ProposalDetails,
+  ProposalDiscussionThread,
+  ProposalDiscussionThreadModeOpen,
+  ProposalExecutedEvent,
+  ProposalExecutionStatus,
+  ProposalIntermediateStatus,
+  ProposalStatus,
+  ProposalStatusCanceledByRuntime,
+  ProposalStatusCancelled,
+  ProposalStatusDeciding,
+  ProposalStatusDormant,
+  ProposalStatusExecuted,
+  ProposalStatusExecutionFailed,
+  ProposalStatusExpired,
+  ProposalStatusGracing,
+  ProposalStatusRejected,
+  ProposalStatusSlashed,
+  ProposalStatusUpdatedEvent,
+  ProposalStatusVetoed,
+  ProposalVoteKind,
+  ProposalVotedEvent,
+  RuntimeUpgradeProposalDetails,
+  RuntimeWasmBytecode,
   SetCouncilBudgetIncrementProposalDetails,
   SetCouncilorRewardProposalDetails,
   SetInitialInvitationBalanceProposalDetails,
   SetInitialInvitationCountProposalDetails,
+  SetMaxValidatorCountProposalDetails,
   SetMembershipLeadInvitationQuotaProposalDetails,
+  SetMembershipPriceProposalDetails,
   SetReferralCutProposalDetails,
-  VetoProposalDetails,
-  ProposalDetails,
-  FundingRequestDestinationsList,
-  FundingRequestDestination,
-  Membership,
-  ProposalStatusDeciding,
-  ProposalIntermediateStatus,
-  ProposalStatusDormant,
-  ProposalStatusGracing,
-  ProposalStatusUpdatedEvent,
-  ProposalDecisionStatus,
-  ProposalStatusCancelled,
-  ProposalStatusExpired,
-  ProposalStatusRejected,
-  ProposalStatusSlashed,
-  ProposalStatusVetoed,
-  ProposalDecisionMadeEvent,
-  ProposalStatusCanceledByRuntime,
-  ProposalStatusExecuted,
-  ProposalStatusExecutionFailed,
-  ProposalExecutionStatus,
-  ProposalExecutedEvent,
-  ProposalVotedEvent,
-  ProposalVoteKind,
-  ProposalCancelledEvent,
-  ProposalCreatedEvent,
-  RuntimeWasmBytecode,
-  ProposalDiscussionThread,
-  ProposalDiscussionThreadModeOpen,
-  ProposalStatus,
+  SetWorkingGroupLeadRewardProposalDetails,
+  SignalProposalDetails,
+  SlashWorkingGroupLeadProposalDetails,
+  TerminateWorkingGroupLeadProposalDetails,
   UpdateChannelPayoutsProposalDetails,
   UpdatePalletFrozenStatusProposalDetails,
+  UpdateGlobalNftLimitProposalDetails,
+  UpdateWorkingGroupBudgetProposalDetails,
+  VetoProposalDetails,
 } from 'query-node/dist/model'
 import {
+  INT32MAX,
   asBN,
   bytesToString,
   genericEventFields,
+  getByIdOrFail,
   getWorkingGroupModuleName,
-  INT32MAX,
   toNumber,
+  unimplementedError,
   unwrap,
   whenDef,
 } from './common'
@@ -81,18 +86,11 @@ import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } f
 import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
 
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
-import { blake2AsHex } from '@polkadot/util-crypto'
-import { Bytes } from '@polkadot/types'
 
 type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 
 async function getProposal(store: DatabaseManager, id: string) {
-  const proposal = await store.get(Proposal, { where: { id } })
-  if (!proposal) {
-    throw new Error(`Proposal not found by id: ${id}`)
-  }
-
-  return proposal
+  return getByIdOrFail(store, Proposal, id)
 }
 
 async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: Bytes) {
@@ -308,6 +306,17 @@ async function parseProposalDetails(
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
     return details
+  }
+  // UpdateGlobalNftLimitProposalDetails
+  else if (proposalDetails.isUpdateGlobalNftLimit) {
+    const details = new UpdateGlobalNftLimitProposalDetails()
+    const specificDetails = proposalDetails.asUpdateGlobalNftLimit
+    if (specificDetails[0].isDaily) {
+      details.newDailyNftLimit = specificDetails[1].toNumber()
+    } else {
+      details.newWeeklyNftLimit = specificDetails[1].toNumber()
+    }
+    return details
   } else if ((proposalDetails as RuntimeProposalDetails_V2002).isSetPalletFozenStatus) {
     const details = new UpdatePalletFrozenStatusProposalDetails()
     const [frozen, pallet] = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
@@ -315,7 +324,7 @@ async function parseProposalDetails(
     details.pallet = pallet.toString()
     return details
   } else {
-    throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
+    unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
 }
 
@@ -407,7 +416,7 @@ export async function proposalsEngine_ProposalStatusUpdated({
     newStatus = new ProposalStatusGracing()
     ++proposal.councilApprovals
   } else {
-    throw new Error(`Unexpected proposal status: ${status.type}`)
+    unimplementedError(`Unsupported proposal status: ${status.type}`)
   }
 
   const proposalStatusUpdatedEvent = new ProposalStatusUpdatedEvent({
@@ -449,7 +458,7 @@ export async function proposalsEngine_ProposalDecisionMade({
   } else if (decision.isVetoed) {
     decisionStatus = new ProposalStatusVetoed()
   } else {
-    throw new Error(`Unexpected proposal decision: ${decision.type}`)
+    unimplementedError(`Unexpected proposal decision: ${decision.type}`)
   }
 
   const proposalDecisionMadeEvent = new ProposalDecisionMadeEvent({
@@ -493,7 +502,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     status.errorMessage = executionStatus.asExecutionFailed.error.toHuman() as string
     newStatus = status
   } else {
-    throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)
+    unimplementedError(`Unsupported proposal execution status: ${executionStatus.type}`)
   }
 
   const proposalExecutedEvent = new ProposalExecutedEvent({
@@ -525,10 +534,8 @@ export async function proposalsEngine_Voted({ store, event }: EventContext & Sto
     vote = ProposalVoteKind.REJECT
   } else if (voteKind.isSlash) {
     vote = ProposalVoteKind.SLASH
-  } else if (voteKind.isAbstain) {
-    vote = ProposalVoteKind.ABSTAIN
   } else {
-    throw new Error(`Unexpected vote kind: ${voteKind.type}`)
+    vote = ProposalVoteKind.ABSTAIN
   }
 
   const votedEvent = new ProposalVotedEvent({

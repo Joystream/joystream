@@ -3,7 +3,9 @@ module.exports = {
   env: {
     node: true,
   },
+  plugins: ['eslint-plugin-local-rules'],
   rules: {
+    'local-rules/no-throw': 'error',
     '@typescript-eslint/naming-convention': 'off',
     // TODO: Remove all the rules below, they seem quite useful
     '@typescript-eslint/no-explicit-any': 'off',

@@ -69,7 +69,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
     OpenApiValidator.middleware({
       apiSpec: spec,
       validateApiSpec: true,
-      validateResponses: true,
+      validateResponses: process.env.NODE_ENV !== 'production',
       validateRequests: true,
       operationHandlers: {
         basePath: path.join(__dirname, './controllers'),
