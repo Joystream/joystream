@@ -48,33 +48,48 @@ query getDataObjectDetails($id: ID!) {
   }
 }
 
-fragment DistirubtionBucketWithObjects on DistributionBucket {
+fragment MinimalDataObject on StorageDataObject {
   id
-  bags {
-    objects {
-      id
-      size
-      ipfsHash
-      type {
-        ... on DataObjectTypeVideoSubtitle {
-          subtitle {
-            mimeType
-          }
-        }
+  size
+  ipfsHash
+  type {
+    ... on DataObjectTypeVideoSubtitle {
+      subtitle {
+        mimeType
       }
     }
   }
 }
 
-query getDistributionBucketsWithObjectsByIds($ids: [ID!]) {
-  distributionBuckets(where: { id_in: $ids }) {
-    ...DistirubtionBucketWithObjects
+fragment StorageBagWithObjects on StorageBag {
+  id
+  objects {
+    ...MinimalDataObject
   }
 }
 
-query getDistributionBucketsWithObjectsByWorkerId($workerId: Int!) {
+query getDataObjectsWithBagsByIds($bagIds: [ID!], $limit: Int) {
+  storageBags(where: { id_in: $bagIds }, limit: $limit) {
+    ...StorageBagWithObjects
+  }
+}
+
+fragment DistributionBucketWithBags on DistributionBucket {
+  id
+  bags {
+    id
+  }
+}
+
+query getDistributionBucketsWithBagsByIds($ids: [ID!]) {
+  distributionBuckets(where: { id_in: $ids }) {
+    ...DistributionBucketWithBags
+  }
+}
+
+query getDistributionBucketsWithBagsByWorkerId($workerId: Int!) {
   distributionBuckets(where: { operators_some: { workerId_eq: $workerId, status_eq: ACTIVE } }) {
-    ...DistirubtionBucketWithObjects
+    ...DistributionBucketWithBags
   }
 }
 

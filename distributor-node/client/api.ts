@@ -128,6 +128,12 @@ export interface StatusResponse {
     'downloadsInProgress': number;
     /**
      * 
+     * @type {string}
+     * @memberof StatusResponse
+     */
+    'nodeEnv': string;
+    /**
+     * 
      * @type {StatusResponseQueryNodeStatus}
      * @memberof StatusResponse
      */

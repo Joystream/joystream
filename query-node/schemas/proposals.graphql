@@ -333,8 +333,18 @@ type UpdateChannelPayoutsProposalDetails @variant {
 }
 
 type UpdatePalletFrozenStatusProposalDetails @variant {
+  """New frozen status for pallet"""
   frozen: Boolean!
+  """The pallet to update frozen status on"""
   pallet: String!
+}
+
+type UpdateGlobalNftLimitProposalDetails @variant {
+  "New daily NFT limit set in the proposal (if any)"
+  newDailyNftLimit: Int
+
+  "New weekly NFT limit set in the proposal (if any)"
+  newWeeklyNftLimit: Int
 }
 
 union ProposalDetails =
@@ -361,3 +371,4 @@ union ProposalDetails =
   | VetoProposalDetails
   | UpdateChannelPayoutsProposalDetails
   | UpdatePalletFrozenStatusProposalDetails
+  | UpdateGlobalNftLimitProposalDetails
