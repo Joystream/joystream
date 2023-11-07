@@ -4,6 +4,7 @@ import chalk from 'chalk'
 import UploadCommandBase from '../../base/UploadCommandBase'
 import fs from 'fs'
 import { createType } from '@joystream/types'
+import { readBytesFromFile } from '@joystream/js/utils'
 
 export default class UpdateChannelPayoutsProposal extends UploadCommandBase {
   static description = 'Create channel payouts proposal.'
@@ -94,7 +95,9 @@ export default class UpdateChannelPayoutsProposal extends UploadCommandBase {
       },
       {
         UpdateChannelPayouts: createType('PalletContentUpdateChannelPayoutsParametersRecord', {
-          commitment: payloadFilePath ? await generateCommitmentFromPayloadFile('PATH', payloadFilePath) : null,
+          commitment: payloadFilePath
+            ? await generateCommitmentFromPayloadFile(readBytesFromFile('PATH', payloadFilePath))
+            : null,
           payload: payloadFilePath
             ? {
                 objectCreationParams: {
