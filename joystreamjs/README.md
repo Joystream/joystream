@@ -30,8 +30,6 @@ header and then uses the `offset` of given channel Id from header to fetch the r
 ```javascript
 import { channelPayoutProof } from '@joystream/js/content'
 
-const readContext = 'PATH' // 'PATH' | 'URL'
-const inputFilePath = './payload'
 const channelId = 1
 const payoutRecord = await channelPayoutProof(channelId)
 ```
@@ -40,11 +38,14 @@ const payoutRecord = await channelPayoutProof(channelId)
 
 ```javascript
 import { channelPayoutProofAtByteOffset } from '@joystream/js/content'
+import { readBytesFromFile } from '@joystream/js/utils'
 
 const readContext = 'PATH' // 'PATH' | 'URL'
 const inputFilePath = './payload'
 const byteOffset = 40
-const payoutRecord = await channelPayoutProofAtByteOffset(readContext, input, byteOffset)
+const payoutRecord = await channelPayoutProofAtByteOffset(
+  readBytesFromFile(readContext, inputFilePath), byteOffset
+)
 ```
 
 ### Get header from serialized channel payouts payload file
@@ -52,9 +53,13 @@ const payoutRecord = await channelPayoutProofAtByteOffset(readContext, input, by
 ```javascript
 import { serializedPayloadHeader } from '@joystream/js/content'
 import { ChannelPayoutsMetadata } from '@joystream/metadata-protobuf'
+import { readBytesFromFile } from '@joystream/js/utils'
 
 const readContext = 'PATH' // 'PATH' | 'URL'
-const serializedHeader = await serializedPayloadHeader(readContext, input)
+const inputFilePath = './payload'
+const serializedHeader = await serializedPayloadHeader(
+  readBytesFromFile(readContext, inputFilePath)
+)
 // decode header
 const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
 console.log(
@@ -68,11 +73,13 @@ console.log(
 ### Generate merkle root from serialized channel payouts payload
 
 ```javascript
-import { generateMerkleRoot } from '@joystream/js/content'
+import { generateCommitmentFromPayloadFile } from '@joystream/js/content'
 
 const inputFilePath = './payload'
 const readContext = 'PATH' // 'PATH' | 'URL'
-const merkleRoot = await generateCommitmentFromPayloadFile(inputFilePath)
+const merkleRoot = await generateCommitmentFromPayloadFile(
+  readBytesFromFile(readContext, inputFilePath)
+)
 ```
 
 # Utils Submodule (@joystream/js/utils)
@@ -92,10 +99,12 @@ Read a range of bytes from input file provided `start` and `end` values.
 Both `start` and `end` are inclusive
 
 ```javascript
-import { getByteSequenceFromFile } from '@joystream/js/utils'
+import { readBytesFromFile } from '@joystream/js/utils'
 
+const readContext = 'PATH' // 'PATH' | 'URL'
 const inputFilePath = './payload'
 const start = 10
 const end = 20
-const bytes = await getByteSequenceFromFile(inputFilePath, start, end)
+const bytesReader = readBytesFromFile(readContext, inputFilePath)
+const bytes = await bytesReader(start, end)
 ```
