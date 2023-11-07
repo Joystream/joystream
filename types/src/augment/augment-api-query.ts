@@ -177,24 +177,6 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       underConstruction: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<U8aFixed>>, [u32]>;
     };
-    bagsList: {
-      /**
-       * Counter for the related counted storage map
-       **/
-      counterForListNodes: AugmentedQuery<ApiType, () => Observable<u32>, []>;
-      /**
-       * A bag stored in storage.
-       * 
-       * Stores a `Bag` struct, which stores head and tail pointers to itself.
-       **/
-      listBags: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletBagsListListBag>>, [u64]>;
-      /**
-       * A single node, within some bag.
-       * 
-       * Nodes store links forward and back within their respective bags.
-       **/
-      listNodes: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletBagsListListNode>>, [AccountId32]>;
-    };
     balances: {
       /**
        * The Balances pallet example of storing the balance of an account.
@@ -1575,6 +1557,24 @@ declare module '@polkadot/api-base/types/storage' {
        * Information regarding the vesting of a given account.
        **/
       vesting: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Option<Vec<PalletVestingVestingInfo>>>, [AccountId32]>;
+    };
+    voterList: {
+      /**
+       * Counter for the related counted storage map
+       **/
+      counterForListNodes: AugmentedQuery<ApiType, () => Observable<u32>, []>;
+      /**
+       * A bag stored in storage.
+       * 
+       * Stores a `Bag` struct, which stores head and tail pointers to itself.
+       **/
+      listBags: AugmentedQuery<ApiType, (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletBagsListListBag>>, [u64]>;
+      /**
+       * A single node, within some bag.
+       * 
+       * Nodes store links forward and back within their respective bags.
+       **/
+      listNodes: AugmentedQuery<ApiType, (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletBagsListListNode>>, [AccountId32]>;
     };
   } // AugmentedQueries
 } // declare module

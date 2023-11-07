@@ -30,7 +30,7 @@ use node_runtime::Block;
 use node_runtime::{ExistentialDeposit, RuntimeApi};
 
 use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
-use sc_finality_grandpa as grandpa;
+use sc_consensus_grandpa as grandpa;
 use sc_service::PartialComponents;
 use sp_core::crypto::Ss58AddressFormat;
 use sp_keyring::Sr25519Keyring;

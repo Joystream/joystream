@@ -31,12 +31,11 @@ use node_runtime::RuntimeApi;
 use overrides::DEFAULT_HEAP_PAGES;
 use sc_client_api::BlockBackend;
 use sc_consensus_babe::{self, SlotProportion};
+use sc_consensus_grandpa as grandpa;
 use sc_executor::NativeElseWasmExecutor;
-use sc_finality_grandpa as grandpa;
-use sc_network::NetworkService;
-use sc_network_common::{
-    protocol::event::Event, service::NetworkEventStream, sync::warp::WarpSyncParams,
-};
+use sc_network::{event::Event, NetworkEventStream, NetworkService};
+use sc_network_common::sync::warp::WarpSyncParams;
+use sc_network_sync::SyncingService;
 use sc_service::{config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryWorker};
 use sp_api::ProvideRuntimeApi;
@@ -311,6 +310,8 @@ pub struct NewFullBase {
     pub client: Arc<FullClient>,
     /// The networking service of the node.
     pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
+    /// The syncing service of the node.
+    pub sync: Arc<SyncingService<Block>>,
     /// The transaction pool of the node.
     pub transaction_pool: Arc<TransactionPool>,
     /// The rpc handlers of the node.
@@ -367,7 +368,7 @@ pub fn new_full_base(
         Vec::default(),
     ));
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter) =
+    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             client: client.clone(),
@@ -406,6 +407,7 @@ pub fn new_full_base(
         task_manager: &mut task_manager,
         system_rpc_tx,
         tx_handler_controller,
+        sync_service: sync_service.clone(),
         telemetry: telemetry.as_mut(),
     })?;
 
@@ -448,8 +450,8 @@ pub fn new_full_base(
             select_chain,
             env: proposer,
             block_import,
-            sync_oracle: network.clone(),
-            justification_sync_link: network.clone(),
+            sync_oracle: sync_service.clone(),
+            justification_sync_link: sync_service.clone(),
             create_inherent_data_providers: move |parent, ()| {
                 let client_clone = client_clone.clone();
                 async move {
@@ -550,6 +552,7 @@ pub fn new_full_base(
             config,
             link: grandpa_link,
             network: network.clone(),
+            sync: Arc::new(sync_service.clone()),
             telemetry: telemetry.as_ref().map(|x| x.handle()),
             voting_rule: grandpa::VotingRulesBuilder::default().build(),
             prometheus_registry,
@@ -570,6 +573,7 @@ pub fn new_full_base(
         task_manager,
         client,
         network,
+        sync: sync_service,
         transaction_pool,
         rpc_handlers,
     })
@@ -585,7 +589,8 @@ pub fn new_full(config: Configuration, cli: Cli) -> Result<TaskManager, ServiceE
         cli.storage_monitor,
         database_source,
         &task_manager.spawn_essential_handle(),
-    )?;
+    )
+    .map_err(|e| ServiceError::Application(e.into()))?;
 
     Ok(task_manager)
 }
@@ -656,6 +661,7 @@ mod tests {
                     task_manager,
                     client,
                     network,
+                    sync,
                     transaction_pool,
                     ..
                 } = new_full_base(
@@ -671,6 +677,7 @@ mod tests {
                     task_manager,
                     client,
                     network,
+                    sync,
                     transaction_pool,
                 );
                 Ok((node, setup_handles.unwrap()))
@@ -787,7 +794,7 @@ mod tests {
                 );
                 params.fork_choice = Some(ForkChoiceStrategy::LongestChain);
 
-                futures::executor::block_on(block_import.import_block(params, Default::default()))
+                futures::executor::block_on(block_import.import_block(params))
                     .expect("error importing test block");
             },
             |service, _| {
@@ -863,6 +870,7 @@ mod tests {
                     task_manager,
                     client,
                     network,
+                    sync,
                     transaction_pool,
                     ..
                 } = new_full_base(config, false, |_, _| ())?;
@@ -870,6 +878,7 @@ mod tests {
                     task_manager,
                     client,
                     network,
+                    sync,
                     transaction_pool,
                 ))
             },

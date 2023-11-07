@@ -77,17 +77,17 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn transfer(o: u32, _m: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1800 + o * (165 ±0)`
-		//  Estimated: `14591 + o * (5564 ±0)`
-		// Minimum execution time: 143_320 nanoseconds.
-		Weight::from_parts(144_240_000, 0u64)
-			.saturating_add(Weight::from_proof_size(14591))
-			// Standard Error: 16_496
-			.saturating_add(Weight::from_parts(10_584_246, 0u64).saturating_mul(o.into()))
-			.saturating_add(T::DbWeight::get().reads(7_u64))
+		//  Estimated: `14095 + o * (5564 ±0)`
+		// Minimum execution time: 119_000 nanoseconds.
+		Weight::from_parts(119_000_000, 0u64)
+			.saturating_add(Weight::from_parts(0, 14095))
+			// Standard Error: 3_767
+			.saturating_add(Weight::from_parts(9_473_790, 0u64).saturating_mul(o.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().reads((2_u64).saturating_mul(o.into())))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(o.into())))
-			.saturating_add(Weight::from_proof_size(5564).saturating_mul(o.into()))
+			.saturating_add(Weight::from_parts(0, 5564).saturating_mul(o.into()))
 	}
 	// Storage: Token PalletFrozen (r:1 w:0)
 	// Proof: Token PalletFrozen (max_values: Some(1), max_size: Some(1), added: 496, mode: MaxEncodedLen)
@@ -102,11 +102,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn dust_account() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1179`
-		//  Estimated: `14080`
-		// Minimum execution time: 48_750 nanoseconds.
-		Weight::from_parts(49_850_000, 0u64)
-			.saturating_add(Weight::from_proof_size(14080))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
+		//  Estimated: `13584`
+		// Minimum execution time: 42_000 nanoseconds.
+		Weight::from_parts(43_000_000, 0u64)
+			.saturating_add(Weight::from_parts(0, 13584))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Token PalletFrozen (r:1 w:0)
@@ -125,13 +125,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn join_whitelist(h: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1173`
-		//  Estimated: `14591`
-		// Minimum execution time: 62_730 nanoseconds.
-		Weight::from_parts(63_196_984, 0u64)
-			.saturating_add(Weight::from_proof_size(14591))
-			// Standard Error: 11_202
-			.saturating_add(Weight::from_parts(898_552, 0u64).saturating_mul(h.into()))
-			.saturating_add(T::DbWeight::get().reads(7_u64))
+		//  Estimated: `14095`
+		// Minimum execution time: 56_000 nanoseconds.
+		Weight::from_parts(56_746_277, 0u64)
+			.saturating_add(Weight::from_parts(0, 14095))
+			// Standard Error: 7_413
+			.saturating_add(Weight::from_parts(558_908, 0u64).saturating_mul(h.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Token PalletFrozen (r:1 w:0)
@@ -151,11 +151,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn purchase_tokens_on_sale() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1441`
-		//  Estimated: `17693`
-		// Minimum execution time: 86_070 nanoseconds.
-		Weight::from_parts(87_520_000, 0u64)
-			.saturating_add(Weight::from_proof_size(17693))
-			.saturating_add(T::DbWeight::get().reads(9_u64))
+		//  Estimated: `17197`
+		// Minimum execution time: 76_000 nanoseconds.
+		Weight::from_parts(77_000_000, 0u64)
+			.saturating_add(Weight::from_parts(0, 17197))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	// Storage: Token PalletFrozen (r:1 w:0)
@@ -171,11 +171,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn participate_in_split() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1589`
-		//  Estimated: `14080`
-		// Minimum execution time: 59_400 nanoseconds.
-		Weight::from_parts(60_310_000, 0u64)
-			.saturating_add(Weight::from_proof_size(14080))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
+		//  Estimated: `13584`
+		// Minimum execution time: 52_000 nanoseconds.
+		Weight::from_parts(53_000_000, 0u64)
+			.saturating_add(Weight::from_parts(0, 13584))
+			.saturating_add(T::DbWeight::get().reads(5_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 	// Storage: Token PalletFrozen (r:1 w:0)
@@ -189,11 +189,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn exit_revenue_split() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1211`
-		//  Estimated: `8874`
-		// Minimum execution time: 33_961 nanoseconds.
-		Weight::from_parts(35_640_000, 0u64)
-			.saturating_add(Weight::from_proof_size(8874))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
+		//  Estimated: `8378`
+		// Minimum execution time: 29_000 nanoseconds.
+		Weight::from_parts(30_000_000, 0u64)
+			.saturating_add(Weight::from_parts(0, 8378))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Token PalletFrozen (r:0 w:1)
@@ -204,7 +204,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `0`
 		// Minimum execution time: 7_370 nanoseconds.
 		Weight::from_parts(7_650_000, 0u64)
-			.saturating_add(Weight::from_proof_size(0))
+			.saturating_add(Weight::from_parts(0, 0))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Token PalletFrozen (r:1 w:0)
@@ -218,11 +218,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	fn burn() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1095`
-		//  Estimated: `8874`
-		// Minimum execution time: 34_340 nanoseconds.
-		Weight::from_parts(35_220_000, 0u64)
-			.saturating_add(Weight::from_proof_size(8874))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
+		//  Estimated: `8378`
+		// Minimum execution time: 30_000 nanoseconds.
+		Weight::from_parts(30_000_000, 0u64)
+			.saturating_add(Weight::from_parts(0, 8378))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 

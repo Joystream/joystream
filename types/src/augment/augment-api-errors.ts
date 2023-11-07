@@ -153,12 +153,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidKeyOwnershipProof: AugmentedError<ApiType>;
     };
-    bagsList: {
-      /**
-       * A error in the list interface implementation.
-       **/
-      List: AugmentedError<ApiType>;
-    };
     balances: {
       /**
        * Beneficiary account must pre-exist
@@ -3361,6 +3355,12 @@ declare module '@polkadot/api-base/types/errors' {
        * An index was out of bounds of the vesting schedules.
        **/
       ScheduleIndexOutOfBounds: AugmentedError<ApiType>;
+    };
+    voterList: {
+      /**
+       * A error in the list interface implementation.
+       **/
+      List: AugmentedError<ApiType>;
     };
   } // AugmentedErrors
 } // declare module

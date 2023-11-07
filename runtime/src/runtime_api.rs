@@ -12,10 +12,10 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::{
-    AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, BagsList,
-    Balance, BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical,
-    Index, InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys,
-    Signature, Staking, System, TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
+    BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
+    InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys, Signature,
+    Staking, System, TransactionPayment, VoterList, BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
 
 #[cfg(feature = "try-runtime")]
@@ -100,10 +100,8 @@ pub type Migrations = (
     pallet_staking::migrations::v9::InjectValidatorsIntoVoterList<Runtime>,
     // slash all pending slashes correctly
     pallet_staking::migrations::v10::MigrateToV10<Runtime>,
-    // Rename BagsList to VoterList - SKIPPING FOR NOW BY KEEPING SAME NAME
-    // Post-Upgrade check is failing -> 'old pallet data hasn't been removed'
-    // Only storage version will be bumped. Is this a problem?
-    pallet_staking::migrations::v11::MigrateToV11<Runtime, BagsList, StakingMigrationV11OldPallet>,
+    // Rename BagsList to VoterList
+    pallet_staking::migrations::v11::MigrateToV11<Runtime, VoterList, StakingMigrationV11OldPallet>,
     // Kill HistoryDepth storage
     pallet_staking::migrations::v12::MigrateToV12<Runtime>,
     // Migrate to new storage versioning
@@ -134,7 +132,7 @@ mod benches {
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
-        [pallet_bags_list, BagsList]
+        [pallet_bags_list, VoterList]
         [pallet_balances, Balances]
         [pallet_election_provider_multi_phase, ElectionProviderMultiPhase]
         [pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]
