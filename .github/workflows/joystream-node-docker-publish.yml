@@ -4,9 +4,6 @@ name: joystream-node-docker-publish
 on:
   - workflow_dispatch
 
-env:
-  REPOSITORY: joystream/node
-
 jobs:
   main:
     name: Publish joystream/node:latest docker image
@@ -20,11 +17,6 @@ jobs:
         with:
           node-version: '18.x'
 
-      - id: compute_shasum
-        name: Compute runtime code shasum
-        run: |
-          export TAG_SHASUM=`scripts/runtime-code-shasum.sh`
-
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
@@ -33,8 +25,9 @@ jobs:
 
       - name: Publish manifest
         run: |
-          IMAGE=${{ env.REPOSITORY }}:${{ env.TAG_SHASUM }}
-          LATEST_TAG=${{ env.REPOSITORY }}:latest
+          SHASUM=`scripts/runtime-code-shasum.sh`
+          IMAGE=joystream/node:$SHASUM
+          LATEST_TAG=joystream/node:latest
           docker pull $IMAGE-amd64
           docker pull $IMAGE-arm64
           docker manifest create $LATEST_TAG $IMAGE-amd64 $IMAGE-arm64
