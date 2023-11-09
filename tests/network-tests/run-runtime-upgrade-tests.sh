@@ -167,7 +167,8 @@ function main {
     # 4. early chain db init
     init_chain_db
     echo >&2 "chain db initialized"
-    # 5. start node
+    # 5. start node using new version
+    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
     CONTAINER_ID=$(start_joystream_node)
     echo >&2 "joystream node starting"
 
@@ -189,24 +190,9 @@ function main {
     # Do some setup and checks before the upgrade
     ./run-test-scenario.sh preRuntimeUpgrade
 
-    # We allow this step to fail as the indexer currently has
-    # a problem dealing with the runtime upgrade block
-    ./run-test-scenario.sh runtimeUpgrade || :
+    ./run-test-scenario.sh runtimeUpgrade
 
-    # stop joystream-node, but don't remove volumes
-    echo >&2 "stopping joystream-node"
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-
-    # start new joystream-node - ensure that new node is compatible with old database
-    export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
-    CONTAINER_ID=$(start_joystream_node)
-    echo >&2 "starting new joystream-node"
-
-    # restart indexer
-    docker restart indexer
-
-    sleep 90
+    sleep 20
 
     ./run-test-scenario.sh postRuntimeUpgrade
 }

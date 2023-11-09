@@ -6,7 +6,6 @@ use frame_support::assert_noop;
 use frame_support::assert_ok;
 use frame_system::RawOrigin;
 use project_token::types::PaymentWithVesting;
-use project_token::types::{PaymentWithVestingOf, Transfers};
 
 #[test]
 fn unsuccessful_creator_token_issuer_transfer_non_existing_channel() {
