@@ -162,14 +162,13 @@ function main {
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
 
-    CONTAINER_ID=""
-    export JOYSTREAM_NODE_TAG=${RUNTIME}
     # 4. early chain db init
+    export JOYSTREAM_NODE_TAG=${RUNTIME}
     init_chain_db
     echo >&2 "chain db initialized"
     # 5. start node using new version
     export JOYSTREAM_NODE_TAG=${TARGET_RUNTIME}
-    CONTAINER_ID=$(start_joystream_node)
+    start_joystream_node
     echo >&2 "joystream node starting"
 
     # Start a query-node
