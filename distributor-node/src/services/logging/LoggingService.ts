@@ -84,7 +84,6 @@ export class LoggingService {
     const transports: winston.LoggerOptions['transports'] = []
 
     let esTransport: ElasticsearchTransport | undefined
-    console.log('config.logs?.elastic', config.logs?.elastic)
     if (config.logs?.elastic) {
       esTransport = new ElasticsearchTransport({
         index: config.logs.elastic.index || 'distributor-node',
