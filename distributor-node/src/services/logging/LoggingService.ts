@@ -70,6 +70,14 @@ export class LoggingService {
   private constructor(options: LoggerOptions, esTransport?: ElasticsearchTransport) {
     this.esTransport = esTransport
     this.rootLogger = winston.createLogger(options)
+
+    // Compulsory error handling
+    this.rootLogger.on('error', (error) => {
+      console.error('Error in logger caught:', error)
+    })
+    this.esTransport?.on('error', (error) => {
+      console.error('Error in logger caught:', error)
+    })
   }
 
   public static withAppConfig(config: ReadonlyConfig): LoggingService {

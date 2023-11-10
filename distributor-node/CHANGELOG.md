@@ -1,4 +1,7 @@
-##
+## 1.4.1
+
+- Bumped `winston-elasticsearch` package verion 
+- **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
 
 ### 1.4.0
 

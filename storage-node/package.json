@@ -1,7 +1,7 @@
 {
   "name": "storage-node",
   "description": "Joystream storage subsystem.",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "author": "Joystream contributors",
   "bin": {
     "storage-node": "./bin/run"
@@ -62,7 +62,7 @@
     "uuid": "^8.3.2",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.5.5",
-    "winston-elasticsearch": "^0.15.8"
+    "winston-elasticsearch": "^0.17.4"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
