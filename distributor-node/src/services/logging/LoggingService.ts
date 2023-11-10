@@ -70,12 +70,21 @@ export class LoggingService {
   private constructor(options: LoggerOptions, esTransport?: ElasticsearchTransport) {
     this.esTransport = esTransport
     this.rootLogger = winston.createLogger(options)
+
+    // Compulsory error handling
+    this.rootLogger.on('error', (error) => {
+      console.error('Error in logger caught:', error)
+    })
+    this.esTransport?.on('error', (error) => {
+      console.error('Error in logger caught:', error)
+    })
   }
 
   public static withAppConfig(config: ReadonlyConfig): LoggingService {
     const transports: winston.LoggerOptions['transports'] = []
 
     let esTransport: ElasticsearchTransport | undefined
+    console.log('config.logs?.elastic', config.logs?.elastic)
     if (config.logs?.elastic) {
       esTransport = new ElasticsearchTransport({
         index: config.logs.elastic.index || 'distributor-node',

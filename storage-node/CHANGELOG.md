@@ -1,3 +1,9 @@
+### 3.7.2
+
+- Bumped `winston-elasticsearch` package verion 
+- **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
+
+
 ### 3.7.1
 
 - Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets.
