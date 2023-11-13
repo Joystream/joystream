@@ -86,8 +86,9 @@ export class LoggingService {
     let esTransport: ElasticsearchTransport | undefined
     if (config.logs?.elastic) {
       const indexPrefix = config.logs.elastic.indexPrefix || 'logs-argus'
+      const index = `${indexPrefix}-${config.id}`.toLowerCase()
       esTransport = new ElasticsearchTransport({
-        index: `${indexPrefix}-${config.id}`,
+        index,
         dataStream: true,
         level: config.logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),

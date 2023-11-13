@@ -1,8 +1,11 @@
+### 3.8.0
+
+- Changed Elasticsearch transport to use data streams instead of regular indices. Removed `--elasticSearchIndex` option and replaced with `--elasticSearchIndexPrefix`. Node ID from config will be automatically appended to the index name.
+
 ### 3.7.2
 
-- Bumped `winston-elasticsearch` package verion 
+- Bumped `winston-elasticsearch` package verion
 - **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
-
 
 ### 3.7.1
 

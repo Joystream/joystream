@@ -1,7 +1,6 @@
 ## 1.5.0
 
 - Changed Elasticsearch transport to use data streams instead of regular indices. Renamed `config.logs.elastic.index` to `config.logs.elastic.indexPrefix`. Node ID from config will be automatically appended to the index name.
-- Updated example distributor node config to match values currently used in production.
 
 ## 1.4.1
 
