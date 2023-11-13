@@ -63,13 +63,10 @@ export async function getFile(
       sendResponseWithError(res, next, err, 'files')
     })
 
-    stream.on('end', async () => {
-      await unpinDataObjectIdFromCache(req.params.id)
-    })
-
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
+  } finally {
     await unpinDataObjectIdFromCache(req.params.id)
   }
 }

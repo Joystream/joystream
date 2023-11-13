@@ -131,7 +131,7 @@ async function getDeletionTasksFromMovedDataObjects(
 
   const timeoutMs = 60 * 1000 // 1 minute since it's only a HEAD request
   const deletionTasks: DeleteLocalFileTask[] = []
-  await Promise.all(
+  await Promise.allSettled(
     movedDataObjects.map(async (movedDataObject) => {
       let dataObjectReplicationCount = 0
 

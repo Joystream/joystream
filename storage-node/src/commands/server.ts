@@ -67,14 +67,14 @@ export default class Server extends ApiCommandBase {
       default: 1,
     }),
     cleanup: flags.boolean({
-      char: 's',
+      char: 'c',
       description: 'Enable cleanup/pruning of no-longer assigned assets.',
       default: false,
     }),
     cleanupInterval: flags.integer({
       char: 'i',
       description: 'Interval between periodic cleanup actions (in minutes)',
-      default: 1,
+      default: 360,
     }),
     queryNodeEndpoint: flags.string({
       char: 'q',
@@ -353,7 +353,7 @@ async function runSyncWithInterval(
 }
 
 /**
- * Run the data synchronization process.
+ * Run the data cleanup process.
  *
  * @param workerId - worker ID
  * @param buckets - Selected storage buckets

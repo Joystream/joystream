@@ -42,8 +42,7 @@ export async function loadDataObjectIdCache(uploadDir: string, tempDirName: stri
   const tempDirectoryName = path.parse(tempDirName).name
   const ids = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
 
-  ids.map((id) => idCache.set(id, 0))
-
+  ids.forEach((id) => idCache.set(id, 0))
   logger.debug(`Local ID cache loaded.`)
 
   lock.release()

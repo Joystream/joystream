@@ -26,7 +26,7 @@ export default class DevCleanup extends Command {
     bucketId: flags.integer({
       char: 'b',
       required: true,
-      description: 'The buckerId to sync',
+      description: 'The buckerId to sync prune/cleanup',
     }),
     cleanupWorkersNumber: flags.integer({
       char: 'p',
