@@ -177,8 +177,11 @@ type MemberProfileUpdatedEvent implements Event @entity {
   "Membership being updated."
   member: Membership!
 
-  "New member handle. Null means no new value was provided."
+  "New member handle (utf-8 string). Null means no new value was provided."
   newHandle: String
+
+  "New member handle (raw hex string). Null means no new value was provided."
+  newHandleRaw: String
 
   "New member metadata. (empty values inside metadata mean no new value was provided)"
   newMetadata: MemberMetadata!

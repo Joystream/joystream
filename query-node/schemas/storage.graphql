@@ -133,6 +133,9 @@ type StorageBag @entity {
   "Data objects in the bag"
   objects: [StorageDataObject!] @derivedFrom(field: "storageBag")
 
+  "Total size of data objects in Bag"
+  objectsSize: BigInt!
+
   "Storage buckets assigned to the bag"
   storageBuckets: [StorageBucket!]
 

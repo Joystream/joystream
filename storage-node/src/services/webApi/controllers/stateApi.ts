@@ -135,16 +135,17 @@ export async function getVersion(
  * A public endpoint: returns the server status.
  */
 export async function getStatus(req: express.Request, res: express.Response<StatusResponse, AppConfig>): Promise<void> {
-  const { qnApi, process, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
+  const { qnApi, process: proc, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
 
   // Copy from an object, because the actual object could contain more data.
   res.status(200).json({
-    version: process.version,
+    version: proc.version,
     uploadBuckets,
     downloadBuckets,
     sync,
     cleanup,
     queryNodeStatus: await getQueryNodeStatus(qnApi),
+    nodeEnv: process.env.NODE_ENV,
   })
 }
 

@@ -1047,6 +1047,9 @@ type StorageBag implements BaseGraphQLObject {
   deletedById: ID
   version: Int!
   objects: [StorageDataObject!]!
+
+  """Total size of data objects in Bag"""
+  objectsSize: BigInt!
   storageBuckets: [StorageBucket!]!
   distributionBuckets: [DistributionBucket!]!
 
@@ -2002,6 +2005,7 @@ enum MembershipExternalResourceType {
   IRC
   WECHAT
   WHATSAPP
+  LINKEDIN
 }
 
 type MemberMetadata implements BaseGraphQLObject {
@@ -2024,6 +2028,8 @@ type MemberMetadata implements BaseGraphQLObject {
   about: String
   member: Membership
   externalResources: [MembershipExternalResource!]
+  isVerifiedValidator: Boolean
+  validatorAccount: String
   membercreatedeventmetadata: [MemberCreatedEvent!]
   memberinvitedeventmetadata: [MemberInvitedEvent!]
   memberprofileupdatedeventnewMetadata: [MemberProfileUpdatedEvent!]
@@ -2102,7 +2108,7 @@ type Proposal implements BaseGraphQLObject {
   proposalexecutedeventproposal: [ProposalExecutedEvent!]
 }
 
-union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails
+union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails | UpdateGlobalNftLimitProposalDetails
 
 union ProposalStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant | ProposalStatusVetoed | ProposalStatusExecuted | ProposalStatusExecutionFailed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
 
@@ -2820,6 +2826,14 @@ type UpdateChannelPayoutsProposalDetails {
   payloadHash: String
 }
 
+type UpdateGlobalNftLimitProposalDetails {
+  """New daily NFT limit set in the proposal (if any)"""
+  newDailyNftLimit: Int
+
+  """New weekly NFT limit set in the proposal (if any)"""
+  newWeeklyNftLimit: Int
+}
+
 type UpdateWorkingGroupBudgetProposalDetails {
   """
   Amount to increase / decrease the working group budget by (will be decudted from / appended to council budget accordingly)
@@ -3182,7 +3196,10 @@ type Membership implements BaseGraphQLObject {
   deletedById: ID
   version: Int!
 
-  """The unique handle chosen by member"""
+  """The unique handle chosen by member as raw hex representation"""
+  handleRaw: String!
+
+  """The unique handle chosen by member as utf-8"""
   handle: String!
   metadata: MemberMetadata!
   metadataId: String!
@@ -12474,6 +12491,12 @@ input StorageBagWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  objectsSize_eq: BigInt
+  objectsSize_gt: BigInt
+  objectsSize_gte: BigInt
+  objectsSize_lt: BigInt
+  objectsSize_lte: BigInt
+  objectsSize_in: [BigInt!]
   owner_json: JSONObject
   objects_none: StorageDataObjectWhereInput
   objects_some: StorageDataObjectWhereInput
@@ -12494,10 +12517,12 @@ input StorageBagWhereUniqueInput {
 }
 
 input StorageBagCreateInput {
+  objectsSize: String!
   owner: JSONObject!
 }
 
 input StorageBagUpdateInput {
+  objectsSize: String
   owner: JSONObject
 }
 
@@ -17547,6 +17572,11 @@ input MemberProfileUpdatedEventWhereInput {
   newHandle_startsWith: String
   newHandle_endsWith: String
   newHandle_in: [String!]
+  newHandleRaw_eq: String
+  newHandleRaw_contains: String
+  newHandleRaw_startsWith: String
+  newHandleRaw_endsWith: String
+  newHandleRaw_in: [String!]
   member: MembershipWhereInput
   newMetadata: MemberMetadataWhereInput
   AND: [MemberProfileUpdatedEventWhereInput!]
@@ -17565,6 +17595,7 @@ input MemberProfileUpdatedEventCreateInput {
   indexInBlock: Float!
   member: ID!
   newHandle: String
+  newHandleRaw: String
   newMetadata: ID!
 }
 
@@ -17575,6 +17606,7 @@ input MemberProfileUpdatedEventUpdateInput {
   indexInBlock: Float
   member: ID
   newHandle: String
+  newHandleRaw: String
   newMetadata: ID
 }
 
@@ -17711,6 +17743,13 @@ input MemberMetadataWhereInput {
   about_startsWith: String
   about_endsWith: String
   about_in: [String!]
+  isVerifiedValidator_eq: Boolean
+  isVerifiedValidator_in: [Boolean!]
+  validatorAccount_eq: String
+  validatorAccount_contains: String
+  validatorAccount_startsWith: String
+  validatorAccount_endsWith: String
+  validatorAccount_in: [String!]
   member: MembershipWhereInput
   externalResources_none: MembershipExternalResourceWhereInput
   externalResources_some: MembershipExternalResourceWhereInput
@@ -17743,12 +17782,16 @@ input MemberMetadataCreateInput {
   name: String
   avatar: JSONObject!
   about: String
+  isVerifiedValidator: Boolean
+  validatorAccount: String
 }
 
 input MemberMetadataUpdateInput {
   name: String
   avatar: JSONObject
   about: String
+  isVerifiedValidator: Boolean
+  validatorAccount: String
 }
 
 input MembershipGiftedEventWhereInput {
@@ -20765,6 +20808,11 @@ input MembershipWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
+  handleRaw_eq: String
+  handleRaw_contains: String
+  handleRaw_startsWith: String
+  handleRaw_endsWith: String
+  handleRaw_in: [String!]
   handle_eq: String
   handle_contains: String
   handle_startsWith: String
@@ -21061,10 +21109,11 @@ input MembershipWhereInput {
 
 input MembershipWhereUniqueInput {
   id: ID
-  handle: String
+  handleRaw: String
 }
 
 input MembershipCreateInput {
+  handleRaw: String!
   handle: String!
   metadata: ID!
   controllerAccount: String!
@@ -21081,6 +21130,7 @@ input MembershipCreateInput {
 }
 
 input MembershipUpdateInput {
+  handleRaw: String
   handle: String
   metadata: ID
   controllerAccount: String
@@ -26238,8 +26288,15 @@ type MemberProfileUpdatedEvent implements Event & BaseGraphQLObject {
   member: Membership!
   memberId: String!
 
-  """New member handle. Null means no new value was provided."""
+  """
+  New member handle (utf-8 string). Null means no new value was provided.
+  """
   newHandle: String
+
+  """
+  New member handle (raw hex string). Null means no new value was provided.
+  """
+  newHandleRaw: String
   newMetadata: MemberMetadata!
   newMetadataId: String!
 }
@@ -30451,6 +30508,10 @@ enum MemberMetadataOrderByInput {
   name_DESC
   about_ASC
   about_DESC
+  isVerifiedValidator_ASC
+  isVerifiedValidator_DESC
+  validatorAccount_ASC
+  validatorAccount_DESC
 }
 
 enum MemberProfileUpdatedEventOrderByInput {
@@ -30472,6 +30533,8 @@ enum MemberProfileUpdatedEventOrderByInput {
   member_DESC
   newHandle_ASC
   newHandle_DESC
+  newHandleRaw_ASC
+  newHandleRaw_DESC
   newMetadata_ASC
   newMetadata_DESC
 }
@@ -30598,6 +30661,8 @@ enum MembershipOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  handleRaw_ASC
+  handleRaw_DESC
   handle_ASC
   handle_DESC
   metadata_ASC
@@ -31855,6 +31920,8 @@ enum StorageBagOrderByInput {
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
+  objectsSize_ASC
+  objectsSize_DESC
 }
 
 enum StorageBucketOperatorMetadataOrderByInput {

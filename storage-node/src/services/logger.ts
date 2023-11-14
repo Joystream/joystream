@@ -210,7 +210,7 @@ function createElasticTransport(
     elasticLogLevel = 'debug' // default
   }
 
-  return new ElasticsearchTransport({
+  const esTransport = new ElasticsearchTransport({
     level: elasticLogLevel,
     clientOpts: {
       node: elasticSearchEndpoint,
@@ -229,6 +229,13 @@ function createElasticTransport(
     source: logSource,
     retryLimit: 10,
   })
+
+  // Handle ES logger error.
+  esTransport.on('error', (error) => {
+    console.error('Error in logger caught:', error)
+  })
+
+  return esTransport
 }
 
 /**

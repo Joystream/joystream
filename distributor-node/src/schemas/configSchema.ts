@@ -165,6 +165,12 @@ export const configSchema: JSONSchema4 = objectSchema({
           type: 'integer',
           minimum: 1,
         },
+        queryNodeCacheTTL: {
+          description: ` TTL (in seconds) for the Apollo's InMemoryCache, to cache the data fetched from the query node.`,
+          default: 60,
+          type: 'integer',
+          minimum: 1,
+        },
       },
       required: [
         'storage',

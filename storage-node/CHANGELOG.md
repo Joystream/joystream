@@ -1,3 +1,14 @@
+### 3.7.2
+
+- Bumped `winston-elasticsearch` package verion 
+- **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
+
+
+### 3.7.1
+
+- Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets.
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+
 ### 3.7.0
 
 - Updates `leader:update-bag` CLI command to `leader:update-bags` to accept multiple bag ids as input. This allows the command to be used to update storage buckets of multiple bags in a single batched transaction.
