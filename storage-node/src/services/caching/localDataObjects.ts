@@ -112,14 +112,16 @@ export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise
 export async function getDataObjectIdFromCache(
   dataObjectId: string
 ): Promise<{ dataObjectId: DataObjectId; pinnedCount: DataObjectPinCount } | undefined> {
-  if (idCache.has(dataObjectId)) {
-    await lock.acquireAsync()
-    const id = { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
-    lock.release()
-    return id
+  // First check without lock
+  if (!idCache.has(dataObjectId)) {
+    return undefined
   }
 
-  return undefined
+  // Acquire lock
+  await lock.acquireAsync()
+  const id = { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
+  lock.release()
+  return id
 }
 
 /**
