@@ -17,7 +17,7 @@ fn accept_incoming_offer() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -25,7 +25,7 @@ fn accept_incoming_offer() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -34,7 +34,7 @@ fn accept_incoming_offer() {
 
         // Accept nft offer
         assert_ok!(Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             None
         ));
@@ -66,7 +66,7 @@ fn accept_incoming_offer_video_does_not_exist() {
 
         // Make an attempt to accept incoming nft offer if corresponding video does not exist
         let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             None,
         );
@@ -92,7 +92,7 @@ fn accept_incoming_offer_nft_not_issued() {
 
         // Make an attempt to accept incoming nft offer if corresponding nft is not issued yet
         let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             None,
         );
@@ -115,7 +115,7 @@ fn accept_incoming_offer_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -123,7 +123,7 @@ fn accept_incoming_offer_auth_failed() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -132,7 +132,7 @@ fn accept_incoming_offer_auth_failed() {
 
         // Make an attempt to accept incoming nft offer providing wrong credentials
         let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             None,
         );
@@ -158,7 +158,7 @@ fn accept_incoming_offer_no_incoming_offers() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -166,7 +166,7 @@ fn accept_incoming_offer_no_incoming_offers() {
 
         // Make an attempt to accept incoming nft offer if there is no incoming transfers
         let accept_incoming_offer_result = Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             None,
         );
@@ -196,7 +196,7 @@ fn accept_incoming_offer_ok_with_nft_member_owner_correctly_credited() {
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
         assert_ok!(Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             VideoId::one(),
             Some(DEFAULT_NFT_PRICE)
         ));
@@ -224,7 +224,7 @@ fn accept_incoming_offer_reward_account_ok_with_owner_channel_account_correctly_
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
         assert_ok!(Content::accept_incoming_offer(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             VideoId::one(),
             Some(DEFAULT_NFT_PRICE)
         ));
@@ -245,7 +245,7 @@ fn accept_incoming_offer_insufficient_balance() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -256,7 +256,7 @@ fn accept_incoming_offer_insufficient_balance() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE - 1);
         assert_noop!(
             Content::accept_incoming_offer(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 video_id,
                 Some(DEFAULT_NFT_PRICE),
             ),
@@ -277,7 +277,7 @@ fn accept_incoming_offer_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::accept_incoming_offer(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 None
             ),
@@ -296,7 +296,7 @@ fn accept_incoming_offer_fails_with_invalid_witness_price_provided() {
 
         assert_noop!(
             Content::accept_incoming_offer(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 Some(DEFAULT_NFT_PRICE - 1)
             ),
@@ -305,7 +305,7 @@ fn accept_incoming_offer_fails_with_invalid_witness_price_provided() {
 
         assert_noop!(
             Content::accept_incoming_offer(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 None
             ),
@@ -328,7 +328,7 @@ fn accept_incoming_offer_fails_when_trying_to_use_locked_balance() {
 
         assert_noop!(
             Content::accept_incoming_offer(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 Some(DEFAULT_NFT_PRICE)
             ),

@@ -100,8 +100,8 @@ export class ConfigParserService {
               _.set(config, path, envValue)
           }
         }
-        const errors = this.validator.errorsByProperty('Config', path.join('.'), config)
-        if (errors) {
+        const errors = this.validator.errorsByProperty('Config', path.join('/'), config)
+        if (errors?.length) {
           throw new ValidationError(`Invalid env value of ${envKey}`, errors)
         }
         return

@@ -1,6 +1,6 @@
 {
   "name": "@joystream/js",
-  "version": "1.2.0",
+  "version": "1.6.0",
   "license": "GPL-3.0-only",
   "description": "Joystream JS package provides  utilities required to work with Joystream network.",
   "main": "lib/index.js",
@@ -41,8 +41,8 @@
     "generate:all": "yarn generate:schema-typings"
   },
   "dependencies": {
-    "@joystream/metadata-protobuf": "^2.6.0",
-    "@joystream/types": "~0.20.5",
+    "@joystream/metadata-protobuf": "^2.10.0",
+    "@joystream/types": "^4.0.0",
     "@polkadot/util-crypto": "9.5.1",
     "axios": "^1.2.1",
     "buffer": "^6.0.3",
@@ -66,7 +66,7 @@
     }
   },
   "engines": {
-    "node": ">=14.0.0",
+    "node": ">=14.18.0",
     "yarn": "^1.22.15"
   }
 }

@@ -2,21 +2,19 @@
 eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { Curator, CuratorGroup, CuratorAgentPermissions } from 'query-node/dist/model'
-import { Content } from '../../generated/types'
-import { inconsistentState, logger } from '../common'
-import { mapAgentPermission } from './utils'
 import { BTreeSet } from '@polkadot/types'
+import { Curator, CuratorAgentPermissions, CuratorGroup } from 'query-node/dist/model'
+import { getById, getByIdOrFail, logger } from '../common'
 // Joystream types
-import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
-
-async function getCurator(store: DatabaseManager, curatorId: string): Promise<Curator | undefined> {
-  const existingCurator = await store.get(Curator, {
-    where: { id: curatorId.toString() },
-  })
-
-  return existingCurator
-}
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V1001 } from '../../generated/types/1001/types-lookup'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V2002 } from '../../generated/types/2002/types-lookup'
+import {
+  Content_CuratorAddedEvent_V2002 as CuratorAddedEvent_V2002,
+  Content_CuratorAddedEvent_V1001 as CuratorAddedEvent_V1001,
+  Content_CuratorGroupCreatedEvent_V1001 as CuratorGroupCreatedEvent_V1001,
+  Content_CuratorGroupStatusSetEvent_V1001 as CuratorGroupStatusSetEvent_V1001,
+  Content_CuratorRemovedEvent_V1001 as CuratorRemovedEvent_V1001,
+} from '../../generated/types'
 
 async function createCurator(store: DatabaseManager, curatorId: string): Promise<Curator> {
   const curator = new Curator({
@@ -31,12 +29,12 @@ async function createCurator(store: DatabaseManager, curatorId: string): Promise
 }
 
 async function ensureCurator(store: DatabaseManager, curatorId: string): Promise<Curator> {
-  return (await getCurator(store, curatorId)) || (await createCurator(store, curatorId))
+  return (await getById(store, Curator, curatorId)) || (await createCurator(store, curatorId))
 }
 
 export async function content_CuratorGroupCreated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId] = new Content.CuratorGroupCreatedEvent(event).params
+  const [curatorGroupId] = new CuratorGroupCreatedEvent_V1001(event).params
 
   // create new curator group
   const curatorGroup = new CuratorGroup({
@@ -55,17 +53,10 @@ export async function content_CuratorGroupCreated({ store, event }: EventContext
 
 export async function content_CuratorGroupStatusSet({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, isActive] = new Content.CuratorGroupStatusSetEvent(event).params
+  const [curatorGroupId, isActive] = new CuratorGroupStatusSetEvent_V1001(event).params
 
   // load curator group
-  const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: curatorGroupId.toString() },
-  })
-
-  // ensure curator group exists
-  if (!curatorGroup) {
-    return inconsistentState('Non-existing curator group status set requested', curatorGroupId)
-  }
+  const curatorGroup = await getByIdOrFail(store, CuratorGroup, curatorGroupId.toString())
 
   // update curator group
   curatorGroup.isActive = isActive.isTrue
@@ -77,20 +68,15 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
   logger.info('Curator group status has been set', { id: curatorGroupId, isActive })
 }
 
-export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function content_CuratorAdded({ store, event, block }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId, permissions] = new Content.CuratorAddedEvent(event).params
+  const { specVersion } = block.runtimeVersion
+
+  const [curatorGroupId, curatorId, permissions] =
+    specVersion < 2002 ? new CuratorAddedEvent_V1001(event).params : new CuratorAddedEvent_V2002(event).params
 
   // load curator group
-  const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: curatorGroupId.toString() },
-    relations: ['curators'],
-  })
-
-  // ensure curator group exists
-  if (!curatorGroup) {
-    return inconsistentState('Curator add to non-existing curator group requested', curatorGroupId)
-  }
+  const curatorGroup = await getByIdOrFail(store, CuratorGroup, curatorGroupId.toString(), ['curators'])
 
   // load curator
   const curator = await ensureCurator(store, curatorId.toString())
@@ -107,18 +93,10 @@ export async function content_CuratorAdded({ store, event }: EventContext & Stor
 
 export async function content_CuratorRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId] = new Content.CuratorRemovedEvent(event).params
+  const [curatorGroupId, curatorId] = new CuratorRemovedEvent_V1001(event).params
 
   // load curator group
-  const curatorGroup = await store.get(CuratorGroup, {
-    where: { id: curatorGroupId.toString() },
-    relations: ['curators'],
-  })
-
-  // ensure curator group exists
-  if (!curatorGroup) {
-    return inconsistentState('Non-existing curator group removal requested', curatorGroupId)
-  }
+  const curatorGroup = await getByIdOrFail(store, CuratorGroup, curatorGroupId.toString(), ['curators'])
 
   // load curator
   const curator = await ensureCurator(store, curatorId.toString())
@@ -134,7 +112,9 @@ async function updateCuratorAgentPermissions(
   store: DatabaseManager,
   curatorGroup: CuratorGroup,
   curator: Curator,
-  permissions?: BTreeSet<PalletContentIterableEnumsChannelActionPermission>
+  permissions?: BTreeSet<
+    PalletContentIterableEnumsChannelActionPermission_V1001 | PalletContentIterableEnumsChannelActionPermission_V2002
+  >
 ) {
   // safest way to update permission is to delete existing and creating new ones
 
@@ -155,7 +135,9 @@ async function updateCuratorAgentPermissions(
   const curatorAgentPermissions = new CuratorAgentPermissions({
     curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
     curator: new Curator({ id: curator.id.toString() }),
-    permissions: permissionsArray.map(mapAgentPermission),
+    permissions: permissionsArray.map((permissions) => {
+      return permissions.toString()
+    }),
   })
 
   await store.save(curatorAgentPermissions)

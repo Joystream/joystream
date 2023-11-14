@@ -15,13 +15,13 @@ When building joystream-node as described in [../bin/node/README.md](../bin/node
 
 ### Deployment
 
-Deploying the compiled runtime on a live system can be done in one of two ways:
-
-1. By creating a proposal for upgrading the Joystream runtime, which will then be voted on by the council. If the proposal is approved, the upgrade will go through after a grace period. When the Joystream platform is live, this will be the only way to upgrade the chain's runtime code.
-
-2. By creating  an extrinsic (transaction) signed with the sudo key invoking `system::setCode()`. This can be done either from the [polkadot-js/apps](https://polkadot.js.org/apps/) extrinsics tab, or directly with an admin script. This way of upgrading the runtime code is intended for development and testnet phases only.
+Deploying the compiled runtime on a live system is done by creating a proposal for upgrading the Joystream runtime, which will then be voted on by the council. If the proposal is approved, the upgrade will go through after a grace period.
 
 ### Versioning the runtime
 
 Versioning of the runtime is set in `runtime/src/lib.rs`
 For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/joystream/issues/1)
+
+### Contributing
+
+For more details about how to contribute to the runtime check [RUNTIME-CONTRIBUTING.md](../RUNTIME-CONTRIBUTING.md).

@@ -2,6 +2,7 @@ import { flags } from '@oclif/command'
 import { acceptStorageBucketInvitation } from '../../services/runtime/extrinsics'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
+import { getWorkerRoleAccount } from '../../services/runtime/queries'
 
 /**
  * CLI command:
@@ -37,20 +38,26 @@ export default class OperatorAcceptInvitation extends ApiCommandBase {
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorAcceptInvitation)
 
-    const worker = flags.workerId
-    const bucket = flags.bucketId
-    const transactorAccountId = flags.transactorAccountId
+    const { workerId, bucketId, transactorAccountId } = flags
 
     logger.info('Accepting pending storage bucket invitation...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
-
     const api = await this.getApi()
-    const success = await acceptStorageBucketInvitation(api, account, worker, bucket, transactorAccountId)
+    const account = await getWorkerRoleAccount(api, workerId)
 
-    this.exitAfterRuntimeCall(success)
+    if (account) {
+      if (this.hasKeyringPair(account)) {
+        const keypair = this.getKeyringPair(account)
+        const success = await acceptStorageBucketInvitation(api, keypair, workerId, bucketId, transactorAccountId)
+        this.exitAfterRuntimeCall(success)
+      } else {
+        this.error(`Keyring does not contain role key ${account} for operator ${workerId}`)
+      }
+    } else {
+      this.error(`workerId ${workerId} is not valid`)
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { deleteStorageBucket } from '../../services/runtime/extrinsics'
 import { flags } from '@oclif/command'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 
 /**
@@ -11,7 +11,7 @@ import logger from '../../services/logger'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:delete-bucket"
  */
-export default class LeaderDeleteBucket extends ApiCommandBase {
+export default class LeaderDeleteBucket extends LeaderCommandBase {
   static description = `Delete a storage bucket. Requires storage working group leader permissions.`
 
   static flags = {
@@ -20,7 +20,7 @@ export default class LeaderDeleteBucket extends ApiCommandBase {
       required: true,
       description: 'Storage bucket ID',
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -33,7 +33,7 @@ export default class LeaderDeleteBucket extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     const success = await deleteStorageBucket(api, account, storageBucketId)

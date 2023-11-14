@@ -4,7 +4,6 @@ import initFaucet from '../flows/faucet/initFaucet'
 import { scenario } from '../Scenario'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
-import { deleteApp } from '../flows/content/deleteApp'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('App', async ({ job }) => {
@@ -14,5 +13,4 @@ scenario('App', async ({ job }) => {
   job('Create app', createApp).after(leads)
   job('Update app', updateApp).after(leads)
   job('Create app actions', createAppActions).after(leads)
-  job('Delete app', deleteApp).after(leads)
 })

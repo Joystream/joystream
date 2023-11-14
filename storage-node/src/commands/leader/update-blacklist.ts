@@ -1,6 +1,6 @@
 import { flags } from '@oclif/command'
 import { updateBlacklist } from '../../services/runtime/extrinsics'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import ExitCodes from '../../command-base/ExitCodes'
 import logger from '../../services/logger'
 import _ from 'lodash'
@@ -14,7 +14,7 @@ import _ from 'lodash'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-blacklist"
  */
-export default class LeaderUpdateBlacklist extends ApiCommandBase {
+export default class LeaderUpdateBlacklist extends LeaderCommandBase {
   static description = 'Add/remove a content ID from the blacklist (adds by default).'
 
   static flags = {
@@ -30,7 +30,7 @@ export default class LeaderUpdateBlacklist extends ApiCommandBase {
       multiple: true,
       default: [],
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -46,7 +46,7 @@ export default class LeaderUpdateBlacklist extends ApiCommandBase {
       this.exit(ExitCodes.InvalidParameters)
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
     const api = await this.getApi()
 
     const success = await updateBlacklist(api, account, flags.add, flags.remove)

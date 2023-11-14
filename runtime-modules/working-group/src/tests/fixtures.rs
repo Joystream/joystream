@@ -7,7 +7,7 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Balances, Event, LockId, System, Test, TestWorkingGroup};
+use super::mock::{Balances, LockId, RuntimeEvent, System, Test, TestWorkingGroup};
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
@@ -20,7 +20,7 @@ pub fn set_invitation_lock(
     amount: BalanceOf<Test>,
 ) {
     <Test as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );
@@ -44,12 +44,12 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = Event::TestWorkingGroup(expected_raw_event);
+        let converted_event = RuntimeEvent::TestWorkingGroup(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -75,12 +75,12 @@ impl EventFixture {
             DefaultInstance,
         >,
     ) {
-        let converted_event = Event::TestWorkingGroup(expected_raw_event);
+        let converted_event = RuntimeEvent::TestWorkingGroup(expected_raw_event);
 
         Self::contains_global_event(converted_event)
     }
 
-    fn contains_global_event(expected_event: Event) {
+    fn contains_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -760,7 +760,7 @@ pub(crate) fn get_stake_balance(account_id: &u64) -> u64 {
     existing_lock.map_or(0, |lock| lock.amount)
 }
 
-fn get_current_lead_account_id() -> u64 {
+pub(crate) fn get_current_lead_account_id() -> u64 {
     let leader_worker_id = TestWorkingGroup::current_lead();
 
     if let Some(leader_worker_id) = leader_worker_id {

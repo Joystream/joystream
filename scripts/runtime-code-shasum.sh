@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
+set -e
 
 # Compute a hash over files related to building joystream/node docker image
 
-# Cargo workspace root
-export WORKSPACE_ROOT=`cargo metadata --offline --no-deps --format-version 1 | jq .workspace_root -r`
+# Assuming cargo workspace root is same as the git repo root
+cd `git rev-parse --show-toplevel`
 
-cd ${WORKSPACE_ROOT}
+# Make sure a recognized RUNTIME_PROFILE is used
+_=`./scripts/features.sh`
 
 TAR=tar
 SED=sed
@@ -16,6 +18,7 @@ fi
 
 # sort/owner/group/mtime arguments only work with gnu version of tar!
 ${TAR} -c --sort=name --owner=root:0 --group=root:0 --mode 644 --mtime='UTC 2020-01-01' \
+    --exclude='*.md' \
     Cargo.lock \
     Cargo.toml \
     runtime \

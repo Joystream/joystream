@@ -40,7 +40,7 @@ wss://{{ hostname }}/query-node/server* {
 
 {{ hostname }}/orion* {
     uri strip_prefix /orion
-    reverse_proxy localhost:6116
+    reverse_proxy localhost:4350
 }
 
 {{ hostname }}/member-faucet* {

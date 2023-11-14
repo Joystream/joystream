@@ -1,84 +1,90 @@
-import {
-  EventContext,
-  StoreContext,
-  DatabaseManager,
-  SubstrateEvent,
-  FindOptionsOrder,
-  FindOptionsWhere,
-} from '@joystream/hydra-common'
-import { CURRENT_NETWORK, deserializeMetadata, genericEventFields } from './common'
+import { DatabaseManager, EventContext, FindOptionsWhere, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import BN from 'bn.js'
-import { FindOneOptions } from 'typeorm'
-
 import {
-  // Council events
+  CURRENT_NETWORK,
+  RelationsArr,
+  deserializeMetadata,
+  genericEventFields,
+  getMembershipById,
+  getOneByOrFail,
+  inconsistentState,
+} from './common'
+
+import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
+import { isSet } from '@joystream/metadata-protobuf/utils'
+import {
   AnnouncingPeriodStartedEvent,
-  NotEnoughCandidatesEvent,
-  VotingPeriodStartedEvent,
+  BudgetBalanceSetEvent,
+  BudgetIncrementUpdatedEvent,
+  BudgetRefillEvent,
+  BudgetRefillPlannedEvent,
+  CandidacyNoteMetadata,
+  CandidacyNoteSetEvent,
+  CandidacyStakeReleaseEvent,
+  CandidacyStatus,
+  CandidacyWithdrawEvent,
+  Candidate,
+  CastVote,
+  CouncilBudgetFundedEvent,
+  CouncilMember,
+  CouncilStage,
+  CouncilStageAnnouncing,
+  CouncilStageElection,
+  CouncilStageIdle,
+  // Council & referendum schema types
+  CouncilStageUpdate,
+  CouncilorRewardUpdatedEvent,
+  ElectedCouncil,
+  ElectionProblem,
+  ElectionRound,
+  // Misc
+  Membership,
   NewCandidateEvent,
   NewCouncilElectedEvent,
   NewCouncilNotElectedEvent,
-  CandidacyStakeReleaseEvent,
-  CandidacyWithdrawEvent,
-  CandidacyNoteSetEvent,
-  RewardPaymentEvent,
-  BudgetBalanceSetEvent,
-  BudgetRefillEvent,
-  BudgetRefillPlannedEvent,
-  BudgetIncrementUpdatedEvent,
-  CouncilorRewardUpdatedEvent,
-  RequestFundedEvent,
-
+  NotEnoughCandidatesEvent,
+  ReferendumFinishedEvent,
+  ReferendumStageRevealing,
+  // Council & referendum structures
+  ReferendumStageVoting,
   // Referendum events
   ReferendumStartedEvent,
   ReferendumStartedForcefullyEvent,
+  RequestFundedEvent,
   RevealingStageStartedEvent,
-  ReferendumFinishedEvent,
+  RewardPaymentEvent,
+  StakeReleasedEvent,
   VoteCastEvent,
   VoteRevealedEvent,
-  StakeReleasedEvent,
-
-  // Council & referendum structures
-  ReferendumStageVoting,
-  ReferendumStageRevealing,
-
-  // Council & referendum schema types
-  CouncilStageUpdate,
-  CouncilStageAnnouncing,
-  CouncilStageIdle,
-  CouncilStageElection,
-  CouncilStage,
-  ElectionProblem,
-  Candidate,
-  CouncilMember,
-  ElectionRound,
-  ElectedCouncil,
-  CastVote,
-  CandidacyNoteMetadata,
-  CandidacyStatus,
-
-  // Misc
-  Membership,
-  CouncilBudgetFundedEvent,
+  VotingPeriodStartedEvent,
 } from 'query-node/dist/model'
-import { Council, Referendum } from '../generated/types'
-import { CouncilCandidacyNoteMetadata } from '@joystream/metadata-protobuf'
-import { isSet } from '@joystream/metadata-protobuf/utils'
+import {
+  Council_AnnouncingPeriodStartedEvent_V1001 as AnnouncingPeriodStartedEvent_V1001,
+  Council_BudgetBalanceSetEvent_V1001 as BudgetBalanceSetEvent_V1001,
+  Council_BudgetIncrementUpdatedEvent_V1001 as BudgetIncrementUpdatedEvent_V1001,
+  Council_BudgetRefillEvent_V1001 as BudgetRefillEvent_V1001,
+  Council_BudgetRefillPlannedEvent_V1001 as BudgetRefillPlannedEvent_V1001,
+  Council_CandidacyNoteSetEvent_V1001 as CandidacyNoteSetEvent_V1001,
+  Council_CandidacyStakeReleaseEvent_V1001 as CandidacyStakeReleaseEvent_V1001,
+  Council_CandidacyWithdrawEvent_V1001 as CandidacyWithdrawEvent_V1001,
+  Council_CouncilBudgetFundedEvent_V1001 as CouncilBudgetFundedEvent_V1001,
+  Council_RequestFundedEvent_V1001,
+  Council_CouncilorRewardUpdatedEvent_V1001 as CouncilorRewardUpdatedEvent_V1001,
+  Council_NewCandidateEvent_V1001 as NewCandidateEvent_V1001,
+  Council_NewCouncilElectedEvent_V1001 as NewCouncilElectedEvent_V1001,
+  Council_NewCouncilNotElectedEvent_V1001 as NewCouncilNotElectedEvent_V1001,
+  Council_NotEnoughCandidatesEvent_V1001 as NotEnoughCandidatesEvent_V1001,
+  Referendum_ReferendumStartedEvent_V1001 as ReferendumStartedEvent_V1001,
+  Referendum_ReferendumStartedForcefullyEvent_V1001 as ReferendumStartedForcefullyEvent_V1001,
+  Referendum_RevealingStageStartedEvent_V1001 as RevealingStageStartedEvent_V1001,
+  Council_RewardPaymentEvent_V1001 as RewardPaymentEvent_V1001,
+  Referendum_StakeReleasedEvent_V1001 as StakeReleasedEvent_V1001,
+  Referendum_VoteCastEvent_V1001 as VoteCastEvent_V1001,
+  Referendum_VoteRevealedEvent_V1001 as VoteRevealedEvent_V1001,
+  Council_VotingPeriodStartedEvent_V1001 as VotingPeriodStartedEvent_V1001,
+} from '../generated/types'
 
 /// /////////////// Common - Gets //////////////////////////////////////////////
-
-/*
-  Retrieves the member record by its id.
-*/
-async function getMembership(store: DatabaseManager, memberId: string): Promise<Membership | undefined> {
-  const member = await store.get(Membership, { where: { id: memberId } })
-
-  if (!member) {
-    throw new Error(`Membership not found. memberId '${memberId}'`)
-  }
-
-  return member
-}
 
 /*
   Retrieves the council candidate by its member id. Returns the last record for the member
@@ -102,15 +108,14 @@ async function getCandidate(
     where.electionRound = { id: electionRound.id.toString() }
   }
 
-  const event = await store.get(NewCandidateEvent, {
+  const event = await getOneByOrFail(
+    store,
+    NewCandidateEvent,
     where,
-    order: { inBlock: 'DESC', indexInBlock: 'DESC' },
-    relations: ['candidate'].concat(relations.map((r) => `candidate.${r}`)),
-  })
-
-  if (!event) {
-    throw new Error(`Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`)
-  }
+    ['candidate'].concat(relations.map((r) => `candidate.${r}`)) as RelationsArr<NewCandidateEvent>,
+    { inBlock: 'DESC', indexInBlock: 'DESC' },
+    `Candidate not found. memberId '${memberId}' electionRound '${electionRound?.id}'`
+  )
 
   return event.candidate
 }
@@ -119,14 +124,9 @@ async function getCandidate(
   Retrieves the member's last council member record.
 */
 async function getCouncilMember(store: DatabaseManager, memberId: string): Promise<CouncilMember> {
-  const councilMember = await store.get(CouncilMember, {
-    where: { memberId: memberId },
-    order: { createdAt: 'DESC' },
-  } as FindOneOptions<CouncilMember>)
-
-  if (!councilMember) {
-    throw new Error(`Council member not found. memberId '${memberId}'`)
-  }
+  const councilMember = await getOneByOrFail(store, CouncilMember, { member: { id: memberId } }, undefined, {
+    createdAt: 'DESC',
+  })
 
   return councilMember
 }
@@ -134,12 +134,11 @@ async function getCouncilMember(store: DatabaseManager, memberId: string): Promi
 /*
   Returns the current election round record.
 */
-async function getCurrentElectionRound(store: DatabaseManager, relations: string[] = []): Promise<ElectionRound> {
-  const electionRound = await store.get(ElectionRound, { order: { cycleId: 'DESC' }, relations: relations })
-
-  if (!electionRound) {
-    throw new Error(`No election round found`)
-  }
+async function getCurrentElectionRound(
+  store: DatabaseManager,
+  relations: RelationsArr<ElectionRound> = []
+): Promise<ElectionRound> {
+  const electionRound = await getOneByOrFail(store, ElectionRound, undefined, relations, { cycleId: 'DESC' })
 
   return electionRound
 }
@@ -148,12 +147,7 @@ async function getCurrentElectionRound(store: DatabaseManager, relations: string
   Returns the last council stage update.
 */
 async function getCurrentStageUpdate(store: DatabaseManager): Promise<CouncilStageUpdate> {
-  const stageUpdate = await store.get(CouncilStageUpdate, { order: { changedAt: 'DESC' } as FindOptionsOrder<any> }) // TODO: get rid of `any` typecast
-
-  if (!stageUpdate) {
-    throw new Error('No stage update found.')
-  }
-
+  const stageUpdate = await getOneByOrFail(store, CouncilStageUpdate, undefined, undefined, { changedAt: 'DESC' })
   return stageUpdate
 }
 
@@ -167,10 +161,10 @@ export async function getCurrentElectedCouncil(store: DatabaseManager): Promise<
   return electedCouncil as ElectedCouncil
 }
 
-/*
-  Returns the last vote cast in an election by the given account. Returns the last record for the account
-  if the election round isn't explicitly set.
-*/
+/**
+ * Returns the last vote cast in an election by the given account. Returns the last record for the account
+ * if the election round isn't explicitly set.
+ */
 async function getAccountCastVote(
   store: DatabaseManager,
   account: string,
@@ -182,13 +176,14 @@ async function getAccountCastVote(
     where.electionRound = { id: electionRound.id.toString() }
   }
 
-  const castVote = await store.get(CastVote, { where, order: { createdAt: 'DESC' } } as FindOneOptions<CastVote>)
-
-  if (!castVote) {
-    throw new Error(
-      `No vote cast by the given account in the current election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
-    )
-  }
+  const castVote = getOneByOrFail(
+    store,
+    CastVote,
+    where,
+    undefined,
+    { createdAt: 'DESC' },
+    `No vote cast by the given account in the current election round. accountId '${account}', cycleId '${electionRound?.cycleId}'`
+  )
 
   return castVote
 }
@@ -346,7 +341,7 @@ async function abortCandidacies(store: DatabaseManager) {
   candidates can announce their candidacies.
 */
 export async function council_AnnouncingPeriodStarted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [endsAt] = new Council.AnnouncingPeriodStartedEvent(event).params
+  const [endsAt] = new AnnouncingPeriodStartedEvent_V1001(event).params
 
   const announcingPeriodStartedEvent = new AnnouncingPeriodStartedEvent({
     ...genericEventFields(event),
@@ -372,7 +367,7 @@ export async function council_AnnouncingPeriodStarted({ event, store }: EventCon
   The event is emitted when a candidacy announcement period has ended, but not enough members announced.
 */
 export async function council_NotEnoughCandidates({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [announcingEndsAt] = new Council.NotEnoughCandidatesEvent(event).params
+  const [announcingEndsAt] = new NotEnoughCandidatesEvent_V1001(event).params
 
   const notEnoughCandidatesEvent = new NotEnoughCandidatesEvent({
     ...genericEventFields(event),
@@ -401,7 +396,7 @@ export async function council_NotEnoughCandidates({ event, store }: EventContext
 export async function council_VotingPeriodStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [numOfCandidates] = new Council.VotingPeriodStartedEvent(event).params
+  const [numOfCandidates] = new VotingPeriodStartedEvent_V1001(event).params
 
   const votingPeriodStartedEvent = new VotingPeriodStartedEvent({
     ...genericEventFields(event),
@@ -425,15 +420,15 @@ export async function council_VotingPeriodStarted({ event, store }: EventContext
 export async function council_NewCandidate({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing - init
 
-  const [memberId, stakingAccount, rewardAccount, balance] = new Council.NewCandidateEvent(event).params
-  const member = await getMembership(store, memberId.toString())
+  const [memberId, stakingAccount, rewardAccount, balance] = new NewCandidateEvent_V1001(event).params
+  const member = await getMembershipById(store, memberId)
 
   // specific event processing
 
   // increase candidate count in stage update record
   const lastStageUpdate = await getCurrentStageUpdate(store)
   if (!isCouncilStageAnnouncing(lastStageUpdate.stage)) {
-    throw new Error(`Unexpected council stage "${lastStageUpdate.stage.isTypeOf}"`)
+    inconsistentState(`Unexpected council stage "${lastStageUpdate.stage.isTypeOf}"`)
   }
 
   lastStageUpdate.stage.candidatesCount = new BN(lastStageUpdate.stage.candidatesCount).add(new BN(1))
@@ -482,7 +477,7 @@ export async function council_NewCandidate({ event, store }: EventContext & Stor
 export async function council_NewCouncilElected({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing - init
 
-  const [memberIds, idlePeriodEndBlock] = new Council.NewCouncilElectedEvent(event).params
+  const [memberIds, idlePeriodEndBlock] = new NewCouncilElectedEvent_V1001(event).params
   const electedMemberIds = memberIds.map((item) => item.toString())
 
   // specific event processing
@@ -583,7 +578,7 @@ export async function council_NewCouncilElected({ event, store }: EventContext &
   This can be vaguely translated as the public not having enough interest in the candidates.
 */
 export async function council_NewCouncilNotElected({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [announcingEndsAt] = new Council.NewCouncilNotElectedEvent(event).params
+  const [announcingEndsAt] = new NewCouncilNotElectedEvent_V1001(event).params
 
   const newCouncilNotElectedEvent = new NewCouncilNotElectedEvent({
     ...genericEventFields(event),
@@ -612,7 +607,7 @@ export async function council_NewCouncilNotElected({ event, store }: EventContex
 export async function council_CandidacyStakeRelease({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId] = new Council.CandidacyStakeReleaseEvent(event).params
+  const [memberId] = new CandidacyStakeReleaseEvent_V1001(event).params
   const candidate = await getCandidate(store, memberId.toString()) // get last member's candidacy record
 
   const candidacyStakeReleaseEvent = new CandidacyStakeReleaseEvent({
@@ -635,7 +630,7 @@ export async function council_CandidacyStakeRelease({ event, store }: EventConte
 export async function council_CandidacyWithdraw({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId] = new Council.CandidacyWithdrawEvent(event).params
+  const [memberId] = new CandidacyWithdrawEvent_V1001(event).params
   const candidate = await getCandidate(store, memberId.toString())
 
   const candidacyWithdrawEvent = new CandidacyWithdrawEvent({
@@ -658,7 +653,7 @@ export async function council_CandidacyWithdraw({ event, store }: EventContext &
 export async function council_CandidacyNoteSet({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, note] = new Council.CandidacyNoteSetEvent(event).params
+  const [memberId, note] = new CandidacyNoteSetEvent_V1001(event).params
 
   // load candidate recorded
   const electionRound = await getCurrentElectionRound(store)
@@ -716,7 +711,7 @@ export async function council_CandidacyNoteSet({ event, store }: EventContext & 
 export async function council_RewardPayment({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, rewardAccount, paidBalance, missingBalance] = new Council.RewardPaymentEvent(event).params
+  const [memberId, rewardAccount, paidBalance, missingBalance] = new RewardPaymentEvent_V1001(event).params
   const councilMember = await getCouncilMember(store, memberId.toString())
 
   const rewardPaymentEvent = new RewardPaymentEvent({
@@ -744,7 +739,7 @@ export async function council_RewardPayment({ event, store }: EventContext & Sto
 export async function council_BudgetBalanceSet({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [balance] = new Council.BudgetBalanceSetEvent(event).params
+  const [balance] = new BudgetBalanceSetEvent_V1001(event).params
 
   const budgetBalanceSetEvent = new BudgetBalanceSetEvent({
     ...genericEventFields(event),
@@ -760,7 +755,7 @@ export async function council_BudgetBalanceSet({ event, store }: EventContext & 
   The event is emitted when a planned budget refill occurs.
 */
 export async function council_BudgetRefill({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [balance] = new Council.BudgetRefillEvent(event).params
+  const [balance] = new BudgetRefillEvent_V1001(event).params
 
   const budgetRefillEvent = new BudgetRefillEvent({
     ...genericEventFields(event),
@@ -778,7 +773,7 @@ export async function council_BudgetRefill({ event, store }: EventContext & Stor
 export async function council_BudgetRefillPlanned({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [nextRefillInBlock] = new Council.BudgetRefillPlannedEvent(event).params
+  const [nextRefillInBlock] = new BudgetRefillPlannedEvent_V1001(event).params
 
   const budgetRefillPlannedEvent = new BudgetRefillPlannedEvent({
     ...genericEventFields(event),
@@ -796,7 +791,7 @@ export async function council_BudgetRefillPlanned({ event, store }: EventContext
 export async function council_BudgetIncrementUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [amount] = new Council.BudgetIncrementUpdatedEvent(event).params
+  const [amount] = new BudgetIncrementUpdatedEvent_V1001(event).params
 
   const budgetIncrementUpdatedEvent = new BudgetIncrementUpdatedEvent({
     ...genericEventFields(event),
@@ -814,7 +809,7 @@ export async function council_BudgetIncrementUpdated({ event, store }: EventCont
 export async function council_CouncilorRewardUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [rewardAmount] = new Council.CouncilorRewardUpdatedEvent(event).params
+  const [rewardAmount] = new CouncilorRewardUpdatedEvent_V1001(event).params
 
   const councilorRewardUpdatedEvent = new CouncilorRewardUpdatedEvent({
     ...genericEventFields(event),
@@ -832,7 +827,7 @@ export async function council_CouncilorRewardUpdated({ event, store }: EventCont
 export async function council_RequestFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [account, amount] = new Council.RequestFundedEvent(event).params
+  const [account, amount] = new Council_RequestFundedEvent_V1001(event).params
 
   const requestFundedEvent = new RequestFundedEvent({
     ...genericEventFields(event),
@@ -848,7 +843,7 @@ export async function council_RequestFunded({ event, store }: EventContext & Sto
 export async function council_CouncilBudgetFunded({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [memberId, amount, rationale] = new Council.CouncilBudgetFundedEvent(event).params
+  const [memberId, amount, rationale] = new CouncilBudgetFundedEvent_V1001(event).params
 
   const requestFundedEvent = new CouncilBudgetFundedEvent({
     ...genericEventFields(event),
@@ -869,7 +864,7 @@ export async function council_CouncilBudgetFunded({ event, store }: EventContext
 */
 export async function referendum_ReferendumStarted({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
-  const [winningTargetCount, votingEndsAt] = new Referendum.ReferendumStartedEvent(event).params
+  const [winningTargetCount, votingEndsAt] = new ReferendumStartedEvent_V1001(event).params
 
   const referendumStartedEvent = new ReferendumStartedEvent({
     ...genericEventFields(event),
@@ -892,7 +887,7 @@ export async function referendum_ReferendumStartedForcefully({
 }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [winningTargetCount, votingEndsAt] = new Referendum.ReferendumStartedForcefullyEvent(event).params
+  const [winningTargetCount, votingEndsAt] = new ReferendumStartedForcefullyEvent_V1001(event).params
 
   const referendumStartedForcefullyEvent = new ReferendumStartedForcefullyEvent({
     ...genericEventFields(event),
@@ -930,7 +925,7 @@ async function recordReferendumVotingStart(
   The event is emitted when the vote revealing stage of elections starts.
 */
 export async function referendum_RevealingStageStarted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [endsAt] = new Referendum.RevealingStageStartedEvent(event).params
+  const [endsAt] = new RevealingStageStartedEvent_V1001(event).params
 
   const revealingStageStartedEvent = new RevealingStageStartedEvent({
     ...genericEventFields(event),
@@ -974,7 +969,7 @@ export async function referendum_ReferendumFinished({ event, store }: EventConte
 export async function referendum_VoteCast({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing - init
 
-  const [account, hash, stake] = new Referendum.VoteCastEvent(event).params
+  const [account, hash, stake] = new VoteCastEvent_V1001(event).params
   const votePower = calculateVotePower(account.toString(), stake)
 
   // specific event processing
@@ -1007,7 +1002,7 @@ export async function referendum_VoteCast({ event, store }: EventContext & Store
 export async function referendum_VoteRevealed({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing - init
 
-  const [account, memberId /*, salt */] = new Referendum.VoteRevealedEvent(event).params
+  const [account, memberId /*, salt */] = new VoteRevealedEvent_V1001(event).params
 
   // specific event processing
 
@@ -1042,7 +1037,7 @@ export async function referendum_VoteRevealed({ event, store }: EventContext & S
 export async function referendum_StakeReleased({ event, store }: EventContext & StoreContext): Promise<void> {
   // common event processing
 
-  const [stakingAccount] = new Referendum.StakeReleasedEvent(event).params
+  const [stakingAccount] = new StakeReleasedEvent_V1001(event).params
 
   const stakeReleasedEvent = new StakeReleasedEvent({
     ...genericEventFields(event),

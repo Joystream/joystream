@@ -3,3 +3,4 @@ lib
 local
 /**/*.md
 client
+src/services/networking/query-node/schema.graphql

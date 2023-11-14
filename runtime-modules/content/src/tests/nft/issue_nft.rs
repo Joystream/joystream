@@ -21,7 +21,7 @@ fn issue_nft() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -55,7 +55,7 @@ fn nft_is_issued_with_open_auction_status_successfully() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
@@ -90,7 +90,7 @@ fn issue_nft_video_does_not_exist() {
 
         // Make an attempt to issue nft for non existent video
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -115,7 +115,7 @@ fn issue_nft_already_issued() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -123,7 +123,7 @@ fn issue_nft_already_issued() {
 
         // Make an attempt to issue nft once again for the same video
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -148,7 +148,7 @@ fn issue_nft_auth_failed() {
 
         // Make an attempt to issue nft with wrong credentials
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -173,7 +173,7 @@ fn issue_nft_actor_not_authorized() {
 
         // Make an attempt to issue nft if actor is not authorized
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -198,7 +198,7 @@ fn issue_nft_royalty_bounds_violated() {
 
         // Make an attempt to issue nft with wrong credentials
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
@@ -212,7 +212,7 @@ fn issue_nft_royalty_bounds_violated() {
 
         // Make an attempt to issue nft with wrong credentials
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
@@ -248,7 +248,7 @@ fn issue_nft_fails_with_invalid_open_auction_parameters() {
 
         // Make an attempt to issue nft with wrong credentials
         let issue_nft_result = Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
@@ -323,7 +323,7 @@ fn nft_test_helper_for_exceeded_limit(nft_limit_id: NftLimitId<u64>, expected_er
     // Issue nft
     assert_eq!(
         Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -416,12 +416,12 @@ fn test_helper_for_nft_limit_works_as_expected(
         Content::set_nft_limit(nft_limit_id, 1);
 
         if disable_limits {
-            assert_ok!(Content::toggle_nft_limits(Origin::root(), false));
+            assert_ok!(Content::toggle_nft_limits(RuntimeOrigin::root(), false));
         }
 
         // Issue nft 1
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -441,7 +441,7 @@ fn test_helper_for_nft_limit_works_as_expected(
         // Issue nft 2
         assert_eq!(
             Content::issue_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 NftIssuanceParameters::<Test>::default(),
@@ -457,7 +457,7 @@ fn test_helper_for_nft_limit_works_as_expected(
         if !disable_limits {
             // Issue nft 3
             assert_ok!(Content::issue_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 video_id,
                 NftIssuanceParameters::<Test>::default(),
@@ -496,7 +496,7 @@ fn nft_counters_increment_works_as_expected() {
 
         // Issue nft 1
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -523,7 +523,7 @@ fn nft_counters_increment_works_as_expected() {
         let daily_period_in_blocks = nft_limit_by_id(NftLimitId::GlobalDaily).block_number_period;
         run_to_block(daily_period_in_blocks);
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -548,7 +548,7 @@ fn issue_nft_fails_with_pending_channel_transfer() {
 
         assert_noop!(
             Content::issue_nft(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 NftIssuanceParameters::<Test>::default(),

@@ -4,7 +4,6 @@ import expressWinston from 'express-winston'
 import { Handler, ErrorRequestHandler } from 'express'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
 import 'winston-daily-rotate-file'
-import path from 'path'
 
 /**
  * Possible log levels.
@@ -145,7 +144,15 @@ function createCustomLogger(customOptions: LogConfig): winston.Logger {
   }
 
   if (customOptions.elasticSearchEndpoint) {
-    transports.push(createElasticTransport(customOptions.elasticSearchlogSource, customOptions.elasticSearchEndpoint))
+    transports.push(
+      createElasticTransport(
+        customOptions.elasticSearchlogSource,
+        customOptions.elasticSearchEndpoint,
+        customOptions.elasticSearchIndex,
+        customOptions.elasticSearchUser,
+        customOptions.elasticSearchPassword
+      )
+    )
   }
   if (customOptions.filePath) {
     transports.push(
@@ -187,7 +194,13 @@ export function initNewLogger(options: LogConfig): void {
  * @param elasticSearchEndpoint - elastic search engine endpoint.
  * @returns elastic search winston transport
  */
-function createElasticTransport(logSource: string, elasticSearchEndpoint: string): winston.transport {
+function createElasticTransport(
+  logSource: string,
+  elasticSearchEndpoint: string,
+  elasticSearchIndex?: string,
+  elasticSearchUser?: string,
+  elasticSearchPassword?: string
+): winston.transport {
   const possibleLevels = ['warn', 'error', 'debug', 'info']
 
   let elasticLogLevel = process.env.ELASTIC_LOG_LEVEL ?? ''
@@ -197,15 +210,25 @@ function createElasticTransport(logSource: string, elasticSearchEndpoint: string
     elasticLogLevel = 'debug' // default
   }
 
-  const esTransportOpts = {
+  return new ElasticsearchTransport({
     level: elasticLogLevel,
-    clientOpts: { node: elasticSearchEndpoint, maxRetries: 5 },
-    index: 'storage-node',
+    clientOpts: {
+      node: elasticSearchEndpoint,
+      maxRetries: 5,
+      ...(elasticSearchUser && elasticSearchPassword
+        ? {
+            auth: {
+              username: elasticSearchUser,
+              password: elasticSearchPassword,
+            },
+          }
+        : {}),
+    },
+    index: elasticSearchIndex || 'storage-node',
     format: ecsformat(),
     source: logSource,
     retryLimit: 10,
-  }
-  return new ElasticsearchTransport(esTransportOpts)
+  })
 }
 
 /**
@@ -224,12 +247,24 @@ function createFileTransport(
   maxSize: number
 ): winston.transport {
   const options = {
-    filename: path.join(filepath, 'colossus-%DATE%.log'),
+    filename: 'colossus-%DATE%.log',
+    dirname: filepath,
+    frequency: 'custom',
     datePattern: DatePatternByFrequency[fileFrequency || 'daily'],
     maxSize,
     maxFiles,
     level: 'debug',
     format: ecsformat(),
+    zippedArchive: true,
+    tailable: true,
+    createSymlink: true,
+    symlinkName: 'current.log',
+  }
+
+  // Rotation only occurs when maxSize of file is exceeded
+  if (fileFrequency === 'none') {
+    options.frequency = 'none'
+    options.filename = 'colossus.log'
   }
 
   return new winston.transports.DailyRotateFile(options)
@@ -240,6 +275,7 @@ export const DatePatternByFrequency = {
   monthly: 'YYYY-MM',
   daily: 'YYYY-MM-DD',
   hourly: 'YYYY-MM-DD-HH',
+  none: '',
 }
 
 /** File frequency for  */
@@ -266,4 +302,13 @@ export type LogConfig = {
 
   /** Elastic search engine endpoint */
   elasticSearchEndpoint?: string
+
+  /** Elastic search index name */
+  elasticSearchIndex?: string
+
+  /** Elastic search user */
+  elasticSearchUser?: string
+
+  /** Elastic search password */
+  elasticSearchPassword?: string
 }

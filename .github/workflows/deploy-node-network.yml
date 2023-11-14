@@ -86,13 +86,17 @@ jobs:
             EC2InstanceType=${{ steps.network_config.outputs.instanceType }},
             VolumeSize=${{ steps.network_config.outputs.volumeSize }}
 
+      - name: Wait for docker build server to be ready
+        run: |
+          sleep 30
+
       - name: Prepare inventory for Ansible
         run: |
           VAL1="${{ steps.deploy_stack.outputs.Val1PublicIp }}"
           VAL2="${{ steps.deploy_stack.outputs.Val2PublicIp }}"
-          VAL3="${{ steps.deploy_stack.outputs.Val3PublicIp }}"
+          BOOT1="${{ steps.deploy_stack.outputs.Val3PublicIp }}"
           echo -e "[validators]\n$VAL1\n$VAL2\n\n" >> inventory
-          echo -e "[boot]\n$VAL3\n\n" >> inventory
+          echo -e "[boot]\n$BOOT1\n\n" >> inventory
           echo -e "[build]\n${{ steps.deploy_stack.outputs.BuildPublicIp }}\n\n" >> inventory
           echo -e "[rpc]\n${{ steps.deploy_stack.outputs.RPCPublicIp }}\n" >> inventory
           cat inventory

@@ -49,7 +49,7 @@ yarn ts-node src/test-command.ts
 
 Some examples of how to write "scripts" is available under [./scripts/](./scripts) folder.
 These are "code-snippets" designed primarly for doing queries or very simple transactions.
-If you follow the example format you can also copy/paste them into https://testnet.joystream.org/#/js for execution.
+If you follow the example format you can also copy/paste them into https://polkadot.js.org/apps/#/js for execution.
 
 ```sh
 yarn script example

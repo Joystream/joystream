@@ -18,7 +18,7 @@ fn sling_nft_back() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
@@ -38,7 +38,7 @@ fn sling_nft_back() {
 
         // Sling nft back to the original artist
         assert_ok!(Content::sling_nft_back(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(SECOND_MEMBER_ID),
         ));
@@ -72,7 +72,7 @@ fn sling_nft_back_video_does_not_exist() {
 
         // Make an attempt to sling nft back which corresponding video does not exist
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
         );
@@ -96,7 +96,7 @@ fn sling_nft_back_not_issued() {
 
         // Make an attempt to sling nft back which is not issued yet
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
         );
@@ -125,7 +125,7 @@ fn sling_nft_back_auth_failed() {
 
         // Make an attempt to sling nft back with wrong credentials
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
         );
@@ -154,7 +154,7 @@ fn sling_nft_back_not_authorized() {
 
         // Make an attempt to sling nft back if actor is not authorized
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
         );
@@ -183,7 +183,7 @@ fn sling_nft_back_transactional_status_is_not_idle() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(SECOND_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -192,7 +192,7 @@ fn sling_nft_back_transactional_status_is_not_idle() {
 
         // Make an attempt to sling nft back when it is already offered
         let sling_nft_back_result = Content::sling_nft_back(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(SECOND_MEMBER_ID),
         );
@@ -217,7 +217,7 @@ fn sling_nft_back_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::sling_nft_back(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 1u64,
                 ContentActor::Member(SECOND_MEMBER_ID),
             ),
@@ -235,7 +235,7 @@ fn sling_nft_back_fails_with_channel_owned_nft() {
 
         assert_noop!(
             Content::sling_nft_back(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 1u64,
                 ContentActor::Member(DEFAULT_MEMBER_ID),
             ),

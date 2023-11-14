@@ -182,7 +182,7 @@ export class StateCacheService {
     this.dropPendingDownload(objectId)
     const cacheGroupNumber = this.memoryState.groupNumberByObjectId.get(objectId)
     this.logger.debug('Cache group by object id established', { objectId, cacheGroupNumber })
-    if (cacheGroupNumber) {
+    if (cacheGroupNumber !== undefined) {
       this.memoryState.groupNumberByObjectId.delete(objectId)
       this.storedState.lruCacheGroups[cacheGroupNumber].delete(objectId)
     }
@@ -204,11 +204,11 @@ export class StateCacheService {
     return _.mean(data?.last10ResponseTimes || [max])
   }
 
-  public getStorageNodeEndpointsMeanResponseTimes(max = 99999): [string, number][] {
-    return Array.from(this.memoryState.storageNodeEndpointDataByEndpoint.keys()).map((endpoint) => [
+  public getStorageNodeEndpointsMeanResponseTimes(max = 99999): { endpoint: string; meanResponseTime: number }[] {
+    return Array.from(this.memoryState.storageNodeEndpointDataByEndpoint.keys()).map((endpoint) => ({
       endpoint,
-      this.getStorageNodeEndpointMeanResponseTime(endpoint, max),
-    ])
+      meanResponseTime: this.getStorageNodeEndpointMeanResponseTime(endpoint, max),
+    }))
   }
 
   public cacheDataObjectSource(objectId: string, source: string): void {

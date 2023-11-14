@@ -4,7 +4,7 @@ use super::*;
 use crate::Module as ProposalsDiscussion;
 use balances::Pallet as Balances;
 use council::Module as Council;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::sp_runtime::traits::Bounded;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
@@ -65,9 +65,9 @@ fn run_to_block<T: Config + council::Config + referendum::Config<ReferendumInsta
     }
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);

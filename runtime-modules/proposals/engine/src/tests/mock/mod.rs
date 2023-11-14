@@ -10,7 +10,7 @@ use frame_support::dispatch::DispatchError;
 use frame_support::traits::LockIdentifier;
 use frame_support::{
     parameter_types,
-    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf},
+    traits::{ConstU16, ConstU32, ConstU64, EitherOfDiverse},
 };
 pub use frame_system;
 use frame_system::{EnsureRoot, EnsureSigned};
@@ -58,12 +58,13 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -137,7 +138,7 @@ impl common::membership::MembershipTypes for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();
@@ -167,13 +168,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -214,7 +217,7 @@ parameter_types! {
 }
 
 impl crate::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ProposerOriginValidator = ();
     type CouncilOriginValidator = ();
     type TotalVotersCounter = ();
@@ -250,9 +253,9 @@ impl Default for proposals::Call<Test> {
     }
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         _account_id: u64,
     ) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;
@@ -265,8 +268,8 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+impl common::council::CouncilOriginValidator<RuntimeOrigin, u64, u64> for () {
+    fn ensure_member_consulate(origin: RuntimeOrigin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 
         Ok(())
@@ -291,8 +294,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -300,7 +303,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -323,7 +326,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -349,7 +352,7 @@ parameter_types! {
 type ReferendumInstance = referendum::Instance1;
 
 impl council::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 

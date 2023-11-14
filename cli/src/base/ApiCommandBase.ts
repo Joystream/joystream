@@ -529,7 +529,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
           return
         }
 
-        if (result.status.isInBlock) {
+        if (result.status.isInBlock || result.status.isFinalized) {
           unsubscribe()
           result.events
             .filter(({ event }) => event.section === 'system')

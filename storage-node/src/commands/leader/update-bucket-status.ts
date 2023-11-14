@@ -1,6 +1,6 @@
 import { flags } from '@oclif/command'
 import { updateStorageBucketStatus } from '../../services/runtime/extrinsics'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
+import LeaderCommandBase from '../../command-base/LeaderCommandBase'
 import logger from '../../services/logger'
 
 /**
@@ -11,7 +11,7 @@ import logger from '../../services/logger'
  * Storage working group leader command. Requires storage WG leader priviliges.
  * Shell command: "leader:update-bucket-status"
  */
-export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
+export default class LeaderUpdateStorageBucketStatus extends LeaderCommandBase {
   static description = 'Update storage bucket status (accepting new bags).'
 
   static flags = {
@@ -26,7 +26,7 @@ export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
       options: ['on', 'off'],
       required: true,
     }),
-    ...ApiCommandBase.flags,
+    ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
@@ -41,7 +41,7 @@ export default class LeaderUpdateStorageBucketStatus extends ApiCommandBase {
       await this.ensureDevelopmentChain()
     }
 
-    const account = this.getAccount(flags)
+    const account = this.getAccount()
 
     const api = await this.getApi()
     const success = await updateStorageBucketStatus(api, account, bucket, newStatus)

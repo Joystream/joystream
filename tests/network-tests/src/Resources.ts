@@ -48,6 +48,7 @@ class Lock {
 export enum Resource {
   Council = 'Council',
   Proposals = 'Proposals',
+  MembershipWgBudget = 'MembershipWgBudget',
 }
 
 export class ResourceManager {
@@ -75,6 +76,8 @@ export class ResourceManager {
       // which limits the number of concurrent tests that create proposals
       // TODO: Get the value from api.consts.proposalsEngine.maxActiveProposalLimit
       [Resource.Proposals]: this.add(Resource.Proposals, 20),
+      // mutex for meembership working group budget
+      [Resource.MembershipWgBudget]: this.add(Resource.MembershipWgBudget),
     }
   }
 

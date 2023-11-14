@@ -27,6 +27,7 @@ import {
   IOpeningMetadata,
   IWorkingGroupMetadata,
   ISubtitleMetadata,
+  IAppMetadata,
 } from '@joystream/metadata-protobuf'
 import {
   MembershipFieldsFragment,
@@ -339,4 +340,8 @@ export type OfflineTransactionData = {
     call: string
     callHash: string
   }
+}
+
+export interface AppInputDetails extends IAppMetadata {
+  name: string
 }

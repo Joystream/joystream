@@ -19,7 +19,6 @@ import cancellingProposals from '../flows/proposals/cancellingProposal'
 import vetoProposal from '../flows/proposals/vetoProposal'
 import electCouncil from '../flows/council/elect'
 import failToElect from '../flows/council/failToElect'
-import runtimeUpgradeProposal from '../flows/proposals/runtimeUpgradeProposal'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
@@ -40,18 +39,12 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
-import { deleteApp } from '../flows/content/deleteApp'
+import curatorModerationActions from '../flows/content/curatorModerationActions'
+import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
-scenario('Full', async ({ job, env }) => {
-  // Runtime upgrade should always be first job
-  // (except councilJob, which is required for voting and should probably depend on the "source" runtime)
-  const councilJob = job('electing council', electCouncil)
-  const runtimeUpgradeProposalJob = env.RUNTIME_UPGRADE_TARGET_WASM_PATH
-    ? job('runtime upgrade proposal', runtimeUpgradeProposal).requires(councilJob)
-    : undefined
-
-  const coreJob = runtimeUpgradeProposalJob || councilJob
+scenario('Full', async ({ job }) => {
+  const coreJob = job('electing council', electCouncil)
 
   // All other jobs should be executed after coreJob
 
@@ -60,6 +53,7 @@ scenario('Full', async ({ job, env }) => {
   job('updating member profile', updatingMemberProfile).after(coreJob)
   job('updating member accounts', updatingMemberAccounts).after(coreJob)
   job('transferring invites', transferringInvites).after(coreJob)
+  job('inviting members', invitingMembers).after(coreJob)
   job('managing staking accounts', managingStakingAccounts).after(coreJob)
 
   // Council (should not interrupt proposalsJob!)
@@ -87,11 +81,10 @@ scenario('Full', async ({ job, env }) => {
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
   job('worker actions', workerActions).requires(hireLeads)
-  const groupBudgetSet = job('group budget', groupBudget).requires(hireLeads)
+  job('group budget', groupBudget).requires(hireLeads)
 
-  // Memberships (depending on hired lead, group budget set)
+  // Memberships (depending on hired leads)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
-  job('inviting members', invitingMembers).requires(groupBudgetSet)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)
@@ -112,15 +105,21 @@ scenario('Full', async ({ job, env }) => {
   const commentsAndReactionsJob = job('video comments and reactions', commentsAndReactions).after(
     nftAuctionAndOffersJob
   )
-  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
+  const curatorModerationActionsJob = job('curator moderation actions', curatorModerationActions).after(
     commentsAndReactionsJob
+  )
+  const collaboratorAndCuratorPermissionsJob = job(
+    'curators and collaborators permissions',
+    collaboratorAndCuratorPermissions
+  ).after(curatorModerationActionsJob)
+  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
+    collaboratorAndCuratorPermissionsJob
   )
 
   // Apps
   job('create app', createApp).after(hireLeads)
   job('update app', updateApp).after(hireLeads)
   job('create app actions', createAppActions).after(hireLeads)
-  job('delete app', deleteApp).after(hireLeads)
 
   const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
 

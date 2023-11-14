@@ -1,0 +1,62 @@
+version: '3.4'
+
+services:
+  # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+    container_name: elasticsearch
+    environment:
+      # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/7.17/security-minimal-setup.html#_enable_elasticsearch_security_features
+      - xpack.security.enabled=true
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - ELASTIC_PASSWORD=${ELASTIC_PASSWORD:-password}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - 127.0.0.1:9200:9200
+    networks:
+      - joystream_default
+
+  # Ref: https://www.elastic.co/guide/en/kibana/8.7/docker.html
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.7.0
+    container_name: kibana
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      ELASTICSEARCH_SERVICEACCOUNTTOKEN: ${ELASTICSEARCH_SERVICEACCOUNTTOKEN}
+    ports:
+      - 127.0.0.1:5601:5601
+    networks:
+      - joystream_default
+
+  # Ref: https://www.elastic.co/guide/en/apm/guide/8.7/running-on-docker.html
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.7.0
+    depends_on:
+      - elasticsearch
+    command: |
+      --strict.perms=false -e 
+      -E output.elasticsearch.hosts=["elasticsearch:9200"] 
+      -E output.elasticsearch.username=${ELASTIC_USERNAME:-elastic} 
+      -E output.elasticsearch.password=${ELASTIC_PASSWORD:-password}
+    ports:
+      - 8200:8200
+    networks:
+      - joystream_default
+
+volumes:
+  es-data:
+    driver: local
+
+# Join default joystream network (from root docker-compose)
+networks:
+  joystream_default:
+    external: true

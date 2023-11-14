@@ -27,6 +27,10 @@ Query node graphql server uri (for example: <http://localhost:8081/graphql>)
 
 `string`
 
+### queryNode Constraints
+
+**URI**: the string must be a URI, according to [RFC 3986](https://tools.ietf.org/html/rfc3986 "check the specification")
+
 ## joystreamNodeWs
 
 Joystream node websocket api uri (for example: ws\://localhost:9944)
@@ -44,3 +48,7 @@ Joystream node websocket api uri (for example: ws\://localhost:9944)
 ### joystreamNodeWs Type
 
 `string`
+
+### joystreamNodeWs Constraints
+
+**URI**: the string must be a URI, according to [RFC 3986](https://tools.ietf.org/html/rfc3986 "check the specification")

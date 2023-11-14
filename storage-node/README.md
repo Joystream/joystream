@@ -6,22 +6,17 @@ Joystream storage subsystem.
 ![License](https://img.shields.io/github/license/Joystream/joystream)
 
 <!-- toc -->
-
-- [Description](#description)
-  - [API](#api)
-  - [CLI](#cli)
-  - [Metadata](#metadata)
-  - [Data](#data)
-    - [Uploading](#uploading)
-    - [Synchronization](#synchronization)
-    - [Distribution](#distribution)
-  - [Comments](#comments)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Prerequisites](#prerequisites)
-  - [CLI Command](#cli-command)
-  - [Docker](#docker)
-- [CLI Commands](#cli-commands)
+* [Colossus v2](#colossus-v2)
+* [Description](#description)
+* [Installation](#installation)
+* [Ubuntu Linux](#ubuntu-linux)
+* [Install packages required for installation](#install-packages-required-for-installation)
+* [Clone the code repository](#clone-the-code-repository)
+* [Install volta](#install-volta)
+* [Install project dependencies and build it](#install-project-dependencies-and-build-it)
+* [Verify installation](#verify-installation)
+* [Usage](#usage)
+* [CLI Commands](#cli-commands)
 <!-- tocstop -->
 
 # Description
@@ -154,7 +149,6 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 <!-- commands -->
 * [`storage-node dev:multihash`](#storage-node-devmultihash)
 * [`storage-node dev:sync`](#storage-node-devsync)
-* [`storage-node dev:upload`](#storage-node-devupload)
 * [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
@@ -164,8 +158,8 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
 * [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
-* [`storage-node leader:update-bag`](#storage-node-leaderupdate-bag)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+* [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
 * [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
 * [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
 * [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
@@ -189,7 +183,7 @@ OPTIONS
   -h, --help       show CLI help
 ```
 
-_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/multihash.ts)_
+_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/master/src/commands/dev/multihash.ts)_
 
 ## `storage-node dev:sync`
 
@@ -200,6 +194,7 @@ USAGE
   $ storage-node dev:sync
 
 OPTIONS
+  -b, --bucketId=bucketId                            (required) The buckerId to sync
   -d, --uploads=uploads                              (required) Data uploading directory (absolute path).
   -h, --help                                         show CLI help
 
@@ -218,31 +213,7 @@ OPTIONS
   -w, --workerId=workerId                            (required) Storage node operator worker ID.
 ```
 
-_See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/sync.ts)_
-
-## `storage-node dev:upload`
-
-Upload data object (development mode only).
-
-```
-USAGE
-  $ storage-node dev:upload
-
-OPTIONS
-  -c, --cid=cid                (required) Data object IPFS content ID.
-  -h, --help                   show CLI help
-  -i, --bagId=bagId            (required) BagId for uploading the Data object.
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
-  -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
-  -s, --size=size              (required) Data object size.
-  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
-```
-
-_See code: [src/commands/dev/upload.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/upload.ts)_
+_See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/master/src/commands/dev/sync.ts)_
 
 ## `storage-node dev:verify-bag-id`
 
@@ -270,7 +241,7 @@ OPTIONS
       - dynamic:member:4
 ```
 
-_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/dev/verify-bag-id.ts)_
+_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/master/src/commands/dev/verify-bag-id.ts)_
 
 ## `storage-node help [COMMAND]`
 
@@ -300,16 +271,21 @@ USAGE
 OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/cancel-invite.ts)_
+_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/cancel-invite.ts)_
 
 ## `storage-node leader:create-bucket`
 
@@ -323,18 +299,24 @@ OPTIONS
   -a, --allow                  Accepts new bags
   -h, --help                   show CLI help
   -i, --invited=invited        Invited storage operator ID (storage WG worker ID)
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
   -n, --number=number          Storage bucket max total objects number
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -s, --size=size              Storage bucket max total objects size
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/create-bucket.ts)_
 
 ## `storage-node leader:delete-bucket`
 
@@ -347,16 +329,21 @@ USAGE
 OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/delete-bucket.ts)_
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/delete-bucket.ts)_
 
 ## `storage-node leader:invite-operator`
 
@@ -369,17 +356,23 @@ USAGE
 OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
   -w, --operatorId=operatorId  (required) Storage bucket operator ID (storage group worker ID)
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/invite-operator.ts)_
+_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/invite-operator.ts)_
 
 ## `storage-node leader:remove-operator`
 
@@ -392,16 +385,21 @@ USAGE
 OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/remove-operator.ts)_
+_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/remove-operator.ts)_
 
 ## `storage-node leader:set-bucket-limits`
 
@@ -414,18 +412,24 @@ USAGE
 OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
   -o, --objects=objects        (required) New 'voucher object number limit' value
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -s, --size=size              (required) New 'voucher object size limit' value
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/set-bucket-limits.ts)_
+_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-bucket-limits.ts)_
 
 ## `storage-node leader:set-global-uploading-status`
 
@@ -437,34 +441,67 @@ USAGE
 
 OPTIONS
   -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -s, --set=(on|off)           (required) Sets global uploading block (on/off).
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/set-global-uploading-status.ts)_
+_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-global-uploading-status.ts)_
 
-## `storage-node leader:update-bag`
+## `storage-node leader:update-bag-limit`
 
-Add/remove a storage bucket from a bag (adds by default).
+Update StorageBucketsPerBagLimit variable in the Joystream node storage.
 
 ```
 USAGE
-  $ storage-node leader:update-bag
+  $ storage-node leader:update-bag-limit
+
+OPTIONS
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
+  -l, --limit=limit            (required) New StorageBucketsPerBagLimit value
+  -m, --dev                    Use development mode
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
+```
+
+_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bag-limit.ts)_
+
+## `storage-node leader:update-bags`
+
+Add/remove a storage bucket/s from a bag/s. If multiple bags are provided, then the same input bucket ID/s would be added/removed from all bags.
+
+```
+USAGE
+  $ storage-node leader:update-bags
 
 OPTIONS
   -a, --add=add
-      [default: ] ID/s of a bucket/s to add to bag
+      [default: ] Comma separated list of bucket IDs to add to all bag/s
 
   -h, --help
       show CLI help
 
-  -i, --bagId=bagId
+  -i, --bagIds=bagIds
       (required) Bag ID. Format: {bag_type}:{sub_type}:{id}.
       - Bag types: 'static', 'dynamic'
       - Sub types: 'static:council', 'static:wg', 'dynamic:member', 'dynamic:channel'
@@ -478,48 +515,32 @@ OPTIONS
       - dynamic:member:4
 
   -k, --keyFile=keyFile
-      Key file for the account. Mandatory in non-dev environment.
+      Path to key file to add to the keyring.
 
   -m, --dev
       Use development mode
 
   -p, --password=password
-      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files. If not specified a single
+      password can be set in ACCOUNT_PWD environment variable.
 
   -r, --remove=remove
-      [default: ] ID/s of a bucket/s to remove from bag
+      [default: ] Comma separated list of bucket IDs to remove from all bag/s
+
+  -s, --updateStrategy=(atomic|force)
+      [default: atomic] Update strategy to use. Either "atomic" or "force".
 
   -u, --apiUrl=apiUrl
       [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
   -y, --accountUri=accountUri
-      Account URI (optional). Has a priority over the keyFile and password flags. Could be overriden by ACCOUNT_URI
-      environment variable.
+      Account URI (optional). If not specified a single key can be set in ACCOUNT_URI environment variable.
+
+  --keyStore=keyStore
+      Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bag.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-bag.ts)_
-
-## `storage-node leader:update-bag-limit`
-
-Update StorageBucketsPerBagLimit variable in the Joystream node storage.
-
-```
-USAGE
-  $ storage-node leader:update-bag-limit
-
-OPTIONS
-  -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
-  -l, --limit=limit            (required) New StorageBucketsPerBagLimit value
-  -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
-  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
-```
-
-_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-bag-limit.ts)_
+_See code: [src/commands/leader/update-bags.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bags.ts)_
 
 ## `storage-node leader:update-blacklist`
 
@@ -532,17 +553,23 @@ USAGE
 OPTIONS
   -a, --add=add                [default: ] Content ID to add
   -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -r, --remove=remove          [default: ] Content ID to remove
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-blacklist.ts)_
+_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-blacklist.ts)_
 
 ## `storage-node leader:update-bucket-status`
 
@@ -555,17 +582,23 @@ USAGE
 OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -s, --set=(on|off)           (required) Sets 'accepting new bags' parameter for the bucket (on/off).
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-bucket-status.ts)_
+_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bucket-status.ts)_
 
 ## `storage-node leader:update-data-fee`
 
@@ -578,16 +611,21 @@ USAGE
 OPTIONS
   -f, --fee=fee                (required) New data size fee
   -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-fee.ts)_
+_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-data-fee.ts)_
 
 ## `storage-node leader:update-data-object-bloat-bond`
 
@@ -599,17 +637,23 @@ USAGE
 
 OPTIONS
   -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
   -v, --value=value            (required) New data object bloat bond value
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-data-object-bloat-bond.ts)_
+_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-data-object-bloat-bond.ts)_
 
 ## `storage-node leader:update-dynamic-bag-policy`
 
@@ -621,18 +665,25 @@ USAGE
 
 OPTIONS
   -h, --help                      show CLI help
-  -k, --keyFile=keyFile           Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile           Path to key file to add to the keyring.
   -m, --dev                       Use development mode
   -n, --number=number             (required) New storage buckets number
-  -p, --password=password         Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password         Password to unlock keyfiles. Multiple passwords can be passed, to try against all
+                                  files. If not specified a single password can be set in ACCOUNT_PWD environment
+                                  variable.
+
   -t, --bagType=(Channel|Member)  (required) Dynamic bag type (Channel, Member).
+
   -u, --apiUrl=apiUrl             [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri     Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                                  overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri     Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                                  environment variable.
+
+  --keyStore=keyStore             Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-dynamic-bag-policy.ts)_
+_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-dynamic-bag-policy.ts)_
 
 ## `storage-node leader:update-voucher-limits`
 
@@ -644,18 +695,24 @@ USAGE
 
 OPTIONS
   -h, --help                   show CLI help
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
   -o, --objects=objects        (required) New 'max voucher object number limit' value
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
   -s, --size=size              (required) New 'max voucher object size limit' value
+
   -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/leader/update-voucher-limits.ts)_
+_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-voucher-limits.ts)_
 
 ## `storage-node operator:accept-invitation`
 
@@ -668,11 +725,12 @@ USAGE
 OPTIONS
   -h, --help                                     show CLI help
   -i, --bucketId=bucketId                        (required) Storage bucket ID
-  -k, --keyFile=keyFile                          Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile                          Path to key file to add to the keyring.
   -m, --dev                                      Use development mode
 
-  -p, --password=password                        Key file password (optional). Could be overriden by ACCOUNT_PWD
-                                                 environment variable.
+  -p, --password=password                        Password to unlock keyfiles. Multiple passwords can be passed, to try
+                                                 against all files. If not specified a single password can be set in
+                                                 ACCOUNT_PWD environment variable.
 
   -t, --transactorAccountId=transactorAccountId  (required) Transactor account ID (public key)
 
@@ -681,11 +739,13 @@ OPTIONS
 
   -w, --workerId=workerId                        (required) Storage operator worker ID
 
-  -y, --accountUri=accountUri                    Account URI (optional). Has a priority over the keyFile and password
-                                                 flags. Could be overriden by ACCOUNT_URI environment variable.
+  -y, --accountUri=accountUri                    Account URI (optional). If not specified a single key can be set in
+                                                 ACCOUNT_URI environment variable.
+
+  --keyStore=keyStore                            Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/operator/accept-invitation.ts)_
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/master/src/commands/operator/accept-invitation.ts)_
 
 ## `storage-node operator:set-metadata`
 
@@ -700,17 +760,23 @@ OPTIONS
   -h, --help                   show CLI help
   -i, --bucketId=bucketId      (required) Storage bucket ID
   -j, --jsonFile=jsonFile      Path to JSON metadata file
-  -k, --keyFile=keyFile        Key file for the account. Mandatory in non-dev environment.
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
   -m, --dev                    Use development mode
-  -p, --password=password      Key file password (optional). Could be overriden by ACCOUNT_PWD environment variable.
-  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
-  -w, --operatorId=operatorId  (required) Storage bucket operator ID (storage group worker ID)
 
-  -y, --accountUri=accountUri  Account URI (optional). Has a priority over the keyFile and password flags. Could be
-                               overriden by ACCOUNT_URI environment variable.
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -w, --workerId=workerId      (required) Storage operator worker ID
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/operator/set-metadata.ts)_
+_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/master/src/commands/operator/set-metadata.ts)_
 
 ## `storage-node server`
 
@@ -721,57 +787,73 @@ USAGE
   $ storage-node server
 
 OPTIONS
-  -d, --uploads=uploads                                       (required) Data uploading directory (absolute path).
+  -b, --buckets=buckets                                            [default: ] Comma separated list of bucket IDs to
+                                                                   service. Buckets that are not assigned to worker are
+                                                                   ignored. If not specified all buckets will be
+                                                                   serviced.
 
-  -e, --elasticSearchEndpoint=elasticSearchEndpoint           Elasticsearch endpoint (e.g.: http://some.com:8081).
-                                                              Log level could be set using the ELASTIC_LOG_LEVEL
-                                                              enviroment variable.
-                                                              Supported values: warn, error, debug, info. Default:debug
+  -d, --uploads=uploads                                            (required) Data uploading directory (absolute path).
 
-  -h, --help                                                  show CLI help
+  -e, --elasticSearchEndpoint=elasticSearchEndpoint                Elasticsearch endpoint (e.g.: http://some.com:8081).
+                                                                   Log level could be set using the ELASTIC_LOG_LEVEL
+                                                                   enviroment variable.
+                                                                   Supported values: warn, error, debug, info.
+                                                                   Default:debug
 
-  -i, --syncInterval=syncInterval                             [default: 1] Interval between synchronizations (in
-                                                              minutes)
+  -h, --help                                                       show CLI help
 
-  -k, --keyFile=keyFile                                       Key file for the account. Mandatory in non-dev
-                                                              environment.
+  -i, --syncInterval=syncInterval                                  [default: 1] Interval between synchronizations (in
+                                                                   minutes)
 
-  -l, --logFilePath=logFilePath                               Absolute path to the rolling log files.
+  -k, --keyFile=keyFile                                            Path to key file to add to the keyring.
 
-  -m, --dev                                                   Use development mode
+  -l, --logFilePath=logFilePath                                    Absolute path to the rolling log files.
 
-  -n, --logMaxFileNumber=logMaxFileNumber                     [default: 7] Maximum rolling log files number.
+  -m, --dev                                                        Use development mode
 
-  -o, --port=port                                             (required) Server port.
+  -n, --logMaxFileNumber=logMaxFileNumber                          [default: 7] Maximum rolling log files number.
 
-  -p, --password=password                                     Key file password (optional). Could be overriden by
-                                                              ACCOUNT_PWD environment variable.
+  -o, --port=port                                                  (required) Server port.
 
-  -q, --queryNodeEndpoint=queryNodeEndpoint                   (required) [default: http://localhost:8081/graphql] Query
-                                                              node endpoint (e.g.: http://some.com:8081/graphql)
+  -p, --password=password                                          Password to unlock keyfiles. Multiple passwords can
+                                                                   be passed, to try against all files. If not specified
+                                                                   a single password can be set in ACCOUNT_PWD
+                                                                   environment variable.
 
-  -r, --syncWorkersNumber=syncWorkersNumber                   [default: 20] Sync workers number (max async operations in
-                                                              progress).
+  -q, --queryNodeEndpoint=queryNodeEndpoint                        (required) [default: http://localhost:8081/graphql]
+                                                                   Query node endpoint (e.g.:
+                                                                   http://some.com:8081/graphql)
 
-  -s, --sync                                                  Enable data synchronization.
+  -r, --syncWorkersNumber=syncWorkersNumber                        [default: 20] Sync workers number (max async
+                                                                   operations in progress).
 
-  -t, --syncWorkersTimeout=syncWorkersTimeout                 [default: 30] Asset downloading timeout for the
-                                                              syncronization (in minutes).
+  -s, --sync                                                       Enable data synchronization.
 
-  -u, --apiUrl=apiUrl                                         [default: ws://localhost:9944] Runtime API URL. Mandatory
-                                                              in non-dev environment.
+  -t, --syncWorkersTimeout=syncWorkersTimeout                      [default: 30] Asset downloading timeout for the
+                                                                   syncronization (in minutes).
 
-  -w, --worker=worker                                         (required) Storage provider worker ID
+  -u, --apiUrl=apiUrl                                              [default: ws://localhost:9944] Runtime API URL.
+                                                                   Mandatory in non-dev environment.
 
-  -x, --logMaxFileSize=logMaxFileSize                         [default: 50000000] Maximum rolling log files size in
-                                                              bytes.
+  -w, --worker=worker                                              (required) Storage provider worker ID
 
-  -y, --accountUri=accountUri                                 Account URI (optional). Has a priority over the keyFile
-                                                              and password flags. Could be overriden by ACCOUNT_URI
-                                                              environment variable.
+  -x, --logMaxFileSize=logMaxFileSize                              [default: 50000000] Maximum rolling log files size in
+                                                                   bytes.
 
-  -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly)  [default: daily] Log files update frequency.
+  -y, --accountUri=accountUri                                      Account URI (optional). If not specified a single key
+                                                                   can be set in ACCOUNT_URI environment variable.
+
+  -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly|none)  [default: daily] Log files update frequency.
+
+  --elasticSearchIndex=elasticSearchIndex                          Elasticsearch index name.
+
+  --elasticSearchPassword=elasticSearchPassword                    Elasticsearch password for basic authentication.
+
+  --elasticSearchUser=elasticSearchUser                            Elasticsearch user for basic authentication.
+
+  --keyStore=keyStore                                              Path to a folder with multiple key files to load into
+                                                                   keystore.
 ```
 
-_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v2.0.0/src/commands/server.ts)_
+_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/master/src/commands/server.ts)_
 <!-- commandsstop -->

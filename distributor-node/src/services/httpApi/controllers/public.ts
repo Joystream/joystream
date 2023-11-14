@@ -194,7 +194,7 @@ export class PublicApiController {
     range?: { start: number; end: number }
   ) {
     this.logger.verbose(`Serving pending download asset from file`, { objectId, objectSize, range })
-    const stream = this.content.createContinousReadStream(objectId, {
+    const stream = this.content.createContinuousReadStream(objectId, {
       start: range?.start,
       end: range !== undefined ? range.end : objectSize - 1,
     })
@@ -219,11 +219,12 @@ export class PublicApiController {
 
   public async assetHead(req: express.Request<AssetRouteParams>, res: express.Response): Promise<void> {
     const { objectId } = req.params
-    const objectStatus = await this.content.objectStatus(objectId)
+    const objectStatus = await this.content.objectStatus(objectId, 'cache-first')
 
     res.setHeader('timing-allow-origin', '*')
     res.setHeader('accept-ranges', 'bytes')
     res.setHeader('content-disposition', 'inline')
+    res.setHeader('access-control-expose-headers', 'x-cache, x-data-source')
 
     switch (objectStatus.type) {
       case ObjectStatusType.Available:
@@ -271,6 +272,7 @@ export class PublicApiController {
     })
 
     res.setHeader('timing-allow-origin', '*')
+    res.setHeader('access-control-expose-headers', 'x-cache, x-data-source')
 
     switch (objectStatus.type) {
       case ObjectStatusType.Available:
@@ -296,12 +298,14 @@ export class PublicApiController {
     const data: StatusResponse = {
       id: this.config.id,
       version: this.config.version,
+      workerId: this.config.workerId,
       objectsInCache: this.stateCache.getCachedObjectsCount(),
       storageLimit: this.config.limits.storage,
       storageUsed: this.content.usedSpace,
       uptime: Math.floor(process.uptime()),
       downloadsInProgress: this.stateCache.getPendingDownloadsCount(),
       queryNodeStatus: await this.networking.getQueryNodeStatus(),
+      nodeEnv: process.env.NODE_ENV || '',
     }
     res.status(200).json(data)
   }

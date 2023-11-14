@@ -24,7 +24,7 @@ pub(crate) fn set_max_validator_count_proposal() -> ProposalParameters<BlockNumb
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(10_000)),
-        constitutionality: 3,
+        constitutionality: 2,
     }
 }
 
@@ -38,7 +38,7 @@ pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Bala
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(10_000)),
-        constitutionality: 4,
+        constitutionality: 2,
     }
 }
 
@@ -224,7 +224,7 @@ pub(crate) fn set_council_budget_increment_proposal() -> ProposalParameters<Bloc
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(2_000)),
-        constitutionality: 3,
+        constitutionality: 2,
     }
 }
 
@@ -340,6 +340,20 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(100)),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Freeze Pallet' proposal
+pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: days!(3),
+        grace_period: 0,
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
         constitutionality: 1,
     }
 }

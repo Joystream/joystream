@@ -15,6 +15,7 @@ const lbReady = config.get('isLoadBalancerReady') === 'true'
 const orionImage = config.get('orionImage') || `joystream/orion:latest`
 const contentSecret = config.require('contentSecret')
 const adminSecret = config.require('adminSecret')
+const appPrivateKey = config.require('appPrivateKey')
 const storage = parseInt(config.get('storage') || '40')
 const isMinikube = config.getBoolean('isMinikube')
 
@@ -99,7 +100,10 @@ const deployment = new k8s.apps.v1.Deployment(
                   name: 'ORION_ADMIN_SECRET',
                   value: adminSecret,
                 },
-
+                {
+                  name: 'APP_PRIVATE_KEY',
+                  value: appPrivateKey,
+                },
                 {
                   name: 'ORION_QUERY_NODE_URL',
                   value: queryNodeHost,

@@ -95,6 +95,12 @@ export interface StatusResponse {
      * @type {number}
      * @memberof StatusResponse
      */
+    'workerId'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponse
+     */
     'objectsInCache': number;
     /**
      * 
@@ -120,6 +126,12 @@ export interface StatusResponse {
      * @memberof StatusResponse
      */
     'downloadsInProgress': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponse
+     */
+    'nodeEnv': string;
     /**
      * 
      * @type {StatusResponseQueryNodeStatus}

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_PATH=`dirname "${BASH_SOURCE[0]}"`
 cd $SCRIPT_PATH
 
 # Log only to stderr
@@ -13,12 +13,14 @@ DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
 # The docker image tag to use for joystream/node
-RUNTIME=${RUNTIME:=$(../../scripts/runtime-code-shasum.sh)}
+if [[ "$RUNTIME" == "" ]]; then
+  RUNTIME=`../../scripts/runtime-code-shasum.sh`
+fi
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=$(docker run --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
+TREASURY_ACCOUNT=`docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r`
 
 >&2 echo "treasury account from suri: ${TREASURY_ACCOUNT}"
 
@@ -47,7 +49,7 @@ else
 fi
 
 # Create a chain spec file
-docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
+docker run --pull never --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
   --fund-accounts \
   --authorities //Alice \
@@ -56,14 +58,15 @@ docker run --rm -v ${DATA_PATH}:/spec --entrypoint ./chain-spec-builder joystrea
   --initial-balances-path /spec/initial-balances.json
 
 # Convert the chain spec file to a raw chainspec file
-docker run --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
+docker run --pull never --rm -v ${DATA_PATH}:/spec joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
   --chain /spec/chain-spec.json > ${DATA_PATH}/chain-spec-raw.json
 
 # Start a chain with generated chain spec
 export JOYSTREAM_NODE_TAG=${RUNTIME}
-docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
-  -p 9944:9944 -p 9933:9933 joystream-node \
+docker-compose -p joystream -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec --name joystream-node \
+  --service-ports joystream-node \
   --alice --validator --unsafe-ws-external --unsafe-rpc-external \
   --rpc-methods Unsafe --rpc-cors=all -l runtime \
-  --chain /spec/chain-spec-raw.json --pruning=archive --no-telemetry
+  --chain /spec/chain-spec-raw.json --pruning=archive --no-telemetry \
+  --no-hardware-benchmarks

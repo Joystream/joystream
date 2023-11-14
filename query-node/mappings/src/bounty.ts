@@ -41,7 +41,7 @@ import {
   WorkSubmittedEvent,
 } from 'query-node/dist/model'
 import { Bounty as BountyEvents } from '../generated/types'
-import { asBN, asInt32, bytesToString, deserializeMetadata, genericEventFields, perpareString } from './common'
+import { asBN, asInt32, bytesToString, deserializeMetadata, genericEventFields, perpareString, whenDef } from './common'
 import { scheduleAtBlock } from './scheduler'
 
 /**
@@ -134,10 +134,6 @@ function scheduleBountyStageEnd(
       })
     }
   }
-}
-
-function whenDef<T, R>(value: T | null | undefined, fn: (value: T) => R): R | undefined {
-  if (value !== null && typeof value !== 'undefined') return fn(value)
 }
 
 /**

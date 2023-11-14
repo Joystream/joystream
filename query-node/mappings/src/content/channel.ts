@@ -3,53 +3,53 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import {
-  IMakeChannelPayment,
   AppAction,
   ChannelMetadata,
   ChannelModeratorRemarked,
   ChannelOwnerRemarked,
+  IMakeChannelPayment,
 } from '@joystream/metadata-protobuf'
-import { ChannelId, DataObjectId, MemberId } from '@joystream/types/primitives'
+import { DataObjectId } from '@joystream/types/primitives'
+import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 import {
   Channel,
+  ChannelAssetsDeletedByModeratorEvent,
+  ChannelDeletedByModeratorEvent,
+  ChannelFundsWithdrawnEvent,
+  ChannelNftCollectors,
+  ChannelPaymentMadeEvent,
+  ChannelPayoutsUpdatedEvent,
+  ChannelRewardClaimedAndWithdrawnEvent,
+  ChannelRewardClaimedEvent,
+  ChannelVisibilitySetByModeratorEvent,
   Collaborator,
+  Comment,
   ContentActor,
   ContentActorCurator,
   ContentActorMember,
   CuratorGroup,
+  DataObjectTypeChannelPayoutsPayload,
+  MemberBannedFromChannelEvent,
   Membership,
   MetaprotocolTransactionSuccessful,
-  StorageBag,
-  StorageDataObject,
-  ChannelAssetsDeletedByModeratorEvent,
-  ChannelDeletedByModeratorEvent,
-  ChannelVisibilitySetByModeratorEvent,
-  ChannelPayoutsUpdatedEvent,
-  ChannelRewardClaimedAndWithdrawnEvent,
-  ChannelRewardClaimedEvent,
-  DataObjectTypeChannelPayoutsPayload,
-  ChannelFundsWithdrawnEvent,
-  PaymentContextVideo,
   PaymentContextChannel,
-  ChannelPaymentMadeEvent,
+  PaymentContextVideo,
+  StorageDataObject,
   Video,
-  ChannelNftCollectors,
-  MemberBannedFromChannelEvent,
 } from 'query-node/dist/model'
-import { In, FindOptionsWhere } from 'typeorm'
-import { Content } from '../../generated/types'
+import { FindOptionsWhere, In } from 'typeorm'
 import {
-  deserializeMetadata,
-  inconsistentState,
-  genericEventFields,
-  logger,
-  saveMetaprotocolTransactionSuccessful,
-  saveMetaprotocolTransactionErrored,
-  unwrap,
+  MetaprotocolTxError,
   bytesToString,
-  getMemberById,
+  deserializeMetadata,
+  genericEventFields,
+  getOneBy,
   invalidMetadata,
-  unexpectedData,
+  logger,
+  saveMetaprotocolTransactionErrored,
+  saveMetaprotocolTransactionSuccessful,
+  unimplementedError,
+  unwrap,
 } from '../common'
 import {
   processBanOrUnbanMemberFromChannelMessage,
@@ -60,26 +60,44 @@ import {
 import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
-  processChannelMetadata,
-  unsetAssetRelations,
+  getChannelOrFail,
   mapAgentPermission,
   processAppActionMetadata,
-  generateAppActionCommitment,
+  processChannelMetadata,
   u8aToBytes,
+  unsetAssetRelations,
 } from './utils'
-import { BTreeMap, BTreeSet, u64 } from '@polkadot/types'
 // Joystream types
-import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
-import BN from 'bn.js'
-import { AccountId32, Balance } from '@polkadot/types/interfaces'
-import { BaseModel } from '@joystream/warthog'
+import { generateAppActionCommitment } from '@joystream/js/utils'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
+import { BaseModel } from '@joystream/warthog'
+import { AccountId32, Balance } from '@polkadot/types/interfaces'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V1001 } from '../../generated/types/1001/types-lookup'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V2002 } from '../../generated/types/2002/types-lookup'
+import BN from 'bn.js'
+import {
+  Content_ChannelAgentRemarkedEvent_V1001 as ChannelAgentRemarkedEvent_V1001,
+  Content_ChannelAssetsDeletedByModeratorEvent_V1001 as ChannelAssetsDeletedByModeratorEvent_V1001,
+  Content_ChannelAssetsRemovedEvent_V1001 as ChannelAssetsRemovedEvent_V1001,
+  Content_ChannelCreatedEvent_V1001 as ChannelCreatedEvent,
+  Content_ChannelDeletedByModeratorEvent_V1001 as ChannelDeletedByModeratorEvent_V1001,
+  Content_ChannelDeletedEvent_V1001 as ChannelDeletedEvent_V1001,
+  Content_ChannelFundsWithdrawnEvent_V1001 as ChannelFundsWithdrawnEvent_V1001,
+  Content_ChannelOwnerRemarkedEvent_V1001 as ChannelOwnerRemarkedEvent_V1001,
+  Content_ChannelPayoutsUpdatedEvent_V2001 as ChannelPayoutsUpdatedEvent_V2001,
+  Content_ChannelRewardClaimedAndWithdrawnEvent_V1001 as ChannelRewardClaimedAndWithdrawnEvent_V1001,
+  Content_ChannelRewardUpdatedEvent_V2001 as ChannelRewardUpdatedEvent_V2001,
+  Content_ChannelUpdatedEvent_V1001 as ChannelUpdatedEvent,
+  Content_ChannelVisibilitySetByModeratorEvent_V1001 as ChannelVisibilitySetByModeratorEvent_V1001,
+} from '../../generated/types'
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
-  const { store, event } = ctx
+  const { store, event, block } = ctx
+  const { specVersion } = block.runtimeVersion
+
   // read event data
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
-    new Content.ChannelCreatedEvent(event).params
+    new ChannelCreatedEvent(event).params
 
   // prepare channel owner (handles fields `ownerMember` and `ownerCuratorGroup`)
   const channelOwner = await convertChannelOwnerToMemberOrCuratorGroup(store, owner)
@@ -95,34 +113,30 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
     ...channelOwner,
     rewardAccount: rewardAccount.toString(),
     channelStateBloatBond: channelStateBloatBond.amount,
+    totalVideosCreated: 0,
   })
 
   // deserialize & process metadata
   if (channelCreationParameters.meta.isSome) {
-    const storageBag = await store.get(StorageBag, { where: { id: `dynamic:channel:${channelId.toString()}` } })
-
-    if (!storageBag) {
-      inconsistentState(`storageBag for channel ${channelId} does not exist`)
-    }
-
     const appAction = deserializeMetadata(AppAction, channelCreationParameters.meta.unwrap(), { skipWarning: true })
 
     if (appAction) {
       const channelMetadataBytes = u8aToBytes(appAction.rawAction)
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelMetadataBytes)
-      const appCommitment = generateAppActionCommitment(
+      const creatorType = channel.ownerMember ? AppAction.CreatorType.MEMBER : AppAction.CreatorType.CURATOR_GROUP
+      const creatorId = (channel.ownerMember ? channel.ownerMember.id : channel.ownerCuratorGroup?.id) ?? ''
+      const expectedCommitment = generateAppActionCommitment(
+        // Note: Curator channels not supported yet
         channelOwner.ownerMember?.totalChannelsCreated ?? -1,
-        channelOwner.ownerMember?.id ? `m:${channelOwner.ownerMember.id}` : `c:${channelOwner.ownerCuratorGroup?.id}`,
+        creatorId,
+        AppAction.ActionType.CREATE_CHANNEL,
+        creatorType,
         channelCreationParameters.assets.toU8a(),
-        appAction.rawAction ? channelMetadataBytes : undefined,
-        appAction.metadata ? u8aToBytes(appAction.metadata) : undefined
+        channelMetadataBytes.toU8a(true),
+        appAction.metadata || new Uint8Array()
       )
-      await processAppActionMetadata(
-        ctx,
-        channel,
-        appAction,
-        { ownerNonce: channelOwner.ownerMember?.totalChannelsCreated, appCommitment },
-        (entity: Channel) => processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
+      await processAppActionMetadata(ctx, channel, appAction, expectedCommitment, (entity: Channel) =>
+        processChannelMetadata(ctx, entity, channelMetadata ?? {}, dataObjects)
       )
     } else {
       const channelMetadata = deserializeMetadata(ChannelMetadata, channelCreationParameters.meta.unwrap()) ?? {}
@@ -144,31 +158,19 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 }
 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
-  const { store, event } = ctx
+  const { store, event, block } = ctx
+
   // read event data
-  const [, channelId, channelUpdateParameters, newDataObjects] = new Content.ChannelUpdatedEvent(event).params
+  const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent(event).params
 
   // load channel
-  const channel = await store.get(Channel, {
-    where: { id: channelId.toString() },
-  })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel update requested', channelId)
-  }
+  const channel = await getChannelOrFail(store, channelId.toString())
 
   // prepare changed metadata
   const newMetadataBytes = channelUpdateParameters.newMeta.unwrapOr(null)
 
   //  update metadata if it was changed
   if (newMetadataBytes) {
-    const storageBag = await store.get(StorageBag, { where: { id: `dynamic:channel:${channelId.toString()}` } })
-
-    if (!storageBag) {
-      inconsistentState(`storageBag for channel ${channelId} does not exist`)
-    }
-
     const newMetadata = deserializeMetadata(AppAction, newMetadataBytes, { skipWarning: true })
 
     if (newMetadata) {
@@ -194,7 +196,7 @@ export async function content_ChannelUpdated(ctx: EventContext & StoreContext): 
 }
 
 export async function content_ChannelAssetsRemoved({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, , dataObjectIds] = new Content.ChannelAssetsRemovedEvent(event).params
+  const [, , dataObjectIds] = new ChannelAssetsRemovedEvent_V1001(event).params
 
   await deleteChannelAssets(store, [...dataObjectIds])
 }
@@ -203,7 +205,7 @@ export async function content_ChannelAssetsDeletedByModerator({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [actor, channelId, dataObjectIds, rationale] = new Content.ChannelAssetsDeletedByModeratorEvent(event).params
+  const [actor, channelId, dataObjectIds, rationale] = new ChannelAssetsDeletedByModeratorEvent_V1001(event).params
 
   await deleteChannelAssets(store, [...dataObjectIds])
 
@@ -235,19 +237,13 @@ async function deleteChannelAssets(store: DatabaseManager, dataObjectIds: DataOb
 }
 
 export async function content_ChannelDeleted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, channelId] = new Content.ChannelDeletedEvent(event).params
-
-  // TODO: remove manual deletion of referencing records after
-  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
-
-  await removeChannelReferencingRelations(store, channelId.toString())
-
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  const [, channelId] = new ChannelDeletedEvent_V1001(event).params
+  await removeChannel(store, channelId)
 }
 
 export async function content_ChannelDeletedByModerator({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [actor, channelId, rationale] = new Content.ChannelDeletedByModeratorEvent(event).params
-  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
+  const [actor, channelId, rationale] = new ChannelDeletedByModeratorEvent_V1001(event).params
+  await removeChannel(store, channelId)
 
   // common event processing - second
 
@@ -267,17 +263,10 @@ export async function content_ChannelVisibilitySetByModerator({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [actor, channelId, isCensored, rationale] = new Content.ChannelVisibilitySetByModeratorEvent(event).params
+  const [actor, channelId, isCensored, rationale] = new ChannelVisibilitySetByModeratorEvent_V1001(event).params
 
   // load channel
-  const channel = await store.get(Channel, {
-    where: { id: channelId.toString() },
-  })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel censoring requested', channelId)
-  }
+  const channel = await getChannelOrFail(store, channelId.toString())
 
   // update channel
   channel.isCensored = isCensored.isTrue
@@ -304,18 +293,10 @@ export async function content_ChannelVisibilitySetByModerator({
 
 export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [channelId, message] = new Content.ChannelOwnerRemarkedEvent(ctx.event).params
+  const [channelId, message] = new ChannelOwnerRemarkedEvent_V1001(ctx.event).params
 
   // load channel
-  const channel = await store.get(Channel, {
-    where: { id: channelId.toString() },
-    relations: ['ownerMember', 'ownerCuratorGroup'],
-  })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Owner Remarked for Non-existing channel', channelId)
-  }
+  const channel = await getChannelOrFail(store, channelId.toString(), ['ownerMember', 'ownerCuratorGroup'])
 
   const getContentActor = (ownerMember?: Membership, ownerCuratorGroup?: CuratorGroup) => {
     if (ownerMember) {
@@ -330,52 +311,49 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
       return actor
     }
 
-    return inconsistentState('Unknown content actor', { ownerMember, ownerCuratorGroup })
+    return unimplementedError('Unsupported content actor type')
   }
 
-  try {
-    const decodedMessage = ChannelOwnerRemarked.decode(message.toU8a(true))
-    const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
-    const metaTransactionInfo = await processOwnerRemark(store, event, channelId, contentActor, decodedMessage)
+  const metadata = ChannelOwnerRemarked.decode(message.toU8a(true))
+  const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
+  const metaprotocolTxResult = await processOwnerRemark(store, event, channel, contentActor, metadata)
 
-    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
-    // emit log event
-    logger.info('Channel owner remarked', { decodedMessage })
-  } catch (e) {
-    // emit log event
-    logger.info(`Bad metadata for channel owner's remark`, { e })
-
-    // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for channel's owner`)
+  if (metaprotocolTxResult instanceof MetaprotocolTransactionSuccessful) {
+    await saveMetaprotocolTransactionSuccessful(store, event, metaprotocolTxResult)
+  } else {
+    await saveMetaprotocolTransactionErrored(store, event, metaprotocolTxResult)
+    invalidMetadata(`Bad metadata for channel owner's remark:`, { metadata, metaprotocolTxResult })
   }
 }
 
 export async function content_ChannelAgentRemarked(ctx: EventContext & StoreContext): Promise<void> {
   const { event, store } = ctx
-  const [moderator, channelId, message] = new Content.ChannelAgentRemarkedEvent(ctx.event).params
+  const [moderator, channelId, message] = new ChannelAgentRemarkedEvent_V1001(ctx.event).params
 
-  try {
-    const decodedMessage = ChannelModeratorRemarked.decode(message.toU8a(true))
-    const contentActor = await convertContentActor(store, moderator)
+  // load channel
+  const channel = await getChannelOrFail(store, channelId.toString())
 
-    const metaTransactionInfo = await processModeratorRemark(store, event, channelId, contentActor, decodedMessage)
+  const metadata = ChannelModeratorRemarked.decode(message.toU8a(true))
+  const contentActor = await convertContentActor(store, moderator)
+  const metaprotocolTxResult = await processModeratorRemark(store, event, channel, contentActor, metadata)
 
-    await saveMetaprotocolTransactionSuccessful(store, event, metaTransactionInfo)
-    // emit log event
-    logger.info('Channel moderator remarked', { decodedMessage })
-  } catch (e) {
-    // emit log event
-    logger.info(`Bad metadata for channel moderator's remark`, { e })
-
-    // save metaprotocol info
-    await saveMetaprotocolTransactionErrored(store, event, `Bad metadata for channel's remark`)
+  if (metaprotocolTxResult instanceof MetaprotocolTransactionSuccessful) {
+    await saveMetaprotocolTransactionSuccessful(store, event, metaprotocolTxResult)
+  } else {
+    await saveMetaprotocolTransactionErrored(store, event, metaprotocolTxResult)
+    invalidMetadata(`Bad metadata for channel_agent_remark:`, { metadata, metaprotocolTxResult })
   }
 }
 
 async function updateChannelAgentsPermissions(
   store: DatabaseManager,
   channel: Channel,
-  collaboratorsPermissions: BTreeMap<u64, BTreeSet<PalletContentIterableEnumsChannelActionPermission>>
+  collaboratorsPermissions: BTreeMap<
+    u64,
+    BTreeSet<
+      PalletContentIterableEnumsChannelActionPermission_V1001 | PalletContentIterableEnumsChannelActionPermission_V2002
+    >
+  >
 ) {
   // safest way to update permission is to delete existing and creating new ones
 
@@ -389,12 +367,12 @@ async function updateChannelAgentsPermissions(
 
   // create new records for privledged members
   for (const [memberId, permissions] of Array.from(collaboratorsPermissions)) {
-    const permissionsArray = Array.from(permissions)
-
     const collaborator = new Collaborator({
       channel: new Channel({ id: channel.id.toString() }),
       member: new Membership({ id: memberId.toString() }),
-      permissions: Array.from(permissions).map(mapAgentPermission),
+      permissions: Array.from(permissions).map((permissions) => {
+        return permissions.toString()
+      }),
     })
 
     await store.save(collaborator)
@@ -404,83 +382,100 @@ async function updateChannelAgentsPermissions(
 async function processOwnerRemark(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelId: ChannelId,
+  channel: Channel,
   contentActor: typeof ContentActor,
   decodedMessage: ChannelOwnerRemarked
-): Promise<Partial<MetaprotocolTransactionSuccessful>> {
-  const messageType = decodedMessage.channelOwnerRemarked
-
-  if (messageType === 'pinOrUnpinComment') {
-    await processPinOrUnpinCommentMessage(store, event, contentActor, channelId, decodedMessage.pinOrUnpinComment!)
-
-    return {}
-  }
-
-  if (messageType === 'banOrUnbanMemberFromChannel') {
-    await processBanOrUnbanMemberFromChannelMessage(
+): Promise<MetaprotocolTransactionSuccessful | MetaprotocolTxError> {
+  const metaprotocolTransactionSuccessful = new MetaprotocolTransactionSuccessful()
+  if (decodedMessage.pinOrUnpinComment) {
+    const commentOrError = await processPinOrUnpinCommentMessage(
       store,
       event,
-      contentActor,
-      channelId,
+      channel,
+      decodedMessage.pinOrUnpinComment!
+    )
+
+    if (commentOrError instanceof Comment) {
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
+  }
+
+  if (decodedMessage.banOrUnbanMemberFromChannel) {
+    const memberOrError = await processBanOrUnbanMemberFromChannelMessage(
+      store,
+      event,
+      channel,
       decodedMessage.banOrUnbanMemberFromChannel!
     )
 
-    return {}
+    if (memberOrError instanceof Membership) {
+      return metaprotocolTransactionSuccessful
+    }
+    return memberOrError
   }
 
-  if (messageType === 'videoReactionsPreference') {
-    await processVideoReactionsPreferenceMessage(
+  if (decodedMessage.videoReactionsPreference) {
+    const channelOrError = await processVideoReactionsPreferenceMessage(
       store,
       event,
-      contentActor,
-      channelId,
+      channel,
       decodedMessage.videoReactionsPreference!
     )
 
-    return {}
+    if (channelOrError instanceof Channel) {
+      return metaprotocolTransactionSuccessful
+    }
+    return channelOrError
   }
 
-  if (messageType === 'moderateComment') {
-    const comment = await processModerateCommentMessage(
+  if (decodedMessage.moderateComment) {
+    const commentOrError = await processModerateCommentMessage(
       store,
       event,
       contentActor,
-      channelId,
+      channel,
       decodedMessage.moderateComment!
     )
-    return { commentModeratedId: comment.id }
+
+    if (commentOrError instanceof Comment) {
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
   }
 
-  return inconsistentState('Unsupported message type in channel owner remark action', messageType)
+  return MetaprotocolTxError.InvalidMetadata
 }
 
 async function processModeratorRemark(
   store: DatabaseManager,
   event: SubstrateEvent,
-  channelId: ChannelId,
+  channel: Channel,
   contentActor: typeof ContentActor,
   decodedMessage: ChannelModeratorRemarked
-): Promise<Partial<MetaprotocolTransactionSuccessful>> {
-  const messageType = decodedMessage.channelModeratorRemarked
-
-  if (messageType === 'moderateComment') {
-    const comment = await processModerateCommentMessage(
+): Promise<MetaprotocolTransactionSuccessful | MetaprotocolTxError> {
+  const metaprotocolTransactionSuccessful = new MetaprotocolTransactionSuccessful()
+  if (decodedMessage.moderateComment) {
+    const commentOrError = await processModerateCommentMessage(
       store,
       event,
       contentActor,
-      channelId,
+      channel,
       decodedMessage.moderateComment!
     )
 
-    return { commentModeratedId: comment.id }
+    if (commentOrError instanceof Comment) {
+      return metaprotocolTransactionSuccessful
+    }
+    return commentOrError
   }
 
-  return inconsistentState('Unsupported message type in moderator remark action', messageType)
+  return MetaprotocolTxError.InvalidMetadata
 }
 
 export async function content_ChannelPayoutsUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [updateChannelPayoutParameters, dataObjectId] = new Content.ChannelPayoutsUpdatedEvent(event).params
+  const [updateChannelPayoutParameters, dataObjectId] = new ChannelPayoutsUpdatedEvent_V2001(event).params
 
   const asDataObjectId = unwrap(dataObjectId)
   const payloadDataObject = await store.get(StorageDataObject, { where: { id: asDataObjectId?.toString() } })
@@ -512,16 +507,11 @@ export async function content_ChannelPayoutsUpdated({ store, event }: EventConte
 }
 
 export async function content_ChannelRewardUpdated({ store, event }: EventContext & StoreContext): Promise<void> {
-  // load event data
-  const [cumulativeRewardEarned, claimedAmount, channelId] = new Content.ChannelRewardUpdatedEvent(event).params
+  // load event data (was impossible to emit before v2001)
+  const [cumulativeRewardEarned, claimedAmount, channelId] = new ChannelRewardUpdatedEvent_V2001(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel reward updated', channelId)
-  }
+  const channel = await getChannelOrFail(store, channelId.toString())
 
   // common event processing - second
 
@@ -545,16 +535,10 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
   event,
 }: EventContext & StoreContext): Promise<void> {
   // load event data
-  const [owner, channelId, withdrawnAmount, destination] = new Content.ChannelRewardClaimedAndWithdrawnEvent(event)
-    .params
+  const [owner, channelId, withdrawnAmount, destination] = new ChannelRewardClaimedAndWithdrawnEvent_V1001(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel reward updated', channelId)
-  }
+  const channel = await getChannelOrFail(store, channelId.toString())
 
   // common event processing - second
 
@@ -577,19 +561,12 @@ export async function content_ChannelRewardClaimedAndWithdrawn({
 
 export async function content_ChannelFundsWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
   // load event data
-  // load event data
-  const [owner, channelId, amount, destination] = new Content.ChannelFundsWithdrawnEvent(event).params
+  const [owner, channelId, amount, destination] = new ChannelFundsWithdrawnEvent_V1001(event).params
 
   // load channel
-  const channel = await store.get(Channel, { where: { id: channelId.toString() } })
-
-  // ensure channel exists
-  if (!channel) {
-    return inconsistentState('Non-existing channel reward updated', channelId)
-  }
+  const channel = await getChannelOrFail(store, channelId.toString())
 
   // common event processing - second
-
   const rewardClaimedEvent = new ChannelFundsWithdrawnEvent({
     ...genericEventFields(event),
 
@@ -605,27 +582,22 @@ export async function content_ChannelFundsWithdrawn({ store, event }: EventConte
 export async function processChannelPaymentFromMember(
   store: DatabaseManager,
   event: SubstrateEvent,
-  memberId: MemberId,
+  member: Membership,
   message: DecodedMetadataObject<IMakeChannelPayment>,
   [payeeAccount, amount]: [AccountId32, Balance]
-): Promise<ChannelPaymentMadeEvent> {
-  const member = await getMemberById(store, memberId)
-
+): Promise<ChannelPaymentMadeEvent | MetaprotocolTxError> {
   // Only channel reward accounts are being checked right now as payment destination.
   // Transfers to any other destination will be ignored by the query node.
-  const channel = await store.get(Channel, { where: { rewardAccount: payeeAccount.toString() } })
+  const channel = await getOneBy(store, Channel, { rewardAccount: payeeAccount.toString() })
   if (!channel) {
-    unexpectedData('Payment made to unknown channel reward account')
+    return MetaprotocolTxError.InvalidChannelRewardAccount
   }
 
   // Get payment context from the metadata
   const getPaymentContext = async (msg: DecodedMetadataObject<IMakeChannelPayment>) => {
     if (msg.videoId) {
       const paymentContext = new PaymentContextVideo()
-      const video = await store.get(Video, {
-        where: { id: msg.videoId.toString(), channel: { id: channel.id } },
-        relations: ['channel'],
-      })
+      const video = await getOneBy(store, Video, { id: msg.videoId, channel: { id: channel.id } }, ['channel'])
       if (!video) {
         invalidMetadata(
           `payment context video not found in channel that was queried based on reward (or payee) account.`
@@ -655,6 +627,13 @@ export async function processChannelPaymentFromMember(
   await store.save<ChannelPaymentMadeEvent>(paymentMadeEvent)
 
   return paymentMadeEvent
+}
+
+async function removeChannel(store: DatabaseManager, channelId: u64): Promise<void> {
+  // TODO: remove manual deletion of referencing records after
+  // TODO: https://github.com/Joystream/hydra/issues/490 has been implemented
+  await removeChannelReferencingRelations(store, channelId.toString())
+  await store.remove<Channel>(new Channel({ id: channelId.toString() }))
 }
 
 async function removeChannelReferencingRelations(store: DatabaseManager, channelId: string): Promise<void> {

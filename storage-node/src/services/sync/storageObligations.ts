@@ -87,15 +87,12 @@ type DataObject = {
  */
 export async function getStorageObligationsFromRuntime(
   queryNodeUrl: string,
-  workerId: number
+  bucketIds: string[]
 ): Promise<DataObligations> {
   const api = new QueryNodeApi(queryNodeUrl)
 
   const allBuckets = await getAllBuckets(api)
 
-  const bucketIds = allBuckets
-    .filter((bucket) => bucket.operatorStatus?.workerId === workerId)
-    .map((bucket) => bucket.id)
   const assignedBags = await getAllAssignedBags(api, bucketIds)
 
   const bagIds = assignedBags.map((bag) => bag.id)

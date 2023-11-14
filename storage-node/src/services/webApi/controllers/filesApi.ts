@@ -100,6 +100,12 @@ export async function uploadFile(
   // saved filename to delete on verification or extrinsic errors
   let cleanupFileName = ''
   try {
+    // we assume bucket id has already been validated, and known to be be operated by the node
+    const bucketKeyPair = res.locals.bucketKeyPairs.get(uploadRequest.storageBucketId)
+    if (!bucketKeyPair) {
+      throw new WebApiError('Node failure. Bucket keyring not available.', 500)
+    }
+
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
@@ -124,14 +130,9 @@ export async function uploadFile(
     await fsPromises.rename(fileObj.path, newPath)
     cleanupFileName = newPath
 
-    await acceptPendingDataObjects(
-      api,
-      bagId,
-      res.locals.storageProviderAccount,
-      workerId,
-      new BN(uploadRequest.storageBucketId),
-      [new BN(uploadRequest.dataObjectId)]
-    )
+    await acceptPendingDataObjects(api, bagId, bucketKeyPair, workerId, new BN(uploadRequest.storageBucketId), [
+      new BN(uploadRequest.dataObjectId),
+    ])
 
     res.status(201).json({
       id: hash,
@@ -152,7 +153,9 @@ export async function authTokenForUploading(
   next: express.NextFunction
 ): Promise<void> {
   try {
-    const account = res.locals.storageProviderAccount
+    // Function is not used
+    const account = res.locals.operatorRoleKey
+    if (!account) return
     const tokenRequest = getTokenRequest(req)
     const api = res.locals.api
 

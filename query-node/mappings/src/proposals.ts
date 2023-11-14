@@ -1,84 +1,96 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { SubstrateEvent, DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails } from '@polkadot/types/lookup'
+import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
+import { Bytes } from '@polkadot/types'
+import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import {
-  Proposal,
-  SignalProposalDetails,
-  RuntimeUpgradeProposalDetails,
-  FundingRequestProposalDetails,
-  SetMaxValidatorCountProposalDetails,
-  CreateWorkingGroupLeadOpeningProposalDetails,
-  FillWorkingGroupLeadOpeningProposalDetails,
-  UpdateWorkingGroupBudgetProposalDetails,
-  DecreaseWorkingGroupLeadStakeProposalDetails,
-  SlashWorkingGroupLeadProposalDetails,
-  SetWorkingGroupLeadRewardProposalDetails,
-  TerminateWorkingGroupLeadProposalDetails,
   AmendConstitutionProposalDetails,
   CancelWorkingGroupLeadOpeningProposalDetails,
-  SetMembershipPriceProposalDetails,
+  CreateWorkingGroupLeadOpeningProposalDetails,
+  DecreaseWorkingGroupLeadStakeProposalDetails,
+  FillWorkingGroupLeadOpeningProposalDetails,
+  FundingRequestDestination,
+  FundingRequestDestinationsList,
+  FundingRequestProposalDetails,
+  Membership,
+  Proposal,
+  ProposalCancelledEvent,
+  ProposalCreatedEvent,
+  ProposalDecisionMadeEvent,
+  ProposalDecisionStatus,
+  ProposalDetails,
+  ProposalDiscussionThread,
+  ProposalDiscussionThreadModeOpen,
+  ProposalExecutedEvent,
+  ProposalExecutionStatus,
+  ProposalIntermediateStatus,
+  ProposalStatus,
+  ProposalStatusCanceledByRuntime,
+  ProposalStatusCancelled,
+  ProposalStatusDeciding,
+  ProposalStatusDormant,
+  ProposalStatusExecuted,
+  ProposalStatusExecutionFailed,
+  ProposalStatusExpired,
+  ProposalStatusGracing,
+  ProposalStatusRejected,
+  ProposalStatusSlashed,
+  ProposalStatusUpdatedEvent,
+  ProposalStatusVetoed,
+  ProposalVoteKind,
+  ProposalVotedEvent,
+  RuntimeUpgradeProposalDetails,
+  RuntimeWasmBytecode,
   SetCouncilBudgetIncrementProposalDetails,
   SetCouncilorRewardProposalDetails,
   SetInitialInvitationBalanceProposalDetails,
   SetInitialInvitationCountProposalDetails,
+  SetMaxValidatorCountProposalDetails,
   SetMembershipLeadInvitationQuotaProposalDetails,
+  SetMembershipPriceProposalDetails,
   SetReferralCutProposalDetails,
-  VetoProposalDetails,
-  ProposalDetails,
-  FundingRequestDestinationsList,
-  FundingRequestDestination,
-  Membership,
-  ProposalStatusDeciding,
-  ProposalIntermediateStatus,
-  ProposalStatusDormant,
-  ProposalStatusGracing,
-  ProposalStatusUpdatedEvent,
-  ProposalDecisionStatus,
-  ProposalStatusCancelled,
-  ProposalStatusExpired,
-  ProposalStatusRejected,
-  ProposalStatusSlashed,
-  ProposalStatusVetoed,
-  ProposalDecisionMadeEvent,
-  ProposalStatusCanceledByRuntime,
-  ProposalStatusExecuted,
-  ProposalStatusExecutionFailed,
-  ProposalExecutionStatus,
-  ProposalExecutedEvent,
-  ProposalVotedEvent,
-  ProposalVoteKind,
-  ProposalCancelledEvent,
-  ProposalCreatedEvent,
-  RuntimeWasmBytecode,
-  ProposalDiscussionThread,
-  ProposalDiscussionThreadModeOpen,
-  ProposalStatus,
+  SetWorkingGroupLeadRewardProposalDetails,
+  SignalProposalDetails,
+  SlashWorkingGroupLeadProposalDetails,
+  TerminateWorkingGroupLeadProposalDetails,
   UpdateChannelPayoutsProposalDetails,
+  UpdatePalletFrozenStatusProposalDetails,
+  UpdateGlobalNftLimitProposalDetails,
+  UpdateWorkingGroupBudgetProposalDetails,
+  VetoProposalDetails,
 } from 'query-node/dist/model'
 import {
+  INT32MAX,
+  asBN,
   bytesToString,
   genericEventFields,
+  getByIdOrFail,
   getWorkingGroupModuleName,
-  INT32MAX,
-  perpareString,
   toNumber,
+  unimplementedError,
   unwrap,
+  whenDef,
 } from './common'
-import { ProposalsEngine, ProposalsCodex } from '../generated/types'
+import {
+  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsCodex_ProposalCreatedEvent_V2002 as ProposalCreatedEvent_V2002,
+  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
+  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
+  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
+  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
+  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
+} from '../generated/types'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } from '../generated/types/1001/types-lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
+
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
-import { blake2AsHex } from '@polkadot/util-crypto'
-import { Bytes } from '@polkadot/types'
+
+type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 
 async function getProposal(store: DatabaseManager, id: string) {
-  const proposal = await store.get(Proposal, { where: { id } })
-  if (!proposal) {
-    throw new Error(`Proposal not found by id: ${id}`)
-  }
-
-  return proposal
+  return getByIdOrFail(store, Proposal, id)
 }
 
 async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: Bytes) {
@@ -97,7 +109,7 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
 async function parseProposalDetails(
   event: SubstrateEvent,
   store: DatabaseManager,
-  proposalDetails: RuntimeProposalDetails
+  proposalDetails: RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 ): Promise<typeof ProposalDetails> {
   const eventTime = new Date(event.blockTimestamp)
 
@@ -286,16 +298,33 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asUpdateChannelPayouts
 
     details.commitment = unwrap(specificDetails.commitment)?.toString()
-    details.minCashoutAllowed = unwrap(specificDetails.minCashoutAllowed)
-    details.maxCashoutAllowed = unwrap(specificDetails.maxCashoutAllowed)
+    details.minCashoutAllowed = whenDef(unwrap(specificDetails.minCashoutAllowed), asBN)
+    details.maxCashoutAllowed = whenDef(unwrap(specificDetails.maxCashoutAllowed), asBN)
     details.channelCashoutsEnabled = unwrap(specificDetails.channelCashoutsEnabled)?.valueOf()
 
     const asPayload = unwrap(specificDetails.payload)?.objectCreationParams
     details.payloadHash = asPayload && bytesToString(asPayload.ipfsContentId)
 
     return details
+  }
+  // UpdateGlobalNftLimitProposalDetails
+  else if (proposalDetails.isUpdateGlobalNftLimit) {
+    const details = new UpdateGlobalNftLimitProposalDetails()
+    const specificDetails = proposalDetails.asUpdateGlobalNftLimit
+    if (specificDetails[0].isDaily) {
+      details.newDailyNftLimit = specificDetails[1].toNumber()
+    } else {
+      details.newWeeklyNftLimit = specificDetails[1].toNumber()
+    }
+    return details
+  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isSetPalletFozenStatus) {
+    const details = new UpdatePalletFrozenStatusProposalDetails()
+    const [frozen, pallet] = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
+    details.frozen = frozen.isTrue
+    details.pallet = pallet.toString()
+    return details
   } else {
-    throw new Error(`Unspported proposal details type: ${proposalDetails.type}`)
+    unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
 }
 
@@ -325,9 +354,15 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
   )
 }
 
-export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function proposalsCodex_ProposalCreated({
+  store,
+  event,
+  block,
+}: EventContext & StoreContext): Promise<void> {
+  const specVersion = block.runtimeVersion.specVersion
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    new ProposalsCodex.ProposalCreatedEvent(event).params
+    specVersion >= 2002 ? new ProposalCreatedEvent_V2002(event).params : new ProposalCreatedEvent_V1001(event).params
+
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 
@@ -368,7 +403,7 @@ export async function proposalsEngine_ProposalStatusUpdated({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, status] = new ProposalsEngine.ProposalStatusUpdatedEvent(event).params
+  const [proposalId, status] = new ProposalStatusUpdatedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let newStatus: typeof ProposalIntermediateStatus
@@ -381,7 +416,7 @@ export async function proposalsEngine_ProposalStatusUpdated({
     newStatus = new ProposalStatusGracing()
     ++proposal.councilApprovals
   } else {
-    throw new Error(`Unexpected proposal status: ${status.type}`)
+    unimplementedError(`Unsupported proposal status: ${status.type}`)
   }
 
   const proposalStatusUpdatedEvent = new ProposalStatusUpdatedEvent({
@@ -400,7 +435,7 @@ export async function proposalsEngine_ProposalDecisionMade({
   store,
   event,
 }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, decision] = new ProposalsEngine.ProposalDecisionMadeEvent(event).params
+  const [proposalId, decision] = new ProposalDecisionMadeEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let decisionStatus: typeof ProposalDecisionStatus
@@ -423,7 +458,7 @@ export async function proposalsEngine_ProposalDecisionMade({
   } else if (decision.isVetoed) {
     decisionStatus = new ProposalStatusVetoed()
   } else {
-    throw new Error(`Unexpected proposal decision: ${decision.type}`)
+    unimplementedError(`Unexpected proposal decision: ${decision.type}`)
   }
 
   const proposalDecisionMadeEvent = new ProposalDecisionMadeEvent({
@@ -456,7 +491,7 @@ export async function proposalsEngine_ProposalDecisionMade({
 }
 
 export async function proposalsEngine_ProposalExecuted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [proposalId, executionStatus] = new ProposalsEngine.ProposalExecutedEvent(event).params
+  const [proposalId, executionStatus] = new ProposalExecutedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let newStatus: typeof ProposalExecutionStatus
@@ -467,7 +502,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
     status.errorMessage = executionStatus.asExecutionFailed.error.toHuman() as string
     newStatus = status
   } else {
-    throw new Error(`Unexpected proposal execution status: ${executionStatus.type}`)
+    unimplementedError(`Unsupported proposal execution status: ${executionStatus.type}`)
   }
 
   const proposalExecutedEvent = new ProposalExecutedEvent({
@@ -489,7 +524,7 @@ export async function proposalsEngine_ProposalExecuted({ store, event }: EventCo
 }
 
 export async function proposalsEngine_Voted({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalsEngine.VotedEvent(event).params
+  const [memberId, proposalId, voteKind, rationaleBytes] = new ProposalVotedEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   let vote: ProposalVoteKind
@@ -499,10 +534,8 @@ export async function proposalsEngine_Voted({ store, event }: EventContext & Sto
     vote = ProposalVoteKind.REJECT
   } else if (voteKind.isSlash) {
     vote = ProposalVoteKind.SLASH
-  } else if (voteKind.isAbstain) {
-    vote = ProposalVoteKind.ABSTAIN
   } else {
-    throw new Error(`Unexpected vote kind: ${voteKind.type}`)
+    vote = ProposalVoteKind.ABSTAIN
   }
 
   const votedEvent = new ProposalVotedEvent({
@@ -518,7 +551,7 @@ export async function proposalsEngine_Voted({ store, event }: EventContext & Sto
 }
 
 export async function proposalsEngine_ProposalCancelled({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [, proposalId] = new ProposalsEngine.ProposalCancelledEvent(event).params
+  const [, proposalId] = new ProposalCancelledEvent_V1001(event).params
   const proposal = await getProposal(store, proposalId.toString())
 
   const proposalCancelledEvent = new ProposalCancelledEvent({

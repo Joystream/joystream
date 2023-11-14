@@ -1,7 +1,6 @@
 import { Command, flags } from '@oclif/command'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
-
+import { customFlags } from '../../command-base/CustomFlags'
 /**
  * CLI command:
  * Verifies supported bag ID types in the string format.
@@ -15,7 +14,7 @@ export default class DevVerifyBagId extends Command {
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    bagId: ApiCommandBase.extraFlags.bagId({
+    bagId: customFlags.bagId({
       char: 'i',
       required: true,
     }),

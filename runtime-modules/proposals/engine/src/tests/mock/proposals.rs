@@ -5,7 +5,7 @@ use sp_std::vec::Vec;
 pub trait Config: frame_system::Config {}
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Working extrinsic test
         #[weight = 10_000_000]
         pub fn dummy_proposal(_origin, _title: Vec<u8>, _description: Vec<u8>) {}

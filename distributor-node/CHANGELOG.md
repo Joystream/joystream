@@ -1,11 +1,51 @@
-### 1.0.0
+##
+
+### 1.4.0
+
+- Add 1s delay between fetching pages for QN state sync. This will allow QN to have some breathing space and process other requests that may have been stuck because of heavy processing.
+- Add `Access-Control-Expose-Headers` response header to allow web clients checking cache status of downloaded file.
+- Include response headers in `http` logs
+- Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should improve response times when serving assets.
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+- **FIX** Axios Error Logging: Logging the error, when asset download from storage-node time outs, has been fixed to include the _only_ error message, response, status code and bunch of other fields. Previously, logging error object (which includes axios client instance), failed with `Converting circular structure to JSON` error and causing the distributor-node to crash.
+
+### 1.3.1
+
+- **FIX** QN state sync: The QN state sync that runs on startup and on interval, has been split to multiple paginated queries so that it doesn't crash QN's GraphQL server because of huge payload: [#4921](https://github.com/Joystream/joystream/pull/4921)
+
+### 1.3.0
+
+- Adds support for TTL based caching of `StorageDataObject` QN entity for `HEAD /assets` requests. The TTL is configurable using `interval.queryNodeCacheTTL` flag.
+
+### 1.2.2
+
+- **FIX** `sendExtrinsic`: The send extrinsic function (which is a wrapper around PolkadotJS `tx.signAndSend` function) has been fixed to handle the case when tx has been finalized before the callback registered in `tx.signAndSend` would run.
+
+### 1.2.1
+
+- Integrates OpenTelemetry API/SDK with Argus for exporting improved tracing logs & metrics to Elasticsearch. Adds `./start-elasticsearch-stack.sh` script to bootstrap elasticsearch services (Elasticsearch + Kibana + APM Server) with all the required configurations.
+- Add support for Elasticsearch authentication (`logs.elastic.auth` config section)
+- **FIX:** Objects belonging to group `0` of LRU-SP cache were never fully dropped from the state because of a bug in `StateCacheService.dropById`
+
+### 1.1.0 (Ephesus release)
+
+- `dev:batchUpload` command was removed as it relied on no longer available `sudo` extrinsic
+- Any other references to `sudo` were removed (not affecting any functionality besides the removed `dev:batchUpload` command)
+- Updated `@joystream/types` and `@joystream/metadata-protobuf` dependencies
+- Minor fix for invalid elasticsearch log metadata format in `verbose` mode (https://github.com/Joystream/joystream/issues/3877)
+
+### 1.0.1
+
+- `@joystream/types` dependency version bump for consistency with mainnet release versioning
+
+### 1.0.0 (Mainnet release)
 
 - Adds connected query-node's state information to the `/status` endpoint.
 - Bumps the major version of the node since it's now Joystream mainnet compatible.
 
-### 0.2.0
+### 0.2.0 (Carthage release)
 
-- **Carthage release:** Support for mime-type provided as part of `SubtitleMetadata` (video subtitles). It is now treated as fallback `mime-type` as long as it's a valid `text/*` type and the `file-type` package fails to detect any type from the file signature (magic number),
+- Support for mime-type provided as part of `SubtitleMetadata` (video subtitles). It is now treated as fallback `mime-type` as long as it's a valid `text/*` type and the `file-type` package fails to detect any type from the file signature (magic number),
 - **Security:** Sensitive information (like private keys) is now hidden in the node's logs,
 - Requesting an asset which has not been accepted by any storage provider yet (`isAccepted == false`) now results in `404: Data object has not been uploaded yet` (previously `500: Failed to download object {id} from any availablable storage provider`),
 - Fixed links in CLI docs,

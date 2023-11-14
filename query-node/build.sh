@@ -18,11 +18,6 @@ cp mappings/src/queryTemplates.ts generated/graphql-server/src/
 yarn typegen # if this fails try to run this command outside of yarn workspaces
 
 ################################################
-# temporary patches TODO: create proper solution
-
-sed -i -e "s#new TypeRegistry();#new TypeRegistry() as any;#" ./mappings/generated/types/index.ts
-
-################################################
 
 # We run yarn again to ensure graphql-server dependencies are installed
 # and are inline with root workspace resolutions
@@ -37,4 +32,17 @@ yarn workspace query-node build
 
 yarn workspace query-node-mappings build
 
+cp ./generated/graphql-server/generated/schema.graphql ../storage-node/src/services/queryNode/schema.graphql
+cp ./generated/graphql-server/generated/schema.graphql ../distributor-node/src/services/networking/query-node/schema.graphql
 
+################################################
+# temporary patche TODO: create proper solution
+
+# Add command to run Query Node's Graphql server with Opentelemetry instrumentation
+sed -i -e '/"start:prod": "WARTHOG_ENV=production yarn dotenv:generate && node dist\/src\/index.js"/a \
+   "start:prod:with-instrumentation": "export OTEL_APPLICATION=query-node; WARTHOG_ENV=production yarn dotenv:generate && node --require @joystream/opentelemetry dist/src/index.js", \
+   "start:prod:pm2": "WARTHOG_ENV=production yarn dotenv:generate && yarn pm2-runtime start dist/src/index.js -i 1 --name graphql-server",' ./generated/graphql-server/package.json
+
+# Add @joystream/opentelemetry dependency symlink, as it is not specified in generated/graphql-server/package.json dependencies
+mkdir -p ./generated/graphql-server/node_modules/@joystream
+ln -s ../../../../../node_modules/@joystream/opentelemetry ./generated/graphql-server/node_modules/@joystream/opentelemetry

@@ -13,6 +13,7 @@ enum ExitCodes {
   ServerError,
   ApiError = 200,
   UnsuccessfulRuntimeCall,
+  KeyringNotReady,
 
   // NOTE: never exceed exit code 255 or it will be modulated by `256` and create problems
 }

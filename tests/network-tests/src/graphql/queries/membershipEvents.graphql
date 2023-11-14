@@ -136,6 +136,7 @@ fragment MemberInvitedEventFields on MemberInvitedEvent {
   metadata {
     ...MemberMetadataFields
   }
+  initialBalance
 }
 
 query getMemberInvitedEventsByEventIds($eventIds: [ID!]) {

@@ -78,7 +78,7 @@ export class LoggingService {
     let esTransport: ElasticsearchTransport | undefined
     if (config.logs?.elastic) {
       esTransport = new ElasticsearchTransport({
-        index: 'distributor-node',
+        index: config.logs.elastic.index || 'distributor-node',
         level: config.logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
         retryLimit: 10,
@@ -88,6 +88,7 @@ export class LoggingService {
           node: {
             url: new URL(config.logs.elastic.endpoint),
           },
+          ...(config.logs.elastic.auth ? { auth: config.logs.elastic.auth } : {}),
         },
       })
       transports.push(esTransport)

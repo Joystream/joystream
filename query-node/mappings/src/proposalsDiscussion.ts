@@ -1,47 +1,42 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { EventContext, StoreContext, DatabaseManager } from '@joystream/hydra-common'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
+import { ProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import {
   Membership,
+  ProposalDiscussionPost,
+  ProposalDiscussionPostCreatedEvent,
+  ProposalDiscussionPostDeletedEvent,
   ProposalDiscussionPostStatusActive,
   ProposalDiscussionPostStatusLocked,
-  ProposalDiscussionPost,
-  ProposalDiscussionThread,
-  ProposalDiscussionPostCreatedEvent,
-  ProposalDiscussionPostUpdatedEvent,
-  ProposalDiscussionThreadModeClosed,
-  ProposalDiscussionWhitelist,
-  ProposalDiscussionThreadModeOpen,
-  ProposalDiscussionThreadModeChangedEvent,
-  ProposalDiscussionPostDeletedEvent,
   ProposalDiscussionPostStatusRemoved,
+  ProposalDiscussionPostUpdatedEvent,
+  ProposalDiscussionThread,
+  ProposalDiscussionThreadModeChangedEvent,
+  ProposalDiscussionThreadModeClosed,
+  ProposalDiscussionThreadModeOpen,
+  ProposalDiscussionWhitelist,
 } from 'query-node/dist/model'
-import { bytesToString, deserializeMetadata, genericEventFields } from './common'
-import { ProposalsDiscussion } from '../generated/types'
-import { ProposalsDiscussionPostMetadata } from '@joystream/metadata-protobuf'
 import { In } from 'typeorm'
+import {
+  ProposalsDiscussion_PostCreatedEvent_V1001 as PostCreatedEvent_V1001,
+  ProposalsDiscussion_PostDeletedEvent_V1001 as PostDeletedEvent_V1001,
+  ProposalsDiscussion_PostUpdatedEvent_V1001 as PostUpdatedEvent_V1001,
+  ProposalsDiscussion_ThreadModeChangedEvent_V1001 as ThreadModeChangedEvent_V1001,
+} from '../generated/types'
+import { bytesToString, deserializeMetadata, genericEventFields, getByIdOrFail, unimplementedError } from './common'
 
 async function getPost(store: DatabaseManager, id: string) {
-  const post = await store.get(ProposalDiscussionPost, { where: { id } })
-  if (!post) {
-    throw new Error(`Proposal discussion post not found by id: ${id}`)
-  }
-
-  return post
+  return getByIdOrFail(store, ProposalDiscussionPost, id)
 }
 
 async function getThread(store: DatabaseManager, id: string) {
-  const thread = await store.get(ProposalDiscussionThread, { where: { id } })
-  if (!thread) {
-    throw new Error(`Proposal discussion thread not found by id: ${id}`)
-  }
-
-  return thread
+  return getByIdOrFail(store, ProposalDiscussionThread, id)
 }
 
 export async function proposalsDiscussion_PostCreated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [postId, memberId, threadId, metadataBytes, editable] = new ProposalsDiscussion.PostCreatedEvent(event).params
+  const [postId, memberId, threadId, metadataBytes, editable] = new PostCreatedEvent_V1001(event).params
 
   const metadata = deserializeMetadata(ProposalsDiscussionPostMetadata, metadataBytes)
 
@@ -72,7 +67,7 @@ export async function proposalsDiscussion_PostCreated({ event, store }: EventCon
 }
 
 export async function proposalsDiscussion_PostUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [postId, , , newTextBytes] = new ProposalsDiscussion.PostUpdatedEvent(event).params
+  const [postId, , , newTextBytes] = new PostUpdatedEvent_V1001(event).params
 
   const post = await getPost(store, postId.toString())
   const newText = bytesToString(newTextBytes)
@@ -92,7 +87,7 @@ export async function proposalsDiscussion_ThreadModeChanged({
   event,
   store,
 }: EventContext & StoreContext): Promise<void> {
-  const [threadId, threadMode, memberId] = new ProposalsDiscussion.ThreadModeChangedEvent(event).params
+  const [threadId, threadMode, memberId] = new ThreadModeChangedEvent_V1001(event).params
 
   const thread = await getThread(store, threadId.toString())
 
@@ -112,7 +107,7 @@ export async function proposalsDiscussion_ThreadModeChanged({
     const newMode = new ProposalDiscussionThreadModeOpen()
     thread.mode = newMode
   } else {
-    throw new Error(`Unrecognized proposal thread mode: ${threadMode.type}`)
+    unimplementedError(`Unsupported thread mode: ${threadMode}`)
   }
 
   await store.save<ProposalDiscussionThread>(thread)
@@ -127,7 +122,7 @@ export async function proposalsDiscussion_ThreadModeChanged({
 }
 
 export async function proposalsDiscussion_PostDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
-  const [memberId, , postId, hide] = new ProposalsDiscussion.PostDeletedEvent(event).params
+  const [memberId, , postId, hide] = new PostDeletedEvent_V1001(event).params
   const post = await getPost(store, postId.toString())
 
   const postDeletedEvent = new ProposalDiscussionPostDeletedEvent({

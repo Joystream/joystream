@@ -538,11 +538,11 @@ fn terminate_bounty_by_creator_succeeds() {
         EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Member(member_id)
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -588,7 +588,7 @@ fn terminate_bounty_w_oracle_reward_funding_expired_succeeds() {
             BountyActor::Council,
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
         let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
         assert_eq!(
             Bounty::get_bounty_stage(&bounty),
@@ -637,11 +637,11 @@ fn terminate_bounty_wo_oracle_reward_funding_expired_succeeds() {
         EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Council
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -688,7 +688,7 @@ fn terminate_bounty_w_oracle_reward_wo_funds_funding_succeeds() {
             BountyActor::Council,
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
 
         let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
         assert_eq!(
@@ -740,11 +740,11 @@ fn terminate_bounty_wo_oracle_reward_wo_funds_funding_succeeds() {
         EventFixture::contains_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Council
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -802,7 +802,7 @@ fn terminate_bounty_w_oracle_reward_w_funds_funding_succeeds() {
             BountyActor::Council,
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
 
         let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
         assert_eq!(
@@ -864,7 +864,7 @@ fn terminate_bounty_wo_oracle_reward_w_funds_funding_succeeds() {
             BountyActor::Council,
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
 
         let bounty = Bounty::ensure_bounty_exists(&bounty_id).unwrap();
         assert_eq!(
@@ -1242,7 +1242,7 @@ fn terminate_bounty_fails_with_invalid_stage() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment.clone())
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         TerminateBountyFixture::default().call_and_assert(Err(
@@ -1734,7 +1734,7 @@ fn fund_bounty_fails_with_invalid_stage() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment.clone())
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         FundBountyFixture::default()
@@ -2100,7 +2100,7 @@ fn end_working_period_invalid_stage_fails() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment.clone())
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         EndWorkPeriodFixture::default()
@@ -2236,7 +2236,7 @@ fn withdraw_funding_member_with_failed_bounty_with_no_removal() {
             get_funder_state_bloat_bond_amount(),
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -2298,7 +2298,7 @@ fn withdraw_funding_council_with_failed_bounty_with_no_removal() {
             get_funder_state_bloat_bond_amount(),
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -2363,11 +2363,11 @@ fn withdraw_funding_member_with_failed_bounty_with_removal() {
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Member(member_id)
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -2846,7 +2846,7 @@ fn withdraw_funding_state_bloat_bond_with_successful_bounty_with_no_removal() {
             get_funder_state_bloat_bond_amount(),
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -2997,16 +2997,16 @@ fn withdraw_funding_state_bloat_bond_with_successful_bounty_removal() {
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Member(funder_member_id)
         ));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Council
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -3306,7 +3306,7 @@ fn announce_work_entry_fails_with_invalid_stage() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment.clone())
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         AnnounceWorkEntryFixture::default().call_and_assert(Err(
@@ -3670,7 +3670,7 @@ fn submit_work_fails_with_invalid_stage() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment.clone())
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         SubmitWorkFixture::default()
@@ -3803,7 +3803,7 @@ fn submit_judgment_by_member_succeeded() {
             .with_origin(RawOrigin::Signed(work_account_id_1))
             .with_member_id(work_member_id_1)
             .with_entry_id(entry_id_1)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         EndWorkPeriodFixture::default()
@@ -3916,7 +3916,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .with_origin(RawOrigin::Signed(worker_account_id_1))
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_1)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         let worker_member_id_2 = 2;
@@ -3937,7 +3937,7 @@ fn submit_judgment_by_council_succeeded_with_complex_judgment() {
             .with_origin(RawOrigin::Signed(worker_account_id_2))
             .with_member_id(worker_member_id_2)
             .with_entry_id(entry_id_2)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         let worker_member_id_3 = 3;
@@ -4116,7 +4116,7 @@ fn submit_judgment_by_member_succeeded_with_complex_judgment() {
             .with_origin(RawOrigin::Signed(worker_account_id_1))
             .with_member_id(worker_member_id_1)
             .with_entry_id(entry_id_1)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         let worker_member_id_2 = 2;
@@ -4137,7 +4137,7 @@ fn submit_judgment_by_member_succeeded_with_complex_judgment() {
             .with_origin(RawOrigin::Signed(worker_account_id_2))
             .with_member_id(worker_member_id_2)
             .with_entry_id(entry_id_2)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         let worker_member_id_3 = 3;
@@ -4323,7 +4323,7 @@ fn submit_judgment_dont_return_cherry_on_unsuccessful_bounty() {
             .with_origin(RawOrigin::Signed(worker_account_id))
             .with_member_id(worker_member_id)
             .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         EndWorkPeriodFixture::default()
@@ -4623,7 +4623,7 @@ fn submit_judgment_fails_with_invalid_stage() {
 
         SubmitJudgmentFixture::default()
             .with_bounty_id(bounty_id)
-            .with_judgment(judgment.clone())
+            .with_judgment(judgment)
             .call_and_assert(Ok(()));
 
         SubmitJudgmentFixture::default().call_and_assert(Err(
@@ -4687,7 +4687,7 @@ fn submit_judgment_fails_with_invalid_judgment() {
             .with_origin(RawOrigin::Signed(account_id))
             .with_member_id(member_id)
             .with_entry_id(entry_id)
-            .with_work_data(work_data.clone())
+            .with_work_data(work_data)
             .call_and_assert(Ok(()));
 
         EndWorkPeriodFixture::default()
@@ -5311,7 +5311,7 @@ fn withdraw_entrant_stake_succeeds_after_terminating_in_working_period() {
             worker_account_id_2,
         ));
 
-        assert!(Bounties::<Test>::contains_key(&bounty_id));
+        assert!(Bounties::<Test>::contains_key(bounty_id));
     });
 }
 
@@ -5450,7 +5450,7 @@ fn withdraw_entrant_stake_succeeds_after_terminating_in_judging_period() {
             entry_id_2,
             worker_account_id_2,
         ));
-        assert!(Bounties::<Test>::contains_key(&bounty_id));
+        assert!(Bounties::<Test>::contains_key(bounty_id));
     });
 }
 
@@ -5594,7 +5594,7 @@ fn withdraw_entrant_stake_succeeds_after_judging() {
             entry_id_2,
             worker_account_id_2,
         ));
-        assert!(Bounties::<Test>::contains_key(&bounty_id));
+        assert!(Bounties::<Test>::contains_key(bounty_id));
     });
 }
 
@@ -5867,11 +5867,11 @@ fn withdraw_oracle_reward_cancelled_bounty_succeeds() {
             BountyActor::Council,
         ));
 
-        assert!(<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(<Bounties<Test>>::contains_key(bounty_id));
 
         WithdrawOracleRewardFixture::default().call_and_assert(Ok(()));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
 
         EventFixture::contains_crate_event(RawEvent::BountyOracleRewardWithdrawal(
             bounty_id,
@@ -5888,11 +5888,11 @@ fn withdraw_oracle_reward_cancelled_bounty_succeeds() {
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Council
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -5972,7 +5972,7 @@ fn withdraw_oracle_reward_successful_bounty_succeeds() {
 
         WithdrawOracleRewardFixture::default().call_and_assert(Ok(()));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
 
         EventFixture::contains_crate_event(RawEvent::BountyOracleRewardWithdrawal(
             bounty_id,
@@ -5989,11 +5989,11 @@ fn withdraw_oracle_reward_successful_bounty_succeeds() {
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Council
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 
@@ -6036,7 +6036,7 @@ fn withdraw_oracle_reward_failed_bounty_succeeds() {
             .with_origin(RawOrigin::Signed(oracle_account_id))
             .call_and_assert(Ok(()));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
 
         EventFixture::contains_crate_event(RawEvent::BountyOracleRewardWithdrawal(
             bounty_id,
@@ -6053,11 +6053,11 @@ fn withdraw_oracle_reward_failed_bounty_succeeds() {
         EventFixture::assert_last_crate_event(RawEvent::BountyRemoved(bounty_id));
 
         assert!(!<BountyContributions<Test>>::contains_key(
-            &bounty_id,
+            bounty_id,
             BountyActor::Council
         ));
 
-        assert!(!<Bounties<Test>>::contains_key(&bounty_id));
+        assert!(!<Bounties<Test>>::contains_key(bounty_id));
     });
 }
 

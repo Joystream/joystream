@@ -19,7 +19,7 @@ fn setup_open_auction_scenario() {
 
     // Issue nft
     assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test>::default(),
@@ -35,7 +35,7 @@ fn setup_open_auction_scenario() {
 
     // Start nft auction
     assert_ok!(Content::start_open_auction(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         auction_params,
@@ -51,7 +51,7 @@ fn setup_english_auction_scenario() {
 
     // Issue nft
     assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test>::default(),
@@ -69,7 +69,7 @@ fn setup_english_auction_scenario() {
 
     // Start nft auction
     assert_ok!(Content::start_english_auction(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         auction_params,
@@ -82,7 +82,7 @@ fn setup_open_auction_scenario_with_bid(amount: u64) {
 
     // Make an attempt to make auction bid if bid step constraint violated
     assert_ok!(Content::make_open_auction_bid(
-        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
         SECOND_MEMBER_ID,
         video_id,
         amount,
@@ -113,7 +113,7 @@ fn make_bid() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -123,7 +123,7 @@ fn make_bid() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -141,7 +141,7 @@ fn make_bid() {
 
         // Make nft auction bid
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -187,7 +187,7 @@ fn make_bid_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -197,7 +197,7 @@ fn make_bid_auth_failed() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -210,7 +210,7 @@ fn make_bid_auth_failed() {
 
         // Make an attempt to make auction bid providing wrong credentials
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             DEFAULT_MEMBER_ID,
             video_id,
             bid,
@@ -231,7 +231,7 @@ fn make_bid_insufficient_balance() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -243,7 +243,7 @@ fn make_bid_insufficient_balance() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + bid - 1);
         assert_noop!(
             Content::make_open_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 video_id,
                 bid,
@@ -263,7 +263,7 @@ fn make_bid_locked_balance() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -277,7 +277,7 @@ fn make_bid_locked_balance() {
 
         assert_noop!(
             Content::make_open_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 video_id,
                 bid,
@@ -302,7 +302,7 @@ fn make_bid_video_does_not_exist() {
 
         // Make an attempt to make auction bid if corresponding video does not exist
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -332,7 +332,7 @@ fn make_bid_nft_is_not_issued() {
 
         // Make an attempt to make auction bid if corresponding nft is not issued yet
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -357,7 +357,7 @@ fn make_bid_nft_is_not_in_auction_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -370,7 +370,7 @@ fn make_bid_nft_is_not_in_auction_state() {
 
         // Make an attempt to make auction bid if corresponding nft is not in auction state
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -395,7 +395,7 @@ fn make_bid_nft_auction_expired() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -413,7 +413,7 @@ fn make_bid_nft_auction_expired() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -430,7 +430,7 @@ fn make_bid_nft_auction_expired() {
 
         // Make an attempt to make auction bid if corresponding english nft auction is already expired
         let make_bid_result = Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -455,7 +455,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -473,7 +473,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -490,7 +490,7 @@ fn make_bid_member_is_not_allowed_to_participate() {
 
         // Make an attempt to make auction bid on auction with whitelist if member is not whitelisted
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -518,7 +518,7 @@ fn make_bid_starting_price_constraint_violated() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -534,7 +534,7 @@ fn make_bid_starting_price_constraint_violated() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -546,7 +546,7 @@ fn make_bid_starting_price_constraint_violated() {
 
         // Make an attempt to make auction bid if bid amount provided is less then auction starting price
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -579,7 +579,7 @@ fn make_bid_fails_with_lower_offer_and_locking_period_not_expired() {
         run_to_block(start_block + Content::min_bid_lock_duration() - 1);
         assert_err!(
             Content::make_open_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 video_id,
                 low_bid,
@@ -603,7 +603,7 @@ fn make_bid_succeeds_with_higher_offer_and_locking_period_not_expired() {
 
         // attemp to lower the offer on the same block -> error
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             second_bid,
@@ -628,7 +628,7 @@ fn make_bid_fails_by_insufficient_funds_for_the_next_bid() {
 
         assert_err!(
             Content::make_open_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 video_id,
                 new_bid,
@@ -651,7 +651,7 @@ fn make_english_auction_bid_ok_with_previous_amount_unreserved_and_free_balance_
         setup_english_auction_scenario();
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             init_bid,
@@ -661,7 +661,7 @@ fn make_english_auction_bid_ok_with_previous_amount_unreserved_and_free_balance_
         increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, ed() + new_bid);
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID,
             video_id,
             new_bid,
@@ -692,7 +692,7 @@ fn make_english_auction_bid_ok_with_previous_amount_unreserved_and_reserved_bala
         setup_english_auction_scenario();
 
         let _ = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             init_bid,
@@ -702,7 +702,7 @@ fn make_english_auction_bid_ok_with_previous_amount_unreserved_and_reserved_bala
         increase_account_balance_helper(COLLABORATOR_MEMBER_ACCOUNT_ID, new_bid);
 
         let _ = Content::make_open_auction_bid(
-            Origin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(COLLABORATOR_MEMBER_ACCOUNT_ID),
             COLLABORATOR_MEMBER_ID,
             video_id,
             new_bid,
@@ -726,7 +726,7 @@ fn make_bid_succeeds_with_auction_completion_and_outstanding_bids() {
         setup_open_auction_scenario_with_bid(Content::min_starting_price());
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE,
@@ -754,7 +754,7 @@ fn make_bid_succeeds_with_auction_completion_and_no_outstanding_bids() {
         setup_open_auction_scenario();
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE,
@@ -782,7 +782,7 @@ fn make_bid_ok_with_open_auction_completion_and_total_balance_slashed() {
         setup_open_auction_scenario();
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE + 10,
@@ -806,7 +806,7 @@ fn make_bid_ok_with_open_auction_completion_and_no_reserve_balance_left_for_bidd
         setup_open_auction_scenario();
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE + 10,
@@ -834,14 +834,14 @@ fn make_bid_ok_with_english_auction_completion_with_bid_below_min_step() {
                 .call_and_assert(Ok(()));
 
             assert_ok!(Content::make_english_auction_bid(
-                Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(THIRD_MEMBER_ACCOUNT_ID),
                 THIRD_MEMBER_ID,
                 VideoId::one(),
                 DEFAULT_BUY_NOW_PRICE - 10,
             ));
 
             assert_ok!(Content::make_english_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 VideoId::one(),
                 DEFAULT_BUY_NOW_PRICE,
@@ -861,7 +861,7 @@ fn make_bid_ok_with_english_auction_completion_and_total_balance_slashed() {
                 .call_and_assert(Ok(()));
 
             assert_ok!(Content::make_english_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 VideoId::one(),
                 BID_OFFER,
@@ -887,7 +887,7 @@ fn make_bid_ok_with_open_auction_owner_account_increased_balance_by_correct_amou
         let auction_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_BUY_NOW_PRICE);
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE + 10,
@@ -913,7 +913,7 @@ fn make_bid_ok_with_english_auction_owner_account_increased_balance_by_correct_a
         let auction_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_BUY_NOW_PRICE);
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE + 10,
@@ -942,7 +942,7 @@ fn english_auction_bid_made_event_includes_prev_top_bidder() {
         let third_bid_amount = Content::min_bid_step() * 3;
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             DEFAULT_MEMBER_ID,
             video_id,
             first_bid_amount,
@@ -959,7 +959,7 @@ fn english_auction_bid_made_event_includes_prev_top_bidder() {
         );
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             second_bid_amount,
@@ -976,7 +976,7 @@ fn english_auction_bid_made_event_includes_prev_top_bidder() {
         );
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             DEFAULT_MEMBER_ID,
             video_id,
             third_bid_amount,
@@ -1005,7 +1005,7 @@ fn english_auction_bid_made_completing_auction_event_with_no_previous_bidder() {
         increase_account_balance_helper(DEFAULT_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             DEFAULT_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE,
@@ -1034,7 +1034,7 @@ fn english_auction_bid_made_completing_auction_event_with_previous_bidder() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, BIDDER_BALANCE);
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             Content::min_bid_step(),
@@ -1051,7 +1051,7 @@ fn english_auction_bid_made_completing_auction_event_with_previous_bidder() {
         );
 
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             DEFAULT_MEMBER_ID,
             video_id,
             DEFAULT_BUY_NOW_PRICE
@@ -1081,7 +1081,7 @@ fn make_bid_with_open_auction_is_not_started() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -1097,7 +1097,7 @@ fn make_bid_with_open_auction_is_not_started() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -1107,7 +1107,7 @@ fn make_bid_with_open_auction_is_not_started() {
         let bid = Content::min_starting_price();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
         let make_bid_result = Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -1131,7 +1131,7 @@ fn make_bid_with_english_auction_is_not_started() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -1149,7 +1149,7 @@ fn make_bid_with_english_auction_is_not_started() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -1159,7 +1159,7 @@ fn make_bid_with_english_auction_is_not_started() {
         let bid = Content::min_starting_price();
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + bid);
         let make_bid_result = Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -1187,7 +1187,7 @@ fn english_auction_increased_bid_works_correctly() {
 
         let bid1 = Content::min_bid_step();
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid1,
@@ -1199,7 +1199,7 @@ fn english_auction_increased_bid_works_correctly() {
 
         let bid2 = Content::min_bid_step() * 2;
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid2,
@@ -1228,7 +1228,7 @@ fn open_auction_increased_bid_works_correctly() {
 
         let bid1 = Content::min_bid_step();
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid1,
@@ -1240,7 +1240,7 @@ fn open_auction_increased_bid_works_correctly() {
 
         let bid2 = 2 * Content::min_bid_step();
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid2,
@@ -1269,7 +1269,7 @@ fn open_auction_decreased_bid_works_correctly() {
 
         let bid1 = 2 * Content::min_bid_step();
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid1,
@@ -1283,7 +1283,7 @@ fn open_auction_decreased_bid_works_correctly() {
 
         let bid2 = Content::min_bid_step();
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid2,
@@ -1311,7 +1311,7 @@ fn make_open_auction_bid_fails_during_transfer() {
 
         assert_noop!(
             Content::make_open_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 VideoId::one(),
                 Content::min_starting_price(),
@@ -1334,7 +1334,7 @@ fn make_english_auction_bid_fails_during_transfer() {
 
         assert_noop!(
             Content::make_english_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 VideoId::one(),
                 Content::min_starting_price(),

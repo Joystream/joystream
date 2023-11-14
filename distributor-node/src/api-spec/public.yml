@@ -166,12 +166,15 @@ components:
         - storageUsed
         - uptime
         - downloadsInProgress
+        - nodeEnv
         - queryNodeStatus
       properties:
         id:
           type: string
         version:
           type: string
+        workerId:
+          type: integer
         objectsInCache:
           type: integer
           minimum: 0
@@ -187,6 +190,8 @@ components:
         downloadsInProgress:
           type: integer
           minimum: 0
+        nodeEnv:
+          type: string
         queryNodeStatus:
           type: object
           required:

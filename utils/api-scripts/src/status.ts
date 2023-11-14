@@ -3,8 +3,8 @@ import BN from 'bn.js'
 import '@joystream/types'
 
 async function main() {
-  // Initialise the provider to connect to the local node
-  const provider = new WsProvider('ws://127.0.0.1:9944')
+  const endpoint = process.env.WS_URI || 'ws://127.0.0.1:9944'
+  const provider = new WsProvider(endpoint)
 
   // Create the API and wait until ready
   let api: ApiPromise

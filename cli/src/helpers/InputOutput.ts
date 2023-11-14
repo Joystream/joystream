@@ -45,7 +45,7 @@ export async function validateInput(input: unknown, schema: unknown): Promise<vo
   if (!valid) {
     throw new CLIError(
       `Input JSON file is not valid:\n` +
-        ajv.errors?.map((e) => `${e.dataPath}: ${e.message} (${JSON.stringify(e.params)})`).join('\n')
+        ajv.errors?.map((e) => `${e.instancePath}: ${e.message} (${JSON.stringify(e.params)})`).join('\n')
     )
   }
 }

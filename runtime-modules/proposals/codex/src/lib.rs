@@ -75,6 +75,7 @@ use sp_runtime::SaturatedConversion;
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
+use sp_std::vec;
 
 use common::membership::MemberOriginValidator;
 use common::to_kb;
@@ -139,11 +140,11 @@ pub trait Config:
     + working_group::Config<DistributionWorkingGroupInstance>
 {
     /// Proposal Codex module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates member id and origin combination.
     type MembershipOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
@@ -273,6 +274,11 @@ pub trait Config:
 
     /// Max allowed number of validators in set max validator count proposal
     type SetMaxValidatorCountProposalMaxValidators: Get<u32>;
+
+    /// `Freeze Pallet` proposal parameters
+    type SetPalletFozenStatusProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -393,7 +399,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// Proposal codex substrate module Call
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -496,6 +502,9 @@ decl_module! {
         /// Max allowed number of validators in set max validator count proposal
         const SetMaxValidatorCountProposalMaxValidators: u32 =
             T::SetMaxValidatorCountProposalMaxValidators::get();
+
+        const SetPalletFozenStatusProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -865,6 +874,9 @@ impl<T: Config> Module<T> {
                     );
                 }
             }
+            ProposalDetails::SetPalletFozenStatus(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -931,6 +943,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateChannelPayouts(..) => {
                 T::UpdateChannelPayoutsProposalParameters::get()
+            }
+            ProposalDetails::SetPalletFozenStatus(..) => {
+                T::SetPalletFozenStatusProposalParameters::get()
             }
         }
     }
@@ -1093,6 +1108,12 @@ impl<T: Config> Module<T> {
                 )
                 .saturated_into()
             }
+            ProposalDetails::SetPalletFozenStatus(..) => {
+                WeightInfoCodex::<T>::create_proposal_freeze_pallet(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
         }
     }
 }
@@ -1104,5 +1125,12 @@ impl<T: Config> ProposalObserver<T> for Module<T> {
         let thread_id = Self::thread_id_by_proposal_id(proposal_id);
 
         proposals_discussion::ThreadById::<T>::remove(thread_id);
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

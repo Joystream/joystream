@@ -50,7 +50,12 @@ wss://{{ nip_domain }}/query-node/server* {
 
 {{ nip_domain }}/orion* {
     uri strip_prefix /orion
-    reverse_proxy localhost:6116
+    reverse_proxy localhost:4350
+}
+
+{{ nip_domain }}/archive* {
+    uri strip_prefix /archive
+    reverse_proxy localhost:8000
 }
 
 {{ nip_domain }}/member-faucet* {

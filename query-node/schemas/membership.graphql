@@ -22,6 +22,7 @@ enum MembershipExternalResourceType {
   IRC
   WECHAT
   WHATSAPP
+  LINKEDIN
 }
 
 type MembershipExternalResource @entity {
@@ -47,6 +48,9 @@ type MemberMetadata @entity {
 
   "Social media handles, email address..."
   externalResources: [MembershipExternalResource] @derivedFrom(field: "memberMetadata")
+
+  isVerifiedValidator: Boolean
+  validatorAccount: String
 }
 
 type MembershipEntryPaid @variant {
@@ -89,8 +93,11 @@ type Membership @entity {
   "MemberId: runtime identifier for a user"
   id: ID!
 
-  "The unique handle chosen by member"
-  handle: String! @unique @fulltext(query: "membersByHandle")
+  "The unique handle chosen by member as raw hex representation"
+  handle_raw: String! @unique
+
+  "The unique handle chosen by member as utf-8"
+  handle: String! @fulltext(query: "membersByHandle")
 
   "Member's metadata"
   metadata: MemberMetadata!
@@ -182,9 +189,6 @@ type Membership @entity {
 
   "Number of channels ever created by this member"
   totalChannelsCreated: Int!
-
-  "Number of videos ever created by this member"
-  totalVideosCreated: Int!
 
   # Required for EnglishAuctionSettledEvent->members Many-to-Many relationship
   "Member as bidder in EnglishAuctionSettledEvent/s."

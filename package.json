@@ -11,7 +11,7 @@
     "cargo-checks": "./scripts/cargo-checks.sh",
     "cargo-build": "./scripts/cargo-build.sh",
     "lint": "./scripts/lint-typescript.sh",
-    "update-chain-metadata": "./scripts/fetch-chain-metadata.sh > chain-metadata.json",
+    "update-chain-metadata": "./scripts/fetch-chain-metadata.sh | tee chain-metadata.json query-node/chain-metadata/$(./scripts/fetch-chain-spec-version.sh).json >/dev/null",
     "verify-chain-metadata": "./scripts/verify-chain-metadata.sh"
   },
   "workspaces": [
@@ -30,7 +30,8 @@
     "query-node/mappings",
     "query-node/generated/graphql-server",
     "metadata-protobuf",
-    "joystreamjs"
+    "joystreamjs",
+    "opentelemetry"
   ],
   "resolutions": {
     "@polkadot/api": "8.9.1",
@@ -65,11 +66,11 @@
     }
   },
   "engines": {
-    "node": ">=14.0.0",
+    "node": ">=14.18.0",
     "yarn": "^1.22.15"
   },
   "volta": {
-    "node": "14.18.0",
-    "yarn": "1.22.15"
+    "node": "18.6.0",
+    "yarn": "1.22.19"
   }
 }

@@ -1,4 +1,5 @@
 import Ajv from 'ajv'
+import addFormats from 'ajv-formats'
 import { SchemaKey, schemas, TypeBySchemaKey } from '../../schemas'
 
 export class ValidationError extends Error {
@@ -7,7 +8,7 @@ export class ValidationError extends Error {
 
   public constructor(message: string, errors: Ajv['errors']) {
     const errorMessages: string[] = []
-    errors?.forEach((e) => errorMessages.push(`${e.dataPath}: ${e.message} (${JSON.stringify(e.params)})`))
+    errors?.forEach((e) => errorMessages.push(`${e.instancePath}: ${e.message} (${JSON.stringify(e.params)})`))
     super(`${message}\n\n${errorMessages.join('\n')}`)
     this.errors = errors
     this.errorMessages = errorMessages
@@ -19,6 +20,7 @@ export class ValidationService {
 
   public constructor() {
     this.ajv = new Ajv({ allErrors: true, schemas })
+    addFormats(this.ajv)
   }
 
   validate<SK extends SchemaKey>(schemaKey: SK, input: unknown): TypeBySchemaKey<SK> {
@@ -31,6 +33,6 @@ export class ValidationService {
 
   errorsByProperty<T>(schemaKey: SchemaKey, path: string, input: T): Ajv['errors'] {
     this.ajv.validate(schemaKey, input)
-    return this.ajv.errors?.filter((e) => e.dataPath === `/${path}` || e.dataPath.startsWith(`/${path}/`))
+    return this.ajv.errors?.filter((e) => e.instancePath === `/${path}` || e.instancePath.startsWith(`/${path}/`))
   }
 }

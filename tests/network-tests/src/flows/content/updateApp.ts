@@ -5,6 +5,7 @@ import { FixtureRunner } from '../../Fixture'
 import { CreateMembersFixture } from '../../fixtures/content'
 import { assert } from 'chai'
 import { AppMetadata } from '@joystream/metadata-protobuf'
+import { createJoystreamCli } from '../utils'
 
 export async function updateApp({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:update-app')
@@ -13,6 +14,9 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
   const createMembersFixture = new CreateMembersFixture(api, query, 1, 0, new BN(10_000_000_000))
   await new FixtureRunner(createMembersFixture).run()
   const [member] = createMembersFixture.getCreatedItems().members
+
+  const joystreamCli = await createJoystreamCli()
+  await joystreamCli.importAccount(member.keyringPair)
 
   const updatedMetadata: Partial<AppMetadata> = {
     description: 'updated description',
@@ -29,7 +33,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
     useUri: 'http://example.com',
   }
 
-  await api.createApp(newAppName, newAppMetadata, member.memberId)
+  await joystreamCli.createApp(member.memberId.toString(), { name: newAppName, ...newAppMetadata })
 
   const appsByName = await query.tryQueryWithTimeout(
     () => query.getAppsByName(newAppName),
@@ -44,7 +48,7 @@ export async function updateApp({ api, query }: FlowProps): Promise<void> {
 
   const newAppId = appsByName?.[0]?.id
   if (newAppId) {
-    await api.updateApp(newAppId, updatedMetadata, member.memberId)
+    await joystreamCli.updateApp(member.memberId.toString(), newAppId, updatedMetadata)
   }
 
   await query.tryQueryWithTimeout(

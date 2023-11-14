@@ -4,16 +4,23 @@ set -e
 SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
-CONTAINER_ID=$(./run-test-node-docker.sh)
-
 function cleanup() {
-    docker logs ${CONTAINER_ID} --tail 15
-    docker-compose -f ../../docker-compose.yml down -v
+    docker logs joystream-node --tail 15 || :
+    docker stop joystream-node || :
+    docker rm joystream-node || :
+    echo "# Colossus-1 Logs"
+    docker logs colossus-1 --tail 100 || :
+    echo "# Colossus-2 Logs"
+    docker logs colossus-2 --tail 100 || :
+    docker-compose -f ../../docker-compose.yml down -v || :
 }
 
-trap cleanup EXIT
+trap cleanup EXIT ERR SIGINT SIGTERM
 
-sleep 3
+export JOYSTREAM_NODE_TAG=`RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh`
+CHAIN=dev docker compose -f ../../docker-compose.yml up -d joystream-node
+
+sleep 30
 
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime

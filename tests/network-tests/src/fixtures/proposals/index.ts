@@ -8,3 +8,4 @@ export {
 export { AllProposalsOutcomesFixture, TestedProposal } from './AllProposalsOutcomesFixture'
 export { CancelProposalsFixture } from './CancelProposalsFixture'
 export { ExpireProposalsFixture } from './ExpireProposalsFixture'
+export { PassProposalsFixture } from './PassProposalFixture'

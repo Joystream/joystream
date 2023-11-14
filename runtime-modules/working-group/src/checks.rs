@@ -18,7 +18,7 @@ use crate::types::{ApplicationInfo, StakeParameters};
 
 // Check opening: verifies origin and opening type compatibility.
 pub(crate) fn ensure_origin_for_opening_type<T: Config<I>, I: Instance>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     opening_type: OpeningType,
 ) -> DispatchResult {
     match opening_type {
@@ -34,7 +34,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Config<I>, I: Instance>(
 }
 
 pub(crate) fn ensure_stake_for_opening_type<T: Config<I>, I: Instance>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     opening_type: OpeningType,
 ) -> DispatchResult {
     // Lead needs stake to generate opening
@@ -149,7 +149,7 @@ pub(crate) fn ensure_is_lead_account<T: Config<I>, I: Instance>(
 
 // Check leader: ensures origin is signed by the leader.
 pub(crate) fn ensure_origin_is_active_leader<T: Config<I>, I: Instance>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
 ) -> DispatchResult {
     // Ensure is signed
     let signer = ensure_signed(origin)?;
@@ -166,7 +166,7 @@ pub(crate) fn ensure_worker_exists<T: Config<I>, I: Instance>(
 
 // Check worker: ensures the origin contains signed account that belongs to existing worker.
 pub(crate) fn ensure_worker_signed<T: Config<I>, I: Instance>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     worker_id: &WorkerId<T>,
 ) -> Result<Worker<T>, DispatchError> {
     // Ensure that it is signed
@@ -186,7 +186,7 @@ pub(crate) fn ensure_worker_signed<T: Config<I>, I: Instance>(
 
 // Check worker: verifies proper origin for the worker operation. Returns whether the origin is sudo.
 pub(crate) fn ensure_origin_for_worker_operation<T: Config<I>, I: Instance>(
-    origin: T::Origin,
+    origin: T::RuntimeOrigin,
     worker_id: WorkerId<T>,
 ) -> Result<bool, DispatchError> {
     let leader_worker_id = ensure_lead_is_set::<T, I>()?;
