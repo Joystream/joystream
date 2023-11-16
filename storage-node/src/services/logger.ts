@@ -197,7 +197,7 @@ export function initNewLogger(options: LogConfig): void {
 function createElasticTransport(
   logSource: string,
   elasticSearchEndpoint: string,
-  elasticSearchIndex?: string,
+  elasticSearchIndexPrefix?: string,
   elasticSearchUser?: string,
   elasticSearchPassword?: string
 ): winston.transport {
@@ -210,7 +210,7 @@ function createElasticTransport(
     elasticLogLevel = 'debug' // default
   }
 
-  const indexPrefix = elasticSearchIndex || 'logs-colossus'
+  const indexPrefix = elasticSearchIndexPrefix || 'logs-colossus'
   const index = `${indexPrefix}-${logSource}`.toLowerCase()
 
   const esTransport = new ElasticsearchTransport({
