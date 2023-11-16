@@ -21,6 +21,7 @@ COPY Cargo.lock .
 COPY bin ./bin
 COPY runtime ./runtime
 COPY runtime-modules ./runtime-modules
+COPY joy-mainnet.json .
 ARG CARGO_UNSTABLE_SPARSE_REGISTRY=true
 ARG CARGO_NET_GIT_FETCH_WITH_CLI=true
 RUN cargo +nightly chef prepare --recipe-path /joystream/recipe.json
@@ -43,6 +44,7 @@ COPY Cargo.lock .
 COPY bin ./bin
 COPY runtime ./runtime
 COPY runtime-modules ./runtime-modules
+COPY joy-mainnet.json .
 # Copy over the cached dependencies
 COPY --from=cacher /joystream/target target
 COPY --from=cacher $CARGO_HOME $CARGO_HOME
