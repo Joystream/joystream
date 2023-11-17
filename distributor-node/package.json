@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -161,7 +161,7 @@
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "cli": "./bin/run",
     "start": "./bin/run start",
-    "start:with-instrumentation": "export OTEL_APPLICATION=distributor-node; node --require @joystream/opentelemetry ./bin/run start"
+    "start:with-instrumentation": "export OTEL_APPLICATION=distributor-node; export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:8200; export OTEL_RESOURCE_ATTRIBUTES=service.name=argus,deployment.environment=production; node --require @joystream/opentelemetry ./bin/run start"
   },
   "types": "lib/index.d.ts"
 }

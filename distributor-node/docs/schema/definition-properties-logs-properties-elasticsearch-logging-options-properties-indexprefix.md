@@ -1,0 +1,3 @@
+## indexPrefix Type
+
+`string`
