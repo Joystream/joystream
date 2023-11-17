@@ -1,10 +1,11 @@
-import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from '../queryNode/api'
-import logger from '../logger'
 import _ from 'lodash'
+import logger from '../logger'
+import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from '../queryNode/api'
 import {
+  DataObjectByBagIdsDetailsFragment,
+  DataObjectDetailsFragment,
   StorageBagDetailsFragment,
   StorageBucketDetailsFragment,
-  DataObjectDetailsFragment,
 } from '../queryNode/generated/queries'
 
 /**
@@ -86,17 +87,15 @@ type DataObject = {
  * @returns promise for the DataObligations
  */
 export async function getStorageObligationsFromRuntime(
-  queryNodeUrl: string,
+  qnApi: QueryNodeApi,
   bucketIds: string[]
 ): Promise<DataObligations> {
-  const api = new QueryNodeApi(queryNodeUrl)
+  const allBuckets = await getAllBuckets(qnApi)
 
-  const allBuckets = await getAllBuckets(api)
-
-  const assignedBags = await getAllAssignedBags(api, bucketIds)
+  const assignedBags = await getAllAssignedBags(qnApi, bucketIds)
 
   const bagIds = assignedBags.map((bag) => bag.id)
-  const assignedDataObjects = await getAllAssignedDataObjects(api, bagIds)
+  const assignedDataObjects = await getAllAssignedDataObjects(qnApi, bagIds)
 
   const model: DataObligations = {
     storageBuckets: allBuckets.map((bucket) => ({
@@ -168,12 +167,29 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
 /**
  * Get all data objects assigned to storage provider.
  *
- * @param api - initialiazed QueryNodeApi instance
+ * @param api - initialized QueryNodeApi instance
  * @param bagIds - assigned storage bags' IDs
  * @returns storage bag data
  */
-async function getAllAssignedDataObjects(api: QueryNodeApi, bagIds: string[]): Promise<DataObjectDetailsFragment[]> {
-  return await api.getDataObjectDetails(bagIds)
+async function getAllAssignedDataObjects(
+  api: QueryNodeApi,
+  bagIds: string[]
+): Promise<DataObjectByBagIdsDetailsFragment[]> {
+  return await api.getDataObjectDetailsByBagIds(bagIds)
+}
+
+/**
+ * Get details of storage data objects by IDs.
+ *
+ * @param api - initialized QueryNodeApi instance
+ * @param bagIds - data objects' IDs
+ * @returns storage data objects
+ */
+export async function getDataObjectsByIDs(
+  api: QueryNodeApi,
+  dataObjectIds: string[]
+): Promise<DataObjectDetailsFragment[]> {
+  return await api.getDataObjectDetails(dataObjectIds)
 }
 
 /**

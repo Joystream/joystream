@@ -108,6 +108,61 @@ export interface StatusResponse {
      * @memberof StatusResponse
      */
     'queryNodeStatus': StatusResponseQueryNodeStatus;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof StatusResponse
+     */
+    'uploadBuckets': Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof StatusResponse
+     */
+    'downloadBuckets': Array<string>;
+    /**
+     * 
+     * @type {StatusResponseSync}
+     * @memberof StatusResponse
+     */
+    'sync': StatusResponseSync;
+    /**
+     * 
+     * @type {StatusResponseCleanup}
+     * @memberof StatusResponse
+     */
+    'cleanup': StatusResponseCleanup;
+}
+/**
+ * 
+ * @export
+ * @interface StatusResponseCleanup
+ */
+export interface StatusResponseCleanup {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof StatusResponseCleanup
+     */
+    'enabled': boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseCleanup
+     */
+    'interval': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseCleanup
+     */
+    'maxQnLaggingThresholdInBlocks'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseCleanup
+     */
+    'minReplicationThresholdForPruning'?: number;
 }
 /**
  * 
@@ -133,6 +188,25 @@ export interface StatusResponseQueryNodeStatus {
      * @memberof StatusResponseQueryNodeStatus
      */
     'blocksProcessed': number;
+}
+/**
+ * 
+ * @export
+ * @interface StatusResponseSync
+ */
+export interface StatusResponseSync {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof StatusResponseSync
+     */
+    'enabled': boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseSync
+     */
+    'interval': number;
 }
 /**
  * 

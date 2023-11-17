@@ -1,10 +1,11 @@
-import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
-import logger from '../../services/logger'
-import { getDataObjectIDs } from '../../services/caching/localDataObjects'
-import { SyncTask, DownloadFileTask, PrepareDownloadFileTask } from './tasks'
-import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
-import _ from 'lodash'
 import { ApiPromise } from '@polkadot/api'
+import _ from 'lodash'
+import { getDataObjectIDs } from '../../services/caching/localDataObjects'
+import logger from '../../services/logger'
+import { QueryNodeApi } from '../queryNode/api'
+import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
+import { DownloadFileTask, PrepareDownloadFileTask, SyncTask } from './tasks'
+import { TaskProcessorSpawner, TaskSink, WorkingStack } from './workingProcess'
 
 /**
  * Temporary directory name for data uploading.
@@ -19,10 +20,12 @@ export const TempDirName = 'temp'
  *
  * @param api - (optional) runtime API promise
  * @param workerId - current storage provider ID
+ * @param buckets - Selected storage buckets
  * @param asyncWorkersNumber - maximum parallel downloads number
  * @param asyncWorkersTimeout - downloading asset timeout
- * @param queryNodeUrl - Query Node endpoint URL
+ * @param qnApi - Query Node API
  * @param uploadDirectory - local directory to get file names from
+ * @param tempDirectory - local directory for temporary data uploading
  * @param operatorUrl - (optional) defines the data source URL. If not set
  * the source URL is resolved for each data object separately using the Query
  * Node information about the storage providers.
@@ -33,24 +36,21 @@ export async function performSync(
   buckets: string[],
   asyncWorkersNumber: number,
   asyncWorkersTimeout: number,
-  queryNodeUrl: string,
+  qnApi: QueryNodeApi,
   uploadDirectory: string,
   tempDirectory: string,
   operatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
-  const [model, files] = await Promise.all([
-    getStorageObligationsFromRuntime(queryNodeUrl, buckets),
-    getDataObjectIDs(),
-  ])
+  const [model, files] = await Promise.all([getStorageObligationsFromRuntime(qnApi, buckets), getDataObjectIDs()])
 
   const requiredIds = model.dataObjects.map((obj) => obj.id)
 
   const added = _.difference(requiredIds, files)
-  const deleted = _.difference(files, requiredIds)
+  const removed = _.difference(files, requiredIds)
 
   logger.debug(`Sync - new objects: ${added.length}`)
-  logger.debug(`Sync - obsolete objects: ${deleted.length}`)
+  logger.debug(`Sync - obsolete objects: ${removed.length}`)
 
   const workingStack = new WorkingStack()
 
@@ -84,6 +84,7 @@ export async function performSync(
  * Creates the download preparation tasks.
  *
  * @param api - Runtime API promise
+ * @param currentWorkerId - Worker ID
  * @param dataObligations - defines the current data obligations for the node
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
