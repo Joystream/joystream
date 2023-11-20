@@ -1,3 +1,7 @@
+### 3.9.0
+
+- Add background pruning worker to delete data objects which the node is no longer obligated to store. New optional argument `--cleanup` and `--cleanupInterval`
+
 ### 3.8.0
 
 - Changed Elasticsearch transport to use data streams instead of regular indices. Removed `--elasticSearchIndex` option and replaced with `--elasticSearchIndexPrefix`. Node ID from config will be automatically appended to the index name.
