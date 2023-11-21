@@ -1,23 +1,24 @@
 import { flags } from '@oclif/command'
-import { createApp } from '../services/webApi/app'
-import ApiCommandBase from '../command-base/ApiCommandBase'
-import logger, { initNewLogger, DatePatternByFrequency, Frequency } from '../services/logger'
-import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import { ApiPromise } from '@polkadot/api'
-import { performSync, TempDirName } from '../services/sync/synchronizer'
-import sleep from 'sleep-promise'
-import rimraf from 'rimraf'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { Option } from '@polkadot/types-codec'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
+import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
+import rimraf from 'rimraf'
+import sleep from 'sleep-promise'
 import { promisify } from 'util'
-import ExitCodes from './../command-base/ExitCodes'
-import fs from 'fs'
-import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
-import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import { Option } from '@polkadot/types-codec'
-import { QueryNodeApi } from '../services/queryNode/api'
-import { KeyringPair } from '@polkadot/keyring/types'
+import ApiCommandBase from '../command-base/ApiCommandBase'
 import { customFlags } from '../command-base/CustomFlags'
+import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
+import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
+import { QueryNodeApi } from '../services/queryNode/api'
+import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
+import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
+import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
+import { createApp } from '../services/webApi/app'
+import ExitCodes from './../command-base/ExitCodes'
 const fsPromises = fs.promises
 
 /**
@@ -127,6 +128,11 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 'daily',
       required: false,
     }),
+    maxBatchTxSize: flags.integer({
+      description: 'Maximum number of `accept_pending_data_objects` in a batch transactions.',
+      default: 10,
+      required: false,
+    }),
     ...ApiCommandBase.flags,
   }
 
@@ -205,6 +211,20 @@ Supported values: warn, error, debug, info. Default:debug`,
       await this.ensureDevelopmentChain()
     }
 
+    const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
+
+    const acceptPendingObjectsService = await AcceptPendingObjectsService.init(
+      api,
+      qnApi,
+      workerId,
+      flags.uploads,
+      pendingDataObjectsDir,
+      bucketKeyPairs,
+      writableBuckets,
+      flags.maxBatchTxSize,
+      6000 // Every block
+    )
+
     // Don't run sync job if no buckets selected, to prevent purging
     // any assets.
     if (flags.sync && selectedBuckets.length) {
@@ -244,6 +264,8 @@ Supported values: warn, error, debug, info. Default:debug`,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir,
+        pendingDataObjectsDir,
+        acceptPendingObjectsService,
         process: this.config,
         enableUploadingAuth,
         downloadBuckets: selectedBuckets,
