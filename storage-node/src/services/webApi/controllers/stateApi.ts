@@ -1,12 +1,13 @@
-import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 import * as express from 'express'
-import _ from 'lodash'
-import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import { sendResponseWithError, AppConfig } from './common'
 import fastFolderSize from 'fast-folder-size'
-import { promisify } from 'util'
 import fs from 'fs'
+import _ from 'lodash'
 import NodeCache from 'node-cache'
+import { promisify } from 'util'
+import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
+import logger from '../../logger'
+import { QueryNodeApi } from '../../queryNode/api'
+import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
 import {
   DataObjectResponse,
   DataStatsResponse,
@@ -14,8 +15,7 @@ import {
   StatusResponse,
   VersionResponse,
 } from '../types'
-import { QueryNodeApi } from '../../queryNode/api'
-import logger from '../../logger'
+import { AppConfig, sendResponseWithError } from './common'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
@@ -57,6 +57,7 @@ export async function getLocalDataStats(
   try {
     const uploadsDir = res.locals.uploadsDir
     const tempFileDir = res.locals.tempFileUploadingDir
+    const pendingObjectsDir = res.locals.pendingDataObjectsDir
     const fastFolderSizeAsync = promisify(fastFolderSize)
 
     const tempFolderExists = fs.existsSync(tempFileDir)
@@ -68,6 +69,8 @@ export async function getLocalDataStats(
     let objectNumber = stats.length
     let tempDownloads = 0
     let tempDirSize = 0
+    let pendingObjects = 0
+    let pendingDirSize = 0
     if (tempFolderExists) {
       if (objectNumber > 0) {
         objectNumber--
@@ -75,11 +78,20 @@ export async function getLocalDataStats(
 
       const tempDirStatsPromise = fsPromises.readdir(tempFileDir)
       const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
+      const pendingDirStatsPromise = fsPromises.readdir(pendingObjectsDir)
+      const pendingDirSizePromise = fastFolderSizeAsync(pendingObjectsDir)
 
-      const [tempDirStats, tempSize] = await Promise.all([tempDirStatsPromise, tempDirSizePromise])
+      const [tempDirStats, tempSize, pendingDirStats, pendingSize] = await Promise.all([
+        tempDirStatsPromise,
+        tempDirSizePromise,
+        pendingDirStatsPromise,
+        pendingDirSizePromise,
+      ])
 
       tempDirSize = tempSize ?? 0
       tempDownloads = tempDirStats.length
+      pendingDirSize = pendingSize ?? 0
+      pendingObjects = pendingDirStats.length
     }
 
     res.status(200).json({
@@ -87,6 +99,8 @@ export async function getLocalDataStats(
       totalSize: totalSize ?? 0,
       tempDownloads,
       tempDirSize,
+      pendingObjects,
+      pendingDirSize,
     })
   } catch (err) {
     sendResponseWithError(res, next, err, 'local_data_stats')

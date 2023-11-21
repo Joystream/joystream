@@ -281,6 +281,12 @@ components:
         tempDownloads:
           type: integer
           format: int64
+        pendingDirSize:
+          type: integer
+          format: int64
+        pendingObjects:
+          type: integer
+          format: int64
     VersionResponse:
       type: object
       required:
