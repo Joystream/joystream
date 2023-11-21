@@ -115,6 +115,22 @@ query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $curso
   }
 }
 
+fragment DataObjectsWithBagAndBuckets on StorageDataObject {
+  id
+  storageBag {
+    id
+    storageBuckets {
+      id
+    }
+  }
+}
+
+query getDataObjectsByIds($ids: [ID!], $limit: Int) {
+  storageDataObjects(where: { id_in: $ids }, limit: $limit) {
+    ...DataObjectsWithBagAndBuckets
+  }
+}
+
 fragment QueryNodeStateFields on ProcessorState {
   chainHead
   lastCompleteBlock
