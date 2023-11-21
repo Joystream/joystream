@@ -1,6 +1,6 @@
 # Joystream API Examples
 
-Repo with examples on how to use the @joystream/types package along with @polkadot/api to communicate with a joystream full node.
+Examples on how to use the @joystream/types package along with @polkadot/api to communicate with a joystream full node.
 
 Some useful utilily commands are also included under `src/`
 
@@ -9,7 +9,7 @@ Some useful utilily commands are also included under `src/`
 You can run typescript commands under the `src/` folder simply with:
 
 ```sh
-yarn ts-node src/sudo-init-content-lead.ts
+yarn ts-node src/buy-membership.ts
 ```
 
 ## Adding code to src/

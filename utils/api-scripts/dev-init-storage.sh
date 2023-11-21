@@ -8,5 +8,4 @@ export GROUP="storageWorkingGroup"
 export WORKER_ROLE_URI="//Colossus"
 export INITIAL_WORKER_BALANCE_TOP_UP="10000"
 
-yarn initialize-lead
 yarn initialize-worker

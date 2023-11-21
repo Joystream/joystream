@@ -25,7 +25,6 @@
     "devops/eslint-config",
     "devops/prettier-config",
     "utils/api-scripts",
-    "utils/migration-scripts",
     "query-node",
     "query-node/mappings",
     "query-node/generated/graphql-server",
