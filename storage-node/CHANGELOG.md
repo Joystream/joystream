@@ -1,3 +1,7 @@
+### 3.8.1
+
+- Hotfix: Fix call stack size exceeded when handling large number of initial object to sync.
+
 ### 3.8.0
 
 - Changed Elasticsearch transport to use data streams instead of regular indices. Removed `--elasticSearchIndex` option and replaced with `--elasticSearchIndexPrefix`. Node ID from config will be automatically appended to the index name.
