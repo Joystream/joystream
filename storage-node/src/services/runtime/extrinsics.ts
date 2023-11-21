@@ -263,7 +263,9 @@ export async function inviteStorageBucketOperator(
 async function extrinsicWrapper(
   extrinsic: () => Promise<void>,
   throwErr = false,
-  timeoutMs = 25000 // 25s - default extrinsic timeout
+  // 5 mins - based on the default transactions validity of Substrate based chains with
+  // 6s block time: https://polkadot.js.org/docs/api/FAQ/#how-long-do-transactions-live
+  timeoutMs = 300_000
 ): Promise<boolean> {
   try {
     await timeout(extrinsic(), timeoutMs)
