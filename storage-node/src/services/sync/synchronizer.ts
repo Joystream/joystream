@@ -1,15 +1,20 @@
-import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
-import logger from '../../services/logger'
-import { getDataObjectIDs } from '../../services/caching/localDataObjects'
-import { SyncTask, DownloadFileTask, PrepareDownloadFileTask } from './tasks'
-import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
-import _ from 'lodash'
 import { ApiPromise } from '@polkadot/api'
+import _ from 'lodash'
+import { getDataObjectIDs } from '../../services/caching/localDataObjects'
+import logger from '../../services/logger'
+import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
+import { DownloadFileTask, PrepareDownloadFileTask, SyncTask } from './tasks'
+import { TaskProcessorSpawner, TaskSink, WorkingStack } from './workingProcess'
 
 /**
  * Temporary directory name for data uploading.
  */
 export const TempDirName = 'temp'
+
+/**
+ * Temporary Directory name for data objects not yet accepted (pending) in runtime.
+ */
+export const PendingDirName = 'pending'
 
 /**
  * Runs the data synchronization workflow. It compares the current node's

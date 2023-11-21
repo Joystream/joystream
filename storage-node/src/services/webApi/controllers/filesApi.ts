@@ -109,8 +109,6 @@ export async function uploadFile(
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
-    const workerId = res.locals.workerId
-
     const api = res.locals.api
     const bagId = parseBagId(uploadRequest.bagId)
 
@@ -120,19 +118,17 @@ export async function uploadFile(
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId
-    const uploadsDir = res.locals.uploadsDir
-    const newPath = path.join(uploadsDir, dataObjectId)
+    const pendingObjectsDir = res.locals.pendingDataObjectsDir
+    const newPath = path.join(pendingObjectsDir, dataObjectId)
 
-    registerNewDataObjectId(dataObjectId)
-    await addDataObjectIdToCache(dataObjectId)
-
-    // Overwrites existing file.
+    // Move file to pending objects Dir.
     await fsPromises.rename(fileObj.path, newPath)
-    cleanupFileName = newPath
 
-    await acceptPendingDataObjects(api, bagId, bucketKeyPair, workerId, new BN(uploadRequest.storageBucketId), [
+    res.locals.acceptPendingObjectsService.push(
       new BN(uploadRequest.dataObjectId),
-    ])
+      new BN(uploadRequest.storageBucketId),
+      uploadRequest.bagId
+    )
 
     res.status(201).json({
       id: hash,
