@@ -4,12 +4,12 @@
 
 # elastic Properties
 
-| Property              | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                                        |
-| :-------------------- | :------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [level](#level)       | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-logs-properties-file-logging-options-properties-level.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/level")                |
-| [endpoint](#endpoint) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-endpoint.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/endpoint") |
-| [index](#index)       | `string` | Optional | cannot be null | [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-index.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/index")       |
-| [auth](#auth)         | `object` | Optional | cannot be null | [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-auth.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/auth")         |
+| Property                    | Type     | Required | Nullable       | Defined by                                                                                                                                                                                                                              |
+| :-------------------------- | :------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [level](#level)             | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-logs-properties-file-logging-options-properties-level.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/level")                      |
+| [endpoint](#endpoint)       | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-endpoint.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/endpoint")       |
+| [indexPrefix](#indexprefix) | `string` | Optional | cannot be null | [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-indexprefix.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/indexPrefix") |
+| [auth](#auth)               | `object` | Optional | cannot be null | [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-auth.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/auth")               |
 
 ## level
 
@@ -65,11 +65,11 @@ Elastichsearch endpoint to push the logs to (for example: <http://localhost:9200
 
 **URI**: the string must be a URI, according to [RFC 3986](https://tools.ietf.org/html/rfc3986 "check the specification")
 
-## index
+## indexPrefix
 
-Elasticsearch index to push the logs to. If not provided, will fallback to "distributor-node"
+Elasticsearch data stream prefix to push the logs to. `-${config.id}` will be automatically appended. If not provided, will fallback to "logs-argus"
 
-`index`
+`indexPrefix`
 
 *   is optional
 
@@ -77,9 +77,9 @@ Elasticsearch index to push the logs to. If not provided, will fallback to "dist
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-index.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/index")
+*   defined in: [Distributor node configuration](definition-properties-logs-properties-elasticsearch-logging-options-properties-indexprefix.md "https://joystream.org/schemas/argus/config#/properties/logs/properties/elastic/properties/indexPrefix")
 
-### index Type
+### indexPrefix Type
 
 `string`
 

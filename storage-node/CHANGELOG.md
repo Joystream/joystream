@@ -1,6 +1,19 @@
+### 3.9.0
+
+- Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional optional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
+
+### 3.8.1
+
+- Hotfix: Fix call stack size exceeded when handling large number of initial object to sync.
+
 ### 3.8.0
 
-- Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
+- Changed Elasticsearch transport to use data streams instead of regular indices. Removed `--elasticSearchIndex` option and replaced with `--elasticSearchIndexPrefix`. Node ID from config will be automatically appended to the index name.
+
+### 3.7.2
+
+- Bumped `winston-elasticsearch` package verion
+- **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
 
 ### 3.7.1
 

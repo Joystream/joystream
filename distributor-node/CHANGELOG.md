@@ -1,4 +1,11 @@
-##
+## 1.5.0
+
+- Changed Elasticsearch transport to use data streams instead of regular indices. Renamed `config.logs.elastic.index` to `config.logs.elastic.indexPrefix`. Node ID from config will be automatically appended to the index name.
+
+## 1.4.1
+
+- Bumped `winston-elasticsearch` package verion
+- **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
 
 ### 1.4.0
 
@@ -7,6 +14,7 @@
 - Include response headers in `http` logs
 - Disable open-api express response validation if NODE_ENV is set to 'production' or 'prod'. This should improve response times when serving assets.
 - Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+- **FIX** Axios Error Logging: Logging the error, when asset download from storage-node time outs, has been fixed to include the _only_ error message, response, status code and bunch of other fields. Previously, logging error object (which includes axios client instance), failed with `Converting circular structure to JSON` error and causing the distributor-node to crash.
 
 ### 1.3.1
 

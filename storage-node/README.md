@@ -6,17 +6,18 @@ Joystream storage subsystem.
 ![License](https://img.shields.io/github/license/Joystream/joystream)
 
 <!-- toc -->
-* [Colossus v2](#colossus-v2)
-* [Description](#description)
-* [Installation](#installation)
-* [Ubuntu Linux](#ubuntu-linux)
-* [Install packages required for installation](#install-packages-required-for-installation)
-* [Clone the code repository](#clone-the-code-repository)
-* [Install volta](#install-volta)
-* [Install project dependencies and build it](#install-project-dependencies-and-build-it)
-* [Verify installation](#verify-installation)
-* [Usage](#usage)
-* [CLI Commands](#cli-commands)
+
+- [Colossus v2](#colossus-v2)
+- [Description](#description)
+- [Installation](#installation)
+- [Ubuntu Linux](#ubuntu-linux)
+- [Install packages required for installation](#install-packages-required-for-installation)
+- [Clone the code repository](#clone-the-code-repository)
+- [Install volta](#install-volta)
+- [Install project dependencies and build it](#install-project-dependencies-and-build-it)
+- [Verify installation](#verify-installation)
+- [Usage](#usage)
+- [CLI Commands](#cli-commands)
 <!-- tocstop -->
 
 # Description
@@ -147,28 +148,29 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 # CLI Commands
 
 <!-- commands -->
-* [`storage-node dev:multihash`](#storage-node-devmultihash)
-* [`storage-node dev:sync`](#storage-node-devsync)
-* [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
-* [`storage-node help [COMMAND]`](#storage-node-help-command)
-* [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
-* [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
-* [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
-* [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
-* [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
-* [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
-* [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
-* [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
-* [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
-* [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
-* [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
-* [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
-* [`storage-node leader:update-data-object-bloat-bond`](#storage-node-leaderupdate-data-object-bloat-bond)
-* [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
-* [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
-* [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
-* [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
-* [`storage-node server`](#storage-node-server)
+
+- [`storage-node dev:multihash`](#storage-node-devmultihash)
+- [`storage-node dev:sync`](#storage-node-devsync)
+- [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
+- [`storage-node help [COMMAND]`](#storage-node-help-command)
+- [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
+- [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
+- [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
+- [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
+- [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
+- [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
+- [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
+- [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+- [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
+- [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
+- [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
+- [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
+- [`storage-node leader:update-data-object-bloat-bond`](#storage-node-leaderupdate-data-object-bloat-bond)
+- [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
+- [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
+- [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
+- [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
+- [`storage-node server`](#storage-node-server)
 
 ## `storage-node dev:multihash`
 
@@ -845,7 +847,7 @@ OPTIONS
 
   -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly|none)  [default: daily] Log files update frequency.
 
-  --elasticSearchIndex=elasticSearchIndex                          Elasticsearch index name.
+  --elasticSearchIndexPrefix=elasticSearchIndexPrefix              Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus.
 
   --elasticSearchPassword=elasticSearchPassword                    Elasticsearch password for basic authentication.
 
@@ -856,4 +858,5 @@ OPTIONS
 ```
 
 _See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/master/src/commands/server.ts)_
+
 <!-- commandsstop -->

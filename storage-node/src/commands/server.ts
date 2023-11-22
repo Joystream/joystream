@@ -92,10 +92,10 @@ export default class Server extends ApiCommandBase {
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
-    elasticSearchIndex: flags.string({
+    elasticSearchIndexPrefix: flags.string({
       required: false,
-      env: 'ELASTIC_INDEX',
-      description: 'Elasticsearch index name.',
+      env: 'ELASTIC_INDEX_PREFIX',
+      description: 'Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus',
     }),
     elasticSearchUser: flags.string({
       dependsOn: ['elasticSearchEndpoint', 'elasticSearchPassword'],
@@ -143,7 +143,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       initNewLogger({
         elasticSearchlogSource: logSource,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
-        elasticSearchIndex: flags.elasticSearchIndex,
+        elasticSearchIndexPrefix: flags.elasticSearchIndexPrefix,
         elasticSearchUser: flags.elasticSearchUser,
         elasticSearchPassword: flags.elasticSearchPassword,
         filePath: flags.logFilePath,
