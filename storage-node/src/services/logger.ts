@@ -148,7 +148,7 @@ function createCustomLogger(customOptions: LogConfig): winston.Logger {
       createElasticTransport(
         customOptions.elasticSearchlogSource,
         customOptions.elasticSearchEndpoint,
-        customOptions.elasticSearchIndex,
+        customOptions.elasticSearchIndexPrefix,
         customOptions.elasticSearchUser,
         customOptions.elasticSearchPassword
       )
@@ -197,7 +197,7 @@ export function initNewLogger(options: LogConfig): void {
 function createElasticTransport(
   logSource: string,
   elasticSearchEndpoint: string,
-  elasticSearchIndex?: string,
+  elasticSearchIndexPrefix?: string,
   elasticSearchUser?: string,
   elasticSearchPassword?: string
 ): winston.transport {
@@ -209,6 +209,9 @@ function createElasticTransport(
   if (!possibleLevels.includes(elasticLogLevel)) {
     elasticLogLevel = 'debug' // default
   }
+
+  const indexPrefix = elasticSearchIndexPrefix || 'logs-colossus'
+  const index = `${indexPrefix}-${logSource}`.toLowerCase()
 
   const esTransport = new ElasticsearchTransport({
     level: elasticLogLevel,
@@ -224,10 +227,36 @@ function createElasticTransport(
           }
         : {}),
     },
-    index: elasticSearchIndex || 'storage-node',
+    index,
+    dataStream: true,
     format: ecsformat(),
     source: logSource,
     retryLimit: 10,
+    // apply custom transform so that tracing data (if present) is placed in the top level of the log
+    // based on https://github.com/vanthome/winston-elasticsearch/blob/d948fa1b705269a4713480593ea657de34c0a942/transformer.js
+    transformer: (logData) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const transformed: any = {}
+      transformed['@timestamp'] = logData.timestamp ? logData.timestamp : new Date().toISOString()
+      transformed.message = logData.message
+      transformed.severity = logData.level
+      transformed.fields = logData.meta
+
+      if (logData.meta.trace_id || logData.meta.trace_flags) {
+        transformed.trace = {
+          id: logData.meta.trace_id,
+          flags: logData.meta.trace_flags,
+        }
+      }
+      if (logData.meta.span_id) {
+        transformed.span = { id: logData.meta.span_id }
+      }
+      if (logData.meta.transaction_id) {
+        transformed.transaction = { id: logData.meta.transaction_id }
+      }
+
+      return transformed
+    },
   })
 
   // Handle ES logger error.
@@ -310,8 +339,8 @@ export type LogConfig = {
   /** Elastic search engine endpoint */
   elasticSearchEndpoint?: string
 
-  /** Elastic search index name */
-  elasticSearchIndex?: string
+  /** Elastic search index prefix */
+  elasticSearchIndexPrefix?: string
 
   /** Elastic search user */
   elasticSearchUser?: string

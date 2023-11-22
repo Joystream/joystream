@@ -1,7 +1,7 @@
 {
   "name": "storage-node",
   "description": "Joystream storage subsystem.",
-  "version": "3.7.2",
+  "version": "3.8.1",
   "author": "Joystream contributors",
   "bin": {
     "storage-node": "./bin/run"
@@ -160,7 +160,7 @@
     "ensure": "yarn format && yarn lint --fix && yarn build",
     "checks": "tsc --noEmit --pretty && prettier ./src --check && yarn lint",
     "start": "./bin/run server",
-    "start:with-instrumentation": "export OTEL_APPLICATION=storage-node; node --require @joystream/opentelemetry ./bin/run server"
+    "start:with-instrumentation": "export OTEL_APPLICATION=storage-node; export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:8200; export OTEL_RESOURCE_ATTRIBUTES=service.name=colossus,deployment.environment=production; node --require @joystream/opentelemetry ./bin/run server"
   },
   "types": "lib/index.d.ts"
 }

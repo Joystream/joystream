@@ -1,6 +1,10 @@
+## 1.5.0
+
+- Changed Elasticsearch transport to use data streams instead of regular indices. Renamed `config.logs.elastic.index` to `config.logs.elastic.indexPrefix`. Node ID from config will be automatically appended to the index name.
+
 ## 1.4.1
 
-- Bumped `winston-elasticsearch` package verion 
+- Bumped `winston-elasticsearch` package verion
 - **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
 
 ### 1.4.0

@@ -85,12 +85,40 @@ export class LoggingService {
 
     let esTransport: ElasticsearchTransport | undefined
     if (config.logs?.elastic) {
+      const indexPrefix = config.logs.elastic.indexPrefix || 'logs-argus'
+      const index = `${indexPrefix}-${config.id}`.toLowerCase()
       esTransport = new ElasticsearchTransport({
-        index: config.logs.elastic.index || 'distributor-node',
+        index,
+        dataStream: true,
         level: config.logs.elastic.level,
         format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
         retryLimit: 10,
         flushInterval: 5000,
+        // apply custom transform so that tracing data (if present) is placed in the top level of the log
+        // based on https://github.com/vanthome/winston-elasticsearch/blob/d948fa1b705269a4713480593ea657de34c0a942/transformer.js
+        transformer: (logData) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const transformed: any = {}
+          transformed['@timestamp'] = logData.timestamp ? logData.timestamp : new Date().toISOString()
+          transformed.message = logData.message
+          transformed.severity = logData.level
+          transformed.fields = logData.meta
+
+          if (logData.meta.trace_id || logData.meta.trace_flags) {
+            transformed.trace = {
+              id: logData.meta.trace_id,
+              flags: logData.meta.trace_flags,
+            }
+          }
+          if (logData.meta.span_id) {
+            transformed.span = { id: logData.meta.span_id }
+          }
+          if (logData.meta.transaction_id) {
+            transformed.transaction = { id: logData.meta.transaction_id }
+          }
+
+          return transformed
+        },
         source: config.id,
         clientOpts: {
           node: {
