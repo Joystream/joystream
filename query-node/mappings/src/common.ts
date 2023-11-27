@@ -435,3 +435,15 @@ export enum MetaprotocolTxError {
   // Channel errors
   InvalidChannelRewardAccount = 'InvalidChannelRewardAccount',
 }
+
+export async function getMemberById(
+  store: DatabaseManager,
+  id: MemberId,
+  relations: string[] = []
+): Promise<Membership> {
+  const member = await store.get(Membership, { where: { id: id.toString() }, relations })
+  if (!member) {
+    throw new Error(`Member(${id}) not found`)
+  }
+  return member
+}

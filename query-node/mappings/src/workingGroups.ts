@@ -38,7 +38,9 @@ import {
   InvalidActionMetadata,
   LeaderSetEvent,
   LeaderUnsetEvent,
+  MemberMetadata,
   Membership,
+  MemberProfileUpdatedEvent,
   NewMissedRewardLevelReachedEvent,
   OpeningAddedEvent,
   // LeaderSetEvent,
@@ -110,6 +112,7 @@ import {
   genericEventFields,
   getById,
   getByIdOrFail,
+  getMemberById,
   getOneByOrFail,
   getWorkerOrFail,
   inconsistentState,
@@ -725,6 +728,20 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
       return invalidMetadata(`Forum post not found by id: ${postId}`)
     }
     await moderatePost(store, event, 'leadRemark', post, actor, rationale)
+  } else if (metadata?.verifyValidator) {
+    if (group.name !== 'membershipWorkingGroup') {
+      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
+    }
+    const { member_id, is_verified } = metadata.verifyValidator
+    await getWorkingGroupLeadOrFail(store, group.name)
+
+    const member = await getMemberById(store, createType('u64', Number(member_id)), ['metadata'])
+    if (!member) {
+      return invalidMetadata(`Membership not found by id: ${member_id}`)
+    }
+    member.metadata.isVerifiedValidator = is_verified
+    await store.save<MemberMetadata>(member.metadata)
+    await store.save<Membership>(member)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
@@ -747,6 +764,28 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
       return invalidMetadata(`Forum post not found by id: ${postId}`)
     }
     await moderatePost(store, event, 'workerRemark', post, actor, rationale)
+  } else if (metadata?.verifyValidator) {
+    if (group.name !== 'membershipWorkingGroup') {
+      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
+    }
+    const { member_id, is_verified } = metadata.verifyValidator
+    await getWorkerOrFail(store, group.name, workerId)
+
+    const member = await getMemberById(store, createType('u64', Number(member_id)), ['metadata'])
+    if (!member) {
+      return invalidMetadata(`Membership not found by id: ${member_id}`)
+    }
+    member.metadata.isVerifiedValidator = is_verified
+    await store.save<MemberMetadata>(member.metadata)
+    await store.save<Membership>(member)
+    const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
+      ...genericEventFields(event),
+      member: member,
+      newHandle: member.handle,
+      newHandleRaw: member.handleRaw,
+      newMetadata: member.metadata,
+    })
+    await store.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

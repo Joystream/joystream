@@ -322,6 +322,10 @@ import {
   GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
   GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables,
   GetMemberVerificationStatusUpdatedEventsByEventIds,
+  ValidatorVerificationStatusUpdatedEventFieldsFragment,
+  GetValidatorVerificationStatusUpdatedEventsByEventIdsQuery,
+  GetValidatorVerificationStatusUpdatedEventsByEventIdsQueryVariables,
+  GetValidatorVerificationStatusUpdatedEventsByEventIds,
   CommentCreatedEventFieldsFragment,
   GetCommentCreatedEventsByEventIdsQuery,
   GetCommentCreatedEventsByEventIdsQueryVariables,
@@ -1331,6 +1335,16 @@ export class QueryNodeApi {
       GetMemberVerificationStatusUpdatedEventsByEventIdsQuery,
       GetMemberVerificationStatusUpdatedEventsByEventIdsQueryVariables
     >(GetMemberVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'memberVerificationStatusUpdatedEvents')
+  }
+
+  public async getValidatorVerificationStatusUpdatedEvents(
+    events: EventDetails[]
+  ): Promise<ValidatorVerificationStatusUpdatedEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetValidatorVerificationStatusUpdatedEventsByEventIdsQuery,
+      GetValidatorVerificationStatusUpdatedEventsByEventIdsQueryVariables
+    >(GetValidatorVerificationStatusUpdatedEventsByEventIds, { eventIds }, 'validatorVerificationStatusUpdatedEvents')
   }
 
   public async videoById(videoId: string): Promise<VideoFieldsFragment | null> {
