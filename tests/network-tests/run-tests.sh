@@ -6,7 +6,8 @@ cd $SCRIPT_PATH
 
 rm ./output.json || :
 
-CONTAINER_ID=$(./run-test-node-docker.sh)
+export RUNTIME_PROFILE=TESTING
+CONTAINER_ID=$(./run-node-docker.sh)
 
 if [ "${PERSIST}" == true ]
 then
