@@ -225,7 +225,7 @@ be followed below:
   1. Re run code formatting with `cargo fmt --all`
   1. Do another test build with modified benchmarks `yarn cargo-checks && yarn cargo-build`
   1. Extract the new runtime metadata `yarn update-chain-metadata`
-  1. Build all npm packages: `yarn build:packages`
+  1. Build all npm packages: `yarn build`
   1. Add any new integration tests, query-node mappings that cover the changes implemented.
   1. Lint typescript `yarn lint`
   1. Build the testing runtime joystream/node docker image and run the full integration test suite (see Integration tests section below)

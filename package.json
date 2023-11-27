@@ -6,7 +6,7 @@
   "scripts": {
     "build:node:docker": "./build-node-docker.sh",
     "build:packages": "./build-packages.sh",
-    "build": "yarn build:packages",
+    "build": "./build-packages.sh",
     "setup": "./setup.sh",
     "start": "./start.sh",
     "test": "./tests/network-tests/run-tests.sh",

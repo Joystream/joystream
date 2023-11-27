@@ -10,7 +10,7 @@ Run
 
 ```bash
 # Make sure these steps are executed first:
-# yarn build:packages; # OR:
+# yarn build; # OR:
 # yarn && yarn workspace @joystream/types build && yarn workspace @joystream/metadata-protobuf build
 yarn workspace query-node-root build
 ```
