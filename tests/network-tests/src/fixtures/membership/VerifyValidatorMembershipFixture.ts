@@ -2,9 +2,8 @@ import { assert } from 'chai'
 import Long from 'long'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
-import { WorkerId } from '@joystream/types/primitives'
+import { WorkerId, MemberId } from '@joystream/types/primitives'
 import { RemarkMetadataAction } from '@joystream/metadata-protobuf'
-import { createType } from '@joystream/types'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { EventDetails } from '../../types'
@@ -13,7 +12,7 @@ import { MembershipFieldsFragment, ValididatorVerificationStatusUpdatedEventFiel
 import { WithMembershipWorkersFixture } from './WithMembershipWorkersFixture'
 
 export type VerifyValidatorInput = {
-  memberId: string
+  memberId: MemberId
   isVerified: boolean
   asWorker?: WorkerId
   expectFailure?: boolean
