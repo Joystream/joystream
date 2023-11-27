@@ -16,9 +16,9 @@
     "bootstrap-data:fetch": "yarn bootstrap-data:fetch:members && yarn bootstrap-data:fetch:workingGroups && yarn bootstrap-data:fetch:categories"
   },
   "dependencies": {
+    "@apollo/client": "^3.2.5",
     "@joystream/hydra-common": "5.0.0-alpha.7",
     "@joystream/hydra-db-utils": "5.0.0-alpha.7",
-    "@apollo/client": "^3.2.5",
     "@joystream/js": "^1.6.0",
     "@joystream/warthog": "^2.41.9",
     "@polkadot/types": "8.9.1"
