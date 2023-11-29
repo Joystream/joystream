@@ -1,6 +1,7 @@
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import fs from 'fs'
+import _ from 'lodash'
 import path from 'path'
 import { addDataObjectIdToCache } from '../caching/localDataObjects'
 import { registerNewDataObjectId } from '../caching/newUploads'
@@ -101,21 +102,30 @@ export class AcceptPendingObjectsService {
     this.pendingDataObjects.set(dataObjectId, [storageBucketId, bagId])
   }
 
-  private async popN(n: number): Promise<AcceptPendingDataObjectsParams[]> {
-    const params: AcceptPendingDataObjectsParams[] = []
+  private take(n: number): Array<[string, [string, string]]> {
+    const pending: Array<[string, [string, string]]> = []
     let count = 0
 
-    while (count < n && this.pendingDataObjects.size > 0) {
-      // Extract the first element from the map
-      const [dataObjectId, [storageBucketId, bagId]]: [string, [string, string]] = this.pendingDataObjects
-        .entries()
-        .next().value
+    for (const [dataObjectId, bucketAndBag] of this.pendingDataObjects.entries()) {
+      if (count >= n) break
+      pending.push([dataObjectId, bucketAndBag])
       this.pendingDataObjects.delete(dataObjectId)
+      count++
+    }
 
-      // Find or create the storage bucket in the params array
+    return pending
+  }
+
+  private async createAcceptPendingObjectsParams(
+    pendingObjects: Array<[string, [string, string]]>
+  ): Promise<AcceptPendingDataObjectsParams[]> {
+    const params: AcceptPendingDataObjectsParams[] = []
+
+    // Find or create the storage bucket in the params array
+    for (const [dataObjectId, [storageBucketId, bagId]] of pendingObjects) {
       let storageBucket = params.find((p) => p.storageBucket.id === storageBucketId)
       if (!storageBucket) {
-        const account = this.bucketKeyPairs.get(storageBucketId.toString())
+        const account = this.bucketKeyPairs.get(storageBucketId)
         if (!account) {
           logger.error(`No key pair found for storage bucket ${storageBucketId}.`)
           continue
@@ -143,8 +153,6 @@ export class AcceptPendingObjectsService {
 
       // Add the data object to the bag in the params array
       bag.dataObjects.push(dataObjectId)
-
-      count++
     }
 
     return params
@@ -165,13 +173,8 @@ export class AcceptPendingObjectsService {
     return await fsPromises.readdir(directory)
   }
 
-  private async acceptPendingDataObjects(
-    api: ApiPromise,
-    workerId: number,
-    uploadsDir: string,
-    maxTxBatchSize: number
-  ): Promise<void> {
-    const params = await this.popN(maxTxBatchSize)
+  private async acceptPendingDataObjects(api: ApiPromise, workerId: number, maxTxBatchSize: number): Promise<void> {
+    const params = await this.createAcceptPendingObjectsParams(this.take(maxTxBatchSize))
 
     let failedObjectsIds: string[]
     try {
@@ -181,7 +184,7 @@ export class AcceptPendingObjectsService {
       params.forEach((param) => {
         param.storageBucket.bags.forEach((bag) => {
           bag.dataObjects.forEach((dataObjectId) => {
-            this.push(dataObjectId, param.storageBucket.id, bag.id)
+            this.add(dataObjectId, param.storageBucket.id, bag.id)
           })
         })
       })

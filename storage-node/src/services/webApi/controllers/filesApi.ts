@@ -125,7 +125,7 @@ export async function uploadFile(
     // Move file to pending objects Dir.
     await fsPromises.rename(fileObj.path, newPath)
 
-    res.locals.acceptPendingObjectsService.push(
+    res.locals.acceptPendingObjectsService.add(
       uploadRequest.dataObjectId,
       uploadRequest.storageBucketId,
       uploadRequest.bagId
