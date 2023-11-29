@@ -1996,7 +1996,7 @@ type MembershipExternalResource implements BaseGraphQLObject {
 enum MembershipExternalResourceType {
   EMAIL
   HYPERLINK
-  TWITTER
+  X
   TELEGRAM
   DISCORD
   FACEBOOK

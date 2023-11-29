@@ -13,7 +13,7 @@ union Avatar = AvatarObject | AvatarUri
 enum MembershipExternalResourceType {
   EMAIL
   HYPERLINK
-  TWITTER
+  X
   TELEGRAM
   DISCORD
   FACEBOOK

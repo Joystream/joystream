@@ -12,7 +12,7 @@ message MembershipMetadata {
     enum ResourceType {
       EMAIL = 0;
       HYPERLINK = 1;
-      TWITTER = 2;
+      X = 2;
       TELEGRAM = 3;
       DISCORD = 4;
       FACEBOOK = 5;
