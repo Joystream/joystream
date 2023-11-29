@@ -78,16 +78,31 @@ export class AcceptPendingObjectsService {
   private async loadPendingDataObjectsFromIDs(pendingIds: string[]): Promise<void> {
     const pendingDataObjects = await this.qnApi.getDataObjectsByIds(pendingIds)
 
-    pendingDataObjects.forEach((dataObject) => {
-      const storageBucket = dataObject.storageBag.storageBuckets.find(({ id }) => this.uploadBuckets.includes(id))
-      if (storageBucket) {
-        this.push(dataObject.id, storageBucket.id, dataObject.storageBag.id)
-      } else {
-        logger.warn(
-          `Data object ${dataObject.id} in pending directory is not assigned to any of the upload buckets: ${this.uploadBuckets}.`
-        )
-      }
-    })
+    const deletedObjects = _.differenceWith(pendingIds, pendingDataObjects, (id, dataObject) => dataObject.id === id)
+
+    // Remove stale objects from the pending directory
+    if (deletedObjects.length) {
+      logger.warn(`Found data objects deleted from runtime in Pending directory: ${deletedObjects.length}`)
+      await Promise.all(deletedObjects.map((id) => fsPromises.unlink(path.join(this.pendingDataObjectsDir, id))))
+    }
+
+    await Promise.all(
+      pendingDataObjects.map(async (dataObject) => {
+        const storageBucket = dataObject.storageBag.storageBuckets.find(({ id }) => this.uploadBuckets.includes(id))
+
+        if (storageBucket) {
+          if (dataObject.isAccepted) {
+            await this.movePendingDataObjectToUploadsDir(dataObject.id)
+          } else {
+            this.add(dataObject.id, storageBucket.id, dataObject.storageBag.id)
+          }
+        } else {
+          logger.warn(
+            `Data object ${dataObject.id} in pending directory is no longer assigned to any of the upload buckets: ${this.uploadBuckets}.`
+          )
+        }
+      })
+    )
   }
 
   private async loadPendingDataObjects(): Promise<void> {
@@ -98,7 +113,28 @@ export class AcceptPendingObjectsService {
     logger.debug(`Pending data objects ID cache loaded.`)
   }
 
-  public push(dataObjectId: string, storageBucketId: string, bagId: string): void {
+  private async movePendingDataObjectToUploadsDir(dataObjectId: string): Promise<void> {
+    const currentPath = path.join(this.pendingDataObjectsDir, dataObjectId)
+    const newPath = path.join(this.uploadsDir, dataObjectId)
+
+    try {
+      // Check if the file already exists in the uploads directory (i.e. synced from other operators)
+      try {
+        await fsPromises.access(newPath, fs.constants.F_OK)
+        logger.warn(`File ${dataObjectId} already exists in uploads directory. Deleting current file.`)
+        await fsPromises.unlink(currentPath)
+      } catch {
+        // If the file does not exist in the uploads directory, proceed with the rename
+        registerNewDataObjectId(dataObjectId)
+        await addDataObjectIdToCache(dataObjectId)
+        await fsPromises.rename(currentPath, newPath)
+      }
+    } catch (err) {
+      logger.error(`Error handling data object ${dataObjectId}: ${err}`)
+    }
+  }
+
+  public add(dataObjectId: string, storageBucketId: string, bagId: string): void {
     this.pendingDataObjects.set(dataObjectId, [storageBucketId, bagId])
   }
 
@@ -205,12 +241,7 @@ export class AcceptPendingObjectsService {
 
     // Handle successful calls
     for (const dataObjectId of successfulObjectsIds) {
-      const dataObjectIdStr = dataObjectId.toString()
-      const currentPath = path.join(this.pendingDataObjectsDir, dataObjectIdStr)
-      const newPath = path.join(uploadsDir, dataObjectIdStr)
-      registerNewDataObjectId(dataObjectIdStr)
-      await addDataObjectIdToCache(dataObjectIdStr)
-      await fsPromises.rename(currentPath, newPath)
+      await this.movePendingDataObjectToUploadsDir(dataObjectId.toString())
     }
 
     if (successfulObjectsIds.length > 0) {

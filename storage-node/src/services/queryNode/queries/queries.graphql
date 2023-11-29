@@ -117,6 +117,7 @@ query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $curso
 
 fragment DataObjectsWithBagAndBuckets on StorageDataObject {
   id
+  isAccepted
   storageBag {
     id
     storageBuckets {
