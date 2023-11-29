@@ -87,7 +87,7 @@ jobs:
       - name: Test with latest images
         if: github.event_name == 'pull_request'
         run: |
-          yarn build:packages
+          yarn build
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
           ./tests/network-tests/run-tests.sh content-directory
 

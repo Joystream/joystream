@@ -9,8 +9,8 @@ import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
 
 export const DefaultInstrumentation = new NodeSDK({
   spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter(), {
-    maxQueueSize: 8192 /* 4 times of default queue size */,
-    maxExportBatchSize: 1024 /* 2 times of default batch size */,
+    maxQueueSize: parseInt(process.env.OTEL_MAX_QUEUE_SIZE || '8192'),
+    maxExportBatchSize: parseInt(process.env.OTEL_MAX_EXPORT_BATCH_SIZE || '1024'),
   }),
   metricReader: new PeriodicExportingMetricReader({
     exporter: new OTLPMetricExporter(),

@@ -4,7 +4,7 @@
 - name: Build joystream apps
   shell: 
     cmd: |
-      bash -ic "yarn build:packages"
+      bash -ic "yarn build"
   args:
     chdir: '{{ remote_code_path }}'
     # Always try to rebuild incase code has been updated for existing repo

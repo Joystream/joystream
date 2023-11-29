@@ -19,6 +19,10 @@ docker-compose -f ../docker-compose.yml up -d hydra-indexer-gateway
 # Start processor
 docker-compose -f ../docker-compose.yml up -d processor
 echo "Waiting for processor to be ready..." && sleep 30
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # On Docker Desktop things take a bit longer to startup
+    sleep 150
+fi
 
 # Start graphql-server
 docker-compose -f ../docker-compose.yml up -d graphql-server
