@@ -245,4 +245,9 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
   if (dataObject.accepted.valueOf()) {
     throw new WebApiError(`Data object ${dataObjectId} has already been accepted by storage node`, 400)
   }
+
+  const isObjectPending = res.locals.acceptPendingObjectsService.getPendingDataObject(dataObjectId.toString())
+  if (isObjectPending) {
+    throw new WebApiError(`Data object ${dataObjectId} already exists`, 400)
+  }
 }
