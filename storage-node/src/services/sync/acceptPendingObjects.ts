@@ -21,18 +21,20 @@ export type AcceptPendingDataObjectsParams = {
 }
 
 export class AcceptPendingObjectsService {
+  private static instance: AcceptPendingObjectsService | null = null
   private pendingDataObjects: Map<string, [string, string]> // dataObjectId -> [storageBucketId, bagId]
 
   private constructor(
     private qnApi: QueryNodeApi,
     private pendingDataObjectsDir: string,
+    private uploadsDir: string,
     private bucketKeyPairs: Map<string, KeyringPair>,
     private uploadBuckets: string[]
   ) {
     this.pendingDataObjects = new Map()
   }
 
-  static async init(
+  public static async create(
     api: ApiPromise,
     qnApi: QueryNodeApi,
     workerId: number,
@@ -43,26 +45,29 @@ export class AcceptPendingObjectsService {
     maxTxBatchSize: number,
     intervalMs: number
   ): Promise<AcceptPendingObjectsService> {
-    const acceptPendingObjectsService = new AcceptPendingObjectsService(
-      qnApi,
-      pendingDataObjectsDir,
-      bucketKeyPairs,
-      uploadBuckets
-    )
-
-    // Load pending data objects from the pending directory
-    await acceptPendingObjectsService.loadPendingDataObjects()
-
-    const runWithInterval = () => {
-      acceptPendingObjectsService
-        .acceptPendingDataObjects(api, workerId, uploadsDir, maxTxBatchSize)
-        .catch((err) => logger.error(`Failed to register pending data objects as accepted in runtime: ${err}`))
-
-      setTimeout(runWithInterval, intervalMs)
+    if (this.instance === null) {
+      this.instance = new AcceptPendingObjectsService(
+        qnApi,
+        pendingDataObjectsDir,
+        uploadsDir,
+        bucketKeyPairs,
+        uploadBuckets
+      )
+      await this.instance.loadPendingDataObjects()
+      this.instance.runWithInterval(api, workerId, maxTxBatchSize, intervalMs)
     }
-    runWithInterval()
+    return this.instance
+  }
 
-    return acceptPendingObjectsService
+  private runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
+    const run = () => {
+      this.acceptPendingDataObjects(api, workerId, maxTxBatchSize).catch((err) =>
+        logger.error(`Failed to register pending data objects as accepted in runtime: ${err}`)
+      )
+
+      setTimeout(run, intervalMs)
+    }
+    run()
   }
 
   getPendingDataObject(objectId: string): [string, string] | undefined {

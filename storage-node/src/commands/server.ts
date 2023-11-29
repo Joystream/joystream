@@ -213,7 +213,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
 
-    const acceptPendingObjectsService = await AcceptPendingObjectsService.init(
+    const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
       api,
       qnApi,
       workerId,
