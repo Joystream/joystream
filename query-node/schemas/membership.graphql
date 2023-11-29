@@ -23,6 +23,7 @@ enum MembershipExternalResourceType {
   WECHAT
   WHATSAPP
   LINKEDIN
+  GITHUB
 }
 
 type MembershipExternalResource @entity {
