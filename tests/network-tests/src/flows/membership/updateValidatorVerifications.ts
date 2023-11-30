@@ -1,9 +1,12 @@
 import { FlowProps } from '../../Flow'
-import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
+import {
+  BuyMembershipHappyCaseFixture,
+  VerifyValidatorInput,
+  VerifyValidatorMembershipFixture,
+} from '../../fixtures/membership'
 
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
-import { VerifyValidatorInput, VerifyValidatorMembershipFixture } from '../../fixtures/membership/VerifyValidatorMembershipFixture'
 
 export default async function updateValidatorVerificationStatus({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:updating-validator-verification-status')
@@ -20,7 +23,7 @@ export default async function updateValidatorVerificationStatus({ api, query }: 
   const verifyFixture = new VerifyValidatorMembershipFixture(api, query, updates1)
   await new FixtureRunner(verifyFixture).runWithQueryNodeChecks()
 
-  const updates2 = updates1.map(({ memberId }) => ({ memberId, isVerified : false }))
+  const updates2 = updates1.map(({ memberId }) => ({ memberId, isVerified: false }))
 
   const unverifyFixture = new VerifyValidatorMembershipFixture(api, query, updates2)
   await new FixtureRunner(unverifyFixture).runWithQueryNodeChecks()
