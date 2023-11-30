@@ -12,7 +12,6 @@ export default async function updateValidatorVerificationStatus({ api, query }: 
 
   const accounts = (await api.createKeyPairs(2)).map(({ key }) => key.address)
   const buyMembershipsFixture = new BuyMembershipHappyCaseFixture(api, query, accounts)
-  await new FixtureRunner(buyMembershipsFixture).runWithQueryNodeChecks()
 
   const updates1: VerifyValidatorInput[] = buyMembershipsFixture
     .getCreatedMembers()

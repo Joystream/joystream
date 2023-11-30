@@ -40,7 +40,6 @@ import {
   LeaderUnsetEvent,
   MemberMetadata,
   Membership,
-  MemberProfileUpdatedEvent,
   NewMissedRewardLevelReachedEvent,
   OpeningAddedEvent,
   // LeaderSetEvent,
@@ -112,7 +111,7 @@ import {
   genericEventFields,
   getById,
   getByIdOrFail,
-  getMemberById,
+  getMembershipById,
   getOneByOrFail,
   getWorkerOrFail,
   inconsistentState,
@@ -733,12 +732,8 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
       return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
     }
     const { memberId, isVerified } = metadata.verifyValidator
-    await getWorkingGroupLeadOrFail(store, group.name)
 
-    const member = await getMemberById(store, createType('u64', Number(memberId)), ['metadata'])
-    if (!member) {
-      return invalidMetadata(`Membership not found by id: ${memberId}`)
-    }
+    const member = await getMembershipById(store, createType('u64', Number(memberId)))
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
@@ -769,23 +764,11 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
       return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
     }
     const { memberId, isVerified } = metadata.verifyValidator
-    await getWorkerOrFail(store, group.name, workerId)
 
-    const member = await getMemberById(store, createType('u64', Number(memberId)), ['metadata'])
-    if (!member) {
-      return invalidMetadata(`Membership not found by id: ${memberId}`)
-    }
+    const member = await getMembershipById(store, createType('u64', Number(memberId)))
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
-    const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
-      ...genericEventFields(event),
-      member: member,
-      newHandle: member.handle,
-      newHandleRaw: member.handleRaw,
-      newMetadata: member.metadata,
-    })
-    await store.save<MemberProfileUpdatedEvent>(memberProfileUpdatedEvent)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

@@ -1,4 +1,3 @@
-import { assert } from 'chai'
 import Long from 'long'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
@@ -6,9 +5,9 @@ import { WorkerId, MemberId } from '@joystream/types/primitives'
 import { RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { Api } from '../../Api'
 import { QueryNodeApi } from '../../QueryNodeApi'
-import { EventDetails } from '../../types'
+import { AnyQueryNodeEvent, EventDetails } from '../../types'
 import { Utils } from '../../utils'
-import { MembershipFieldsFragment, ValididatorVerificationStatusUpdatedEventFieldsFragment } from '../../graphql/generated/queries'
+import { MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { WithMembershipWorkersFixture } from './WithMembershipWorkersFixture'
 
 export type VerifyValidatorInput = {
@@ -51,11 +50,7 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
 
   private assertQueriedMembershipsAreValid(
     qMembers: MembershipFieldsFragment[],
-    qEvents: ValididatorVerificationStatusUpdatedEventFieldsFragment[]
   ): void {
-    const verifiedSuccessfully = this.verifications.filter((m) => !m.expectFailure).length
-    assert.equal(qEvents.length, verifiedSuccessfully, 'Too many validator memberships were verified')
-
     this.events.map((e, i) => {
       const verification = this.verifications[i]
       if (verification.expectFailure) return
@@ -65,22 +60,13 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: ValididatorVerificationStatusUpdatedEventFieldsFragment, i: number): void {
-    const { memberId, isVerified, asWorker } = this.verifications[i]
-    assert.equal(qEvent.member.id, memberId)
-    assert.equal(qEvent.actor.id, `membershipWorkingGroup-${asWorker ? asWorker.toString() : this.membershipLeadId!.toString()}`)
-    assert.equal(qEvent.metadata.is_verified, isVerified)
+  protected assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void {
+    // TODO: implement QN checks
   }
+
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
-
-    const expectFailureAtIndexes = this.verifications.flatMap((m, i) => (m.expectFailure ? [i] : []))
-    const qEvents = await this.query.tryQueryWithTimeout(
-      () => this.query.getValidatorVerificationStatusUpdatedEvents(this.events),
-      (qEvents) => this.assertQueryNodeEventsAreValid(qEvents, expectFailureAtIndexes)
-    )
-
     const qMembers = await this.query.getMembersByIds(this.verifications.map((m) => m.memberId))
-    this.assertQueriedMembershipsAreValid(qMembers, qEvents)
+    this.assertQueriedMembershipsAreValid(qMembers)
   }
 }

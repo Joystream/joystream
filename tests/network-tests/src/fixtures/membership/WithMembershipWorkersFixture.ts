@@ -8,7 +8,7 @@ export abstract class WithMembershipWorkersFixture extends StandardizedFixture {
     if (!this.membershipLeadId) {
       const optMembershipLeadId = await this.api.query.membershipWorkingGroup.currentLead()
       if (optMembershipLeadId.isNone) {
-        throw new Error('Forum working group lead not set!')
+        throw new Error('Membership working group lead not set!')
       }
 
       this.membershipLeadId = optMembershipLeadId.unwrap()
