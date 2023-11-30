@@ -32,7 +32,7 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.verifications.map((u) => {
       const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
-        verifyValidator: { memberId: u.memberId, isVerified: u.isVerified },
+        verifyValidator: { memberId: Long.fromString(u.memberId.toString()), isVerified: u.isVerified },
       })
       return u.memberId
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
@@ -48,9 +48,7 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
     }
   }
 
-  private assertQueriedMembershipsAreValid(
-    qMembers: MembershipFieldsFragment[],
-  ): void {
+  private assertQueriedMembershipsAreValid(qMembers: MembershipFieldsFragment[]): void {
     this.events.map((e, i) => {
       const verification = this.verifications[i]
       if (verification.expectFailure) return
