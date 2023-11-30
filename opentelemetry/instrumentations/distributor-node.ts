@@ -5,15 +5,21 @@ import { FsInstrumentation } from '@opentelemetry/instrumentation-fs'
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http'
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
 import { NodeSDK } from '@opentelemetry/sdk-node'
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-node'
+import { BatchSpanProcessor, Span } from '@opentelemetry/sdk-trace-node'
 import { ClientRequest, ServerResponse } from 'http'
 
 /** Opentelemetry Instrumentation for Joystream Distributor Node */
 
+class CustomSpanProcessor extends BatchSpanProcessor {
+  onStart(span: Span) {
+    span.setAttribute('nodeId', process.env.JOYSTREAM_DISTRIBUTOR__ID)
+  }
+}
+
 export const DistributorNodeInstrumentation = new NodeSDK({
-  spanProcessor: new BatchSpanProcessor(new OTLPTraceExporter(), {
-    maxQueueSize: 8192 /* 4 times of default queue size */,
-    maxExportBatchSize: 1024 /* 2 times of default batch size */,
+  spanProcessor: new CustomSpanProcessor(new OTLPTraceExporter(), {
+    maxQueueSize: parseInt(process.env.OTEL_MAX_QUEUE_SIZE || '8192'),
+    maxExportBatchSize: parseInt(process.env.OTEL_MAX_EXPORT_BATCH_SIZE || '1024'),
   }),
   metricReader: new PeriodicExportingMetricReader({
     exporter: new OTLPMetricExporter(),
