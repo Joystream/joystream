@@ -1,3 +1,9 @@
+### 3.9.0
+
+- Added new `AcceptPendingObjectsService` that is responsible for periodically sending batch `accept_pending_data_objects` for all the pending data objects. The `POST /files` endpoint now no longer calls the `accept_pending_data_objects` extrinsic for individual uploads, instead, it registers all the pending objects with `AcceptPendingObjectsService`
+- Updated `/state/data` endpoint response headers to return data objects status too i.e. (`pending` or `accepted`)
+- **FIX**: Increase the default timeout value in the `extrinsicWrapper` function to match the transaction validity in the transaction pool
+
 ### 3.8.1
 
 - Hotfix: Fix call stack size exceeded when handling large number of initial object to sync.
