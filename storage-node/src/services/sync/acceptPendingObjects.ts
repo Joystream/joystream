@@ -62,11 +62,9 @@ export class AcceptPendingObjectsService {
 
   private runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
     const run = () => {
-      this.acceptPendingDataObjects(api, workerId, maxTxBatchSize).catch((err) =>
-        logger.error(`Failed to register pending data objects as accepted in runtime: ${err}`)
-      )
-
-      setTimeout(run, intervalMs)
+      this.acceptPendingDataObjects(api, workerId, maxTxBatchSize)
+        .catch((err) => logger.error(`Failed to register pending data objects as accepted in runtime: ${err}`))
+        .finally(() => setTimeout(run, intervalMs))
     }
     run()
   }
