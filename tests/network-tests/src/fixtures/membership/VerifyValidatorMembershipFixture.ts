@@ -32,7 +32,7 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.verifications.map((u) => {
       const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
-        verifyValidator: { memberId: Long.fromString(u.memberId), isVerified: u.isVerified },
+        verifyValidator: { memberId: u.memberId, isVerified: u.isVerified },
       })
       return u.memberId
         ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
@@ -55,7 +55,7 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
       const verification = this.verifications[i]
       if (verification.expectFailure) return
 
-      const qMembership = qMembers.find((p) => p.id === verification.memberId)
+      const qMembership = qMembers.find((p) => p.id === verification.memberId.toString())
       Utils.assert(qMembership, 'Query node: Membership not found')
     })
   }
