@@ -4,6 +4,7 @@ import * as express from 'express'
 import { QueryNodeApi } from '../../../services/queryNode/api'
 import { BagIdValidationError } from '../../helpers/bagTypes'
 import { ExtrinsicFailedError } from '../../runtime/api'
+import { AcceptPendingObjectsService } from '../../sync/acceptPendingObjects'
 import { ErrorResponse } from '../types'
 
 /**
@@ -125,6 +126,16 @@ export type AppConfig = {
    * Directory for temporary file uploading
    */
   tempFileUploadingDir: string
+
+  /**
+   * Temporary directory for data objects in pending acceptance state
+   */
+  pendingDataObjectsDir: string
+
+  /**
+   * Service to periodically check for pending data objects, and send `accept_pending_data_objects` batch TXs
+   */
+  acceptPendingObjectsService: AcceptPendingObjectsService
 
   /**
    *  Environment configuration

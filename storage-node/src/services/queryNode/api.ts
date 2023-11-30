@@ -27,6 +27,13 @@ import {
   GetDataObjectsConnection,
   GetDataObjectsConnectionQuery,
   GetDataObjectsConnectionQueryVariables,
+  DataObjectsWithBagAndBucketsFragment,
+  // GetDataObjectConnection,
+  // GetDataObjectConnectionQuery,
+  // GetDataObjectConnectionQueryVariables,
+  GetDataObjectsByIds,
+  GetDataObjectsByIdsQuery,
+  GetDataObjectsByIdsQueryVariables,
   GetStorageBucketDetails,
   GetStorageBucketDetailsByWorkerId,
   GetStorageBucketDetailsByWorkerIdQuery,
@@ -341,6 +348,28 @@ export class QueryNodeApi {
           { limit: MAX_RESULTS_PER_QUERY, dataObjectIds: dataObjectIdsBatch },
           'storageDataObjectsConnection'
         ))
+      )
+    }
+
+    return fullResult
+  }
+
+  /**
+   * Returns data objects info by IDs.
+   *
+   * @param bagIds - query filter: data object IDs
+   */
+  public async getDataObjectsByIds(ids: string[]): Promise<Array<DataObjectsWithBagAndBucketsFragment>> {
+    const allIds = [...ids] // Copy to avoid modifying the original array
+    const fullResult: DataObjectsWithBagAndBucketsFragment[] = []
+    while (allIds.length) {
+      const idsBatch = allIds.splice(0, 1000)
+      fullResult.push(
+        ...((await this.multipleEntitiesQuery<GetDataObjectsByIdsQuery, GetDataObjectsByIdsQueryVariables>(
+          GetDataObjectsByIds,
+          { limit: MAX_RESULTS_PER_QUERY, ids: idsBatch },
+          'storageDataObjects'
+        )) || [])
       )
     }
 

@@ -34,13 +34,20 @@ export async function getDataObjectIDs(): Promise<string[]> {
  * @param uploadDir - uploading directory
  * @param tempDirName - temp directory name
  */
-export async function loadDataObjectIdCache(uploadDir: string, tempDirName: string): Promise<void> {
+export async function loadDataObjectIdCache(
+  uploadDir: string,
+  tempDirName: string,
+  pendingDirName: string
+): Promise<void> {
   await lock.acquireAsync()
 
   const localIds = await getLocalFileNames(uploadDir)
-  // Filter temporary directory name.
+  // Filter temporary & pending directory name.
   const tempDirectoryName = path.parse(tempDirName).name
-  const ids = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
+  const pendingDirectoryName = path.parse(pendingDirName).name
+  const ids = localIds.filter(
+    (dataObjectId) => dataObjectId !== tempDirectoryName && dataObjectId !== pendingDirectoryName
+  )
 
   ids.forEach((id) => idCache.set(id, 0))
   logger.debug(`Local ID cache loaded.`)

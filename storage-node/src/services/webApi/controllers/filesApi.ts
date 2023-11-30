@@ -8,19 +8,13 @@ import path from 'path'
 import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import {
-  addDataObjectIdToCache,
-  pinDataObjectIdToCache,
-  unpinDataObjectIdFromCache,
-} from '../../caching/localDataObjects'
-import { registerNewDataObjectId } from '../../caching/newUploads'
+import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
 import { getFileInfo } from '../../helpers/fileInfo'
 import { hashFile } from '../../helpers/hashing'
 import logger from '../../logger'
-import { acceptPendingDataObjects } from '../../runtime/extrinsics'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import {
   GetFileHeadersRequestParams,
@@ -45,7 +39,10 @@ export async function getFile(
 
     const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
+    const pendingObjectsDir = res.locals.pendingDataObjectsDir
+    const pending = res.locals.acceptPendingObjectsService.getPendingDataObject(dataObjectId.toString())
+
+    const fullPath = path.resolve(pending ? pendingObjectsDir : uploadsDir, dataObjectId.toString())
 
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
@@ -57,6 +54,7 @@ export async function getFile(
       res.setHeader('Content-Disposition', 'inline')
       res.setHeader('Content-Type', fileInfo.mimeType)
       res.setHeader('Content-Length', fileStats.size)
+      res.setHeader('X-Status', pending ? 'pending' : 'accepted')
     })
 
     stream.on('error', (err) => {
@@ -121,8 +119,6 @@ export async function uploadFile(
     const fileObj = getFileObject(req)
     cleanupFileName = fileObj.path
 
-    const workerId = res.locals.workerId
-
     const api = res.locals.api
     const bagId = parseBagId(uploadRequest.bagId)
 
@@ -132,19 +128,17 @@ export async function uploadFile(
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId
-    const uploadsDir = res.locals.uploadsDir
-    const newPath = path.join(uploadsDir, dataObjectId)
+    const pendingObjectsDir = res.locals.pendingDataObjectsDir
+    const newPath = path.join(pendingObjectsDir, dataObjectId)
 
-    registerNewDataObjectId(dataObjectId)
-    await addDataObjectIdToCache(dataObjectId)
-
-    // Overwrites existing file.
+    // Move file to pending objects Dir.
     await fsPromises.rename(fileObj.path, newPath)
-    cleanupFileName = newPath
 
-    await acceptPendingDataObjects(api, bagId, bucketKeyPair, workerId, new BN(uploadRequest.storageBucketId), [
-      new BN(uploadRequest.dataObjectId),
-    ])
+    res.locals.acceptPendingObjectsService.add(
+      uploadRequest.dataObjectId,
+      uploadRequest.storageBucketId,
+      uploadRequest.bagId
+    )
 
     res.status(201).json({
       id: hash,

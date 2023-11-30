@@ -13,6 +13,11 @@ import { TaskProcessorSpawner, TaskSink, WorkingStack } from './workingProcess'
 export const TempDirName = 'temp'
 
 /**
+ * Temporary Directory name for data objects not yet accepted (pending) in runtime.
+ */
+export const PendingDirName = 'pending'
+
+/**
  * Runs the data synchronization workflow. It compares the current node's
  * storage obligations with the local storage and fixes the difference.
  * The sync process uses the QueryNode for defining storage obligations and

@@ -18,8 +18,9 @@ import {
   MINIMUM_REPLICATION_THRESHOLD,
   performCleanup,
 } from '../services/sync/cleanupService'
+import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
 import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
-import { TempDirName, performSync } from '../services/sync/synchronizer'
+import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
 const fsPromises = fs.promises
@@ -141,6 +142,11 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 'daily',
       required: false,
     }),
+    maxBatchTxSize: flags.integer({
+      description: 'Maximum number of `accept_pending_data_objects` in a batch transactions.',
+      default: 10,
+      required: false,
+    }),
     ...ApiCommandBase.flags,
   }
 
@@ -212,12 +218,26 @@ Supported values: warn, error, debug, info. Default:debug`,
     await recreateTempDirectory(flags.uploads, TempDirName)
 
     if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName)
+      await loadDataObjectIdCache(flags.uploads, TempDirName, PendingDirName)
     }
 
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
+
+    const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
+
+    const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
+      api,
+      qnApi,
+      workerId,
+      flags.uploads,
+      pendingDataObjectsDir,
+      bucketKeyPairs,
+      writableBuckets,
+      flags.maxBatchTxSize,
+      6000 // Every block
+    )
 
     // Don't run sync job if no buckets selected, to prevent purging
     // any assets.
@@ -279,6 +299,8 @@ Supported values: warn, error, debug, info. Default:debug`,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir,
+        pendingDataObjectsDir,
+        acceptPendingObjectsService,
         process: this.config,
         enableUploadingAuth,
         downloadBuckets: selectedBuckets,
