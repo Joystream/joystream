@@ -16,7 +16,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: lint
       run: |
-        yarn build:packages
+        yarn build
         yarn lint
 
   lint_osx:
@@ -33,5 +33,5 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: lint
       run: |
-        yarn build:packages
+        yarn build
         yarn lint
