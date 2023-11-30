@@ -768,14 +768,14 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     if (group.name !== 'membershipWorkingGroup') {
       return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
     }
-    const { member_id, is_verified } = metadata.verifyValidator
+    const { memberId, isVerified } = metadata.verifyValidator
     await getWorkerOrFail(store, group.name, workerId)
 
-    const member = await getMemberById(store, createType('u64', Number(member_id)), ['metadata'])
+    const member = await getMemberById(store, createType('u64', Number(memberId)), ['metadata'])
     if (!member) {
-      return invalidMetadata(`Membership not found by id: ${member_id}`)
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
     }
-    member.metadata.isVerifiedValidator = is_verified
+    member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
     const memberProfileUpdatedEvent = new MemberProfileUpdatedEvent({
