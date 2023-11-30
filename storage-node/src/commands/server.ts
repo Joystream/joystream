@@ -315,7 +315,7 @@ async function runSyncWithInterval(
   syncIntervalMinutes: number,
   syncRetryIntervalMinutes: number
 ) {
-  const sleepInteval = syncIntervalMinutes * 60 * 1000
+  const sleepInterval = syncIntervalMinutes * 60 * 1000
   const retrySleepInterval = syncRetryIntervalMinutes * 60 * 1000
   while (true) {
     try {
@@ -331,7 +331,7 @@ async function runSyncWithInterval(
         tempDirectory
       )
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
-      await sleep(sleepInteval)
+      await sleep(sleepInterval)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
       logger.info(`Will retry in ${syncRetryIntervalMinutes} minute(s)`)
