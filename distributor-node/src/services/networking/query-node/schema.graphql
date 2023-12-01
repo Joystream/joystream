@@ -17777,7 +17777,6 @@ input MemberMetadataCreateInput {
   avatar: JSONObject!
   about: String
   isVerifiedValidator: Boolean
-  validatorAccount: String
 }
 
 input MemberMetadataUpdateInput {
@@ -17785,7 +17784,6 @@ input MemberMetadataUpdateInput {
   avatar: JSONObject
   about: String
   isVerifiedValidator: Boolean
-  validatorAccount: String
 }
 
 input MembershipGiftedEventWhereInput {

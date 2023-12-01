@@ -1,6 +1,7 @@
 ### 3.9.0
 
 - Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional optional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
+- Add background pruning worker to delete data objects which the node is no longer obligated to store. New optional argument `--cleanup` and `--cleanupInterval`
 - Added new `AcceptPendingObjectsService` that is responsible for periodically sending batch `accept_pending_data_objects` for all the pending data objects. The `POST /files` endpoint now no longer calls the `accept_pending_data_objects` extrinsic for individual uploads, instead, it registers all the pending objects with `AcceptPendingObjectsService`
 - Updated `/state/data` endpoint response headers to return data objects status too i.e. (`pending` or `accepted`)
 - **FIX**: Increase the default timeout value in the `extrinsicWrapper` function to match the transaction validity in the transaction pool
