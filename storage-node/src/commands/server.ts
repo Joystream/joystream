@@ -1,7 +1,6 @@
 import { flags } from '@oclif/command'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Option } from '@polkadot/types-codec'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import fs from 'fs'
 import _ from 'lodash'
@@ -14,9 +13,14 @@ import { customFlags } from '../command-base/CustomFlags'
 import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
+import {
+  MAXIMUM_QN_LAGGING_THRESHOLD,
+  MINIMUM_REPLICATION_THRESHOLD,
+  performCleanup,
+} from '../services/sync/cleanupService'
 import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
 import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
-import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
+import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
 const fsPromises = fs.promises
@@ -62,6 +66,16 @@ export default class Server extends ApiCommandBase {
       char: 'i',
       description: 'Interval between synchronizations (in minutes)',
       default: 1,
+    }),
+    cleanup: flags.boolean({
+      char: 'c',
+      description: 'Enable cleanup/pruning of no-longer assigned assets.',
+      default: false,
+    }),
+    cleanupInterval: flags.integer({
+      char: 'i',
+      description: 'Interval between periodic cleanup actions (in minutes)',
+      default: 360,
     }),
     queryNodeEndpoint: flags.string({
       char: 'q',
@@ -236,7 +250,7 @@ Supported values: warn, error, debug, info. Default:debug`,
             api,
             flags.worker,
             selectedBuckets,
-            flags.queryNodeEndpoint,
+            qnApi,
             flags.uploads,
             TempDirName,
             flags.syncWorkersNumber,
@@ -247,6 +261,27 @@ Supported values: warn, error, debug, info. Default:debug`,
       )
     } else {
       logger.warn(`Synchronization is Disabled.`)
+    }
+
+    // Don't run cleanup job if no buckets selected, to prevent purging
+    // any assets.
+    if (flags.cleanup && selectedBuckets.length) {
+      logger.info(`Cleanup service is Enabled.`)
+      setTimeout(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        async () =>
+          runCleanupWithInterval(
+            flags.worker,
+            selectedBuckets,
+            qnApi,
+            flags.uploads,
+            flags.syncWorkersNumber,
+            flags.cleanupInterval
+          ),
+        0
+      )
+    } else {
+      logger.warn(`Cleanup service is Disabled.`)
     }
 
     try {
@@ -270,6 +305,13 @@ Supported values: warn, error, debug, info. Default:debug`,
         enableUploadingAuth,
         downloadBuckets: selectedBuckets,
         uploadBuckets: writableBuckets,
+        sync: { enabled: flags.sync, interval: flags.syncInterval },
+        cleanup: {
+          enabled: flags.cleanup,
+          interval: flags.cleanupInterval,
+          maxQnLaggingThresholdInBlocks: MAXIMUM_QN_LAGGING_THRESHOLD,
+          minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
+        },
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -285,10 +327,12 @@ Supported values: warn, error, debug, info. Default:debug`,
 }
 
 /**
- * Run the data syncronization process.
+ * Run the data synchronization process.
  *
+ * @param api - runtime Api promise
  * @param workerId - worker ID
- * @param queryNodeUrl - Query Node for data fetching
+ * @param buckets - Selected storage buckets
+ * @param qnApi - Query Node API
  * @param uploadsDir - data uploading directory
  * @param tempDirectory - temporary data uploading directory
  * @param syncWorkersNumber - defines a number of the async processes for sync
@@ -301,7 +345,7 @@ async function runSyncWithInterval(
   api: ApiPromise,
   workerId: number,
   buckets: string[],
-  queryNodeUrl: string,
+  qnApi: QueryNodeApi,
   uploadsDirectory: string,
   tempDirectory: string,
   syncWorkersNumber: number,
@@ -320,12 +364,45 @@ async function runSyncWithInterval(
         buckets,
         syncWorkersNumber,
         syncWorkersTimeout,
-        queryNodeUrl,
+        qnApi,
         uploadsDirectory,
         tempDirectory
       )
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
+    }
+  }
+}
+
+/**
+ * Run the data cleanup process.
+ *
+ * @param workerId - worker ID
+ * @param buckets - Selected storage buckets
+ * @param qnApi - Query Node API
+ * @param uploadsDir - data uploading directory
+ * @param syncWorkersNumber - defines a number of the async processes for cleanup/pruning
+ * @param cleanupIntervalMinutes - defines an interval between cleanup/pruning runs
+ *
+ * @returns void promise.
+ */
+async function runCleanupWithInterval(
+  workerId: number,
+  buckets: string[],
+  qnApi: QueryNodeApi,
+  uploadsDirectory: string,
+  syncWorkersNumber: number,
+  cleanupIntervalMinutes: number
+) {
+  const sleepInterval = cleanupIntervalMinutes * 60 * 1000
+  while (true) {
+    logger.info(`Cleanup paused for ${cleanupIntervalMinutes} minute(s).`)
+    await sleep(sleepInterval)
+    try {
+      logger.info(`Resume cleanup....`)
+      await performCleanup(workerId, buckets, syncWorkersNumber, qnApi, uploadsDirectory)
+    } catch (err) {
+      logger.error(`Critical cleanup error: ${err}`)
     }
   }
 }
@@ -367,13 +444,7 @@ async function constructBucketToAddressMapping(
   const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
     await Promise.all(
-      bucketIds.map(
-        async (bucketId) =>
-          [bucketId, await api.query.storage.storageBucketById(bucketId)] as [
-            string,
-            Option<PalletStorageStorageBucketRecord>
-          ]
-      )
+      bucketIds.map(async (bucketId) => [bucketId, await api.query.storage.storageBucketById(bucketId)] as const)
     )
   )
     .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))

@@ -8,6 +8,7 @@ import path from 'path'
 import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
+import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
@@ -34,6 +35,8 @@ export async function getFile(
   next: express.NextFunction
 ): Promise<void> {
   try {
+    await pinDataObjectIdToCache(req.params.id)
+
     const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
     const pendingObjectsDir = res.locals.pendingDataObjectsDir
@@ -61,6 +64,8 @@ export async function getFile(
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
+  } finally {
+    await unpinDataObjectIdFromCache(req.params.id)
   }
 }
 
@@ -72,6 +77,8 @@ export async function getFileHeaders(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   try {
+    await pinDataObjectIdToCache(req.params.id)
+
     const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
@@ -85,6 +92,8 @@ export async function getFileHeaders(
     res.status(200).send()
   } catch (err) {
     res.status(getHttpStatusCodeByError(err)).send()
+  } finally {
+    await unpinDataObjectIdFromCache(req.params.id)
   }
 }
 
