@@ -1,6 +1,7 @@
 import { createType } from '@joystream/types'
 import { MemberId } from '@joystream/types/primitives'
 import { generateCommitmentFromPayloadFile } from '@joystream/js/content'
+import { readBytesFromFile } from '@joystream/js/utils'
 import BN from 'bn.js'
 import fs from 'fs'
 import { Api } from '../../../Api'
@@ -43,7 +44,7 @@ export class UpdateChannelPayoutsProposalFixture extends BaseQueryNodeFixture {
       {
         type: 'UpdateChannelPayouts',
         details: createType('PalletContentUpdateChannelPayoutsParametersRecord', {
-          commitment: await generateCommitmentFromPayloadFile('PATH', protobufPayloadFilePath),
+          commitment: await generateCommitmentFromPayloadFile(readBytesFromFile('PATH', protobufPayloadFilePath)),
           payload: {
             objectCreationParams: {
               size_: fs.statSync(protobufPayloadFilePath).size,

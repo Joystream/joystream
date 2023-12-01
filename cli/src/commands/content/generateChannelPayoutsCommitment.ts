@@ -1,4 +1,5 @@
 import { generateCommitmentFromPayloadFile } from '@joystream/js/content'
+import { readBytesFromFile } from '@joystream/js/utils'
 import { flags } from '@oclif/command'
 import chalk from 'chalk'
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
@@ -27,8 +28,8 @@ export default class GenerateChannelPayoutsCommitment extends ContentDirectoryCo
 
     try {
       const commitment = path
-        ? await generateCommitmentFromPayloadFile('PATH', path)
-        : await generateCommitmentFromPayloadFile('URL', url!)
+        ? await generateCommitmentFromPayloadFile(readBytesFromFile('PATH', path))
+        : await generateCommitmentFromPayloadFile(readBytesFromFile('URL', url!))
 
       this.log(chalk.green(`Channel Payout payload merkle root is ${chalk.cyanBright(commitment)}!`))
     } catch (error) {

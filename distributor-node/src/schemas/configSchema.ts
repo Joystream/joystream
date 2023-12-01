@@ -105,9 +105,10 @@ export const configSchema: JSONSchema4 = objectSchema({
               type: 'string',
               format: 'uri',
             },
-            index: {
+            indexPrefix: {
               description:
-                'Elasticsearch index to push the logs to. If not provided, will fallback to "distributor-node"',
+                // eslint-disable-next-line no-template-curly-in-string
+                'Elasticsearch data stream prefix to push the logs to. `-${config.id}` will be automatically appended. If not provided, will fallback to "logs-argus"',
               type: 'string',
             },
             auth: objectSchema({

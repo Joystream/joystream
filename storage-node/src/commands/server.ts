@@ -1,23 +1,28 @@
 import { flags } from '@oclif/command'
-import { createApp } from '../services/webApi/app'
-import ApiCommandBase from '../command-base/ApiCommandBase'
-import logger, { initNewLogger, DatePatternByFrequency, Frequency } from '../services/logger'
-import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import { ApiPromise } from '@polkadot/api'
-import { performSync, TempDirName } from '../services/sync/synchronizer'
-import sleep from 'sleep-promise'
-import rimraf from 'rimraf'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
+import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
+import rimraf from 'rimraf'
+import sleep from 'sleep-promise'
 import { promisify } from 'util'
-import ExitCodes from './../command-base/ExitCodes'
-import fs from 'fs'
-import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
-import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import { Option } from '@polkadot/types-codec'
-import { QueryNodeApi } from '../services/queryNode/api'
-import { KeyringPair } from '@polkadot/keyring/types'
+import ApiCommandBase from '../command-base/ApiCommandBase'
 import { customFlags } from '../command-base/CustomFlags'
+import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
+import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
+import { QueryNodeApi } from '../services/queryNode/api'
+import {
+  MAXIMUM_QN_LAGGING_THRESHOLD,
+  MINIMUM_REPLICATION_THRESHOLD,
+  performCleanup,
+} from '../services/sync/cleanupService'
+import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
+import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
+import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
+import { createApp } from '../services/webApi/app'
+import ExitCodes from './../command-base/ExitCodes'
 const fsPromises = fs.promises
 
 /**
@@ -60,7 +65,21 @@ export default class Server extends ApiCommandBase {
     syncInterval: flags.integer({
       char: 'i',
       description: 'Interval between synchronizations (in minutes)',
-      default: 1,
+      default: 20,
+    }),
+    syncRetryInterval: flags.integer({
+      description: 'Interval before retrying failed synchronization run (in minutes)',
+      default: 3,
+    }),
+    cleanup: flags.boolean({
+      char: 'c',
+      description: 'Enable cleanup/pruning of no-longer assigned assets.',
+      default: false,
+    }),
+    cleanupInterval: flags.integer({
+      char: 'i',
+      description: 'Interval between periodic cleanup actions (in minutes)',
+      default: 360,
     }),
     queryNodeEndpoint: flags.string({
       char: 'q',
@@ -88,10 +107,10 @@ export default class Server extends ApiCommandBase {
 Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
-    elasticSearchIndex: flags.string({
+    elasticSearchIndexPrefix: flags.string({
       required: false,
-      env: 'ELASTIC_INDEX',
-      description: 'Elasticsearch index name.',
+      env: 'ELASTIC_INDEX_PREFIX',
+      description: 'Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus',
     }),
     elasticSearchUser: flags.string({
       dependsOn: ['elasticSearchEndpoint', 'elasticSearchPassword'],
@@ -127,6 +146,11 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 'daily',
       required: false,
     }),
+    maxBatchTxSize: flags.integer({
+      description: 'Maximum number of `accept_pending_data_objects` in a batch transactions.',
+      default: 10,
+      required: false,
+    }),
     ...ApiCommandBase.flags,
   }
 
@@ -139,7 +163,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       initNewLogger({
         elasticSearchlogSource: logSource,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
-        elasticSearchIndex: flags.elasticSearchIndex,
+        elasticSearchIndexPrefix: flags.elasticSearchIndexPrefix,
         elasticSearchUser: flags.elasticSearchUser,
         elasticSearchPassword: flags.elasticSearchPassword,
         filePath: flags.logFilePath,
@@ -198,12 +222,26 @@ Supported values: warn, error, debug, info. Default:debug`,
     await recreateTempDirectory(flags.uploads, TempDirName)
 
     if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName)
+      await loadDataObjectIdCache(flags.uploads, TempDirName, PendingDirName)
     }
 
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
+
+    const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
+
+    const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
+      api,
+      qnApi,
+      workerId,
+      flags.uploads,
+      pendingDataObjectsDir,
+      bucketKeyPairs,
+      writableBuckets,
+      flags.maxBatchTxSize,
+      6000 // Every block
+    )
 
     // Don't run sync job if no buckets selected, to prevent purging
     // any assets.
@@ -216,17 +254,39 @@ Supported values: warn, error, debug, info. Default:debug`,
             api,
             flags.worker,
             selectedBuckets,
-            flags.queryNodeEndpoint,
+            qnApi,
             flags.uploads,
             TempDirName,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
-            flags.syncInterval
+            flags.syncInterval,
+            flags.syncRetryInterval
           ),
         0
       )
     } else {
       logger.warn(`Synchronization is Disabled.`)
+    }
+
+    // Don't run cleanup job if no buckets selected, to prevent purging
+    // any assets.
+    if (flags.cleanup && selectedBuckets.length) {
+      logger.info(`Cleanup service is Enabled.`)
+      setTimeout(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        async () =>
+          runCleanupWithInterval(
+            flags.worker,
+            selectedBuckets,
+            qnApi,
+            flags.uploads,
+            flags.syncWorkersNumber,
+            flags.cleanupInterval
+          ),
+        0
+      )
+    } else {
+      logger.warn(`Cleanup service is Disabled.`)
     }
 
     try {
@@ -244,10 +304,19 @@ Supported values: warn, error, debug, info. Default:debug`,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir,
+        pendingDataObjectsDir,
+        acceptPendingObjectsService,
         process: this.config,
         enableUploadingAuth,
         downloadBuckets: selectedBuckets,
         uploadBuckets: writableBuckets,
+        sync: { enabled: flags.sync, interval: flags.syncInterval },
+        cleanup: {
+          enabled: flags.cleanup,
+          interval: flags.cleanupInterval,
+          maxQnLaggingThresholdInBlocks: MAXIMUM_QN_LAGGING_THRESHOLD,
+          minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
+        },
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -263,15 +332,18 @@ Supported values: warn, error, debug, info. Default:debug`,
 }
 
 /**
- * Run the data syncronization process.
+ * Run the data synchronization process.
  *
+ * @param api - runtime Api promise
  * @param workerId - worker ID
- * @param queryNodeUrl - Query Node for data fetching
+ * @param buckets - Selected storage buckets
+ * @param qnApi - Query Node API
  * @param uploadsDir - data uploading directory
  * @param tempDirectory - temporary data uploading directory
  * @param syncWorkersNumber - defines a number of the async processes for sync
  * @param syncWorkersTimeout - downloading asset timeout
  * @param syncIntervalMinutes - defines an interval between sync runs
+ * @param syncRetryIntervalMinutes - defines an interval before retrying sync run after critical error
  *
  * @returns void promise.
  */
@@ -279,17 +351,17 @@ async function runSyncWithInterval(
   api: ApiPromise,
   workerId: number,
   buckets: string[],
-  queryNodeUrl: string,
+  qnApi: QueryNodeApi,
   uploadsDirectory: string,
   tempDirectory: string,
   syncWorkersNumber: number,
   syncWorkersTimeout: number,
-  syncIntervalMinutes: number
+  syncIntervalMinutes: number,
+  syncRetryIntervalMinutes: number
 ) {
-  const sleepInteval = syncIntervalMinutes * 60 * 1000
+  const sleepInterval = syncIntervalMinutes * 60 * 1000
+  const retrySleepInterval = syncRetryIntervalMinutes * 60 * 1000
   while (true) {
-    logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
-    await sleep(sleepInteval)
     try {
       logger.info(`Resume syncing....`)
       await performSync(
@@ -298,12 +370,49 @@ async function runSyncWithInterval(
         buckets,
         syncWorkersNumber,
         syncWorkersTimeout,
-        queryNodeUrl,
+        qnApi,
         uploadsDirectory,
         tempDirectory
       )
+      logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
+      await sleep(sleepInterval)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
+      logger.info(`Will retry in ${syncRetryIntervalMinutes} minute(s)`)
+      await sleep(retrySleepInterval)
+    }
+  }
+}
+
+/**
+ * Run the data cleanup process.
+ *
+ * @param workerId - worker ID
+ * @param buckets - Selected storage buckets
+ * @param qnApi - Query Node API
+ * @param uploadsDir - data uploading directory
+ * @param syncWorkersNumber - defines a number of the async processes for cleanup/pruning
+ * @param cleanupIntervalMinutes - defines an interval between cleanup/pruning runs
+ *
+ * @returns void promise.
+ */
+async function runCleanupWithInterval(
+  workerId: number,
+  buckets: string[],
+  qnApi: QueryNodeApi,
+  uploadsDirectory: string,
+  syncWorkersNumber: number,
+  cleanupIntervalMinutes: number
+) {
+  const sleepInterval = cleanupIntervalMinutes * 60 * 1000
+  while (true) {
+    logger.info(`Cleanup paused for ${cleanupIntervalMinutes} minute(s).`)
+    await sleep(sleepInterval)
+    try {
+      logger.info(`Resume cleanup....`)
+      await performCleanup(workerId, buckets, syncWorkersNumber, qnApi, uploadsDirectory)
+    } catch (err) {
+      logger.error(`Critical cleanup error: ${err}`)
     }
   }
 }
@@ -345,13 +454,7 @@ async function constructBucketToAddressMapping(
   const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
     await Promise.all(
-      bucketIds.map(
-        async (bucketId) =>
-          [bucketId, await api.query.storage.storageBucketById(bucketId)] as [
-            string,
-            Option<PalletStorageStorageBucketRecord>
-          ]
-      )
+      bucketIds.map(async (bucketId) => [bucketId, await api.query.storage.storageBucketById(bucketId)] as const)
     )
   )
     .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))

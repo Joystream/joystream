@@ -1,3 +1,29 @@
+### 3.9.0
+
+- Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional optional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
+- Add background pruning worker to delete data objects which the node is no longer obligated to store. New optional argument `--cleanup` and `--cleanupInterval`
+- Added new `AcceptPendingObjectsService` that is responsible for periodically sending batch `accept_pending_data_objects` for all the pending data objects. The `POST /files` endpoint now no longer calls the `accept_pending_data_objects` extrinsic for individual uploads, instead, it registers all the pending objects with `AcceptPendingObjectsService`
+- Updated `/state/data` endpoint response headers to return data objects status too i.e. (`pending` or `accepted`)
+- **FIX**: Increase the default timeout value in the `extrinsicWrapper` function to match the transaction validity in the transaction pool
+
+### 3.8.1
+
+- Hotfix: Fix call stack size exceeded when handling large number of initial object to sync.
+
+### 3.8.0
+
+- Changed Elasticsearch transport to use data streams instead of regular indices. Removed `--elasticSearchIndex` option and replaced with `--elasticSearchIndexPrefix`. Node ID from config will be automatically appended to the index name.
+
+### 3.7.2
+
+- Bumped `winston-elasticsearch` package verion
+- **FIX**: Added error handler to caught exception in `ElasticsearchTransport` and gracefully log them
+
+### 3.7.1
+
+- Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets. [#4810](https://github.com/Joystream/joystream/pull/4810)
+- Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
+
 ### 3.7.0
 
 - Updates `leader:update-bag` CLI command to `leader:update-bags` to accept multiple bag ids as input. This allows the command to be used to update storage buckets of multiple bags in a single batched transaction.

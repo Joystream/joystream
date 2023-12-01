@@ -281,6 +281,12 @@ components:
         tempDownloads:
           type: integer
           format: int64
+        pendingDirSize:
+          type: integer
+          format: int64
+        pendingObjects:
+          type: integer
+          format: int64
     VersionResponse:
       type: object
       required:
@@ -295,8 +301,14 @@ components:
       required:
         - version
         - queryNodeStatus
+        - uploadBuckets
+        - downloadBuckets
+        - sync
+        - cleanup
       properties:
         version:
+          type: string
+        nodeEnv:
           type: string
         queryNodeStatus:
           type: object
@@ -313,6 +325,39 @@ components:
             blocksProcessed:
               type: integer
               minimum: 0
+        uploadBuckets:
+          type: array
+          items:
+            type: string
+        downloadBuckets:
+          type: array
+          items:
+            type: string
+        sync:
+          type: object
+          required:
+            - 'enabled'
+            - 'interval'
+          properties:
+            enabled:
+              type: boolean
+            interval:
+              type: integer
+        cleanup:
+          type: object
+          required:
+            - 'enabled'
+            - 'interval'
+          properties:
+            enabled:
+              type: boolean
+            interval:
+              type: integer
+            maxQnLaggingThresholdInBlocks:
+              type: integer
+            minReplicationThresholdForPruning:
+              type: integer
+
     DataObjectResponse:
       type: array
       items:
