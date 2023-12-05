@@ -111,7 +111,6 @@ import {
   genericEventFields,
   getById,
   getByIdOrFail,
-  getMembershipById,
   getOneByOrFail,
   getWorkerOrFail,
   inconsistentState,
