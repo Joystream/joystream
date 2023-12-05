@@ -1,0 +1,13 @@
+fragment TagFields on Tag {
+  id
+  name
+  description
+  type
+  visibility
+}
+
+query getAllTags {
+  tags {
+    ...TagFields
+  }
+}

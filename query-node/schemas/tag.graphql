@@ -1,0 +1,39 @@
+type tag @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+  "The name of tag"
+  name: String!
+  "The description of tag"
+  description: String!
+  "The type of tag"
+  type: String!
+  "Visibility of tag"
+  visibility: Boolean!
+}
+
+type tagToWorker @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+  "Id of tag"
+  tagId: ID!
+  "Id of worker"
+  workerId: ID!
+}
+
+type tagToThread @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+  "Id of tag"
+  tagId: ID!
+  "Id of worker"
+  threadId: ID!
+}
+
+type tagToProposal @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+  "Id of tag"
+  tagId: ID!
+  "Id of proposal"
+  proposalId: ID!
+}

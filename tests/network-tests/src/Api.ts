@@ -1,5 +1,6 @@
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { u32, u64, u128, BTreeSet, Option, Bytes } from '@polkadot/types'
+import Long from 'long'
 import { ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import {
@@ -62,7 +63,21 @@ import {
   workingGroupNameByModuleName,
 } from './consts'
 
-import { AppAction, CreateVideoCategory, IAppAction, MemberRemarked } from '@joystream/metadata-protobuf'
+import {
+  DisallowTagToWorker,
+  AllowTagToWorker,
+  AppAction,
+  AssignTagToProposal,
+  AssignTagToThread,
+  CreateTag,
+  CreateVideoCategory,
+  IAppAction,
+  MemberRemarked,
+  RemarkMetadataAction,
+  UnassignTagFromProposal,
+  UnassignTagFromThread,
+  UpdateTag,
+} from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
 import { createType, JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 
@@ -1399,5 +1414,165 @@ export class Api {
 
   public getFaucetInfo(): FaucetInfo {
     return this.factory.faucetInfo
+  }
+
+  async createNewTag(
+    name: string,
+    description: string,
+    type: string,
+    visibility: boolean
+  ): Promise<ISubmittableResult> {
+    const [workerId, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    if (!workerId) {
+      throw new Error('invalid Worker id')
+    }
+
+    const meta = new RemarkMetadataAction({
+      createTag: new CreateTag({
+        name,
+        description,
+        type,
+        visibility,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async updateTag(
+    tagId: string,
+    name: string,
+    description: string,
+    type: string,
+    visibility: boolean
+  ): Promise<ISubmittableResult> {
+    const [workerId, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    if (!workerId) {
+      throw new Error('invalid Worker id')
+    }
+
+    const meta = new RemarkMetadataAction({
+      updateTag: new UpdateTag({
+        tagId,
+        name,
+        description,
+        type,
+        visibility,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async assignTagToThread(tagId: string, threadId: string) {
+    const [, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    const meta = new RemarkMetadataAction({
+      assignTagToThread: new AssignTagToThread({
+        tagId,
+        threadId,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async unassignTagFromThread(tagId: string, threadId: string) {
+    const [, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    const meta = new RemarkMetadataAction({
+      unassignTagFromThread: new UnassignTagFromThread({
+        tagId,
+        threadId,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async assignTagToProposal(tagId: string, proposalId: string) {
+    const [, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    const meta = new RemarkMetadataAction({
+      assignTagToProposal: new AssignTagToProposal({
+        tagId,
+        proposalId,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async unassignTagFromProposal(tagId: string, proposalId: string) {
+    const [, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    const meta = new RemarkMetadataAction({
+      unassignTagFromProposal: new UnassignTagFromProposal({
+        tagId,
+        proposalId,
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async allowTagToWorker(tagId: string, workerId: number) {
+    const [, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    const meta = new RemarkMetadataAction({
+      allowTagToWorker: new AllowTagToWorker({
+        tagId,
+        workerId: Long.fromNumber(workerId),
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
+  }
+
+  async disallowTagToWorker(tagId: string, workerId: number) {
+    const [, worker] = await this.getLeader('forumWorkingGroup')
+    const memberController = await this.getControllerAccountOfMember(worker.memberId)
+
+    const meta = new RemarkMetadataAction({
+      disallowTagToWorker: new DisallowTagToWorker({
+        tagId,
+        workerId: Long.fromNumber(workerId),
+      }),
+    })
+
+    return this.sender.signAndSend(
+      this.api.tx.forumWorkingGroup.leadRemark(Utils.metadataToBytes(RemarkMetadataAction, meta)),
+      memberController
+    )
   }
 }
