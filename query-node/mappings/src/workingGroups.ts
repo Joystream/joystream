@@ -733,7 +733,9 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     const { memberId, isVerified } = metadata.verifyValidator
 
     const member = await getById(store, Membership, memberId)
-    // If member does not exist, just log an invalid metadata message
+    if (!member) {
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
+    }
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
@@ -766,6 +768,9 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     const { memberId, isVerified } = metadata.verifyValidator
 
     const member = await getById(store, Membership, memberId)
+    if (!member) {
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
+    }
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
