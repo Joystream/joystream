@@ -39,10 +39,8 @@ export async function getFile(
 
     const dataObjectId = new BN(req.params.id)
     const uploadsDir = res.locals.uploadsDir
-    const pendingObjectsDir = res.locals.pendingDataObjectsDir
-    const pending = res.locals.acceptPendingObjectsService.getPendingDataObject(dataObjectId.toString())
 
-    const fullPath = path.resolve(pending ? pendingObjectsDir : uploadsDir, dataObjectId.toString())
+    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
 
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
@@ -54,7 +52,6 @@ export async function getFile(
       res.setHeader('Content-Disposition', 'inline')
       res.setHeader('Content-Type', fileInfo.mimeType)
       res.setHeader('Content-Length', fileStats.size)
-      res.setHeader('X-Status', pending ? 'pending' : 'accepted')
     })
 
     stream.on('error', (err) => {
