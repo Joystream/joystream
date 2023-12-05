@@ -765,7 +765,7 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     }
     const { memberId, isVerified } = metadata.verifyValidator
 
-    const member = await getMembershipById(store, createType('u64', Number(memberId)))
+    const member = await getById(store, Membership, memberId)
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
