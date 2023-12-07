@@ -1,7 +1,7 @@
 import { flags } from '@oclif/command'
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { WorkingGroups } from '../../Types'
-import { VerifyValidator, ModeratePost } from '@joystream/metadata-protobuf'
+import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { metadataToString } from '../../helpers/serialization'
 
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
@@ -22,13 +22,13 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
   async run(): Promise<void> {
     const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
 
-    const meta = new ModeratePost({
-      VerifyValidator: new VerifyValidator({
+    const meta = new RemarkMetadataAction({
+      verify_validator: new VerifyValidator({
         memberId,
         isVerified,
       }),
     })
-    const message = metadataToString(ModeratePost, meta)
+    const message = metadataToString(RemarkMetadataAction, meta)
 
     const nowGroup = this.group
 
