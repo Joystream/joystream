@@ -16,6 +16,8 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
   async run(): Promise<void> {
     const { memberId } = this.parse(VerifyValidatorAccountCommand).flags
 
+    const nowGroup = this.group;
+
     await this.setPreservedState({ defaultWorkingGroup: WorkingGroups.Membership })
     const worker = await this.getRequiredWorkerContext()
 
@@ -25,6 +27,6 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
       this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(worker), memberId || "")
     }
 
-    await this.setPreservedState({ defaultWorkingGroup: this.group });
+    await this.setPreservedState({ defaultWorkingGroup: nowGroup });
   }
 }
