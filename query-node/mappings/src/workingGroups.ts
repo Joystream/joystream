@@ -745,8 +745,8 @@ async function processWorkingGroupsRemark(
       return invalidMetadata(`Forum post not found by id: ${postId}`)
     }
     return await moderatePost(store, event, 'leadRemark', post, actor, rationale)
-  } 
-  
+  }
+
   if (decodedMetadata?.verifyValidator) {
     if (group.name !== 'membershipWorkingGroup') {
       return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
@@ -779,11 +779,25 @@ async function processWorkingGroupsRemark(
   }
 
   if (decodedMetadata?.unassignTagFromThread) {
-    return await processUnassignTagFromThread(store, event, decodedMetadata.unassignTagFromThread, group, isLead, workerId)
+    return await processUnassignTagFromThread(
+      store,
+      event,
+      decodedMetadata.unassignTagFromThread,
+      group,
+      isLead,
+      workerId
+    )
   }
 
   if (decodedMetadata?.unassignTagFromProposal) {
-    return await processUnassignTagFromProposal(store, event, decodedMetadata.unassignTagFromProposal, group, isLead, workerId)
+    return await processUnassignTagFromProposal(
+      store,
+      event,
+      decodedMetadata.unassignTagFromProposal,
+      group,
+      isLead,
+      workerId
+    )
   }
 
   if (decodedMetadata?.allowTagToWorker) {
