@@ -30,7 +30,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     })
     const message = metadataToString(ModeratePost, meta)
 
-    const nowGroup = this.group;
+    const nowGroup = this.group
 
     await this.setPreservedState({ defaultWorkingGroup: WorkingGroups.Membership })
     const worker = await this.getRequiredWorkerContext()
@@ -41,6 +41,6 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
       this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(worker), message)
     }
 
-    await this.setPreservedState({ defaultWorkingGroup: nowGroup });
+    await this.setPreservedState({ defaultWorkingGroup: nowGroup })
   }
 }
