@@ -1,4 +1,3 @@
-import { flags } from '@oclif/command'
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { WorkingGroups } from '../../Types'
 import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-protobuf'
@@ -6,21 +5,25 @@ import { metadataToString } from '../../helpers/serialization'
 
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
-  static flags = {
-    memberId: flags.integer({
-      required: true,
-      description: 'Membership ID of the validator to verify',
-    }),
-    isVerified: flags.boolean({
-      required: true,
-      description: 'Verification state of the validator',
-    }),
+  static args = [{
+    name: "memberId",
+    required: true,
+    description: 'Membership ID of the validator to verify',
+  },
+  {
 
+    name: "isVerified",
+    required: true,
+    description: 'Verification state of the validator',
+  }
+  ]
+
+  static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
+    const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).args
 
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
