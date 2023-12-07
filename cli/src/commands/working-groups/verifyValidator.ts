@@ -11,9 +11,9 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
       required: true,
       description: 'Membership ID of the validator to verify',
     }),
-    isVerified: flags.string({
+    isVerified: flags.boolean({
       required: true,
-      description: 'Membership ID of the validator to verify',
+      description: 'Verification state of the validator',
     }),
 
     ...WorkingGroupsCommandBase.flags,
