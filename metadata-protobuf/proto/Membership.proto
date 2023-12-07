@@ -22,6 +22,7 @@ message MembershipMetadata {
       WECHAT = 9;
       WHATSAPP = 10;
       LINKEDIN = 11;
+      GTIHUB = 12;
     }
     optional ResourceType type = 1;
     optional string value = 2;
