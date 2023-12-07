@@ -7,7 +7,7 @@ import { metadataToString } from '../../helpers/serialization'
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
   static flags = {
-    memberId: flags.string({
+    memberId: flags.integer({
       required: true,
       description: 'Membership ID of the validator to verify',
     }),
