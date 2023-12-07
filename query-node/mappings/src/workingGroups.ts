@@ -39,6 +39,7 @@ import {
   InvalidActionMetadata,
   LeaderSetEvent,
   LeaderUnsetEvent,
+  MemberMetadata,
   Membership,
   NewMissedRewardLevelReachedEvent,
   OpeningAddedEvent,
@@ -743,40 +744,57 @@ async function processWorkingGroupsRemark(
     if (!post) {
       return invalidMetadata(`Forum post not found by id: ${postId}`)
     }
-    await moderatePost(store, event, 'leadRemark', post, actor, rationale)
+    return await moderatePost(store, event, 'leadRemark', post, actor, rationale)
+  } 
+  
+  if (decodedMetadata?.verifyValidator) {
+    if (group.name !== 'membershipWorkingGroup') {
+      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
+    }
+    const { memberId, isVerified } = decodedMetadata.verifyValidator
+
+    const member = await getById(store, Membership, memberId)
+    if (!member) {
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
+    }
+    member.metadata.isVerifiedValidator = isVerified
+    await store.save<MemberMetadata>(member.metadata)
+    return await store.save<Membership>(member)
   }
 
   if (decodedMetadata?.createTag) {
-    await processCreateTag(store, event, decodedMetadata.createTag, group, isLead, workerId)
+    return await processCreateTag(store, event, decodedMetadata.createTag, group, isLead, workerId)
   }
 
   if (decodedMetadata?.updateTag) {
-    await processUpdateTag(store, event, decodedMetadata.updateTag, group, isLead, workerId)
+    return await processUpdateTag(store, event, decodedMetadata.updateTag, group, isLead, workerId)
   }
 
   if (decodedMetadata?.assignTagToThread) {
-    await processAssignTagToThread(store, event, decodedMetadata.assignTagToThread, group, isLead, workerId)
+    return await processAssignTagToThread(store, event, decodedMetadata.assignTagToThread, group, isLead, workerId)
   }
 
   if (decodedMetadata?.assignTagToProposal) {
-    await processAssignTagToProposal(store, event, decodedMetadata.assignTagToProposal, group, isLead, workerId)
+    return await processAssignTagToProposal(store, event, decodedMetadata.assignTagToProposal, group, isLead, workerId)
   }
 
   if (decodedMetadata?.unassignTagFromThread) {
-    await processUnassignTagFromThread(store, event, decodedMetadata.unassignTagFromThread, group, isLead, workerId)
+    return await processUnassignTagFromThread(store, event, decodedMetadata.unassignTagFromThread, group, isLead, workerId)
   }
 
   if (decodedMetadata?.unassignTagFromProposal) {
-    await processUnassignTagFromProposal(store, event, decodedMetadata.unassignTagFromProposal, group, isLead, workerId)
+    return await processUnassignTagFromProposal(store, event, decodedMetadata.unassignTagFromProposal, group, isLead, workerId)
   }
 
   if (decodedMetadata?.allowTagToWorker) {
-    await processAllowTagToWorker(store, event, decodedMetadata.allowTagToWorker, group, isLead, workerId)
+    return await processAllowTagToWorker(store, event, decodedMetadata.allowTagToWorker, group, isLead, workerId)
   }
 
   if (decodedMetadata?.disallowTagToWorker) {
-    await processDisallowTagToWorker(store, event, decodedMetadata.disallowTagToWorker, group, isLead, workerId)
+    return await processDisallowTagToWorker(store, event, decodedMetadata.disallowTagToWorker, group, isLead, workerId)
   }
+
+  return invalidMetadata('Unrecognized remarked action')
 }
 
 export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -792,7 +810,7 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
   const group = await getWorkingGroupOrFail(store, event)
 
   const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
-  await processWorkingGroupsRemark(store, event, group, metadata, false, workerId.toNumber())
+  return await processWorkingGroupsRemark(store, event, group, metadata, false, workerId.toNumber())
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated({

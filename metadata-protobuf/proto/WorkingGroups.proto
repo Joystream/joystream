@@ -145,13 +145,19 @@ message DisallowTagToWorker {
 message RemarkMetadataAction {
   oneof action {
     ModeratePost moderate_post = 1;
-    CreateTag create_tag = 2;    
-    UpdateTag update_tag = 3;
-    AssignTagToThread assign_tag_to_thread = 4;
-    UnassignTagFromThread unassign_tag_from_thread = 5;
-    AssignTagToProposal assign_tag_to_proposal = 6;
-    UnassignTagFromProposal unassign_tag_from_proposal = 7;
-    AllowTagToWorker allow_tag_to_worker = 8;
-    DisallowTagToWorker disallow_tag_to_worker = 9;
+    VerifyValidator verify_validator = 2;
+    CreateTag create_tag = 3;
+    UpdateTag update_tag = 4;
+    AssignTagToThread assign_tag_to_thread = 5;
+    UnassignTagFromThread unassign_tag_from_thread = 6;
+    AssignTagToProposal assign_tag_to_proposal = 7;
+    UnassignTagFromProposal unassign_tag_from_proposal = 8;
+    AllowTagToWorker allow_tag_to_worker = 9;
+    DisallowTagToWorker disallow_tag_to_worker = 10;
   }
+}
+
+message VerifyValidator {
+  required uint64 member_id = 1;
+  required bool is_verified = 2;
 }
