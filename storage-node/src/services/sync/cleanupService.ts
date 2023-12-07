@@ -48,7 +48,6 @@ export const MINIMUM_REPLICATION_THRESHOLD = 2
  * @param tempDirectory - local directory for temporary data uploading
  */
 export async function performCleanup(
-  workerId: number,
   buckets: string[],
   asyncWorkersNumber: number,
   qnApi: QueryNodeApi,
@@ -95,7 +94,7 @@ export async function performCleanup(
     deletedDataObjects.map((dataObject) => new DeleteLocalFileTask(uploadDirectory, dataObject))
   )
   const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
-    workerId,
+    buckets,
     uploadDirectory,
     model,
     movedDataObjects
@@ -110,21 +109,21 @@ export async function performCleanup(
 /**
  * Creates the local file deletion tasks.
  *
- * @param currentWorkerId - Worker ID
+ * @param ownBuckets - list of bucket ids operated by this node
  * @param uploadDirectory - local directory for data uploading
  * @param dataObligations - defines the current data obligations for the node
  * @param movedDataObjects- obsolete (no longer assigned) data objects that has been moved to other buckets
  */
 async function getDeletionTasksFromMovedDataObjects(
-  currentWorkerId: number,
+  ownBuckets: string[],
   uploadDirectory: string,
   dataObligations: DataObligations,
   movedDataObjects: DataObjectDetailsFragment[]
 ): Promise<DeleteLocalFileTask[]> {
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    // Skip all buckets of the current WorkerId (this storage provider)
-    if (entry.workerId !== currentWorkerId) {
+    // Skip buckets operated by this storage provider
+    if (!ownBuckets.includes(entry.id)) {
       bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
     }
   }

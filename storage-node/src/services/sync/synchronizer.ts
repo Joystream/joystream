@@ -37,7 +37,6 @@ export const PendingDirName = 'pending'
  */
 export async function performSync(
   api: ApiPromise | undefined,
-  workerId: number,
   buckets: string[],
   asyncWorkersNumber: number,
   asyncWorkersTimeout: number,
@@ -64,7 +63,7 @@ export async function performSync(
     addedTasks = await getPrepareDownloadTasks(
       api,
       model,
-      workerId,
+      buckets,
       added,
       uploadDirectory,
       tempDirectory,
@@ -89,7 +88,7 @@ export async function performSync(
  * Creates the download preparation tasks.
  *
  * @param api - Runtime API promise
- * @param currentWorkerId - Worker ID
+ * @param ownBuckets - list of bucket ids operated this node
  * @param dataObligations - defines the current data obligations for the node
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
@@ -100,7 +99,7 @@ export async function performSync(
 async function getPrepareDownloadTasks(
   api: ApiPromise | undefined,
   dataObligations: DataObligations,
-  currentWorkerId: number,
+  ownBuckets: string[],
   addedIds: string[],
   uploadDirectory: string,
   tempDirectory: string,
@@ -114,8 +113,8 @@ async function getPrepareDownloadTasks(
 
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    // Skip all buckets of the current WorkerId (this storage provider)
-    if (entry.workerId !== currentWorkerId) {
+    // Skip buckets operated by this storage provider
+    if (!ownBuckets.includes(entry.id)) {
       bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
     }
   }

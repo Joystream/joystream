@@ -364,16 +364,7 @@ async function runSyncWithInterval(
   while (true) {
     try {
       logger.info(`Resume syncing....`)
-      await performSync(
-        api,
-        workerId,
-        buckets,
-        syncWorkersNumber,
-        syncWorkersTimeout,
-        qnApi,
-        uploadsDirectory,
-        tempDirectory
-      )
+      await performSync(api, buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory)
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
       await sleep(sleepInterval)
     } catch (err) {
@@ -410,7 +401,7 @@ async function runCleanupWithInterval(
     await sleep(sleepInterval)
     try {
       logger.info(`Resume cleanup....`)
-      await performCleanup(workerId, buckets, syncWorkersNumber, qnApi, uploadsDirectory)
+      await performCleanup(buckets, syncWorkersNumber, qnApi, uploadsDirectory)
     } catch (err) {
       logger.error(`Critical cleanup error: ${err}`)
     }
