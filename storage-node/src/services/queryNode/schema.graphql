@@ -3464,6 +3464,80 @@ type ChannelVisibilitySetByModeratorEvent implements BaseGraphQLObject {
 
 union MetaprotocolTransactionStatus = MetaprotocolTransactionSuccessful | MetaprotocolTransactionErrored
 
+type TagToProposal implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Id of tag"""
+  tagId: String!
+
+  """Id of proposal"""
+  proposalId: String!
+}
+
+type TagToThread implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Id of tag"""
+  tagId: String!
+
+  """Id of worker"""
+  threadId: String!
+}
+
+type TagToWorker implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Id of tag"""
+  tagId: String!
+
+  """Id of worker"""
+  workerId: String!
+}
+
+type Tag implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """The name of tag"""
+  name: String!
+
+  """The description of tag"""
+  description: String!
+
+  """The type of tag"""
+  type: String!
+
+  """Visibility of tag"""
+  visibility: Boolean!
+}
+
 type VideoAssetsDeletedByModeratorEvent implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -5539,6 +5613,50 @@ type StorageDataObjectEdge {
 type StorageDataObjectConnection {
   totalCount: Int!
   edges: [StorageDataObjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagToProposalEdge {
+  node: TagToProposal!
+  cursor: String!
+}
+
+type TagToProposalConnection {
+  totalCount: Int!
+  edges: [TagToProposalEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagToThreadEdge {
+  node: TagToThread!
+  cursor: String!
+}
+
+type TagToThreadConnection {
+  totalCount: Int!
+  edges: [TagToThreadEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagToWorkerEdge {
+  node: TagToWorker!
+  cursor: String!
+}
+
+type TagToWorkerConnection {
+  totalCount: Int!
+  edges: [TagToWorkerEdge!]!
+  pageInfo: PageInfo!
+}
+
+type TagEdge {
+  node: Tag!
+  cursor: String!
+}
+
+type TagConnection {
+  totalCount: Int!
+  edges: [TagEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -23018,6 +23136,233 @@ input StakeReleasedEventUpdateInput {
   stakingAccount: String
 }
 
+input TagToProposalWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  tagId_eq: String
+  tagId_contains: String
+  tagId_startsWith: String
+  tagId_endsWith: String
+  tagId_in: [String!]
+  proposalId_eq: String
+  proposalId_contains: String
+  proposalId_startsWith: String
+  proposalId_endsWith: String
+  proposalId_in: [String!]
+  AND: [TagToProposalWhereInput!]
+  OR: [TagToProposalWhereInput!]
+  NOT: [TagToProposalWhereInput!]
+}
+
+input TagToProposalWhereUniqueInput {
+  id: ID!
+}
+
+input TagToProposalCreateInput {
+  tagId: String!
+  proposalId: String!
+}
+
+input TagToProposalUpdateInput {
+  tagId: String
+  proposalId: String
+}
+
+input TagToThreadWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  tagId_eq: String
+  tagId_contains: String
+  tagId_startsWith: String
+  tagId_endsWith: String
+  tagId_in: [String!]
+  threadId_eq: String
+  threadId_contains: String
+  threadId_startsWith: String
+  threadId_endsWith: String
+  threadId_in: [String!]
+  AND: [TagToThreadWhereInput!]
+  OR: [TagToThreadWhereInput!]
+  NOT: [TagToThreadWhereInput!]
+}
+
+input TagToThreadWhereUniqueInput {
+  id: ID!
+}
+
+input TagToThreadCreateInput {
+  tagId: String!
+  threadId: String!
+}
+
+input TagToThreadUpdateInput {
+  tagId: String
+  threadId: String
+}
+
+input TagToWorkerWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  tagId_eq: String
+  tagId_contains: String
+  tagId_startsWith: String
+  tagId_endsWith: String
+  tagId_in: [String!]
+  workerId_eq: String
+  workerId_contains: String
+  workerId_startsWith: String
+  workerId_endsWith: String
+  workerId_in: [String!]
+  AND: [TagToWorkerWhereInput!]
+  OR: [TagToWorkerWhereInput!]
+  NOT: [TagToWorkerWhereInput!]
+}
+
+input TagToWorkerWhereUniqueInput {
+  id: ID!
+}
+
+input TagToWorkerCreateInput {
+  tagId: String!
+  workerId: String!
+}
+
+input TagToWorkerUpdateInput {
+  tagId: String
+  workerId: String
+}
+
+input TagWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  name_eq: String
+  name_contains: String
+  name_startsWith: String
+  name_endsWith: String
+  name_in: [String!]
+  description_eq: String
+  description_contains: String
+  description_startsWith: String
+  description_endsWith: String
+  description_in: [String!]
+  type_eq: String
+  type_contains: String
+  type_startsWith: String
+  type_endsWith: String
+  type_in: [String!]
+  visibility_eq: Boolean
+  visibility_in: [Boolean!]
+  AND: [TagWhereInput!]
+  OR: [TagWhereInput!]
+  NOT: [TagWhereInput!]
+}
+
+input TagWhereUniqueInput {
+  id: ID!
+}
+
+input TagCreateInput {
+  name: String!
+  description: String!
+  type: String!
+  visibility: Boolean!
+}
+
+input TagUpdateInput {
+  name: String
+  description: String
+  type: String
+  visibility: Boolean
+}
+
 input VideoAssetsDeletedByModeratorEventWhereInput {
   id_eq: ID
   id_in: [ID!]
@@ -28229,6 +28574,18 @@ type Query {
   storageDataObjects(offset: Int, limit: Int = 50, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): [StorageDataObject!]!
   storageDataObjectByUniqueInput(where: StorageDataObjectWhereUniqueInput!): StorageDataObject
   storageDataObjectsConnection(first: Int, after: String, last: Int, before: String, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): StorageDataObjectConnection!
+  tagToProposals(offset: Int, limit: Int = 50, where: TagToProposalWhereInput, orderBy: [TagToProposalOrderByInput!]): [TagToProposal!]!
+  tagToProposalByUniqueInput(where: TagToProposalWhereUniqueInput!): TagToProposal
+  tagToProposalsConnection(first: Int, after: String, last: Int, before: String, where: TagToProposalWhereInput, orderBy: [TagToProposalOrderByInput!]): TagToProposalConnection!
+  tagToThreads(offset: Int, limit: Int = 50, where: TagToThreadWhereInput, orderBy: [TagToThreadOrderByInput!]): [TagToThread!]!
+  tagToThreadByUniqueInput(where: TagToThreadWhereUniqueInput!): TagToThread
+  tagToThreadsConnection(first: Int, after: String, last: Int, before: String, where: TagToThreadWhereInput, orderBy: [TagToThreadOrderByInput!]): TagToThreadConnection!
+  tagToWorkers(offset: Int, limit: Int = 50, where: TagToWorkerWhereInput, orderBy: [TagToWorkerOrderByInput!]): [TagToWorker!]!
+  tagToWorkerByUniqueInput(where: TagToWorkerWhereUniqueInput!): TagToWorker
+  tagToWorkersConnection(first: Int, after: String, last: Int, before: String, where: TagToWorkerWhereInput, orderBy: [TagToWorkerOrderByInput!]): TagToWorkerConnection!
+  tags(offset: Int, limit: Int = 50, where: TagWhereInput, orderBy: [TagOrderByInput!]): [Tag!]!
+  tagByUniqueInput(where: TagWhereUniqueInput!): Tag
+  tagsConnection(first: Int, after: String, last: Int, before: String, where: TagWhereInput, orderBy: [TagOrderByInput!]): TagConnection!
   terminatedLeaderEvents(offset: Int, limit: Int = 50, where: TerminatedLeaderEventWhereInput, orderBy: [TerminatedLeaderEventOrderByInput!]): [TerminatedLeaderEvent!]!
   terminatedLeaderEventByUniqueInput(where: TerminatedLeaderEventWhereUniqueInput!): TerminatedLeaderEvent
   terminatedLeaderEventsConnection(first: Int, after: String, last: Int, before: String, where: TerminatedLeaderEventWhereInput, orderBy: [TerminatedLeaderEventOrderByInput!]): TerminatedLeaderEventConnection!
@@ -31970,6 +32327,62 @@ enum StorageDataObjectOrderByInput {
   stateBloatBond_DESC
   unsetAt_ASC
   unsetAt_DESC
+}
+
+enum TagToProposalOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  tagId_ASC
+  tagId_DESC
+  proposalId_ASC
+  proposalId_DESC
+}
+
+enum TagToThreadOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  tagId_ASC
+  tagId_DESC
+  threadId_ASC
+  threadId_DESC
+}
+
+enum TagToWorkerOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  tagId_ASC
+  tagId_DESC
+  workerId_ASC
+  workerId_DESC
+}
+
+enum TagOrderByInput {
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  deletedAt_ASC
+  deletedAt_DESC
+  name_ASC
+  name_DESC
+  description_ASC
+  description_DESC
+  type_ASC
+  type_DESC
+  visibility_ASC
+  visibility_DESC
 }
 
 enum TerminatedLeaderEventOrderByInput {
