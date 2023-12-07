@@ -23,7 +23,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
 
     const meta = new ModeratePost({
-      createVideoCategory: new VerifyValidator({
+      VerifyValidator: new VerifyValidator({
         memberId,
         isVerified,
       }),
