@@ -4,10 +4,11 @@ import { WorkingGroups } from '../../Types'
 import { createType } from '@joystream/types'
 import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { metadataToString } from '../../helpers/serialization'
+import Long from 'long'
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
   static flags = {
-    memberId: flags.integer({
+    memberId: flags.string({
       required: true,
       description: 'Membership ID of the validator to verify',
     }),
@@ -23,7 +24,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
     const api = this.getOriginalApi()
 
-    const id = createType('u64', memberId);
+    const id = Long.fromNumber(memberId);
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
         memberId: id,
