@@ -1,4 +1,3 @@
-import { Long } from 'long';
 import { flags } from '@oclif/command'
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { WorkingGroups } from '../../Types'
@@ -27,7 +26,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const id = createType('u64', memberId);
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
-        id,
+        memberId: id,
         isVerified,
       }),
     })
