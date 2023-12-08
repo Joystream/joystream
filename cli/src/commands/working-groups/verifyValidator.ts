@@ -39,7 +39,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     if (!worker) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      api.tx.membershipWorkingGroup.workerRemark(Number(worker), message)
+      api.tx.membershipWorkingGroup.workerRemark(worker, message)
     }
 
     await this.setPreservedState({ defaultWorkingGroup: nowGroup })
