@@ -1,29 +1,26 @@
+import { flags } from '@oclif/command'
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { WorkingGroups } from '../../Types'
 import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { metadataToString } from '../../helpers/serialization'
-
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
-  static args = [{
-    name: "memberId",
-    required: true,
-    description: 'Membership ID of the validator to verify',
-  },
-  {
-
-    name: "isVerified",
-    required: true,
-    description: 'Verification state of the validator',
-  }
-  ]
-
   static flags = {
+    memberId: flags.integer({
+      required: true,
+      description: 'Membership ID of the validator to verify',
+    }),
+    isVerified: flags.boolean({
+      required: true,
+      description: 'Verification state of the validator',
+    }),
+
     ...WorkingGroupsCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).args
+    const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
+    const api = this.getOriginalApi()
 
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
@@ -31,6 +28,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
         isVerified,
       }),
     })
+
     const message = metadataToString(RemarkMetadataAction, meta)
 
     const nowGroup = this.group
@@ -41,7 +39,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     if (!worker) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      this.getOriginalApi().tx.membershipWorkingGroup.workerRemark(Number(worker), message)
+      api.tx.membershipWorkingGroup.workerRemark(Number(worker), message)
     }
 
     await this.setPreservedState({ defaultWorkingGroup: nowGroup })
