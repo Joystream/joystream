@@ -2,6 +2,7 @@ import { Long } from 'long';
 import { flags } from '@oclif/command'
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { WorkingGroups } from '../../Types'
+import { createType } from '@joystream/types'
 import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { metadataToString } from '../../helpers/serialization'
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
@@ -23,10 +24,10 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
     const api = this.getOriginalApi()
 
-    const id = Long.fromNumber(memberId);
+    const id = createType('u64', memberId);
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
-        createType('u64', memberId),
+        id,
         isVerified,
       }),
     })
