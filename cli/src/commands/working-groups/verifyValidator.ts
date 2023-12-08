@@ -23,7 +23,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
     const api = this.getOriginalApi()
 
-    const id = Long.fromNumber(memberId);
+    const id = Long.fromNumber(memberId)
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
         memberId: id,
