@@ -26,7 +26,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const id = Long.fromNumber(memberId);
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
-        id,
+        createType('u64', memberId),
         isVerified,
       }),
     })
@@ -41,7 +41,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     if (!worker) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      api.tx.membershipWorkingGroup.workerRemark(worker, message)
+      api.tx.membershipWorkingGroup.workerRemark(worker.memberId, message)
     }
 
     await this.setPreservedState({ defaultWorkingGroup: nowGroup })
