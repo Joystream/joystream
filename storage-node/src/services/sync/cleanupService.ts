@@ -51,7 +51,8 @@ export async function performCleanup(
   buckets: string[],
   asyncWorkersNumber: number,
   qnApi: QueryNodeApi,
-  uploadDirectory: string
+  uploadDirectory: string,
+  hostId: string
 ): Promise<void> {
   logger.info('Started cleanup service...')
   const qnState = await qnApi.getQueryNodeState()
@@ -97,7 +98,8 @@ export async function performCleanup(
     buckets,
     uploadDirectory,
     model,
-    movedDataObjects
+    movedDataObjects,
+    hostId
   )
 
   await workingStack.add(deletionTasksOfDeletedDataObjects)
@@ -118,7 +120,8 @@ async function getDeletionTasksFromMovedDataObjects(
   ownBuckets: string[],
   uploadDirectory: string,
   dataObligations: DataObligations,
-  movedDataObjects: DataObjectDetailsFragment[]
+  movedDataObjects: DataObjectDetailsFragment[],
+  hostId: string
 ): Promise<DeleteLocalFileTask[]> {
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
@@ -136,7 +139,7 @@ async function getDeletionTasksFromMovedDataObjects(
 
       for (const { id } of movedDataObject.storageBag.storageBuckets) {
         const url = urljoin(bucketOperatorUrlById.get(id), 'api/v1/files', movedDataObject.id)
-        await superagent.head(url).timeout(timeoutMs)
+        await superagent.head(url).timeout(timeoutMs).set('X-COLOSSUS-HOST-ID', hostId)
         dataObjectReplicationCount++
       }
 

@@ -23,6 +23,7 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
+import { v4 as uuidv4 } from 'uuid'
 const fsPromises = fs.promises
 
 /**
@@ -229,6 +230,8 @@ Supported values: warn, error, debug, info. Default:debug`,
       await this.ensureDevelopmentChain()
     }
 
+    const X_HOST_ID = uuidv4()
+
     const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
 
     const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
@@ -260,7 +263,8 @@ Supported values: warn, error, debug, info. Default:debug`,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
             flags.syncInterval,
-            flags.syncRetryInterval
+            flags.syncRetryInterval,
+            X_HOST_ID
           ),
         0
       )
@@ -281,7 +285,8 @@ Supported values: warn, error, debug, info. Default:debug`,
             qnApi,
             flags.uploads,
             flags.syncWorkersNumber,
-            flags.cleanupInterval
+            flags.cleanupInterval,
+            X_HOST_ID
           ),
         0
       )
@@ -317,6 +322,7 @@ Supported values: warn, error, debug, info. Default:debug`,
           maxQnLaggingThresholdInBlocks: MAXIMUM_QN_LAGGING_THRESHOLD,
           minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
         },
+        x_host_id: X_HOST_ID,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -357,14 +363,24 @@ async function runSyncWithInterval(
   syncWorkersNumber: number,
   syncWorkersTimeout: number,
   syncIntervalMinutes: number,
-  syncRetryIntervalMinutes: number
+  syncRetryIntervalMinutes: number,
+  hostId: string
 ) {
   const sleepInterval = syncIntervalMinutes * 60 * 1000
   const retrySleepInterval = syncRetryIntervalMinutes * 60 * 1000
   while (true) {
     try {
       logger.info(`Resume syncing....`)
-      await performSync(api, buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory)
+      await performSync(
+        api,
+        buckets,
+        syncWorkersNumber,
+        syncWorkersTimeout,
+        qnApi,
+        uploadsDirectory,
+        tempDirectory,
+        hostId
+      )
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
       await sleep(sleepInterval)
     } catch (err) {
@@ -393,7 +409,8 @@ async function runCleanupWithInterval(
   qnApi: QueryNodeApi,
   uploadsDirectory: string,
   syncWorkersNumber: number,
-  cleanupIntervalMinutes: number
+  cleanupIntervalMinutes: number,
+  hostId: string
 ) {
   const sleepInterval = cleanupIntervalMinutes * 60 * 1000
   while (true) {
@@ -401,7 +418,7 @@ async function runCleanupWithInterval(
     await sleep(sleepInterval)
     try {
       logger.info(`Resume cleanup....`)
-      await performCleanup(buckets, syncWorkersNumber, qnApi, uploadsDirectory)
+      await performCleanup(buckets, syncWorkersNumber, qnApi, uploadsDirectory, hostId)
     } catch (err) {
       logger.error(`Critical cleanup error: ${err}`)
     }

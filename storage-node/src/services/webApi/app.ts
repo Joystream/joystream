@@ -44,6 +44,14 @@ export async function createApp(config: AppConfig): Promise<Express> {
       next()
     },
 
+    // Avoid node connecting to itself
+    (req: express.Request, res: express.Response, next: NextFunction) => {
+      if (res.locals.x_host_id === req.headers['X-COLOSSUS-HOST-ID']) {
+        sendResponseWithError(res, next, new Error('LoopbackRequestDetected'), 'general-request')
+      } else {
+        next()
+      }
+    },
     // Catch aborted requests event early, before we get a chance to handle
     // it in multer middleware. This is an edge case which happens when only
     // a small amount of data is transferred, before multer starts parsing.

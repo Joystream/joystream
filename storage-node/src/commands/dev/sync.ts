@@ -74,6 +74,7 @@ export default class DevSync extends Command {
         flags.syncWorkersTimeout,
         qnApi,
         flags.uploads,
+        '',
         flags.dataSourceOperatorUrl
       )
     } catch (err) {

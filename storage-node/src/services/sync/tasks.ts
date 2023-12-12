@@ -83,13 +83,16 @@ export class DownloadFileTask implements SyncTask {
   tempDirectory: string
   url: string
   downloadTimeout: number
+  hostId: string
+
   constructor(
     baseUrl: string,
     dataObjectId: string,
     expectedHash: string | undefined,
     uploadsDirectory: string,
     tempDirectory: string,
-    downloadTimeout: number
+    downloadTimeout: number,
+    hostId: string
   ) {
     this.dataObjectId = dataObjectId
     this.expectedHash = expectedHash
@@ -97,6 +100,7 @@ export class DownloadFileTask implements SyncTask {
     this.tempDirectory = tempDirectory
     this.downloadTimeout = downloadTimeout
     this.url = urljoin(baseUrl, 'api/v1/files', dataObjectId)
+    this.hostId = hostId
   }
 
   description(): string {
@@ -113,7 +117,10 @@ export class DownloadFileTask implements SyncTask {
       const timeoutMs = this.downloadTimeout * 60 * 1000
       // Casting because of:
       // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
-      const request = superagent.get(this.url).timeout(timeoutMs) as unknown as NodeJS.ReadableStream
+      const request = superagent
+        .get(this.url)
+        .timeout(timeoutMs)
+        .set('X-COLOSSUS-HOST-ID', this.hostId) as unknown as NodeJS.ReadableStream
       const fileStream = fs.createWriteStream(tempFilePath)
 
       request.on('response', (res) => {
@@ -163,9 +170,11 @@ export class PrepareDownloadFileTask implements SyncTask {
   tempDirectory: string
   api?: ApiPromise
   downloadTimeout: number
+  hostId: string
 
   constructor(
     operatorUrlCandidates: string[],
+    hostId: string,
     bagId: string,
     dataObjectId: string,
     uploadsDirectory: string,
@@ -182,6 +191,7 @@ export class PrepareDownloadFileTask implements SyncTask {
     this.uploadsDirectory = uploadsDirectory
     this.tempDirectory = tempDirectory
     this.downloadTimeout = downloadTimeout
+    this.hostId = hostId
   }
 
   description(): string {
@@ -215,7 +225,7 @@ export class PrepareDownloadFileTask implements SyncTask {
       try {
         const chosenBaseUrl = randomUrl
         const [remoteOperatorIds, hash] = await Promise.all([
-          getRemoteDataObjects(chosenBaseUrl),
+          getRemoteDataObjects(chosenBaseUrl, this.hostId),
           this.getExpectedHash(),
         ])
 
@@ -226,7 +236,8 @@ export class PrepareDownloadFileTask implements SyncTask {
             hash,
             this.uploadsDirectory,
             this.tempDirectory,
-            this.downloadTimeout
+            this.downloadTimeout,
+            this.hostId
           )
 
           return this.taskSink.add([newTask])

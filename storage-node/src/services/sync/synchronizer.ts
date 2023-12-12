@@ -43,6 +43,7 @@ export async function performSync(
   qnApi: QueryNodeApi,
   uploadDirectory: string,
   tempDirectory: string,
+  hostId: string,
   operatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
@@ -68,10 +69,11 @@ export async function performSync(
       uploadDirectory,
       tempDirectory,
       workingStack,
-      asyncWorkersTimeout
+      asyncWorkersTimeout,
+      hostId
     )
   } else {
-    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory, asyncWorkersTimeout)
+    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory, asyncWorkersTimeout, hostId)
   }
 
   logger.debug(`Sync - started processing...`)
@@ -104,7 +106,8 @@ async function getPrepareDownloadTasks(
   uploadDirectory: string,
   tempDirectory: string,
   taskSink: TaskSink,
-  asyncWorkersTimeout: number
+  asyncWorkersTimeout: number,
+  hostId: string
 ): Promise<PrepareDownloadFileTask[]> {
   const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
@@ -147,6 +150,7 @@ async function getPrepareDownloadTasks(
 
     return new PrepareDownloadFileTask(
       operatorUrls,
+      hostId,
       bagId,
       id,
       uploadDirectory,
@@ -174,11 +178,12 @@ async function getDownloadTasks(
   addedIds: string[],
   uploadDirectory: string,
   tempDirectory: string,
-  downloadTimeout: number
+  downloadTimeout: number,
+  hostId: string
 ): Promise<DownloadFileTask[]> {
   const addedTasks = addedIds.map(
     (fileName) =>
-      new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory, downloadTimeout)
+      new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory, downloadTimeout, hostId)
   )
 
   return addedTasks
