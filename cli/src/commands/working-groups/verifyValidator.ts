@@ -22,7 +22,6 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
 
   async run(): Promise<void> {
     const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
-    const api = this.getOriginalApi()
 
     const id = Long.fromNumber(memberId)
     const meta = new RemarkMetadataAction({
