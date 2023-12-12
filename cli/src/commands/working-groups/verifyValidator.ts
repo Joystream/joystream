@@ -46,7 +46,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
       this.error('Only membership WG lead/worker can perform this command')
     } else {
       const keypair = await this.getDecodedPair(controllerAccount)
-      const result = await this.sendAndFollowNamedTx(keypair, 'membershipWorkingGroup', 'WorkerRemark', [worker.memberId, message])
+      const result = await this.sendAndFollowNamedTx(keypair, 'membershipWorkingGroup', 'workerRemark', [worker.memberId, message])
 
       const [workerid] = this.getEvent(result, 'membershipWorkingGroup', 'WorkerRemark').data
 
