@@ -6,6 +6,7 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import transferringInvites from '../flows/membership/transferringInvites'
 import managingStakingAccounts from '../flows/membership/managingStakingAccounts'
 import { scenario } from '../Scenario'
+import updateValidatorVerificationStatus from '../flows/membership/updateValidatorVerifications'
 import updatingVerificationStatus from '../flows/membership/updateVerificationStatus'
 import leadOpening from '../flows/working-groups/leadOpening'
 import electCouncil from '../flows/council/elect'
@@ -24,4 +25,5 @@ scenario('Memberships', async ({ job }) => {
   job('transferring invites', transferringInvites)
   job('managing staking accounts', managingStakingAccounts)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job('updating validator verification status', updateValidatorVerificationStatus).after(hireLeads)
 })
