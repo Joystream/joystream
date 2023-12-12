@@ -52,7 +52,7 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
 
       this.log(
         chalk.green(
-          ` ${memberId} verified successfully by member ${workerid}!`
+          `member ${memberId} verified successfully by membership WG worker ${workerid}!`
         )
       )
     }
