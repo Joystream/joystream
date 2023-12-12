@@ -4,6 +4,7 @@ import { WorkingGroups } from '../../Types'
 import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-protobuf'
 import { metadataToString } from '../../helpers/serialization'
 import Long from 'long'
+import chalk from 'chalk'
 export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
   static flags = {
@@ -36,12 +37,24 @@ export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandB
     const nowGroup = this.group
 
     await this.setPreservedState({ defaultWorkingGroup: WorkingGroups.Membership })
+
     const worker = await this.getRequiredWorkerContext()
+
+    const [controllerAccount] = await this.getValidatedMemberRemarkParams()
 
     if (!worker) {
       this.error('Only membership WG lead/worker can perform this command')
     } else {
-      api.tx.membershipWorkingGroup.workerRemark(worker.memberId, message)
+      const keypair = await this.getDecodedPair(controllerAccount)
+      const result = await this.sendAndFollowNamedTx(keypair, 'membershipWorkingGroup', 'WorkerRemark', [worker.memberId, message])
+
+      const [workerid] = this.getEvent(result, 'membershipWorkingGroup', 'WorkerRemark').data
+
+      this.log(
+        chalk.green(
+          ` ${memberId} verified successfully by member ${workerid}!`
+        )
+      )
     }
 
     await this.setPreservedState({ defaultWorkingGroup: nowGroup })
