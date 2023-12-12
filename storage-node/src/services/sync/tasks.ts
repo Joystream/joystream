@@ -121,6 +121,9 @@ export class DownloadFileTask implements SyncTask {
           logger.error(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
         }
       })
+      request.on('error', (err) => {
+        logger.error(`Sync - fetching data error for ${this.url}: ${err}`, { err })
+      })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await fsPromises.rename(tempFilePath, filepath)

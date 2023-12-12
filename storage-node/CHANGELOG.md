@@ -1,3 +1,7 @@
+### 3.9.1
+
+- **FIX**: Added event handler to handle `error` event on `superagent.get` instance. Previously the unhandled error was causing the application to crash.
+
 ### 3.9.0
 
 - Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional optional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
