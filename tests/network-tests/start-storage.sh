@@ -1,20 +1,19 @@
 set -e
 
 TMP=$0
-THIS_DIR=`dirname $TMP`
+THIS_DIR=$(dirname $TMP)
 
 echo "Staring storage infrastructure"
 
-HOST_IP=`$THIS_DIR/get-host-ip.sh`
+# Start Storage-Squid
+docker-compose -f $THIS_DIR/../../docker-compose.storage-squid.yml up -d
+
+HOST_IP=$($THIS_DIR/get-host-ip.sh)
 export COLOSSUS_1_URL="http://${HOST_IP}:3333"
 export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
 export COLOSSUS_2_URL="http://${HOST_IP}:3335"
 export DISTRIBUTOR_2_URL="http://${HOST_IP}:3336"
 $THIS_DIR/run-test-scenario.sh initStorageAndDistribution
-
-
-# give QN time to catch up so nodes can get their initial state
-sleep 30
 
 # Start colossus & argus
 docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-1
