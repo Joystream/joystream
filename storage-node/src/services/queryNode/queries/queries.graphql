@@ -1,45 +1,18 @@
-# TODO: remove after issue fix: https://github.com/Joystream/joystream/issues/2811
 fragment StorageBucketIds on StorageBucket {
   id
 }
 
-query getStorageBucketsConnection($limit: Int, $cursor: String) {
-  storageBucketsConnection(
-    first: $limit
-    after: $cursor
-    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
-  ) {
-    edges {
-      cursor
-      node {
-        ...StorageBucketIds
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+query getStorageBuckets {
+  storageBuckets(where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }) {
+    ...StorageBucketIds
   }
 }
 
-query getStorageBucketDetailsByWorkerId($workerId: ID, $limit: Int, $cursor: String) {
-  storageBucketsConnection(
-    first: $limit
-    after: $cursor
-    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
+query getStorageBucketsByWorkerId($workerId: Int!) {
+  storageBuckets(
+    where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
   ) {
-    edges {
-      cursor
-      node {
-        ...StorageBucketIds
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+    ...StorageBucketIds
   }
 }
 
@@ -59,8 +32,8 @@ fragment StorageBucketDetails on StorageBucket {
   }
 }
 
-query getStorageBucketDetails($ids: [ID!], $offset: Int, $limit: Int) {
-  storageBuckets(where: { id_in: $ids }, offset: $offset, limit: $limit) {
+query getStorageBucketDetails($ids: [String!]) {
+  storageBuckets(where: { id_in: $ids }) {
     ...StorageBucketDetails
   }
 }
@@ -72,96 +45,45 @@ fragment StorageBagDetails on StorageBag {
   }
 }
 
-query getStorageBagDetails($bucketIds: [ID!], $offset: Int, $limit: Int) {
-  storageBags(offset: $offset, limit: $limit, where: { storageBuckets_some: { id_in: $bucketIds } }) {
+query getStorageBagDetails($bucketIds: [String!]) {
+  storageBags(where: { storageBuckets_some: { id_in: $bucketIds } }) {
     ...StorageBagDetails
-  }
-}
-
-query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
-  storageBagsConnection(first: $limit, after: $cursor, where: { storageBuckets_some: { id_in: $bucketIds } }) {
-    edges {
-      cursor
-      node {
-        ...StorageBagDetails
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
   }
 }
 
 fragment DataObjectByBagIdsDetails on StorageDataObject {
   id
-  storageBagId
+  storageBag {
+    id
+  }
 }
 
-query getDataObjectsByBagIdsConnection($bagIds: StorageBagWhereInput, $limit: Int, $cursor: String) {
-  storageDataObjectsConnection(first: $limit, after: $cursor, where: { storageBag: $bagIds, isAccepted_eq: true }) {
-    edges {
-      cursor
-      node {
-        ...DataObjectByBagIdsDetails
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+query getDataObjectsByBagIds($bagIds: StorageBagWhereInput) {
+  storageDataObjects(where: { storageBag: $bagIds, isAccepted_eq: true }) {
+    ...DataObjectByBagIdsDetails
   }
 }
 
 fragment DataObjectDetails on StorageDataObject {
   id
+  isAccepted
   storageBag {
     ...StorageBagDetails
   }
 }
 
-query getDataObjectsConnection($dataObjectIds: [ID!], $limit: Int, $cursor: String) {
-  storageDataObjectsConnection(first: $limit, after: $cursor, where: { id_in: $dataObjectIds, isAccepted_eq: true }) {
-    edges {
-      cursor
-      node {
-        ...DataObjectDetails
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+query getDataObjects($dataObjectIds: [String!]) {
+  storageDataObjects(where: { id_in: $dataObjectIds, isAccepted_eq: true }) {
+    ...DataObjectDetails
   }
 }
 
-fragment DataObjectsWithBagAndBuckets on StorageDataObject {
-  id
-  isAccepted
-  storageBag {
-    id
-    storageBuckets {
-      id
-    }
-  }
+fragment SquidStatusFields on SquidStatus {
+  height
 }
 
-query getDataObjectsByIds($ids: [ID!], $limit: Int) {
-  storageDataObjects(where: { id_in: $ids }, limit: $limit) {
-    ...DataObjectsWithBagAndBuckets
-  }
-}
-
-fragment QueryNodeStateFields on ProcessorState {
-  chainHead
-  lastCompleteBlock
-}
-
-subscription queryNodeState {
-  stateSubscription {
-    ...QueryNodeStateFields
+query squidStatus {
+  squidStatus {
+    height
   }
 }

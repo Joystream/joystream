@@ -74,7 +74,7 @@ export class AcceptPendingObjectsService {
   }
 
   private async loadPendingDataObjectsFromIDs(pendingIds: string[]): Promise<void> {
-    const pendingDataObjects = await this.qnApi.getDataObjectsByIds(pendingIds)
+    const pendingDataObjects = await this.qnApi.getDataObjectDetails(pendingIds)
 
     const deletedObjects = _.differenceWith(pendingIds, pendingDataObjects, (id, dataObject) => dataObject.id === id)
 

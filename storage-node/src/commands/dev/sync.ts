@@ -44,8 +44,8 @@ export default class DevSync extends Command {
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
-      default: 'http://localhost:8081/graphql',
-      description: 'Query node endpoint (e.g.: http://some.com:8081/graphql)',
+      default: 'http://localhost:4352/graphql',
+      description: 'Storage Squid graphql server endpoint (e.g.: http://some.com:4352/graphql)',
     }),
     dataSourceOperatorUrl: flags.string({
       char: 'o',

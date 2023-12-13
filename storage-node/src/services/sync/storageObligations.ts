@@ -109,7 +109,7 @@ export async function getStorageObligationsFromRuntime(
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
       id: dataObject.id,
-      bagId: dataObject.storageBagId,
+      bagId: dataObject.storageBag.id,
     })),
   }
 
@@ -124,7 +124,7 @@ export async function getStorageObligationsFromRuntime(
  * @returns storage bucket IDs
  */
 export async function getStorageBucketIdsByWorkerId(qnApi: QueryNodeApi, workerId: number): Promise<string[]> {
-  const idFragments = await qnApi.getStorageBucketIdsByWorkerId(workerId.toString())
+  const idFragments = await qnApi.getStorageBucketIdsByWorkerId(workerId)
   const ids = idFragments.map((frag) => frag.id)
 
   return ids
@@ -157,7 +157,7 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
     const idsPart = ids.slice(offset, offset + limit)
     if (!_.isEmpty(idsPart)) {
       logger.debug(`Sync - getting all storage buckets: offset = ${offset}, limit = ${limit}`)
-      return await api.getStorageBucketDetails(idsPart, 0, limit)
+      return await api.getStorageBucketDetails(idsPart)
     } else {
       return false
     }
@@ -175,7 +175,7 @@ async function getAllAssignedDataObjects(
   api: QueryNodeApi,
   bagIds: string[]
 ): Promise<DataObjectByBagIdsDetailsFragment[]> {
-  return await api.getDataObjectDetailsByBagIds(bagIds)
+  return await api.getDataObjectsByBagIds(bagIds)
 }
 
 /**

@@ -13,14 +13,14 @@ import { customFlags } from '../command-base/CustomFlags'
 import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
+import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
 import {
   MAXIMUM_QN_LAGGING_THRESHOLD,
   MINIMUM_REPLICATION_THRESHOLD,
   performCleanup,
 } from '../services/sync/cleanupService'
-import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
 import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
-import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
+import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
 const fsPromises = fs.promises
@@ -84,8 +84,8 @@ export default class Server extends ApiCommandBase {
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: true,
-      default: 'http://localhost:8081/graphql',
-      description: 'Query node endpoint (e.g.: http://some.com:8081/graphql)',
+      default: 'http://localhost:4352/graphql',
+      description: 'Storage Squid graphql server endpoint (e.g.: http://some.com:4352/graphql)',
     }),
     syncWorkersNumber: flags.integer({
       char: 'r',
@@ -278,6 +278,7 @@ Supported values: warn, error, debug, info. Default:debug`,
           runCleanupWithInterval(
             flags.worker,
             selectedBuckets,
+            api,
             qnApi,
             flags.uploads,
             flags.syncWorkersNumber,
@@ -399,6 +400,7 @@ async function runSyncWithInterval(
 async function runCleanupWithInterval(
   workerId: number,
   buckets: string[],
+  api: ApiPromise,
   qnApi: QueryNodeApi,
   uploadsDirectory: string,
   syncWorkersNumber: number,
@@ -410,7 +412,7 @@ async function runCleanupWithInterval(
     await sleep(sleepInterval)
     try {
       logger.info(`Resume cleanup....`)
-      await performCleanup(workerId, buckets, syncWorkersNumber, qnApi, uploadsDirectory)
+      await performCleanup(workerId, buckets, syncWorkersNumber, api, qnApi, uploadsDirectory)
     } catch (err) {
       logger.error(`Critical cleanup error: ${err}`)
     }

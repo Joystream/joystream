@@ -1,5 +1,6 @@
-import { Command, flags } from '@oclif/command'
+import { flags } from '@oclif/command'
 import stringify from 'fast-safe-stringify'
+import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../../services/queryNode/api'
 import { performCleanup } from '../../services/sync/cleanupService'
@@ -13,11 +14,10 @@ import { performCleanup } from '../../services/sync/cleanupService'
  * Should be run only during the development.
  * Shell command: "dev:cleanup"
  */
-export default class DevCleanup extends Command {
+export default class DevCleanup extends ApiCommandBase {
   static description = `Runs the data objects cleanup/pruning workflow. It removes all the local stored data objects that the operator is no longer obliged to store`
 
   static flags = {
-    help: flags.help({ char: 'h' }),
     workerId: flags.integer({
       char: 'w',
       required: true,
@@ -37,24 +37,27 @@ export default class DevCleanup extends Command {
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
-      default: 'http://localhost:8081/graphql',
-      description: 'Query node endpoint (e.g.: http://some.com:8081/graphql)',
+      default: 'http://localhost:4352/graphql',
+      description: 'Storage Squid graphql server endpoint (e.g.: http://some.com:4352/graphql)',
     }),
     uploads: flags.string({
       char: 'd',
       required: true,
       description: 'Data uploading directory (absolute path).',
     }),
+    ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(DevCleanup)
     const bucketId = flags.bucketId.toString()
+    const api = await this.getApi()
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+
     logger.info('Cleanup...')
 
     try {
-      await performCleanup(flags.workerId, [bucketId], flags.cleanupWorkersNumber, qnApi, flags.uploads)
+      await performCleanup(flags.workerId, [bucketId], flags.cleanupWorkersNumber, api, qnApi, flags.uploads)
     } catch (err) {
       logger.error(err)
       logger.error(stringify(err))
