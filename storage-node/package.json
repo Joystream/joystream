@@ -132,6 +132,9 @@
       },
       "operator": {
         "description": "Storage provider(operator) commands."
+      },
+      "util": {
+        "description": "Useful utility commands."
       }
     }
   },

@@ -108,7 +108,7 @@ export class DownloadFileTask implements SyncTask {
     const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
-    const tempFilePath = path.join(this.uploadsDirectory, this.tempDirectory, uuidv4())
+    const tempFilePath = path.join(this.tempDirectory, uuidv4())
     try {
       const timeoutMs = this.downloadTimeout * 60 * 1000
       // Casting because of:

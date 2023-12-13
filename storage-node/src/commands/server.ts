@@ -1,14 +1,11 @@
 import { flags } from '@oclif/command'
 import { ApiPromise } from '@polkadot/api'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import fs from 'fs'
+import sleep from 'sleep-promise'
 import _ from 'lodash'
 import path from 'path'
-import rimraf from 'rimraf'
-import sleep from 'sleep-promise'
-import { promisify } from 'util'
-import ApiCommandBase from '../command-base/ApiCommandBase'
+import fs from 'fs'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
+import { KeyringPair } from '@polkadot/keyring/types'
 import { customFlags } from '../command-base/CustomFlags'
 import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
@@ -23,6 +20,8 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
+import ApiCommandBase from '../command-base/ApiCommandBase'
+
 const fsPromises = fs.promises
 
 /**
@@ -51,6 +50,10 @@ export default class Server extends ApiCommandBase {
       char: 'd',
       required: true,
       description: 'Data uploading directory (absolute path).',
+    }),
+    tempFolder: flags.string({
+      description:
+        'Directory to store tempory files during sync and upload (absolute path).\n,Temporary directory (absolute path). If not specified a subfolder under the uploads directory will be used.',
     }),
     port: flags.integer({
       char: 'o',
@@ -219,10 +222,21 @@ Supported values: warn, error, debug, info. Default:debug`,
     const enableUploadingAuth = false
     const operatorRoleKey = undefined
 
-    await recreateTempDirectory(flags.uploads, TempDirName)
+    const tempFolder = flags.tempFolder || path.join(flags.uploads, TempDirName)
+
+    // Prevent tempFolder and uploadsFolder being at the same location. This is a simple check
+    // and doesn't deal with possibility that different path can point to the same location. eg. symlinks or
+    // a volume being mounted on multiple paths
+    if (tempFolder === flags.uploads) {
+      this.error('Please use unique paths for temp and uploads folder paths.')
+    }
+
+    // TODO: Check that uploads and temp folders are writeable
+
+    await createTempDirectory(tempFolder)
 
     if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName, PendingDirName)
+      await loadDataObjectIdCache(flags.uploads)
     }
 
     if (flags.dev) {
@@ -256,7 +270,7 @@ Supported values: warn, error, debug, info. Default:debug`,
             selectedBuckets,
             qnApi,
             flags.uploads,
-            TempDirName,
+            tempFolder,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
             flags.syncInterval,
@@ -292,7 +306,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     try {
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
-      const tempFileUploadingDir = path.join(flags.uploads, TempDirName)
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
       const app = await createApp({
@@ -303,7 +316,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
-        tempFileUploadingDir,
+        tempFileUploadingDir: tempFolder,
         pendingDataObjectsDir,
         acceptPendingObjectsService,
         process: this.config,
@@ -418,23 +431,17 @@ async function runCleanupWithInterval(
 }
 
 /**
- * Removes and recreates the temporary directory from the uploading directory.
- * All files in the temp directory are deleted.
+ * Creates the temporary directory.
+ * If folder exists, all files with extension `.temp` are deleted.
  *
  * @param uploadsDirectory - data uploading directory
  * @param tempDirName - temporary directory name within the uploading directory
  * @returns void promise.
  */
-async function recreateTempDirectory(uploadsDirectory: string, tempDirName: string): Promise<void> {
+async function createTempDirectory(tempDirName: string): Promise<void> {
   try {
-    const tempFileUploadingDir = path.join(uploadsDirectory, tempDirName)
-
-    logger.info(`Removing temp directory ...`)
-    const rimrafAsync = promisify(rimraf)
-    await rimrafAsync(tempFileUploadingDir)
-
     logger.info(`Creating temp directory ...`)
-    await fsPromises.mkdir(tempFileUploadingDir)
+    await fsPromises.mkdir(tempDirName)
   } catch (err) {
     logger.error(`Temp directory IO error: ${err}`)
   }

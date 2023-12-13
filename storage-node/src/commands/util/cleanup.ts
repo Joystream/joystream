@@ -7,13 +7,11 @@ import { performCleanup } from '../../services/sync/cleanupService'
 /**
  * CLI command:
  * Prunes outdated data objects: removes all the local stored data objects that the operator is no longer obliged to store.
- * storage.
  *
  * @remarks
- * Should be run only during the development.
- * Shell command: "dev:cleanup"
+ * Shell command: "util:cleanup"
  */
-export default class DevCleanup extends Command {
+export default class Cleanup extends Command {
   static description = `Runs the data objects cleanup/pruning workflow. It removes all the local stored data objects that the operator is no longer obliged to store`
 
   static flags = {
@@ -48,7 +46,7 @@ export default class DevCleanup extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(DevCleanup)
+    const { flags } = this.parse(Cleanup)
     const bucketId = flags.bucketId.toString()
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
     logger.info('Cleanup...')

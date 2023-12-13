@@ -1,6 +1,5 @@
 import AwaitLock from 'await-lock'
 import fs from 'fs'
-import path from 'path'
 import logger from '../logger'
 const fsPromises = fs.promises
 
@@ -32,23 +31,11 @@ export async function getDataObjectIDs(): Promise<string[]> {
  * @returns empty promise.
  *
  * @param uploadDir - uploading directory
- * @param tempDirName - temp directory name
  */
-export async function loadDataObjectIdCache(
-  uploadDir: string,
-  tempDirName: string,
-  pendingDirName: string
-): Promise<void> {
+export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
   await lock.acquireAsync()
 
-  const localIds = await getLocalFileNames(uploadDir)
-  // Filter temporary & pending directory name.
-  const tempDirectoryName = path.parse(tempDirName).name
-  const pendingDirectoryName = path.parse(pendingDirName).name
-  const ids = localIds.filter(
-    (dataObjectId) => dataObjectId !== tempDirectoryName && dataObjectId !== pendingDirectoryName
-  )
-
+  const ids = await getLocalFileNames(uploadDir)
   ids.forEach((id) => idCache.set(id, 0))
   logger.debug(`Local ID cache loaded.`)
 
@@ -132,10 +119,11 @@ export async function getDataObjectIdFromCache(
 }
 
 /**
- * Returns file names from the local directory.
+ * Returns file names from the local directory, ignoring subfolders.
  *
  * @param directory - local directory to get file names from
  */
-function getLocalFileNames(directory: string): Promise<string[]> {
-  return fsPromises.readdir(directory)
+async function getLocalFileNames(directory: string): Promise<string[]> {
+  const result = await fsPromises.readdir(directory, { withFileTypes: true })
+  return result.filter((entry) => entry.isFile()).map((entry) => entry.name)
 }

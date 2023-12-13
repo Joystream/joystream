@@ -9,10 +9,9 @@ import { print } from '../../services/helpers/stdout'
  * format.
  *
  * @remarks
- * Should be run only during the development.
- * Shell command: "dev:multihash"
+ * Shell command: "util:multihash"
  */
-export default class DevMultihash extends Command {
+export default class Multihash extends Command {
   static description = 'Creates a multihash (blake3) for a file.'
 
   static flags = {
@@ -25,7 +24,7 @@ export default class DevMultihash extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(DevMultihash)
+    const { flags } = this.parse(Multihash)
 
     logger.info(`Hashing ${flags.file} ....`)
 
