@@ -1,23 +1,22 @@
-# Colossus v2
+# Colossus
 
-Joystream storage subsystem.
+Joystream storage node.
 
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
 ![License](https://img.shields.io/github/license/Joystream/joystream)
 
 <!-- toc -->
-
-- [Colossus v2](#colossus-v2)
-- [Description](#description)
-- [Installation](#installation)
-- [Ubuntu Linux](#ubuntu-linux)
-- [Install packages required for installation](#install-packages-required-for-installation)
-- [Clone the code repository](#clone-the-code-repository)
-- [Install volta](#install-volta)
-- [Install project dependencies and build it](#install-project-dependencies-and-build-it)
-- [Verify installation](#verify-installation)
-- [Usage](#usage)
-- [CLI Commands](#cli-commands)
+* [Colossus](#colossus)
+* [Description](#description)
+* [Installation](#installation)
+* [Ubuntu Linux](#ubuntu-linux)
+* [Install packages required for installation](#install-packages-required-for-installation)
+* [Clone the code repository](#clone-the-code-repository)
+* [Install volta](#install-volta)
+* [Install project dependencies and build it](#install-project-dependencies-and-build-it)
+* [Verify installation](#verify-installation)
+* [Usage](#usage)
+* [CLI Commands](#cli-commands)
 <!-- tocstop -->
 
 # Description
@@ -125,7 +124,7 @@ yarn storage-node version
 # Usage
 
 ```sh-session
-$ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Alice -q localhost:8081 -o 3333 -d ~/uploads --sync
+$ yarn storage-node server --apiUrl ws://localhost:9944  -w 0 --accountUri //Alice -q localhost:4352 -o 3333 -d ~/uploads --sync
 ```
 
 ### Prerequisites
@@ -148,29 +147,67 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 # CLI Commands
 
 <!-- commands -->
+* [`storage-node dev:cleanup`](#storage-node-devcleanup)
+* [`storage-node dev:multihash`](#storage-node-devmultihash)
+* [`storage-node dev:sync`](#storage-node-devsync)
+* [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
+* [`storage-node help [COMMAND]`](#storage-node-help-command)
+* [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
+* [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
+* [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
+* [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
+* [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
+* [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
+* [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
+* [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
+* [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
+* [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
+* [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
+* [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
+* [`storage-node leader:update-data-object-bloat-bond`](#storage-node-leaderupdate-data-object-bloat-bond)
+* [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
+* [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
+* [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
+* [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
+* [`storage-node server`](#storage-node-server)
 
-- [`storage-node dev:multihash`](#storage-node-devmultihash)
-- [`storage-node dev:sync`](#storage-node-devsync)
-- [`storage-node dev:verify-bag-id`](#storage-node-devverify-bag-id)
-- [`storage-node help [COMMAND]`](#storage-node-help-command)
-- [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
-- [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
-- [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
-- [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
-- [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
-- [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
-- [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
-- [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
-- [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
-- [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
-- [`storage-node leader:update-bucket-status`](#storage-node-leaderupdate-bucket-status)
-- [`storage-node leader:update-data-fee`](#storage-node-leaderupdate-data-fee)
-- [`storage-node leader:update-data-object-bloat-bond`](#storage-node-leaderupdate-data-object-bloat-bond)
-- [`storage-node leader:update-dynamic-bag-policy`](#storage-node-leaderupdate-dynamic-bag-policy)
-- [`storage-node leader:update-voucher-limits`](#storage-node-leaderupdate-voucher-limits)
-- [`storage-node operator:accept-invitation`](#storage-node-operatoraccept-invitation)
-- [`storage-node operator:set-metadata`](#storage-node-operatorset-metadata)
-- [`storage-node server`](#storage-node-server)
+## `storage-node dev:cleanup`
+
+Runs the data objects cleanup/pruning workflow. It removes all the local stored data objects that the operator is no longer obliged to store
+
+```
+USAGE
+  $ storage-node dev:cleanup
+
+OPTIONS
+  -b, --bucketId=bucketId                          (required) The buckerId to sync prune/cleanup
+  -d, --uploads=uploads                            (required) Data uploading directory (absolute path).
+  -h, --help                                       show CLI help
+  -k, --keyFile=keyFile                            Path to key file to add to the keyring.
+  -m, --dev                                        Use development mode
+
+  -p, --cleanupWorkersNumber=cleanupWorkersNumber  [default: 20] Cleanup/Pruning workers number (max async operations in
+                                                   progress).
+
+  -p, --password=password                          Password to unlock keyfiles. Multiple passwords can be passed, to try
+                                                   against all files. If not specified a single password can be set in
+                                                   ACCOUNT_PWD environment variable.
+
+  -q, --queryNodeEndpoint=queryNodeEndpoint        [default: http://localhost:4352/graphql] Storage Squid graphql server
+                                                   endpoint (e.g.: http://some.com:4352/graphql)
+
+  -u, --apiUrl=apiUrl                              [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev
+                                                   environment.
+
+  -w, --workerId=workerId                          (required) Storage node operator worker ID.
+
+  -y, --accountUri=accountUri                      Account URI (optional). If not specified a single key can be set in
+                                                   ACCOUNT_URI environment variable.
+
+  --keyStore=keyStore                              Path to a folder with multiple key files to load into keystore.
+```
+
+_See code: [src/commands/dev/cleanup.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/dev/cleanup.ts)_
 
 ## `storage-node dev:multihash`
 
@@ -185,7 +222,7 @@ OPTIONS
   -h, --help       show CLI help
 ```
 
-_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/master/src/commands/dev/multihash.ts)_
+_See code: [src/commands/dev/multihash.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/dev/multihash.ts)_
 
 ## `storage-node dev:sync`
 
@@ -206,8 +243,8 @@ OPTIONS
   -p, --syncWorkersNumber=syncWorkersNumber          [default: 20] Sync workers number (max async operations in
                                                      progress).
 
-  -q, --queryNodeEndpoint=queryNodeEndpoint          [default: http://localhost:8081/graphql] Query node endpoint (e.g.:
-                                                     http://some.com:8081/graphql)
+  -q, --queryNodeEndpoint=queryNodeEndpoint          [default: http://localhost:4352/graphql] Storage Squid graphql
+                                                     server endpoint (e.g.: http://some.com:4352/graphql)
 
   -t, --syncWorkersTimeout=syncWorkersTimeout        [default: 30] Asset downloading timeout for the syncronization (in
                                                      minutes).
@@ -215,7 +252,7 @@ OPTIONS
   -w, --workerId=workerId                            (required) Storage node operator worker ID.
 ```
 
-_See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/master/src/commands/dev/sync.ts)_
+_See code: [src/commands/dev/sync.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/dev/sync.ts)_
 
 ## `storage-node dev:verify-bag-id`
 
@@ -243,7 +280,7 @@ OPTIONS
       - dynamic:member:4
 ```
 
-_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/master/src/commands/dev/verify-bag-id.ts)_
+_See code: [src/commands/dev/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/dev/verify-bag-id.ts)_
 
 ## `storage-node help [COMMAND]`
 
@@ -287,7 +324,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/cancel-invite.ts)_
+_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/cancel-invite.ts)_
 
 ## `storage-node leader:create-bucket`
 
@@ -318,7 +355,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/create-bucket.ts)_
 
 ## `storage-node leader:delete-bucket`
 
@@ -345,7 +382,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/delete-bucket.ts)_
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/delete-bucket.ts)_
 
 ## `storage-node leader:invite-operator`
 
@@ -374,7 +411,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/invite-operator.ts)_
+_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/invite-operator.ts)_
 
 ## `storage-node leader:remove-operator`
 
@@ -401,7 +438,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/remove-operator.ts)_
+_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/remove-operator.ts)_
 
 ## `storage-node leader:set-bucket-limits`
 
@@ -431,7 +468,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-bucket-limits.ts)_
+_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/set-bucket-limits.ts)_
 
 ## `storage-node leader:set-global-uploading-status`
 
@@ -459,7 +496,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/set-global-uploading-status.ts)_
+_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/set-global-uploading-status.ts)_
 
 ## `storage-node leader:update-bag-limit`
 
@@ -486,7 +523,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bag-limit.ts)_
+_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-bag-limit.ts)_
 
 ## `storage-node leader:update-bags`
 
@@ -542,7 +579,7 @@ OPTIONS
       Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bags.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bags.ts)_
+_See code: [src/commands/leader/update-bags.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-bags.ts)_
 
 ## `storage-node leader:update-blacklist`
 
@@ -571,7 +608,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-blacklist.ts)_
+_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-blacklist.ts)_
 
 ## `storage-node leader:update-bucket-status`
 
@@ -600,7 +637,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-bucket-status.ts)_
+_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-bucket-status.ts)_
 
 ## `storage-node leader:update-data-fee`
 
@@ -627,7 +664,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-data-fee.ts)_
+_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-data-fee.ts)_
 
 ## `storage-node leader:update-data-object-bloat-bond`
 
@@ -655,7 +692,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-data-object-bloat-bond.ts)_
+_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-data-object-bloat-bond.ts)_
 
 ## `storage-node leader:update-dynamic-bag-policy`
 
@@ -685,7 +722,7 @@ OPTIONS
   --keyStore=keyStore             Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-dynamic-bag-policy.ts)_
+_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-dynamic-bag-policy.ts)_
 
 ## `storage-node leader:update-voucher-limits`
 
@@ -714,7 +751,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/master/src/commands/leader/update-voucher-limits.ts)_
+_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/leader/update-voucher-limits.ts)_
 
 ## `storage-node operator:accept-invitation`
 
@@ -747,7 +784,7 @@ OPTIONS
   --keyStore=keyStore                            Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/master/src/commands/operator/accept-invitation.ts)_
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/operator/accept-invitation.ts)_
 
 ## `storage-node operator:set-metadata`
 
@@ -778,7 +815,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/master/src/commands/operator/set-metadata.ts)_
+_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/operator/set-metadata.ts)_
 
 ## `storage-node server`
 
@@ -794,6 +831,8 @@ OPTIONS
                                                                    ignored. If not specified all buckets will be
                                                                    serviced.
 
+  -c, --cleanup                                                    Enable cleanup/pruning of no-longer assigned assets.
+
   -d, --uploads=uploads                                            (required) Data uploading directory (absolute path).
 
   -e, --elasticSearchEndpoint=elasticSearchEndpoint                Elasticsearch endpoint (e.g.: http://some.com:8081).
@@ -804,7 +843,10 @@ OPTIONS
 
   -h, --help                                                       show CLI help
 
-  -i, --syncInterval=syncInterval                                  [default: 1] Interval between synchronizations (in
+  -i, --cleanupInterval=cleanupInterval                            [default: 360] Interval between periodic cleanup
+                                                                   actions (in minutes)
+
+  -i, --syncInterval=syncInterval                                  [default: 20] Interval between synchronizations (in
                                                                    minutes)
 
   -k, --keyFile=keyFile                                            Path to key file to add to the keyring.
@@ -822,9 +864,9 @@ OPTIONS
                                                                    a single password can be set in ACCOUNT_PWD
                                                                    environment variable.
 
-  -q, --queryNodeEndpoint=queryNodeEndpoint                        (required) [default: http://localhost:8081/graphql]
-                                                                   Query node endpoint (e.g.:
-                                                                   http://some.com:8081/graphql)
+  -q, --queryNodeEndpoint=queryNodeEndpoint                        (required) [default: http://localhost:4352/graphql]
+                                                                   Storage Squid graphql server endpoint (e.g.:
+                                                                   http://some.com:4352/graphql)
 
   -r, --syncWorkersNumber=syncWorkersNumber                        [default: 20] Sync workers number (max async
                                                                    operations in progress).
@@ -847,7 +889,8 @@ OPTIONS
 
   -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly|none)  [default: daily] Log files update frequency.
 
-  --elasticSearchIndexPrefix=elasticSearchIndexPrefix              Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus.
+  --elasticSearchIndexPrefix=elasticSearchIndexPrefix              Elasticsearch index prefix. Node ID will be appended
+                                                                   to the prefix. Default: logs-colossus
 
   --elasticSearchPassword=elasticSearchPassword                    Elasticsearch password for basic authentication.
 
@@ -855,8 +898,14 @@ OPTIONS
 
   --keyStore=keyStore                                              Path to a folder with multiple key files to load into
                                                                    keystore.
+
+  --maxBatchTxSize=maxBatchTxSize                                  [default: 10] Maximum number of
+                                                                   `accept_pending_data_objects` in a batch
+                                                                   transactions.
+
+  --syncRetryInterval=syncRetryInterval                            [default: 3] Interval before retrying failed
+                                                                   synchronization run (in minutes)
 ```
 
-_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/master/src/commands/server.ts)_
-
+_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v3.9.1/src/commands/server.ts)_
 <!-- commandsstop -->
