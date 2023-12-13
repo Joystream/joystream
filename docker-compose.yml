@@ -318,7 +318,7 @@ services:
     shm_size: 1g
     volumes:
       - orion-db-data:/var/lib/postgresql/data
-      - ./orion-postgres.conf:/etc/postgresql/postgresql.conf
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
 
   # Orion processor
   orion-processor:
@@ -335,6 +335,7 @@ services:
       - DB_PORT=${ORION_DB_PORT}
       - DB_HOST=orion-db
       - GQL_PORT=${GRAPHQL_API_PORT}
+      - ARCHIVE_GATEWAY_URL=${ORION_ARCHIVE_GATEWAY_URL}
     volumes:
       - ./db/export:/squid/db/export
     command: >

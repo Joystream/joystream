@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+  squid_db:
+    container_name: squid_db
+    hostname: squid-db
+    image: postgres:14
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${SQUID_DB_NAME}
+      POSTGRES_PASSWORD: ${SQUID_DB_PASS}
+    networks:
+      - joystream
+    ports:
+      - '${SQUID_DB_PORT}:${SQUID_DB_PORT}'
+    command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf', '-p', '${SQUID_DB_PORT}']
+    shm_size: 1g
+    volumes:
+      - squid_db_data:/var/lib/postgresql/data
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
+
+  squid_processor:
+    image: joystream/storage-squid:latest
+    container_name: squid_processor
+    hostname: squid-processor
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${SQUID_DB_NAME}
+      - DB_PASS=${SQUID_DB_PASS}
+      - DB_PORT=${SQUID_DB_PORT}
+      - DB_HOST=${SQUID_DB_HOST}
+      - GQL_PORT=${SQUID_GQL_PORT}
+      - ARCHIVE_GATEWAY_URL=${SQUID_ARCHIVE_GATEWAY_URL}
+      - RPC_ENDPOINT=${JOYSTREAM_NODE_WS}
+
+    ports:
+      - '127.0.0.1:${PROCESSOR_PROMETHEUS_PORT}:${PROCESSOR_PROMETHEUS_PORT}'
+      - '[::1]:${PROCESSOR_PROMETHEUS_PORT}:${PROCESSOR_PROMETHEUS_PORT}'
+    networks:
+      - joystream
+    depends_on:
+      - squid_db
+    command: >
+      sh -c "npx squid-typeorm-migration apply && \
+             node -r dotenv-expand/config lib/processor.js"
+
+  squid_graphql-server:
+    image: joystream/storage-squid:latest
+    container_name: squid_graphql-server
+    hostname: squid-graphql-server
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_NAME=${SQUID_DB_NAME}
+      - DB_PASS=${SQUID_DB_PASS}
+      - DB_PORT=${SQUID_DB_PORT}
+      - DB_HOST=${SQUID_DB_HOST}
+      - GQL_PORT=${SQUID_GQL_PORT}
+    depends_on:
+      - squid_db
+    command: ['npm', 'run', 'graphql-server-start']
+    ports:
+      - '${SQUID_GQL_PORT}:${SQUID_GQL_PORT}'
+    networks:
+      - joystream
+
+volumes:
+  squid_db_data:
+
+    # Join default joystream network to connect will Argus/Colossus nodes
+networks:
+  joystream:
+    external: true
+    name: joystream_default
