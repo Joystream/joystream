@@ -1,27 +1,28 @@
-import { ReadonlyConfig } from '../../types/config'
-import { QueryFetchPolicy, QueryNodeApi } from './query-node/api'
-import { Logger } from 'winston'
-import { LoggingService } from '../logging'
-import { StorageNodeApi } from './storage-node/api'
-import { StateCacheService } from '../cache/StateCacheService'
-import { DataObjectDetailsFragment } from './query-node/generated/queries'
 import axios from 'axios'
+import http from 'http'
+import https from 'https'
+import Mime from 'mime/lite'
+import queue from 'queue'
+import { Logger } from 'winston'
 import {
-  StorageNodeEndpointData,
   DataObjectAccessPoints,
   DataObjectData,
   DataObjectInfo,
-  StorageNodeDownloadResponse,
   DownloadData,
   StatusResponse,
+  StorageNodeDownloadResponse,
+  StorageNodeEndpointData,
 } from '../../types'
-import queue from 'queue'
-import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
-import http from 'http'
-import https from 'https'
+import { ReadonlyConfig } from '../../types/config'
+import { StateCacheService } from '../cache/StateCacheService'
+import { LoggingService } from '../logging'
 import { parseAxiosError } from '../parsers/errors'
 import { PendingDownload, PendingDownloadStatusType } from './PendingDownload'
-import Mime from 'mime/lite'
+import { QueryFetchPolicy, QueryNodeApi } from './query-node/api'
+import { DataObjectDetailsFragment } from './query-node/generated/queries'
+import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
+import { RuntimeApi } from './runtime/api'
+import { StorageNodeApi } from './storage-node/api'
 
 // Concurrency limits
 export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT = 10
@@ -30,6 +31,7 @@ export const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
 export class NetworkingService {
   private config: ReadonlyConfig
   private queryNodeApi: QueryNodeApi
+  private runtimeApi!: RuntimeApi
   private logging: LoggingService
   private stateCache: StateCacheService
   private logger: Logger
@@ -65,6 +67,12 @@ export class NetworkingService {
     this.downloadQueue.on('error', (err) => {
       this.logger.error('Data object download failed', { err })
     })
+
+    this.initRuntimeApi().catch((err) => this.logger.error('Runtime API initialization failed:', { err }))
+  }
+
+  private async initRuntimeApi() {
+    this.runtimeApi = await RuntimeApi.create(this.logging, this.config.endpoints.joystreamNodeWs)
   }
 
   private validateNodeEndpoint(endpoint: string): void {
@@ -97,12 +105,12 @@ export class NetworkingService {
 
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
     const endpointsData = details.storageBag.storageBuckets
-      .filter((bucket) => bucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
-      .map((bucket) => {
-        const rootEndpoint = bucket.operatorMetadata?.nodeEndpoint
+      .filter(({ storageBucket }) => storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
+      .map(({ storageBucket }) => {
+        const rootEndpoint = storageBucket.operatorMetadata?.nodeEndpoint
         const apiEndpoint = rootEndpoint ? this.getApiEndpoint(rootEndpoint) : ''
         return {
-          bucketId: bucket.id,
+          bucketId: storageBucket.id,
           endpoint: apiEndpoint,
         }
       })
@@ -119,8 +127,8 @@ export class NetworkingService {
   private getDataObjectActiveDistributorsSet(objectDetails: DataObjectDetailsFragment): Set<number> {
     const activeDistributorsSet = new Set<number>()
     const { distributionBuckets } = objectDetails.storageBag
-    for (const bucket of distributionBuckets) {
-      for (const operator of bucket.operators) {
+    for (const { distributionBucket } of distributionBuckets) {
+      for (const operator of distributionBucket.operators) {
         if (operator.status === DistributionBucketOperatorStatus.Active) {
           activeDistributorsSet.add(operator.workerId)
         }
@@ -151,14 +159,16 @@ export class NetworkingService {
         isSupported = typeof this.config.workerId === 'number' ? distributors.has(this.config.workerId) : false
       } else {
         const supportedBucketIds = this.config.buckets.map((id) => id.toString())
-        isSupported = details.storageBag.distributionBuckets.some((b) => supportedBucketIds.includes(b.id))
+        isSupported = details.storageBag.distributionBuckets.some((b) =>
+          supportedBucketIds.includes(b.distributionBucket.id)
+        )
       }
       data = {
         objectId,
         accessPoints: this.parseDataObjectAccessPoints(details),
         contentHash: details.ipfsHash,
         size: parseInt(details.size),
-        fallbackMimeType: this.parseUserProvidedMimeType(details.type.subtitle?.mimeType),
+        fallbackMimeType: this.parseUserProvidedMimeType(details.type?.subtitle?.mimeType),
       }
     }
 
@@ -384,7 +394,7 @@ export class NetworkingService {
         contentHash: ipfsHash,
         objectId: id,
         size: parseInt(size),
-        fallbackMimeType: this.parseUserProvidedMimeType(type.subtitle?.mimeType),
+        fallbackMimeType: this.parseUserProvidedMimeType(type?.subtitle?.mimeType),
       })
     })
 
@@ -437,16 +447,16 @@ export class NetworkingService {
   }
 
   async getQueryNodeStatus(): Promise<StatusResponse['queryNodeStatus']> {
-    const qnState = await this.queryNodeApi.getQueryNodeState()
+    const squidStatus = await this.queryNodeApi.getQueryNodeState()
 
-    if (qnState === null) {
-      this.logger.error("Couldn't fetch the state from connected query-node")
+    if (squidStatus === null) {
+      this.logger.error("Couldn't fetch the state from connected storage-squid")
     }
 
     return {
       url: this.config.endpoints.queryNode,
-      chainHead: qnState?.chainHead || 0,
-      blocksProcessed: qnState?.lastCompleteBlock || 0,
+      chainHead: (await this.runtimeApi.derive.chain.bestNumber()).toNumber() || 0,
+      blocksProcessed: squidStatus?.height || 0,
     }
   }
 }

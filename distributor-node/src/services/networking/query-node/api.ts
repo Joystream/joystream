@@ -1,20 +1,9 @@
-import {
-  ApolloClient,
-  DocumentNode,
-  FetchPolicy,
-  HttpLink,
-  NormalizedCacheObject,
-  from,
-  split,
-} from '@apollo/client/core'
+import { ApolloClient, DocumentNode, FetchPolicy, HttpLink, NormalizedCacheObject, from } from '@apollo/client/core'
 import { onError } from '@apollo/client/link/error'
-import { WebSocketLink } from '@apollo/client/link/ws'
-import { getMainDefinition } from '@apollo/client/utilities'
 import { InvalidationPolicyCache } from '@nerdwallet/apollo-cache-policies'
 import fetch from 'cross-fetch'
 import { FragmentDefinitionNode } from 'graphql'
 import { Logger } from 'winston'
-import ws from 'ws'
 import { ReadonlyConfig } from '../../../types'
 import { LoggingService } from '../../logging'
 import {
@@ -35,11 +24,10 @@ import {
   GetDistributionBucketsWithBagsByWorkerIdQuery,
   GetDistributionBucketsWithBagsByWorkerIdQueryVariables,
   MinimalDataObjectFragment,
-  QueryNodeState,
-  QueryNodeStateFields,
-  QueryNodeStateFieldsFragment,
-  QueryNodeStateSubscription,
-  QueryNodeStateSubscriptionVariables,
+  SquidStatus,
+  SquidStatusFieldsFragment,
+  SquidStatusQuery,
+  SquidStatusQueryVariables,
   StorageBagWithObjectsFragment,
   StorageBucketOperatorFieldsFragment,
 } from './generated/queries'
@@ -62,8 +50,6 @@ type PaginationQueryResult<T = unknown> = {
   }
 }
 
-type CustomVariables<T> = Omit<T, keyof PaginationQueryVariables>
-
 export class QueryNodeApi {
   private config: ReadonlyConfig
   private apolloClient: ApolloClient<NormalizedCacheObject>
@@ -79,33 +65,11 @@ export class QueryNodeApi {
       exitOnError && process.exit(-1)
     })
 
-    const queryLink = from([errorLink, new HttpLink({ uri: this.config.endpoints.queryNode, fetch })])
-    const wsLink = new WebSocketLink({
-      uri: this.config.endpoints.queryNode,
-      options: {
-        reconnect: true,
-      },
-      webSocketImpl: ws,
-    })
-    const splitLink = split(
-      ({ query }) => {
-        const definition = getMainDefinition(query)
-        return definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
-      },
-      wsLink,
-      queryLink
-    )
-
     this.apolloClient = new ApolloClient({
-      link: splitLink,
+      link: from([errorLink, new HttpLink({ uri: this.config.endpoints.queryNode, fetch })]),
       // Ref: https://www.apollographql.com/docs/react/api/core/ApolloClient/#assumeimmutableresults
       assumeImmutableResults: true,
       cache: new InvalidationPolicyCache({
-        typePolicies: {
-          ProcessorState: {
-            keyFields: (object) => object.__typename,
-          },
-        },
         invalidationPolicies: {
           types: {
             StorageDataObject: {
@@ -126,7 +90,7 @@ export class QueryNodeApi {
     query: DocumentNode,
     variables: VariablesT,
     resultKey: keyof QueryT,
-    fetchPolicy: QueryFetchPolicy
+    fetchPolicy: QueryFetchPolicy = 'no-cache'
   ): Promise<Required<QueryT>[keyof QueryT] | null> {
     return (
       (await this.apolloClient.query<QueryT, VariablesT>({ query, variables, fetchPolicy })).data[resultKey] || null
@@ -266,30 +230,18 @@ export class QueryNodeApi {
   }
 
   public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
-    return this.multipleEntitiesWithPagination<
-      StorageBucketOperatorFieldsFragment,
+    return this.multipleEntitiesQuery<
       GetActiveStorageBucketOperatorsDataQuery,
-      CustomVariables<GetActiveStorageBucketOperatorsDataQueryVariables>
-    >(GetActiveStorageBucketOperatorsData, {}, 'storageBucketsConnection')
+      GetActiveStorageBucketOperatorsDataQueryVariables
+    >(GetActiveStorageBucketOperatorsData, {}, 'storageBuckets')
   }
 
-  public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
-    // fetch cached state
-    const cachedState = this.readFragment<QueryNodeStateFieldsFragment, QueryNodeStateSubscriptionVariables>(
-      'ProcessorState',
-      QueryNodeStateFields
-    )
-
-    // If we have the state in cache, return it
-    if (cachedState) {
-      return cachedState
-    }
-
-    // Otherwise setup the subscription (which will periodically update the cache) and return for the first result
-    return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
-      QueryNodeState,
+  public async getQueryNodeState(): Promise<SquidStatusFieldsFragment | null> {
+    const squidStatus = await this.uniqueEntityQuery<SquidStatusQuery, SquidStatusQueryVariables>(
+      SquidStatus,
       {},
-      'stateSubscription'
+      'squidStatus'
     )
+    return squidStatus
   }
 }
