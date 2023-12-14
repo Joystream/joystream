@@ -1,0 +1,1966 @@
+"""Exposes a URL that specifies the behaviour of this scalar."""
+directive @specifiedBy(
+  """The URL that specifies the behaviour of this scalar."""
+  url: String!
+) on SCALAR
+
+"""Big number integer"""
+scalar BigInt
+
+enum Continent {
+  AF
+  NA
+  OC
+  AN
+  AS
+  EU
+  SA
+}
+
+union DataObjectType = DataObjectTypeVideoSubtitle
+
+type DataObjectTypeVideoSubtitle {
+  """Related subtitle entity ID"""
+  subtitle: VideoSubtitle!
+}
+
+input DataObjectTypeWhereInput {
+  subtitle_isNull: Boolean
+  subtitle: VideoSubtitleWhereInput
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
+}
+
+"""
+A date-time string in simplified extended ISO 8601 format (YYYY-MM-DDTHH:mm:ss.sssZ)
+"""
+scalar DateTime
+
+type DistributionBucket {
+  """Runtime bucket id in {familyId}:{bucketIndex} format"""
+  id: String!
+
+  """Distribution family the bucket is part of"""
+  family: DistributionBucketFamily!
+
+  """Bucket index within the family"""
+  bucketIndex: Int!
+
+  """Distribution bucket operators (either active or invited)"""
+  operators(where: DistributionBucketOperatorWhereInput, orderBy: [DistributionBucketOperatorOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperator!]!
+
+  """Whether the bucket is accepting any new bags"""
+  acceptingNewBags: Boolean!
+
+  """Whether the bucket is currently distributing content"""
+  distributing: Boolean!
+
+  """Storage bags assigned to the bucket"""
+  bags(where: DistributionBucketBagWhereInput, orderBy: [DistributionBucketBagOrderByInput!], offset: Int, limit: Int): [DistributionBucketBag!]!
+}
+
+type DistributionBucketBag {
+  """{distributionBucketId}-{storageBagId}"""
+  id: String!
+  distributionBucket: DistributionBucket!
+  bag: StorageBag!
+}
+
+type DistributionBucketBagEdge {
+  node: DistributionBucketBag!
+  cursor: String!
+}
+
+enum DistributionBucketBagOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  distributionBucket_id_ASC
+  distributionBucket_id_DESC
+  distributionBucket_id_ASC_NULLS_FIRST
+  distributionBucket_id_DESC_NULLS_LAST
+  distributionBucket_bucketIndex_ASC
+  distributionBucket_bucketIndex_DESC
+  distributionBucket_bucketIndex_ASC_NULLS_FIRST
+  distributionBucket_bucketIndex_DESC_NULLS_LAST
+  distributionBucket_acceptingNewBags_ASC
+  distributionBucket_acceptingNewBags_DESC
+  distributionBucket_acceptingNewBags_ASC_NULLS_FIRST
+  distributionBucket_acceptingNewBags_DESC_NULLS_LAST
+  distributionBucket_distributing_ASC
+  distributionBucket_distributing_DESC
+  distributionBucket_distributing_ASC_NULLS_FIRST
+  distributionBucket_distributing_DESC_NULLS_LAST
+  bag_id_ASC
+  bag_id_DESC
+  bag_id_ASC_NULLS_FIRST
+  bag_id_DESC_NULLS_LAST
+}
+
+type DistributionBucketBagsConnection {
+  edges: [DistributionBucketBagEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input DistributionBucketBagWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  distributionBucket_isNull: Boolean
+  distributionBucket: DistributionBucketWhereInput
+  bag_isNull: Boolean
+  bag: StorageBagWhereInput
+  AND: [DistributionBucketBagWhereInput!]
+  OR: [DistributionBucketBagWhereInput!]
+}
+
+type DistributionBucketEdge {
+  node: DistributionBucket!
+  cursor: String!
+}
+
+type DistributionBucketFamiliesConnection {
+  edges: [DistributionBucketFamilyEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DistributionBucketFamily {
+  """Runtime bucket family id"""
+  id: String!
+
+  """Current bucket family metadata"""
+  metadata: DistributionBucketFamilyMetadata
+
+  """Distribution buckets belonging to the family"""
+  buckets(where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!], offset: Int, limit: Int): [DistributionBucket!]!
+}
+
+type DistributionBucketFamilyEdge {
+  node: DistributionBucketFamily!
+  cursor: String!
+}
+
+type DistributionBucketFamilyMetadata {
+  id: String!
+
+  """Distribution bucket family"""
+  family: DistributionBucketFamily!
+
+  """Name of the geographical region covered by the family (ie.: us-east-1)"""
+  region: String
+
+  """
+  Optional, more specific description of the region covered by the family
+  """
+  description: String
+
+  """Geographical areas covered by the family"""
+  areas: [GeographicalArea!]
+
+  """
+  List of targets (hosts/ips) best suited latency measurements for the family
+  """
+  latencyTestTargets: [String]
+}
+
+type DistributionBucketFamilyMetadataConnection {
+  edges: [DistributionBucketFamilyMetadataEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DistributionBucketFamilyMetadataEdge {
+  node: DistributionBucketFamilyMetadata!
+  cursor: String!
+}
+
+enum DistributionBucketFamilyMetadataOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  family_id_ASC
+  family_id_DESC
+  family_id_ASC_NULLS_FIRST
+  family_id_DESC_NULLS_LAST
+  region_ASC
+  region_DESC
+  region_ASC_NULLS_FIRST
+  region_DESC_NULLS_LAST
+  description_ASC
+  description_DESC
+  description_ASC_NULLS_FIRST
+  description_DESC_NULLS_LAST
+}
+
+input DistributionBucketFamilyMetadataWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  family_isNull: Boolean
+  family: DistributionBucketFamilyWhereInput
+  region_isNull: Boolean
+  region_eq: String
+  region_not_eq: String
+  region_gt: String
+  region_gte: String
+  region_lt: String
+  region_lte: String
+  region_in: [String!]
+  region_not_in: [String!]
+  region_contains: String
+  region_not_contains: String
+  region_containsInsensitive: String
+  region_not_containsInsensitive: String
+  region_startsWith: String
+  region_not_startsWith: String
+  region_endsWith: String
+  region_not_endsWith: String
+  description_isNull: Boolean
+  description_eq: String
+  description_not_eq: String
+  description_gt: String
+  description_gte: String
+  description_lt: String
+  description_lte: String
+  description_in: [String!]
+  description_not_in: [String!]
+  description_contains: String
+  description_not_contains: String
+  description_containsInsensitive: String
+  description_not_containsInsensitive: String
+  description_startsWith: String
+  description_not_startsWith: String
+  description_endsWith: String
+  description_not_endsWith: String
+  areas_isNull: Boolean
+  latencyTestTargets_isNull: Boolean
+  latencyTestTargets_containsAll: [String]
+  latencyTestTargets_containsAny: [String]
+  latencyTestTargets_containsNone: [String]
+  AND: [DistributionBucketFamilyMetadataWhereInput!]
+  OR: [DistributionBucketFamilyMetadataWhereInput!]
+}
+
+enum DistributionBucketFamilyOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  metadata_id_ASC
+  metadata_id_DESC
+  metadata_id_ASC_NULLS_FIRST
+  metadata_id_DESC_NULLS_LAST
+  metadata_region_ASC
+  metadata_region_DESC
+  metadata_region_ASC_NULLS_FIRST
+  metadata_region_DESC_NULLS_LAST
+  metadata_description_ASC
+  metadata_description_DESC
+  metadata_description_ASC_NULLS_FIRST
+  metadata_description_DESC_NULLS_LAST
+}
+
+input DistributionBucketFamilyWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  metadata_isNull: Boolean
+  metadata: DistributionBucketFamilyMetadataWhereInput
+  buckets_every: DistributionBucketWhereInput
+  buckets_some: DistributionBucketWhereInput
+  buckets_none: DistributionBucketWhereInput
+  AND: [DistributionBucketFamilyWhereInput!]
+  OR: [DistributionBucketFamilyWhereInput!]
+}
+
+type DistributionBucketOperator {
+  """{bucketId}-{workerId}"""
+  id: String!
+
+  """Related distirbution bucket"""
+  distributionBucket: DistributionBucket!
+
+  """ID of the distribution group worker"""
+  workerId: Int!
+
+  """Current operator status"""
+  status: DistributionBucketOperatorStatus!
+
+  """Operator metadata"""
+  metadata: DistributionBucketOperatorMetadata
+}
+
+type DistributionBucketOperatorEdge {
+  node: DistributionBucketOperator!
+  cursor: String!
+}
+
+type DistributionBucketOperatorMetadata {
+  id: String!
+
+  """Distribution bucket operator"""
+  distirbutionBucketOperator: DistributionBucketOperator!
+
+  """Root distributor node api endpoint"""
+  nodeEndpoint: String
+
+  """Optional node location metadata"""
+  nodeLocation: NodeLocationMetadata
+
+  """Additional information about the node/operator"""
+  extra: String
+}
+
+type DistributionBucketOperatorMetadataConnection {
+  edges: [DistributionBucketOperatorMetadataEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DistributionBucketOperatorMetadataEdge {
+  node: DistributionBucketOperatorMetadata!
+  cursor: String!
+}
+
+enum DistributionBucketOperatorMetadataOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  distirbutionBucketOperator_id_ASC
+  distirbutionBucketOperator_id_DESC
+  distirbutionBucketOperator_id_ASC_NULLS_FIRST
+  distirbutionBucketOperator_id_DESC_NULLS_LAST
+  distirbutionBucketOperator_workerId_ASC
+  distirbutionBucketOperator_workerId_DESC
+  distirbutionBucketOperator_workerId_ASC_NULLS_FIRST
+  distirbutionBucketOperator_workerId_DESC_NULLS_LAST
+  distirbutionBucketOperator_status_ASC
+  distirbutionBucketOperator_status_DESC
+  distirbutionBucketOperator_status_ASC_NULLS_FIRST
+  distirbutionBucketOperator_status_DESC_NULLS_LAST
+  nodeEndpoint_ASC
+  nodeEndpoint_DESC
+  nodeEndpoint_ASC_NULLS_FIRST
+  nodeEndpoint_DESC_NULLS_LAST
+  nodeLocation_countryCode_ASC
+  nodeLocation_countryCode_DESC
+  nodeLocation_countryCode_ASC_NULLS_FIRST
+  nodeLocation_countryCode_DESC_NULLS_LAST
+  nodeLocation_city_ASC
+  nodeLocation_city_DESC
+  nodeLocation_city_ASC_NULLS_FIRST
+  nodeLocation_city_DESC_NULLS_LAST
+  extra_ASC
+  extra_DESC
+  extra_ASC_NULLS_FIRST
+  extra_DESC_NULLS_LAST
+}
+
+input DistributionBucketOperatorMetadataWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  distirbutionBucketOperator_isNull: Boolean
+  distirbutionBucketOperator: DistributionBucketOperatorWhereInput
+  nodeEndpoint_isNull: Boolean
+  nodeEndpoint_eq: String
+  nodeEndpoint_not_eq: String
+  nodeEndpoint_gt: String
+  nodeEndpoint_gte: String
+  nodeEndpoint_lt: String
+  nodeEndpoint_lte: String
+  nodeEndpoint_in: [String!]
+  nodeEndpoint_not_in: [String!]
+  nodeEndpoint_contains: String
+  nodeEndpoint_not_contains: String
+  nodeEndpoint_containsInsensitive: String
+  nodeEndpoint_not_containsInsensitive: String
+  nodeEndpoint_startsWith: String
+  nodeEndpoint_not_startsWith: String
+  nodeEndpoint_endsWith: String
+  nodeEndpoint_not_endsWith: String
+  nodeLocation_isNull: Boolean
+  nodeLocation: NodeLocationMetadataWhereInput
+  extra_isNull: Boolean
+  extra_eq: String
+  extra_not_eq: String
+  extra_gt: String
+  extra_gte: String
+  extra_lt: String
+  extra_lte: String
+  extra_in: [String!]
+  extra_not_in: [String!]
+  extra_contains: String
+  extra_not_contains: String
+  extra_containsInsensitive: String
+  extra_not_containsInsensitive: String
+  extra_startsWith: String
+  extra_not_startsWith: String
+  extra_endsWith: String
+  extra_not_endsWith: String
+  AND: [DistributionBucketOperatorMetadataWhereInput!]
+  OR: [DistributionBucketOperatorMetadataWhereInput!]
+}
+
+enum DistributionBucketOperatorOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  distributionBucket_id_ASC
+  distributionBucket_id_DESC
+  distributionBucket_id_ASC_NULLS_FIRST
+  distributionBucket_id_DESC_NULLS_LAST
+  distributionBucket_bucketIndex_ASC
+  distributionBucket_bucketIndex_DESC
+  distributionBucket_bucketIndex_ASC_NULLS_FIRST
+  distributionBucket_bucketIndex_DESC_NULLS_LAST
+  distributionBucket_acceptingNewBags_ASC
+  distributionBucket_acceptingNewBags_DESC
+  distributionBucket_acceptingNewBags_ASC_NULLS_FIRST
+  distributionBucket_acceptingNewBags_DESC_NULLS_LAST
+  distributionBucket_distributing_ASC
+  distributionBucket_distributing_DESC
+  distributionBucket_distributing_ASC_NULLS_FIRST
+  distributionBucket_distributing_DESC_NULLS_LAST
+  workerId_ASC
+  workerId_DESC
+  workerId_ASC_NULLS_FIRST
+  workerId_DESC_NULLS_LAST
+  status_ASC
+  status_DESC
+  status_ASC_NULLS_FIRST
+  status_DESC_NULLS_LAST
+  metadata_id_ASC
+  metadata_id_DESC
+  metadata_id_ASC_NULLS_FIRST
+  metadata_id_DESC_NULLS_LAST
+  metadata_nodeEndpoint_ASC
+  metadata_nodeEndpoint_DESC
+  metadata_nodeEndpoint_ASC_NULLS_FIRST
+  metadata_nodeEndpoint_DESC_NULLS_LAST
+  metadata_extra_ASC
+  metadata_extra_DESC
+  metadata_extra_ASC_NULLS_FIRST
+  metadata_extra_DESC_NULLS_LAST
+}
+
+type DistributionBucketOperatorsConnection {
+  edges: [DistributionBucketOperatorEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+enum DistributionBucketOperatorStatus {
+  INVITED
+  ACTIVE
+}
+
+input DistributionBucketOperatorWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  distributionBucket_isNull: Boolean
+  distributionBucket: DistributionBucketWhereInput
+  workerId_isNull: Boolean
+  workerId_eq: Int
+  workerId_not_eq: Int
+  workerId_gt: Int
+  workerId_gte: Int
+  workerId_lt: Int
+  workerId_lte: Int
+  workerId_in: [Int!]
+  workerId_not_in: [Int!]
+  status_isNull: Boolean
+  status_eq: DistributionBucketOperatorStatus
+  status_not_eq: DistributionBucketOperatorStatus
+  status_in: [DistributionBucketOperatorStatus!]
+  status_not_in: [DistributionBucketOperatorStatus!]
+  metadata_isNull: Boolean
+  metadata: DistributionBucketOperatorMetadataWhereInput
+  AND: [DistributionBucketOperatorWhereInput!]
+  OR: [DistributionBucketOperatorWhereInput!]
+}
+
+enum DistributionBucketOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  family_id_ASC
+  family_id_DESC
+  family_id_ASC_NULLS_FIRST
+  family_id_DESC_NULLS_LAST
+  bucketIndex_ASC
+  bucketIndex_DESC
+  bucketIndex_ASC_NULLS_FIRST
+  bucketIndex_DESC_NULLS_LAST
+  acceptingNewBags_ASC
+  acceptingNewBags_DESC
+  acceptingNewBags_ASC_NULLS_FIRST
+  acceptingNewBags_DESC_NULLS_LAST
+  distributing_ASC
+  distributing_DESC
+  distributing_ASC_NULLS_FIRST
+  distributing_DESC_NULLS_LAST
+}
+
+type DistributionBucketsConnection {
+  edges: [DistributionBucketEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input DistributionBucketWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  family_isNull: Boolean
+  family: DistributionBucketFamilyWhereInput
+  bucketIndex_isNull: Boolean
+  bucketIndex_eq: Int
+  bucketIndex_not_eq: Int
+  bucketIndex_gt: Int
+  bucketIndex_gte: Int
+  bucketIndex_lt: Int
+  bucketIndex_lte: Int
+  bucketIndex_in: [Int!]
+  bucketIndex_not_in: [Int!]
+  operators_every: DistributionBucketOperatorWhereInput
+  operators_some: DistributionBucketOperatorWhereInput
+  operators_none: DistributionBucketOperatorWhereInput
+  acceptingNewBags_isNull: Boolean
+  acceptingNewBags_eq: Boolean
+  acceptingNewBags_not_eq: Boolean
+  distributing_isNull: Boolean
+  distributing_eq: Boolean
+  distributing_not_eq: Boolean
+  bags_every: DistributionBucketBagWhereInput
+  bags_some: DistributionBucketBagWhereInput
+  bags_none: DistributionBucketBagWhereInput
+  AND: [DistributionBucketWhereInput!]
+  OR: [DistributionBucketWhereInput!]
+}
+
+type Event {
+  """{blockNumber}-{indexInBlock}"""
+  id: String!
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Hash of the extrinsic the event was emitted in"""
+  inExtrinsic: String
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Timestamp of the block the event was emitted in"""
+  timestamp: DateTime!
+
+  """More specific event data, which depends on event type"""
+  data: EventData!
+}
+
+union EventData = MetaprotocolTransactionStatusEventData
+
+input EventDataWhereInput {
+  result_isNull: Boolean
+  result: MetaprotocolTransactionResultWhereInput
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
+}
+
+type EventEdge {
+  node: Event!
+  cursor: String!
+}
+
+enum EventOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  inBlock_ASC
+  inBlock_DESC
+  inBlock_ASC_NULLS_FIRST
+  inBlock_DESC_NULLS_LAST
+  inExtrinsic_ASC
+  inExtrinsic_DESC
+  inExtrinsic_ASC_NULLS_FIRST
+  inExtrinsic_DESC_NULLS_LAST
+  indexInBlock_ASC
+  indexInBlock_DESC
+  indexInBlock_ASC_NULLS_FIRST
+  indexInBlock_DESC_NULLS_LAST
+  timestamp_ASC
+  timestamp_DESC
+  timestamp_ASC_NULLS_FIRST
+  timestamp_DESC_NULLS_LAST
+  data_isTypeOf_ASC
+  data_isTypeOf_DESC
+  data_isTypeOf_ASC_NULLS_FIRST
+  data_isTypeOf_DESC_NULLS_LAST
+}
+
+type EventsConnection {
+  edges: [EventEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input EventWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  inBlock_isNull: Boolean
+  inBlock_eq: Int
+  inBlock_not_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  inBlock_not_in: [Int!]
+  inExtrinsic_isNull: Boolean
+  inExtrinsic_eq: String
+  inExtrinsic_not_eq: String
+  inExtrinsic_gt: String
+  inExtrinsic_gte: String
+  inExtrinsic_lt: String
+  inExtrinsic_lte: String
+  inExtrinsic_in: [String!]
+  inExtrinsic_not_in: [String!]
+  inExtrinsic_contains: String
+  inExtrinsic_not_contains: String
+  inExtrinsic_containsInsensitive: String
+  inExtrinsic_not_containsInsensitive: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_not_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_not_endsWith: String
+  indexInBlock_isNull: Boolean
+  indexInBlock_eq: Int
+  indexInBlock_not_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  indexInBlock_not_in: [Int!]
+  timestamp_isNull: Boolean
+  timestamp_eq: DateTime
+  timestamp_not_eq: DateTime
+  timestamp_gt: DateTime
+  timestamp_gte: DateTime
+  timestamp_lt: DateTime
+  timestamp_lte: DateTime
+  timestamp_in: [DateTime!]
+  timestamp_not_in: [DateTime!]
+  data_isNull: Boolean
+  data: EventDataWhereInput
+  AND: [EventWhereInput!]
+  OR: [EventWhereInput!]
+}
+
+type GeoCoordinates {
+  latitude: Float!
+  longitude: Float!
+}
+
+input GeoCoordinatesWhereInput {
+  latitude_isNull: Boolean
+  latitude_eq: Float
+  latitude_not_eq: Float
+  latitude_gt: Float
+  latitude_gte: Float
+  latitude_lt: Float
+  latitude_lte: Float
+  latitude_in: [Float!]
+  latitude_not_in: [Float!]
+  longitude_isNull: Boolean
+  longitude_eq: Float
+  longitude_not_eq: Float
+  longitude_gt: Float
+  longitude_gte: Float
+  longitude_lt: Float
+  longitude_lte: Float
+  longitude_in: [Float!]
+  longitude_not_in: [Float!]
+}
+
+union GeographicalArea = GeographicalAreaContinent | GeographicalAreaCountry | GeographicalAreaSubdivistion
+
+type GeographicalAreaContinent {
+  continentCode: Continent
+}
+
+type GeographicalAreaCountry {
+  """ISO 3166-1 alpha-2 country code"""
+  countryCode: String
+}
+
+type GeographicalAreaSubdivistion {
+  """ISO 3166-2 subdivision code"""
+  subdivisionCode: String
+}
+
+union MetaprotocolTransactionResult = MetaprotocolTransactionResultOK | MetaprotocolTransactionResultFailed
+
+type MetaprotocolTransactionResultFailed {
+  errorMessage: String!
+}
+
+type MetaprotocolTransactionResultOK {
+  phantom: Int
+}
+
+input MetaprotocolTransactionResultWhereInput {
+  phantom_isNull: Boolean
+  phantom_eq: Int
+  phantom_not_eq: Int
+  phantom_gt: Int
+  phantom_gte: Int
+  phantom_lt: Int
+  phantom_lte: Int
+  phantom_in: [Int!]
+  phantom_not_in: [Int!]
+  errorMessage_isNull: Boolean
+  errorMessage_eq: String
+  errorMessage_not_eq: String
+  errorMessage_gt: String
+  errorMessage_gte: String
+  errorMessage_lt: String
+  errorMessage_lte: String
+  errorMessage_in: [String!]
+  errorMessage_not_in: [String!]
+  errorMessage_contains: String
+  errorMessage_not_contains: String
+  errorMessage_containsInsensitive: String
+  errorMessage_not_containsInsensitive: String
+  errorMessage_startsWith: String
+  errorMessage_not_startsWith: String
+  errorMessage_endsWith: String
+  errorMessage_not_endsWith: String
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
+}
+
+type MetaprotocolTransactionStatusEventData {
+  """The result of metaprotocol action"""
+  result: MetaprotocolTransactionResult!
+}
+
+type NodeLocationMetadata {
+  """ISO 3166-1 alpha-2 country code (2 letters)"""
+  countryCode: String
+
+  """City name"""
+  city: String
+
+  """Geographic coordinates"""
+  coordinates: GeoCoordinates
+}
+
+input NodeLocationMetadataWhereInput {
+  countryCode_isNull: Boolean
+  countryCode_eq: String
+  countryCode_not_eq: String
+  countryCode_gt: String
+  countryCode_gte: String
+  countryCode_lt: String
+  countryCode_lte: String
+  countryCode_in: [String!]
+  countryCode_not_in: [String!]
+  countryCode_contains: String
+  countryCode_not_contains: String
+  countryCode_containsInsensitive: String
+  countryCode_not_containsInsensitive: String
+  countryCode_startsWith: String
+  countryCode_not_startsWith: String
+  countryCode_endsWith: String
+  countryCode_not_endsWith: String
+  city_isNull: Boolean
+  city_eq: String
+  city_not_eq: String
+  city_gt: String
+  city_gte: String
+  city_lt: String
+  city_lte: String
+  city_in: [String!]
+  city_not_in: [String!]
+  city_contains: String
+  city_not_contains: String
+  city_containsInsensitive: String
+  city_not_containsInsensitive: String
+  city_startsWith: String
+  city_not_startsWith: String
+  city_endsWith: String
+  city_not_endsWith: String
+  coordinates_isNull: Boolean
+  coordinates: GeoCoordinatesWhereInput
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String!
+  endCursor: String!
+}
+
+type Query {
+  events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
+  eventById(id: String!): Event
+  eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
+  eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
+  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
+  videoSubtitleById(id: String!): VideoSubtitle
+  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
+  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
+  storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
+  storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
+  storageBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): StorageBucketOperatorMetadata @deprecated(reason: "Use storageBucketOperatorMetadataById")
+  storageBucketOperatorMetadataConnection(orderBy: [StorageBucketOperatorMetadataOrderByInput!]!, after: String, first: Int, where: StorageBucketOperatorMetadataWhereInput): StorageBucketOperatorMetadataConnection!
+  storageBuckets(where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!], offset: Int, limit: Int): [StorageBucket!]!
+  storageBucketById(id: String!): StorageBucket
+  storageBucketByUniqueInput(where: WhereIdInput!): StorageBucket @deprecated(reason: "Use storageBucketById")
+  storageBucketsConnection(orderBy: [StorageBucketOrderByInput!]!, after: String, first: Int, where: StorageBucketWhereInput): StorageBucketsConnection!
+  storageBags(where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!], offset: Int, limit: Int): [StorageBag!]!
+  storageBagById(id: String!): StorageBag
+  storageBagByUniqueInput(where: WhereIdInput!): StorageBag @deprecated(reason: "Use storageBagById")
+  storageBagsConnection(orderBy: [StorageBagOrderByInput!]!, after: String, first: Int, where: StorageBagWhereInput): StorageBagsConnection!
+  storageBucketBags(where: StorageBucketBagWhereInput, orderBy: [StorageBucketBagOrderByInput!], offset: Int, limit: Int): [StorageBucketBag!]!
+  storageBucketBagById(id: String!): StorageBucketBag
+  storageBucketBagByUniqueInput(where: WhereIdInput!): StorageBucketBag @deprecated(reason: "Use storageBucketBagById")
+  storageBucketBagsConnection(orderBy: [StorageBucketBagOrderByInput!]!, after: String, first: Int, where: StorageBucketBagWhereInput): StorageBucketBagsConnection!
+  distributionBucketBags(where: DistributionBucketBagWhereInput, orderBy: [DistributionBucketBagOrderByInput!], offset: Int, limit: Int): [DistributionBucketBag!]!
+  distributionBucketBagById(id: String!): DistributionBucketBag
+  distributionBucketBagByUniqueInput(where: WhereIdInput!): DistributionBucketBag @deprecated(reason: "Use distributionBucketBagById")
+  distributionBucketBagsConnection(orderBy: [DistributionBucketBagOrderByInput!]!, after: String, first: Int, where: DistributionBucketBagWhereInput): DistributionBucketBagsConnection!
+  storageDataObjects(where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!], offset: Int, limit: Int): [StorageDataObject!]!
+  storageDataObjectById(id: String!): StorageDataObject
+  storageDataObjectByUniqueInput(where: WhereIdInput!): StorageDataObject @deprecated(reason: "Use storageDataObjectById")
+  storageDataObjectsConnection(orderBy: [StorageDataObjectOrderByInput!]!, after: String, first: Int, where: StorageDataObjectWhereInput): StorageDataObjectsConnection!
+  distributionBucketFamilyMetadata(where: DistributionBucketFamilyMetadataWhereInput, orderBy: [DistributionBucketFamilyMetadataOrderByInput!], offset: Int, limit: Int): [DistributionBucketFamilyMetadata!]!
+  distributionBucketFamilyMetadataById(id: String!): DistributionBucketFamilyMetadata
+  distributionBucketFamilyMetadataByUniqueInput(where: WhereIdInput!): DistributionBucketFamilyMetadata @deprecated(reason: "Use distributionBucketFamilyMetadataById")
+  distributionBucketFamilyMetadataConnection(orderBy: [DistributionBucketFamilyMetadataOrderByInput!]!, after: String, first: Int, where: DistributionBucketFamilyMetadataWhereInput): DistributionBucketFamilyMetadataConnection!
+  distributionBucketOperatorMetadata(where: DistributionBucketOperatorMetadataWhereInput, orderBy: [DistributionBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperatorMetadata!]!
+  distributionBucketOperatorMetadataById(id: String!): DistributionBucketOperatorMetadata
+  distributionBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): DistributionBucketOperatorMetadata @deprecated(reason: "Use distributionBucketOperatorMetadataById")
+  distributionBucketOperatorMetadataConnection(orderBy: [DistributionBucketOperatorMetadataOrderByInput!]!, after: String, first: Int, where: DistributionBucketOperatorMetadataWhereInput): DistributionBucketOperatorMetadataConnection!
+  distributionBucketOperators(where: DistributionBucketOperatorWhereInput, orderBy: [DistributionBucketOperatorOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperator!]!
+  distributionBucketOperatorById(id: String!): DistributionBucketOperator
+  distributionBucketOperatorByUniqueInput(where: WhereIdInput!): DistributionBucketOperator @deprecated(reason: "Use distributionBucketOperatorById")
+  distributionBucketOperatorsConnection(orderBy: [DistributionBucketOperatorOrderByInput!]!, after: String, first: Int, where: DistributionBucketOperatorWhereInput): DistributionBucketOperatorsConnection!
+  distributionBuckets(where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!], offset: Int, limit: Int): [DistributionBucket!]!
+  distributionBucketById(id: String!): DistributionBucket
+  distributionBucketByUniqueInput(where: WhereIdInput!): DistributionBucket @deprecated(reason: "Use distributionBucketById")
+  distributionBucketsConnection(orderBy: [DistributionBucketOrderByInput!]!, after: String, first: Int, where: DistributionBucketWhereInput): DistributionBucketsConnection!
+  distributionBucketFamilies(where: DistributionBucketFamilyWhereInput, orderBy: [DistributionBucketFamilyOrderByInput!], offset: Int, limit: Int): [DistributionBucketFamily!]!
+  distributionBucketFamilyById(id: String!): DistributionBucketFamily
+  distributionBucketFamilyByUniqueInput(where: WhereIdInput!): DistributionBucketFamily @deprecated(reason: "Use distributionBucketFamilyById")
+  distributionBucketFamiliesConnection(orderBy: [DistributionBucketFamilyOrderByInput!]!, after: String, first: Int, where: DistributionBucketFamilyWhereInput): DistributionBucketFamiliesConnection!
+  squidStatus: SquidStatus
+}
+
+type SquidStatus {
+  """The height of the processed part of the chain"""
+  height: Int
+}
+
+type StorageBag {
+  """Storage bag id"""
+  id: String!
+
+  """Data objects in the bag"""
+  objects(where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!], offset: Int, limit: Int): [StorageDataObject!]!
+
+  """Storage buckets assigned to the bag"""
+  storageBuckets(where: StorageBucketBagWhereInput, orderBy: [StorageBucketBagOrderByInput!], offset: Int, limit: Int): [StorageBucketBag!]!
+
+  """Distribution buckets assigned to the bag"""
+  distributionBuckets(where: DistributionBucketBagWhereInput, orderBy: [DistributionBucketBagOrderByInput!], offset: Int, limit: Int): [DistributionBucketBag!]!
+
+  """Owner of the storage bag"""
+  owner: StorageBagOwner!
+}
+
+type StorageBagEdge {
+  node: StorageBag!
+  cursor: String!
+}
+
+enum StorageBagOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  owner_phantom_ASC
+  owner_phantom_DESC
+  owner_phantom_ASC_NULLS_FIRST
+  owner_phantom_DESC_NULLS_LAST
+  owner_workingGroupId_ASC
+  owner_workingGroupId_DESC
+  owner_workingGroupId_ASC_NULLS_FIRST
+  owner_workingGroupId_DESC_NULLS_LAST
+  owner_memberId_ASC
+  owner_memberId_DESC
+  owner_memberId_ASC_NULLS_FIRST
+  owner_memberId_DESC_NULLS_LAST
+  owner_channelId_ASC
+  owner_channelId_DESC
+  owner_channelId_ASC_NULLS_FIRST
+  owner_channelId_DESC_NULLS_LAST
+  owner_daoId_ASC
+  owner_daoId_DESC
+  owner_daoId_ASC_NULLS_FIRST
+  owner_daoId_DESC_NULLS_LAST
+  owner_isTypeOf_ASC
+  owner_isTypeOf_DESC
+  owner_isTypeOf_ASC_NULLS_FIRST
+  owner_isTypeOf_DESC_NULLS_LAST
+}
+
+union StorageBagOwner = StorageBagOwnerCouncil | StorageBagOwnerWorkingGroup | StorageBagOwnerMember | StorageBagOwnerChannel | StorageBagOwnerDAO
+
+type StorageBagOwnerChannel {
+  channelId: String!
+}
+
+type StorageBagOwnerCouncil {
+  phantom: Int
+}
+
+type StorageBagOwnerDAO {
+  daoId: Int
+}
+
+type StorageBagOwnerMember {
+  memberId: String!
+}
+
+input StorageBagOwnerWhereInput {
+  phantom_isNull: Boolean
+  phantom_eq: Int
+  phantom_not_eq: Int
+  phantom_gt: Int
+  phantom_gte: Int
+  phantom_lt: Int
+  phantom_lte: Int
+  phantom_in: [Int!]
+  phantom_not_in: [Int!]
+  workingGroupId_isNull: Boolean
+  workingGroupId_eq: String
+  workingGroupId_not_eq: String
+  workingGroupId_gt: String
+  workingGroupId_gte: String
+  workingGroupId_lt: String
+  workingGroupId_lte: String
+  workingGroupId_in: [String!]
+  workingGroupId_not_in: [String!]
+  workingGroupId_contains: String
+  workingGroupId_not_contains: String
+  workingGroupId_containsInsensitive: String
+  workingGroupId_not_containsInsensitive: String
+  workingGroupId_startsWith: String
+  workingGroupId_not_startsWith: String
+  workingGroupId_endsWith: String
+  workingGroupId_not_endsWith: String
+  memberId_isNull: Boolean
+  memberId_eq: String
+  memberId_not_eq: String
+  memberId_gt: String
+  memberId_gte: String
+  memberId_lt: String
+  memberId_lte: String
+  memberId_in: [String!]
+  memberId_not_in: [String!]
+  memberId_contains: String
+  memberId_not_contains: String
+  memberId_containsInsensitive: String
+  memberId_not_containsInsensitive: String
+  memberId_startsWith: String
+  memberId_not_startsWith: String
+  memberId_endsWith: String
+  memberId_not_endsWith: String
+  channelId_isNull: Boolean
+  channelId_eq: String
+  channelId_not_eq: String
+  channelId_gt: String
+  channelId_gte: String
+  channelId_lt: String
+  channelId_lte: String
+  channelId_in: [String!]
+  channelId_not_in: [String!]
+  channelId_contains: String
+  channelId_not_contains: String
+  channelId_containsInsensitive: String
+  channelId_not_containsInsensitive: String
+  channelId_startsWith: String
+  channelId_not_startsWith: String
+  channelId_endsWith: String
+  channelId_not_endsWith: String
+  daoId_isNull: Boolean
+  daoId_eq: Int
+  daoId_not_eq: Int
+  daoId_gt: Int
+  daoId_gte: Int
+  daoId_lt: Int
+  daoId_lte: Int
+  daoId_in: [Int!]
+  daoId_not_in: [Int!]
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
+}
+
+type StorageBagOwnerWorkingGroup {
+  workingGroupId: String
+}
+
+type StorageBagsConnection {
+  edges: [StorageBagEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input StorageBagWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  objects_every: StorageDataObjectWhereInput
+  objects_some: StorageDataObjectWhereInput
+  objects_none: StorageDataObjectWhereInput
+  storageBuckets_every: StorageBucketBagWhereInput
+  storageBuckets_some: StorageBucketBagWhereInput
+  storageBuckets_none: StorageBucketBagWhereInput
+  distributionBuckets_every: DistributionBucketBagWhereInput
+  distributionBuckets_some: DistributionBucketBagWhereInput
+  distributionBuckets_none: DistributionBucketBagWhereInput
+  owner_isNull: Boolean
+  owner: StorageBagOwnerWhereInput
+  AND: [StorageBagWhereInput!]
+  OR: [StorageBagWhereInput!]
+}
+
+type StorageBucket {
+  """Runtime bucket id"""
+  id: String!
+
+  """Current bucket operator status"""
+  operatorStatus: StorageBucketOperatorStatus!
+
+  """Storage bucket operator metadata"""
+  operatorMetadata: StorageBucketOperatorMetadata
+
+  """Whether the bucket is accepting any new storage bags"""
+  acceptingNewBags: Boolean!
+
+  """Storage bags assigned to the bucket"""
+  bags(where: StorageBucketBagWhereInput, orderBy: [StorageBucketBagOrderByInput!], offset: Int, limit: Int): [StorageBucketBag!]!
+
+  """Bucket's data object size limit in bytes"""
+  dataObjectsSizeLimit: BigInt!
+
+  """Bucket's data object count limit"""
+  dataObjectCountLimit: BigInt!
+
+  """Number of assigned data objects"""
+  dataObjectsCount: BigInt!
+
+  """Total size of assigned data objects"""
+  dataObjectsSize: BigInt!
+}
+
+type StorageBucketBag {
+  """{storageBucketId}-{storageBagId}"""
+  id: String!
+  storageBucket: StorageBucket!
+  bag: StorageBag!
+}
+
+type StorageBucketBagEdge {
+  node: StorageBucketBag!
+  cursor: String!
+}
+
+enum StorageBucketBagOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  storageBucket_id_ASC
+  storageBucket_id_DESC
+  storageBucket_id_ASC_NULLS_FIRST
+  storageBucket_id_DESC_NULLS_LAST
+  storageBucket_acceptingNewBags_ASC
+  storageBucket_acceptingNewBags_DESC
+  storageBucket_acceptingNewBags_ASC_NULLS_FIRST
+  storageBucket_acceptingNewBags_DESC_NULLS_LAST
+  storageBucket_dataObjectsSizeLimit_ASC
+  storageBucket_dataObjectsSizeLimit_DESC
+  storageBucket_dataObjectsSizeLimit_ASC_NULLS_FIRST
+  storageBucket_dataObjectsSizeLimit_DESC_NULLS_LAST
+  storageBucket_dataObjectCountLimit_ASC
+  storageBucket_dataObjectCountLimit_DESC
+  storageBucket_dataObjectCountLimit_ASC_NULLS_FIRST
+  storageBucket_dataObjectCountLimit_DESC_NULLS_LAST
+  storageBucket_dataObjectsCount_ASC
+  storageBucket_dataObjectsCount_DESC
+  storageBucket_dataObjectsCount_ASC_NULLS_FIRST
+  storageBucket_dataObjectsCount_DESC_NULLS_LAST
+  storageBucket_dataObjectsSize_ASC
+  storageBucket_dataObjectsSize_DESC
+  storageBucket_dataObjectsSize_ASC_NULLS_FIRST
+  storageBucket_dataObjectsSize_DESC_NULLS_LAST
+  bag_id_ASC
+  bag_id_DESC
+  bag_id_ASC_NULLS_FIRST
+  bag_id_DESC_NULLS_LAST
+}
+
+type StorageBucketBagsConnection {
+  edges: [StorageBucketBagEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input StorageBucketBagWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  storageBucket_isNull: Boolean
+  storageBucket: StorageBucketWhereInput
+  bag_isNull: Boolean
+  bag: StorageBagWhereInput
+  AND: [StorageBucketBagWhereInput!]
+  OR: [StorageBucketBagWhereInput!]
+}
+
+type StorageBucketEdge {
+  node: StorageBucket!
+  cursor: String!
+}
+
+type StorageBucketOperatorMetadata {
+  id: String!
+
+  """Storage bucket to which the metadata is assigned"""
+  storageBucket: StorageBucket!
+
+  """Root node endpoint"""
+  nodeEndpoint: String
+
+  """Optional node location metadata"""
+  nodeLocation: NodeLocationMetadata
+
+  """Additional information about the node/operator"""
+  extra: String
+}
+
+type StorageBucketOperatorMetadataConnection {
+  edges: [StorageBucketOperatorMetadataEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type StorageBucketOperatorMetadataEdge {
+  node: StorageBucketOperatorMetadata!
+  cursor: String!
+}
+
+enum StorageBucketOperatorMetadataOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  storageBucket_id_ASC
+  storageBucket_id_DESC
+  storageBucket_id_ASC_NULLS_FIRST
+  storageBucket_id_DESC_NULLS_LAST
+  storageBucket_acceptingNewBags_ASC
+  storageBucket_acceptingNewBags_DESC
+  storageBucket_acceptingNewBags_ASC_NULLS_FIRST
+  storageBucket_acceptingNewBags_DESC_NULLS_LAST
+  storageBucket_dataObjectsSizeLimit_ASC
+  storageBucket_dataObjectsSizeLimit_DESC
+  storageBucket_dataObjectsSizeLimit_ASC_NULLS_FIRST
+  storageBucket_dataObjectsSizeLimit_DESC_NULLS_LAST
+  storageBucket_dataObjectCountLimit_ASC
+  storageBucket_dataObjectCountLimit_DESC
+  storageBucket_dataObjectCountLimit_ASC_NULLS_FIRST
+  storageBucket_dataObjectCountLimit_DESC_NULLS_LAST
+  storageBucket_dataObjectsCount_ASC
+  storageBucket_dataObjectsCount_DESC
+  storageBucket_dataObjectsCount_ASC_NULLS_FIRST
+  storageBucket_dataObjectsCount_DESC_NULLS_LAST
+  storageBucket_dataObjectsSize_ASC
+  storageBucket_dataObjectsSize_DESC
+  storageBucket_dataObjectsSize_ASC_NULLS_FIRST
+  storageBucket_dataObjectsSize_DESC_NULLS_LAST
+  nodeEndpoint_ASC
+  nodeEndpoint_DESC
+  nodeEndpoint_ASC_NULLS_FIRST
+  nodeEndpoint_DESC_NULLS_LAST
+  nodeLocation_countryCode_ASC
+  nodeLocation_countryCode_DESC
+  nodeLocation_countryCode_ASC_NULLS_FIRST
+  nodeLocation_countryCode_DESC_NULLS_LAST
+  nodeLocation_city_ASC
+  nodeLocation_city_DESC
+  nodeLocation_city_ASC_NULLS_FIRST
+  nodeLocation_city_DESC_NULLS_LAST
+  extra_ASC
+  extra_DESC
+  extra_ASC_NULLS_FIRST
+  extra_DESC_NULLS_LAST
+}
+
+input StorageBucketOperatorMetadataWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  storageBucket_isNull: Boolean
+  storageBucket: StorageBucketWhereInput
+  nodeEndpoint_isNull: Boolean
+  nodeEndpoint_eq: String
+  nodeEndpoint_not_eq: String
+  nodeEndpoint_gt: String
+  nodeEndpoint_gte: String
+  nodeEndpoint_lt: String
+  nodeEndpoint_lte: String
+  nodeEndpoint_in: [String!]
+  nodeEndpoint_not_in: [String!]
+  nodeEndpoint_contains: String
+  nodeEndpoint_not_contains: String
+  nodeEndpoint_containsInsensitive: String
+  nodeEndpoint_not_containsInsensitive: String
+  nodeEndpoint_startsWith: String
+  nodeEndpoint_not_startsWith: String
+  nodeEndpoint_endsWith: String
+  nodeEndpoint_not_endsWith: String
+  nodeLocation_isNull: Boolean
+  nodeLocation: NodeLocationMetadataWhereInput
+  extra_isNull: Boolean
+  extra_eq: String
+  extra_not_eq: String
+  extra_gt: String
+  extra_gte: String
+  extra_lt: String
+  extra_lte: String
+  extra_in: [String!]
+  extra_not_in: [String!]
+  extra_contains: String
+  extra_not_contains: String
+  extra_containsInsensitive: String
+  extra_not_containsInsensitive: String
+  extra_startsWith: String
+  extra_not_startsWith: String
+  extra_endsWith: String
+  extra_not_endsWith: String
+  AND: [StorageBucketOperatorMetadataWhereInput!]
+  OR: [StorageBucketOperatorMetadataWhereInput!]
+}
+
+union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
+
+type StorageBucketOperatorStatusActive {
+  workerId: Int!
+  transactorAccountId: String!
+}
+
+type StorageBucketOperatorStatusInvited {
+  workerId: Int!
+}
+
+type StorageBucketOperatorStatusMissing {
+  phantom: Int
+}
+
+input StorageBucketOperatorStatusWhereInput {
+  phantom_isNull: Boolean
+  phantom_eq: Int
+  phantom_not_eq: Int
+  phantom_gt: Int
+  phantom_gte: Int
+  phantom_lt: Int
+  phantom_lte: Int
+  phantom_in: [Int!]
+  phantom_not_in: [Int!]
+  workerId_isNull: Boolean
+  workerId_eq: Int
+  workerId_not_eq: Int
+  workerId_gt: Int
+  workerId_gte: Int
+  workerId_lt: Int
+  workerId_lte: Int
+  workerId_in: [Int!]
+  workerId_not_in: [Int!]
+  transactorAccountId_isNull: Boolean
+  transactorAccountId_eq: String
+  transactorAccountId_not_eq: String
+  transactorAccountId_gt: String
+  transactorAccountId_gte: String
+  transactorAccountId_lt: String
+  transactorAccountId_lte: String
+  transactorAccountId_in: [String!]
+  transactorAccountId_not_in: [String!]
+  transactorAccountId_contains: String
+  transactorAccountId_not_contains: String
+  transactorAccountId_containsInsensitive: String
+  transactorAccountId_not_containsInsensitive: String
+  transactorAccountId_startsWith: String
+  transactorAccountId_not_startsWith: String
+  transactorAccountId_endsWith: String
+  transactorAccountId_not_endsWith: String
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
+}
+
+enum StorageBucketOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  operatorStatus_phantom_ASC
+  operatorStatus_phantom_DESC
+  operatorStatus_phantom_ASC_NULLS_FIRST
+  operatorStatus_phantom_DESC_NULLS_LAST
+  operatorStatus_workerId_ASC
+  operatorStatus_workerId_DESC
+  operatorStatus_workerId_ASC_NULLS_FIRST
+  operatorStatus_workerId_DESC_NULLS_LAST
+  operatorStatus_transactorAccountId_ASC
+  operatorStatus_transactorAccountId_DESC
+  operatorStatus_transactorAccountId_ASC_NULLS_FIRST
+  operatorStatus_transactorAccountId_DESC_NULLS_LAST
+  operatorStatus_isTypeOf_ASC
+  operatorStatus_isTypeOf_DESC
+  operatorStatus_isTypeOf_ASC_NULLS_FIRST
+  operatorStatus_isTypeOf_DESC_NULLS_LAST
+  operatorMetadata_id_ASC
+  operatorMetadata_id_DESC
+  operatorMetadata_id_ASC_NULLS_FIRST
+  operatorMetadata_id_DESC_NULLS_LAST
+  operatorMetadata_nodeEndpoint_ASC
+  operatorMetadata_nodeEndpoint_DESC
+  operatorMetadata_nodeEndpoint_ASC_NULLS_FIRST
+  operatorMetadata_nodeEndpoint_DESC_NULLS_LAST
+  operatorMetadata_extra_ASC
+  operatorMetadata_extra_DESC
+  operatorMetadata_extra_ASC_NULLS_FIRST
+  operatorMetadata_extra_DESC_NULLS_LAST
+  acceptingNewBags_ASC
+  acceptingNewBags_DESC
+  acceptingNewBags_ASC_NULLS_FIRST
+  acceptingNewBags_DESC_NULLS_LAST
+  dataObjectsSizeLimit_ASC
+  dataObjectsSizeLimit_DESC
+  dataObjectsSizeLimit_ASC_NULLS_FIRST
+  dataObjectsSizeLimit_DESC_NULLS_LAST
+  dataObjectCountLimit_ASC
+  dataObjectCountLimit_DESC
+  dataObjectCountLimit_ASC_NULLS_FIRST
+  dataObjectCountLimit_DESC_NULLS_LAST
+  dataObjectsCount_ASC
+  dataObjectsCount_DESC
+  dataObjectsCount_ASC_NULLS_FIRST
+  dataObjectsCount_DESC_NULLS_LAST
+  dataObjectsSize_ASC
+  dataObjectsSize_DESC
+  dataObjectsSize_ASC_NULLS_FIRST
+  dataObjectsSize_DESC_NULLS_LAST
+}
+
+type StorageBucketsConnection {
+  edges: [StorageBucketEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input StorageBucketWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  operatorStatus_isNull: Boolean
+  operatorStatus: StorageBucketOperatorStatusWhereInput
+  operatorMetadata_isNull: Boolean
+  operatorMetadata: StorageBucketOperatorMetadataWhereInput
+  acceptingNewBags_isNull: Boolean
+  acceptingNewBags_eq: Boolean
+  acceptingNewBags_not_eq: Boolean
+  bags_every: StorageBucketBagWhereInput
+  bags_some: StorageBucketBagWhereInput
+  bags_none: StorageBucketBagWhereInput
+  dataObjectsSizeLimit_isNull: Boolean
+  dataObjectsSizeLimit_eq: BigInt
+  dataObjectsSizeLimit_not_eq: BigInt
+  dataObjectsSizeLimit_gt: BigInt
+  dataObjectsSizeLimit_gte: BigInt
+  dataObjectsSizeLimit_lt: BigInt
+  dataObjectsSizeLimit_lte: BigInt
+  dataObjectsSizeLimit_in: [BigInt!]
+  dataObjectsSizeLimit_not_in: [BigInt!]
+  dataObjectCountLimit_isNull: Boolean
+  dataObjectCountLimit_eq: BigInt
+  dataObjectCountLimit_not_eq: BigInt
+  dataObjectCountLimit_gt: BigInt
+  dataObjectCountLimit_gte: BigInt
+  dataObjectCountLimit_lt: BigInt
+  dataObjectCountLimit_lte: BigInt
+  dataObjectCountLimit_in: [BigInt!]
+  dataObjectCountLimit_not_in: [BigInt!]
+  dataObjectsCount_isNull: Boolean
+  dataObjectsCount_eq: BigInt
+  dataObjectsCount_not_eq: BigInt
+  dataObjectsCount_gt: BigInt
+  dataObjectsCount_gte: BigInt
+  dataObjectsCount_lt: BigInt
+  dataObjectsCount_lte: BigInt
+  dataObjectsCount_in: [BigInt!]
+  dataObjectsCount_not_in: [BigInt!]
+  dataObjectsSize_isNull: Boolean
+  dataObjectsSize_eq: BigInt
+  dataObjectsSize_not_eq: BigInt
+  dataObjectsSize_gt: BigInt
+  dataObjectsSize_gte: BigInt
+  dataObjectsSize_lt: BigInt
+  dataObjectsSize_lte: BigInt
+  dataObjectsSize_in: [BigInt!]
+  dataObjectsSize_not_in: [BigInt!]
+  AND: [StorageBucketWhereInput!]
+  OR: [StorageBucketWhereInput!]
+}
+
+type StorageDataObject {
+  """Data object runtime id"""
+  id: String!
+
+  """Timestamp of the block the data object was created at"""
+  createdAt: DateTime!
+
+  """
+  Whether the data object was uploaded and accepted by the storage provider
+  """
+  isAccepted: Boolean!
+
+  """The storage bucket which accepted the data object """
+  acceptingBucketId: BigInt
+
+  """Data object size in bytes"""
+  size: BigInt!
+
+  """Storage bag the data object is part of"""
+  storageBag: StorageBag!
+
+  """IPFS content hash"""
+  ipfsHash: String!
+
+  """The type of the asset that the data object represents (if known)"""
+  type: DataObjectType
+
+  """State Bloat Bond for removing the data object"""
+  stateBloatBond: BigInt!
+}
+
+type StorageDataObjectEdge {
+  node: StorageDataObject!
+  cursor: String!
+}
+
+enum StorageDataObjectOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  createdAt_ASC
+  createdAt_DESC
+  createdAt_ASC_NULLS_FIRST
+  createdAt_DESC_NULLS_LAST
+  isAccepted_ASC
+  isAccepted_DESC
+  isAccepted_ASC_NULLS_FIRST
+  isAccepted_DESC_NULLS_LAST
+  acceptingBucketId_ASC
+  acceptingBucketId_DESC
+  acceptingBucketId_ASC_NULLS_FIRST
+  acceptingBucketId_DESC_NULLS_LAST
+  size_ASC
+  size_DESC
+  size_ASC_NULLS_FIRST
+  size_DESC_NULLS_LAST
+  storageBag_id_ASC
+  storageBag_id_DESC
+  storageBag_id_ASC_NULLS_FIRST
+  storageBag_id_DESC_NULLS_LAST
+  ipfsHash_ASC
+  ipfsHash_DESC
+  ipfsHash_ASC_NULLS_FIRST
+  ipfsHash_DESC_NULLS_LAST
+  type_isTypeOf_ASC
+  type_isTypeOf_DESC
+  type_isTypeOf_ASC_NULLS_FIRST
+  type_isTypeOf_DESC_NULLS_LAST
+  stateBloatBond_ASC
+  stateBloatBond_DESC
+  stateBloatBond_ASC_NULLS_FIRST
+  stateBloatBond_DESC_NULLS_LAST
+}
+
+type StorageDataObjectsConnection {
+  edges: [StorageDataObjectEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input StorageDataObjectWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  createdAt_isNull: Boolean
+  createdAt_eq: DateTime
+  createdAt_not_eq: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_in: [DateTime!]
+  createdAt_not_in: [DateTime!]
+  isAccepted_isNull: Boolean
+  isAccepted_eq: Boolean
+  isAccepted_not_eq: Boolean
+  acceptingBucketId_isNull: Boolean
+  acceptingBucketId_eq: BigInt
+  acceptingBucketId_not_eq: BigInt
+  acceptingBucketId_gt: BigInt
+  acceptingBucketId_gte: BigInt
+  acceptingBucketId_lt: BigInt
+  acceptingBucketId_lte: BigInt
+  acceptingBucketId_in: [BigInt!]
+  acceptingBucketId_not_in: [BigInt!]
+  size_isNull: Boolean
+  size_eq: BigInt
+  size_not_eq: BigInt
+  size_gt: BigInt
+  size_gte: BigInt
+  size_lt: BigInt
+  size_lte: BigInt
+  size_in: [BigInt!]
+  size_not_in: [BigInt!]
+  storageBag_isNull: Boolean
+  storageBag: StorageBagWhereInput
+  ipfsHash_isNull: Boolean
+  ipfsHash_eq: String
+  ipfsHash_not_eq: String
+  ipfsHash_gt: String
+  ipfsHash_gte: String
+  ipfsHash_lt: String
+  ipfsHash_lte: String
+  ipfsHash_in: [String!]
+  ipfsHash_not_in: [String!]
+  ipfsHash_contains: String
+  ipfsHash_not_contains: String
+  ipfsHash_containsInsensitive: String
+  ipfsHash_not_containsInsensitive: String
+  ipfsHash_startsWith: String
+  ipfsHash_not_startsWith: String
+  ipfsHash_endsWith: String
+  ipfsHash_not_endsWith: String
+  type_isNull: Boolean
+  type: DataObjectTypeWhereInput
+  stateBloatBond_isNull: Boolean
+  stateBloatBond_eq: BigInt
+  stateBloatBond_not_eq: BigInt
+  stateBloatBond_gt: BigInt
+  stateBloatBond_gte: BigInt
+  stateBloatBond_lt: BigInt
+  stateBloatBond_lte: BigInt
+  stateBloatBond_in: [BigInt!]
+  stateBloatBond_not_in: [BigInt!]
+  AND: [StorageDataObjectWhereInput!]
+  OR: [StorageDataObjectWhereInput!]
+}
+
+type Subscription {
+  events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
+  eventById(id: String!): Event
+  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
+  videoSubtitleById(id: String!): VideoSubtitle
+  storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
+  storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
+  storageBuckets(where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!], offset: Int, limit: Int): [StorageBucket!]!
+  storageBucketById(id: String!): StorageBucket
+  storageBags(where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!], offset: Int, limit: Int): [StorageBag!]!
+  storageBagById(id: String!): StorageBag
+  storageBucketBags(where: StorageBucketBagWhereInput, orderBy: [StorageBucketBagOrderByInput!], offset: Int, limit: Int): [StorageBucketBag!]!
+  storageBucketBagById(id: String!): StorageBucketBag
+  distributionBucketBags(where: DistributionBucketBagWhereInput, orderBy: [DistributionBucketBagOrderByInput!], offset: Int, limit: Int): [DistributionBucketBag!]!
+  distributionBucketBagById(id: String!): DistributionBucketBag
+  storageDataObjects(where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!], offset: Int, limit: Int): [StorageDataObject!]!
+  storageDataObjectById(id: String!): StorageDataObject
+  distributionBucketFamilyMetadata(where: DistributionBucketFamilyMetadataWhereInput, orderBy: [DistributionBucketFamilyMetadataOrderByInput!], offset: Int, limit: Int): [DistributionBucketFamilyMetadata!]!
+  distributionBucketFamilyMetadataById(id: String!): DistributionBucketFamilyMetadata
+  distributionBucketOperatorMetadata(where: DistributionBucketOperatorMetadataWhereInput, orderBy: [DistributionBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperatorMetadata!]!
+  distributionBucketOperatorMetadataById(id: String!): DistributionBucketOperatorMetadata
+  distributionBucketOperators(where: DistributionBucketOperatorWhereInput, orderBy: [DistributionBucketOperatorOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperator!]!
+  distributionBucketOperatorById(id: String!): DistributionBucketOperator
+  distributionBuckets(where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!], offset: Int, limit: Int): [DistributionBucket!]!
+  distributionBucketById(id: String!): DistributionBucket
+  distributionBucketFamilies(where: DistributionBucketFamilyWhereInput, orderBy: [DistributionBucketFamilyOrderByInput!], offset: Int, limit: Int): [DistributionBucketFamily!]!
+  distributionBucketFamilyById(id: String!): DistributionBucketFamily
+}
+
+type VideoSubtitle {
+  """(videoId)-{type}-{language}"""
+  id: String!
+
+  """MIME type description of format used for this subtitle"""
+  mimeType: String!
+
+  """Storage object representing the subtitle file"""
+  asset: StorageDataObject
+}
+
+type VideoSubtitleEdge {
+  node: VideoSubtitle!
+  cursor: String!
+}
+
+enum VideoSubtitleOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  mimeType_ASC
+  mimeType_DESC
+  mimeType_ASC_NULLS_FIRST
+  mimeType_DESC_NULLS_LAST
+  asset_id_ASC
+  asset_id_DESC
+  asset_id_ASC_NULLS_FIRST
+  asset_id_DESC_NULLS_LAST
+  asset_createdAt_ASC
+  asset_createdAt_DESC
+  asset_createdAt_ASC_NULLS_FIRST
+  asset_createdAt_DESC_NULLS_LAST
+  asset_isAccepted_ASC
+  asset_isAccepted_DESC
+  asset_isAccepted_ASC_NULLS_FIRST
+  asset_isAccepted_DESC_NULLS_LAST
+  asset_acceptingBucketId_ASC
+  asset_acceptingBucketId_DESC
+  asset_acceptingBucketId_ASC_NULLS_FIRST
+  asset_acceptingBucketId_DESC_NULLS_LAST
+  asset_size_ASC
+  asset_size_DESC
+  asset_size_ASC_NULLS_FIRST
+  asset_size_DESC_NULLS_LAST
+  asset_ipfsHash_ASC
+  asset_ipfsHash_DESC
+  asset_ipfsHash_ASC_NULLS_FIRST
+  asset_ipfsHash_DESC_NULLS_LAST
+  asset_stateBloatBond_ASC
+  asset_stateBloatBond_DESC
+  asset_stateBloatBond_ASC_NULLS_FIRST
+  asset_stateBloatBond_DESC_NULLS_LAST
+}
+
+type VideoSubtitlesConnection {
+  edges: [VideoSubtitleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input VideoSubtitleWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  mimeType_isNull: Boolean
+  mimeType_eq: String
+  mimeType_not_eq: String
+  mimeType_gt: String
+  mimeType_gte: String
+  mimeType_lt: String
+  mimeType_lte: String
+  mimeType_in: [String!]
+  mimeType_not_in: [String!]
+  mimeType_contains: String
+  mimeType_not_contains: String
+  mimeType_containsInsensitive: String
+  mimeType_not_containsInsensitive: String
+  mimeType_startsWith: String
+  mimeType_not_startsWith: String
+  mimeType_endsWith: String
+  mimeType_not_endsWith: String
+  asset_isNull: Boolean
+  asset: StorageDataObjectWhereInput
+  AND: [VideoSubtitleWhereInput!]
+  OR: [VideoSubtitleWhereInput!]
+}
+
+input WhereIdInput {
+  id: String!
+}
+
