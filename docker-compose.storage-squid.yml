@@ -59,6 +59,8 @@ services:
       - DB_PORT=${SQUID_DB_PORT}
       - DB_HOST=${SQUID_DB_HOST}
       - GQL_PORT=${SQUID_GQL_PORT}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED}
     depends_on:
       - squid_db
     command: ['npm', 'run', 'graphql-server-start']
