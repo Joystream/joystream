@@ -957,14 +957,14 @@ type PageInfo {
 }
 
 type Query {
-  events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
-  eventById(id: String!): Event
-  eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
-  eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
   videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
   videoSubtitleById(id: String!): VideoSubtitle
   videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
   videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
+  events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
+  eventById(id: String!): Event
+  eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
+  eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
   storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
   storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
   storageBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): StorageBucketOperatorMetadata @deprecated(reason: "Use storageBucketOperatorMetadataById")
@@ -1827,35 +1827,6 @@ input StorageDataObjectWhereInput {
   stateBloatBond_not_in: [BigInt!]
   AND: [StorageDataObjectWhereInput!]
   OR: [StorageDataObjectWhereInput!]
-}
-
-type Subscription {
-  events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
-  eventById(id: String!): Event
-  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
-  videoSubtitleById(id: String!): VideoSubtitle
-  storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
-  storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
-  storageBuckets(where: StorageBucketWhereInput, orderBy: [StorageBucketOrderByInput!], offset: Int, limit: Int): [StorageBucket!]!
-  storageBucketById(id: String!): StorageBucket
-  storageBags(where: StorageBagWhereInput, orderBy: [StorageBagOrderByInput!], offset: Int, limit: Int): [StorageBag!]!
-  storageBagById(id: String!): StorageBag
-  storageBucketBags(where: StorageBucketBagWhereInput, orderBy: [StorageBucketBagOrderByInput!], offset: Int, limit: Int): [StorageBucketBag!]!
-  storageBucketBagById(id: String!): StorageBucketBag
-  distributionBucketBags(where: DistributionBucketBagWhereInput, orderBy: [DistributionBucketBagOrderByInput!], offset: Int, limit: Int): [DistributionBucketBag!]!
-  distributionBucketBagById(id: String!): DistributionBucketBag
-  storageDataObjects(where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!], offset: Int, limit: Int): [StorageDataObject!]!
-  storageDataObjectById(id: String!): StorageDataObject
-  distributionBucketFamilyMetadata(where: DistributionBucketFamilyMetadataWhereInput, orderBy: [DistributionBucketFamilyMetadataOrderByInput!], offset: Int, limit: Int): [DistributionBucketFamilyMetadata!]!
-  distributionBucketFamilyMetadataById(id: String!): DistributionBucketFamilyMetadata
-  distributionBucketOperatorMetadata(where: DistributionBucketOperatorMetadataWhereInput, orderBy: [DistributionBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperatorMetadata!]!
-  distributionBucketOperatorMetadataById(id: String!): DistributionBucketOperatorMetadata
-  distributionBucketOperators(where: DistributionBucketOperatorWhereInput, orderBy: [DistributionBucketOperatorOrderByInput!], offset: Int, limit: Int): [DistributionBucketOperator!]!
-  distributionBucketOperatorById(id: String!): DistributionBucketOperator
-  distributionBuckets(where: DistributionBucketWhereInput, orderBy: [DistributionBucketOrderByInput!], offset: Int, limit: Int): [DistributionBucket!]!
-  distributionBucketById(id: String!): DistributionBucket
-  distributionBucketFamilies(where: DistributionBucketFamilyWhereInput, orderBy: [DistributionBucketFamilyOrderByInput!], offset: Int, limit: Int): [DistributionBucketFamily!]!
-  distributionBucketFamilyById(id: String!): DistributionBucketFamily
 }
 
 type VideoSubtitle {
