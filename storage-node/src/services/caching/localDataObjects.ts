@@ -35,8 +35,17 @@ export async function getDataObjectIDs(): Promise<string[]> {
 export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
   await lock.acquireAsync()
 
-  const ids = await getLocalFileNames(uploadDir)
-  ids.forEach((id) => idCache.set(id, 0))
+  const names = await getLocalFileNames(uploadDir)
+
+  names
+    .filter((name) => {
+      // Just incase the directory is polluted with other files,
+      // filter out filenames that do not match with an objectid (number)
+      const num = Number(name)
+      return Number.isInteger(num)
+    })
+    .forEach((id) => idCache.set(id, 0))
+
   logger.debug(`Local ID cache loaded.`)
 
   lock.release()

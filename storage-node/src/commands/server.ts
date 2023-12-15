@@ -160,11 +160,9 @@ Supported values: warn, error, debug, info. Default:debug`,
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    const logSource = `StorageProvider_${flags.worker}`
-
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
       initNewLogger({
-        elasticSearchlogSource: logSource,
+        elasticSearchlogSource: `StorageProvider_${flags.worker}`,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
         elasticSearchIndexPrefix: flags.elasticSearchIndexPrefix,
         elasticSearchUser: flags.elasticSearchUser,
@@ -179,6 +177,10 @@ Supported values: warn, error, debug, info. Default:debug`,
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
 
     const api = await this.getApi()
+
+    if (flags.dev) {
+      await this.ensureDevelopmentChain()
+    }
 
     const workerId = flags.worker
 
@@ -231,17 +233,10 @@ Supported values: warn, error, debug, info. Default:debug`,
       this.error('Please use unique paths for temp and uploads folder paths.')
     }
 
-    // TODO: Check that uploads and temp folders are writeable
+    await createDirectory(flags.uploads)
+    await loadDataObjectIdCache(flags.uploads)
 
-    await createTempDirectory(tempFolder)
-
-    if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads)
-    }
-
-    if (flags.dev) {
-      await this.ensureDevelopmentChain()
-    }
+    await createDirectory(tempFolder)
 
     const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
 
@@ -431,20 +426,14 @@ async function runCleanupWithInterval(
 }
 
 /**
- * Creates the temporary directory.
- * If folder exists, all files with extension `.temp` are deleted.
+ * Creates a directory recursivly. Like `mkdir -p`
  *
- * @param uploadsDirectory - data uploading directory
- * @param tempDirName - temporary directory name within the uploading directory
+ * @param tempDirName - full path to temporary directory
  * @returns void promise.
  */
-async function createTempDirectory(tempDirName: string): Promise<void> {
-  try {
-    logger.info(`Creating temp directory ...`)
-    await fsPromises.mkdir(tempDirName)
-  } catch (err) {
-    logger.error(`Temp directory IO error: ${err}`)
-  }
+async function createDirectory(dirName: string): Promise<void> {
+  logger.info(`Creating directory ${dirName}`)
+  await fsPromises.mkdir(dirName, { recursive: true })
 }
 
 async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
