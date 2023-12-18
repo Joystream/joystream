@@ -38,12 +38,9 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
   const names = await getLocalFileNames(uploadDir)
 
   names
-    .filter((name) => {
-      // Just incase the directory is polluted with other files,
-      // filter out filenames that do not match with an objectid (number)
-      const num = Number(name)
-      return Number.isInteger(num)
-    })
+    // Just incase the directory is polluted with other files,
+    // filter out filenames that do not match with an objectid (number)
+    .filter((name) => Number.isInteger(Number(name)))
     .forEach((id) => idCache.set(id, 0))
 
   logger.debug(`Local ID cache loaded.`)
