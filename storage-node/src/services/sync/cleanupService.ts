@@ -123,11 +123,21 @@ async function getDeletionTasksFromMovedDataObjects(
   movedDataObjects: DataObjectDetailsFragment[],
   hostId: string
 ): Promise<DeleteLocalFileTask[]> {
+  const ownOperatorUrls: string[] = []
+  for (const entry of dataObligations.storageBuckets) {
+    if (ownBuckets.includes(entry.id)) {
+      ownOperatorUrls.push(entry.operatorUrl)
+    }
+  }
+
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    // Skip buckets operated by this storage provider
     if (!ownBuckets.includes(entry.id)) {
-      bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+      if (ownOperatorUrls.includes(entry.operatorUrl)) {
+        logger.warn(`(cleanup) Skipping remote bucket ${entry.id} - ${entry.operatorUrl}`)
+      } else {
+        bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+      }
     }
   }
 
