@@ -160,6 +160,16 @@ Supported values: warn, error, debug, info. Default:debug`,
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
+    const api = await this.getApi()
+
+    if (flags.dev) {
+      await this.ensureDevelopmentChain()
+    }
+
+    if (flags.logFilePath && path.relative(flags.logFilePath, flags.uploads) === '') {
+      this.error('Paths for logs and uploads must be unique.')
+    }
+
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
       initNewLogger({
         elasticSearchlogSource: `StorageProvider_${flags.worker}`,
@@ -175,12 +185,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
-
-    const api = await this.getApi()
-
-    if (flags.dev) {
-      await this.ensureDevelopmentChain()
-    }
 
     const workerId = flags.worker
 
@@ -224,13 +228,18 @@ Supported values: warn, error, debug, info. Default:debug`,
     const enableUploadingAuth = false
     const operatorRoleKey = undefined
 
+    if (!flags.tempFolder) {
+      logger.warn(
+        'It is recommended to specify a unique file path for temporary files.' +
+          'For now a temp folder under the uploads folder will be used.' +
+          'In future this will be warning will become and error!'
+      )
+    }
+
     const tempFolder = flags.tempFolder || path.join(flags.uploads, TempDirName)
 
-    // Prevent tempFolder and uploadsFolder being at the same location. This is a simple check
-    // and doesn't deal with possibility that different path can point to the same location. eg. symlinks or
-    // a volume being mounted on multiple paths
-    if (tempFolder === flags.uploads) {
-      this.error('Please use unique paths for temp and uploads folder paths.')
+    if (path.relative(tempFolder, flags.uploads) === '') {
+      this.error('Paths for temporary and uploads folders must be unique.')
     }
 
     await createDirectory(flags.uploads)
