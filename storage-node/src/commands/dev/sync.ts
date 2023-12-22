@@ -69,12 +69,12 @@ export default class DevSync extends Command {
     try {
       await performSync(
         undefined,
-        flags.workerId,
         [bucketId],
         flags.syncWorkersNumber,
         flags.syncWorkersTimeout,
         qnApi,
         flags.uploads,
+        '',
         flags.dataSourceOperatorUrl
       )
     } catch (err) {
