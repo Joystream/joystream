@@ -52,7 +52,7 @@ export default class Cleanup extends Command {
     logger.info('Cleanup...')
 
     try {
-      await performCleanup(flags.workerId, [bucketId], flags.cleanupWorkersNumber, qnApi, flags.uploads)
+      await performCleanup([bucketId], flags.cleanupWorkersNumber, qnApi, flags.uploads, '')
     } catch (err) {
       logger.error(err)
       logger.error(stringify(err))

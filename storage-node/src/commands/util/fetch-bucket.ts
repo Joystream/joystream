@@ -71,13 +71,13 @@ export default class FetchBucket extends Command {
     try {
       await performSync(
         undefined,
-        flags.workerId,
         [bucketId],
         flags.syncWorkersNumber,
         flags.syncWorkersTimeout,
         qnApi,
         flags.uploads,
         flags.tempFolder ? flags.tempFolder : path.join(flags.uploads, 'temp'),
+        '',
         flags.dataSourceOperatorUrl
       )
     } catch (err) {

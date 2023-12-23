@@ -30,7 +30,7 @@ const badOperatorUrls = new NodeCache({
  *
  * @param operatorUrl - remote storage node URL
  */
-export async function getRemoteDataObjects(operatorUrl: string): Promise<string[]> {
+export async function getRemoteDataObjects(operatorUrl: string, hostId: string): Promise<string[]> {
   const url = urljoin(operatorUrl, 'api/v1/state/data-objects')
 
   const faultyOperator = badOperatorUrls.has(operatorUrl)
@@ -48,7 +48,7 @@ export async function getRemoteDataObjects(operatorUrl: string): Promise<string[
   try {
     logger.debug(`Sync - fetching available data for ${url}`)
     const timeoutMs = 120 * 1000 // 2 min
-    const response = await superagent.get(url).timeout(timeoutMs)
+    const response = await superagent.get(url).timeout(timeoutMs).set('X-COLOSSUS-HOST-ID', hostId)
 
     const data = response.body
     availableIDsCache.set(url, data, ExpirationPeriod)

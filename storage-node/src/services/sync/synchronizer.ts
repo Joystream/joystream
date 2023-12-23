@@ -37,13 +37,13 @@ export const PendingDirName = 'pending'
  */
 export async function performSync(
   api: ApiPromise | undefined,
-  workerId: number,
   buckets: string[],
   asyncWorkersNumber: number,
   asyncWorkersTimeout: number,
   qnApi: QueryNodeApi,
   uploadDirectory: string,
   tempDirectory: string,
+  hostId: string,
   operatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
@@ -64,15 +64,16 @@ export async function performSync(
     addedTasks = await getPrepareDownloadTasks(
       api,
       model,
-      workerId,
+      buckets,
       added,
       uploadDirectory,
       tempDirectory,
       workingStack,
-      asyncWorkersTimeout
+      asyncWorkersTimeout,
+      hostId
     )
   } else {
-    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory, asyncWorkersTimeout)
+    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory, asyncWorkersTimeout, hostId)
   }
 
   logger.debug(`Sync - started processing...`)
@@ -89,7 +90,7 @@ export async function performSync(
  * Creates the download preparation tasks.
  *
  * @param api - Runtime API promise
- * @param currentWorkerId - Worker ID
+ * @param ownBuckets - list of bucket ids operated this node
  * @param dataObligations - defines the current data obligations for the node
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
@@ -100,23 +101,34 @@ export async function performSync(
 async function getPrepareDownloadTasks(
   api: ApiPromise | undefined,
   dataObligations: DataObligations,
-  currentWorkerId: number,
+  ownBuckets: string[],
   addedIds: string[],
   uploadDirectory: string,
   tempDirectory: string,
   taskSink: TaskSink,
-  asyncWorkersTimeout: number
+  asyncWorkersTimeout: number,
+  hostId: string
 ): Promise<PrepareDownloadFileTask[]> {
   const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
     bagIdByDataObjectId.set(entry.id, entry.bagId)
   }
 
+  const ownOperatorUrls: string[] = []
+  for (const entry of dataObligations.storageBuckets) {
+    if (ownBuckets.includes(entry.id)) {
+      ownOperatorUrls.push(entry.operatorUrl)
+    }
+  }
+
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    // Skip all buckets of the current WorkerId (this storage provider)
-    if (entry.workerId !== currentWorkerId) {
-      bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+    if (!ownBuckets.includes(entry.id)) {
+      if (ownOperatorUrls.includes(entry.operatorUrl)) {
+        logger.warn(`(sync) Skipping remote bucket ${entry.id} - ${entry.operatorUrl}`)
+      } else {
+        bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+      }
     }
   }
 
@@ -148,6 +160,7 @@ async function getPrepareDownloadTasks(
 
     return new PrepareDownloadFileTask(
       operatorUrls,
+      hostId,
       bagId,
       id,
       uploadDirectory,
@@ -175,11 +188,12 @@ async function getDownloadTasks(
   addedIds: string[],
   uploadDirectory: string,
   tempDirectory: string,
-  downloadTimeout: number
+  downloadTimeout: number,
+  hostId: string
 ): Promise<DownloadFileTask[]> {
   const addedTasks = addedIds.map(
     (fileName) =>
-      new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory, downloadTimeout)
+      new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory, downloadTimeout, hostId)
   )
 
   return addedTasks
