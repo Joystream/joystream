@@ -53,7 +53,7 @@ export default class Server extends ApiCommandBase {
     }),
     tempFolder: flags.string({
       description:
-        'Directory to store tempory files during sync and upload (absolute path).\n,Temporary directory (absolute path). If not specified a subfolder under the uploads directory will be used.',
+        'Directory to store tempory files during sync and upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
     }),
     port: flags.integer({
       char: 'o',
@@ -230,9 +230,10 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     if (!flags.tempFolder) {
       logger.warn(
-        'It is recommended to specify a unique file path for temporary files.' +
-          'For now a temp folder under the uploads folder will be used.' +
-          'In future this will be warning will become and error!'
+        'You did not specify a path to the temporary directory. ' +
+          'A temp folder under the uploads folder willl be used. ' +
+          'In a future release passing an absolute path to a temporary directory with the ' +
+          '"tempFolder" argument will be required.'
       )
     }
 
