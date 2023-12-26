@@ -1,3 +1,9 @@
+### 3.10.0
+
+- **FIX** unhandled `error` events on superagent. [#4988](https://github.com/Joystream/joystream/pull/4998),[#5007](https://github.com/Joystream/joystream/pull/5007)
+- General improvements when setting up uploads and temp folder. Ensure local data objects cache is not polluted by other than object id file names.
+- Added constraint on temp folder and uploads folder needing to be at different paths, and added optional `tempFolder` argument to specify full path to temp folder. This is in preparation for future releases where we will be moving to use different storage backends. [#5000](https://github.com/Joystream/joystream/pull/5000)
+
 ### 3.9.1
 
 - **FIX**: Added event handler to handle `error` event on `superagent.get` instance. Previously the unhandled error was causing the application to crash.
