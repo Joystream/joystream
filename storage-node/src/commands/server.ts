@@ -1,14 +1,11 @@
 import { flags } from '@oclif/command'
 import { ApiPromise } from '@polkadot/api'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import fs from 'fs'
+import sleep from 'sleep-promise'
 import _ from 'lodash'
 import path from 'path'
-import rimraf from 'rimraf'
-import sleep from 'sleep-promise'
-import { promisify } from 'util'
-import ApiCommandBase from '../command-base/ApiCommandBase'
+import fs from 'fs'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
+import { KeyringPair } from '@polkadot/keyring/types'
 import { customFlags } from '../command-base/CustomFlags'
 import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
@@ -23,6 +20,7 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
+import ApiCommandBase from '../command-base/ApiCommandBase'
 import { v4 as uuidv4 } from 'uuid'
 const fsPromises = fs.promises
 
@@ -52,6 +50,10 @@ export default class Server extends ApiCommandBase {
       char: 'd',
       required: true,
       description: 'Data uploading directory (absolute path).',
+    }),
+    tempFolder: flags.string({
+      description:
+        'Directory to store tempory files during sync and upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
     }),
     port: flags.integer({
       char: 'o',
@@ -158,11 +160,19 @@ Supported values: warn, error, debug, info. Default:debug`,
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    const logSource = `StorageProvider_${flags.worker}`
+    const api = await this.getApi()
+
+    if (flags.dev) {
+      await this.ensureDevelopmentChain()
+    }
+
+    if (flags.logFilePath && path.relative(flags.logFilePath, flags.uploads) === '') {
+      this.error('Paths for logs and uploads must be unique.')
+    }
 
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
       initNewLogger({
-        elasticSearchlogSource: logSource,
+        elasticSearchlogSource: `StorageProvider_${flags.worker}`,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
         elasticSearchIndexPrefix: flags.elasticSearchIndexPrefix,
         elasticSearchUser: flags.elasticSearchUser,
@@ -175,8 +185,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
-
-    const api = await this.getApi()
 
     const workerId = flags.worker
 
@@ -220,15 +228,25 @@ Supported values: warn, error, debug, info. Default:debug`,
     const enableUploadingAuth = false
     const operatorRoleKey = undefined
 
-    await recreateTempDirectory(flags.uploads, TempDirName)
-
-    if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName, PendingDirName)
+    if (!flags.tempFolder) {
+      logger.warn(
+        'You did not specify a path to the temporary directory. ' +
+          'A temp folder under the uploads folder willl be used. ' +
+          'In a future release passing an absolute path to a temporary directory with the ' +
+          '"tempFolder" argument will be required.'
+      )
     }
 
-    if (flags.dev) {
-      await this.ensureDevelopmentChain()
+    const tempFolder = flags.tempFolder || path.join(flags.uploads, TempDirName)
+
+    if (path.relative(tempFolder, flags.uploads) === '') {
+      this.error('Paths for temporary and uploads folders must be unique.')
     }
+
+    await createDirectory(flags.uploads)
+    await loadDataObjectIdCache(flags.uploads)
+
+    await createDirectory(tempFolder)
 
     const X_HOST_ID = uuidv4()
 
@@ -259,7 +277,7 @@ Supported values: warn, error, debug, info. Default:debug`,
             selectedBuckets,
             qnApi,
             flags.uploads,
-            TempDirName,
+            tempFolder,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
             flags.syncInterval,
@@ -297,7 +315,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     try {
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
-      const tempFileUploadingDir = path.join(flags.uploads, TempDirName)
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
       const app = await createApp({
@@ -308,7 +325,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
-        tempFileUploadingDir,
+        tempFileUploadingDir: tempFolder,
         pendingDataObjectsDir,
         acceptPendingObjectsService,
         process: this.config,
@@ -426,26 +443,14 @@ async function runCleanupWithInterval(
 }
 
 /**
- * Removes and recreates the temporary directory from the uploading directory.
- * All files in the temp directory are deleted.
+ * Creates a directory recursivly. Like `mkdir -p`
  *
- * @param uploadsDirectory - data uploading directory
- * @param tempDirName - temporary directory name within the uploading directory
+ * @param tempDirName - full path to temporary directory
  * @returns void promise.
  */
-async function recreateTempDirectory(uploadsDirectory: string, tempDirName: string): Promise<void> {
-  try {
-    const tempFileUploadingDir = path.join(uploadsDirectory, tempDirName)
-
-    logger.info(`Removing temp directory ...`)
-    const rimrafAsync = promisify(rimraf)
-    await rimrafAsync(tempFileUploadingDir)
-
-    logger.info(`Creating temp directory ...`)
-    await fsPromises.mkdir(tempFileUploadingDir)
-  } catch (err) {
-    logger.error(`Temp directory IO error: ${err}`)
-  }
+async function createDirectory(dirName: string): Promise<void> {
+  logger.info(`Creating directory ${dirName}`)
+  await fsPromises.mkdir(dirName, { recursive: true })
 }
 
 async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
