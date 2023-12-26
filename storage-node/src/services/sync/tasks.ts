@@ -142,8 +142,8 @@ export class DownloadFileTask implements SyncTask {
       const fileStream = fs.createWriteStream(tempFilePath)
 
       request.on('response', (res) => {
-        if (!res.ok) {
-          logger.debug(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
+        if (!res.ok && res.statusCode !== 404) {
+          logger.error(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
         }
 
         // Handle 'error' event on Response too, because it will be emitted if request was
