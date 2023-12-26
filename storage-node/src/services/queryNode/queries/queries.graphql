@@ -96,6 +96,7 @@ query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
 
 fragment DataObjectByBagIdsDetails on StorageDataObject {
   id
+  ipfsHash
   storageBagId
 }
 

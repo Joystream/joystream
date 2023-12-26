@@ -388,16 +388,7 @@ async function runSyncWithInterval(
   while (true) {
     try {
       logger.info(`Resume syncing....`)
-      await performSync(
-        api,
-        buckets,
-        syncWorkersNumber,
-        syncWorkersTimeout,
-        qnApi,
-        uploadsDirectory,
-        tempDirectory,
-        hostId
-      )
+      await performSync(buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory, hostId)
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
       await sleep(sleepInterval)
     } catch (err) {
