@@ -57,6 +57,7 @@
     "sleep-promise": "^9.1.0",
     "subscriptions-transport-ws": "^0.11.0",
     "superagent": "^6.1.0",
+    "superagent-node-http-timings": "1.0.1",
     "tslib": "^1",
     "url-join": "^4.0.1",
     "uuid": "^8.3.2",

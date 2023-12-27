@@ -76,6 +76,16 @@ type DataObject = {
    * Assigned bag ID
    */
   bagId: string
+
+  /**
+   * Data Object size (in bytes)
+   */
+  size: string
+
+  /**
+   * Data Object hash
+   */
+  ipfsHash: string
 }
 
 /**
@@ -109,6 +119,8 @@ export async function getStorageObligationsFromRuntime(
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
       id: dataObject.id,
+      size: dataObject.size,
+      ipfsHash: dataObject.ipfsHash,
       bagId: dataObject.storageBagId,
     })),
   }
