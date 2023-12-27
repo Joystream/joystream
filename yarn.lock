@@ -20508,6 +20508,11 @@ subscriptions-transport-ws@^0.9.18, subscriptions-transport-ws@^0.9.19, subscrip
     symbol-observable "^1.0.4"
     ws "^5.2.0 || ^6.0.0 || ^7.0.0"
 
+superagent-node-http-timings@1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/superagent-node-http-timings/-/superagent-node-http-timings-1.0.1.tgz#e529ac02773753279536aa718ea8060a0db05a5b"
+  integrity sha512-d+iwOeDGnKrcJ8U7YMF6lXYaKMB/grpDPVbsH9YPy6vZsH8+uRT9NjxpELrn6QlH9pPDgNANiw71PxUdwSBfrQ==
+
 superagent@^6.1.0:
   version "6.1.0"
   resolved "https://registry.yarnpkg.com/superagent/-/superagent-6.1.0.tgz#09f08807bc41108ef164cfb4be293cebd480f4a6"

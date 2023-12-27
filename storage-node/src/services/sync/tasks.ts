@@ -3,6 +3,7 @@ import _ from 'lodash'
 import path from 'path'
 import { pipeline } from 'stream'
 import superagent from 'superagent'
+import superagentTimings from 'superagent-node-http-timings'
 import urljoin from 'url-join'
 import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
@@ -16,8 +17,36 @@ import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
 const fsPromises = fs.promises
 
+class DownloadSpeedTracker {
+  private downloadSpeedsByUrl: Map<string, number[]>
+
+  constructor(private maxRecordsPerUrl: number) {
+    this.downloadSpeedsByUrl = new Map()
+  }
+
+  recordDownloadSpeed(url: string, speed: number): void {
+    const downloadSpeeds = this.downloadSpeedsByUrl.get(url) || []
+    downloadSpeeds.push(speed)
+
+    // Keep only the last `maxRecordsPerUrl` records
+    if (downloadSpeeds.length > this.maxRecordsPerUrl) {
+      downloadSpeeds.shift()
+    }
+
+    // Update the map with the new download times list
+    this.downloadSpeedsByUrl.set(url, downloadSpeeds)
+  }
+
+  getAverageDownloadSpeed(url: string): number {
+    const downloadSpeeds = this.downloadSpeedsByUrl.get(url)
+    return _.mean(downloadSpeeds) || 0
+  }
+}
+
+const downloadSpeedTracker = new DownloadSpeedTracker(10)
+
 /**
- * Defines syncronization task abstraction.
+ * Defines synchronization task abstraction.
  */
 export interface SyncTask {
   /**
@@ -72,71 +101,65 @@ export class DeleteLocalFileTask implements SyncTask {
  * Download the file from the remote storage node to the local storage.
  */
 export class DownloadFileTask implements SyncTask {
-  operatorUrls: string[]
-
   constructor(
-    baseUrls: string[],
+    private baseUrls: string[],
     private dataObjectId: string,
+    private expectedSize: string,
     private expectedHash: string,
     private uploadsDirectory: string,
     private tempDirectory: string,
     private downloadTimeout: number,
     private hostId: string
-  ) {
-    this.operatorUrls = baseUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', dataObjectId))
-  }
+  ) {}
 
   description(): string {
     return `Sync - Trying for download of: ${this.dataObjectId} ....`
   }
 
   async execute(): Promise<void> {
-    // Create an array of operator URL indices to maintain a random URL choice
-    // cannot use the original array because we shouldn't modify the original data.
-    // And cloning it seems like a heavy operation.
-    const operatorUrlIndices: number[] = [...Array(this.operatorUrls.length).keys()]
+    const baseUrls: string[] = this.getBaseUrlsOrderedByAvgDownloadSpeed()
 
-    while (!_.isEmpty(operatorUrlIndices)) {
-      const randomUrlIndex = _.sample(operatorUrlIndices)
-      if (randomUrlIndex === undefined) {
-        logger.warn(`Sync - cannot get a random URL`)
-        break
-      }
-
-      const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
-      logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
-
-      // Remove random url from the original list.
-      _.remove(operatorUrlIndices, (index) => index === randomUrlIndex)
+    for (const baseUrl of baseUrls) {
+      logger.debug(`Sync - storage node URL chosen for download: ${baseUrl}`)
 
       const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
-      try {
-        // Try downloading file
-        await this.tryDownload(chosenBaseUrl, filepath)
 
-        // if download succeeds, break the loop
-        if (fs.existsSync(filepath)) {
-          return
-        }
-      } catch (err) {
-        logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
+      // Try downloading file
+      await this.tryDownload(baseUrl, filepath)
+
+      // if download succeeds, break the loop
+      if (fs.existsSync(filepath)) {
+        return
       }
     }
 
     logger.warn(`Sync - cannot get operator URLs for ${this.dataObjectId}`)
   }
 
-  async tryDownload(url: string, filepath: string): Promise<void> {
+  async tryDownload(baseUrl: string, filepath: string): Promise<void> {
     const streamPipeline = promisify(pipeline)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
     const tempFilePath = path.join(this.tempDirectory, uuidv4())
+    const url = urljoin(baseUrl, 'api/v1/files', this.dataObjectId)
     try {
       const timeoutMs = this.downloadTimeout * 60 * 1000
       // Casting because of:
       // https://stackoverflow.com/questions/38478034/pipe-superagent-response-to-express-response
       const request = superagent
         .get(url)
+        .use(
+          superagentTimings((err: unknown, result: { status: number; timings: { total: number } }) => {
+            if (err) {
+              logger.error(`Sync - error measuring download time for ${url}: ${err}`, { err })
+            }
+
+            // Record download speed for given operator (speed = bytes/ms)
+            if (result.status === 200) {
+              downloadSpeedTracker.recordDownloadSpeed(baseUrl, parseInt(this.expectedSize) / result.timings.total)
+            }
+          })
+        )
         .timeout(timeoutMs)
         .set('X-COLOSSUS-HOST-ID', this.hostId) as unknown as NodeJS.ReadableStream
       const fileStream = fs.createWriteStream(tempFilePath)
@@ -182,5 +205,16 @@ export class DownloadFileTask implements SyncTask {
     if (hash !== this.expectedHash) {
       throw new Error(`Invalid file hash. Expected: ${this.expectedHash} - real: ${hash}`)
     }
+  }
+
+  getBaseUrlsOrderedByAvgDownloadSpeed(): string[] {
+    const urlsWithAvgSpeeds = []
+
+    for (const baseUrl of this.baseUrls) {
+      const avgSpeed = downloadSpeedTracker.getAverageDownloadSpeed(baseUrl)
+      urlsWithAvgSpeeds.push({ baseUrl, avgSpeed })
+    }
+
+    return urlsWithAvgSpeeds.sort((a, b) => b.avgSpeed - a.avgSpeed).map((item) => item.baseUrl)
   }
 }

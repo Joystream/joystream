@@ -153,6 +153,7 @@ async function getDownloadTasks(
     return new DownloadFileTask(
       selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
       dataObject.id,
+      dataObject.size,
       dataObject.ipfsHash,
       uploadDirectory,
       tempDirectory,
