@@ -44,7 +44,7 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
  *
  * @param dataObjectId - Storage data object ID
  *
- * @returns empty promise.
+ * @returns void
  */
 export function addDataObjectIdToCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
@@ -60,7 +60,7 @@ export function addDataObjectIdToCache(dataObjectId: string): void {
  *
  * @param dataObjectId - Storage data object ID
  *
- * @returns promise<boolean> - true if object exists and was pinned
+ * @returns void
  */
 export function pinDataObjectIdToCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
@@ -76,7 +76,7 @@ export function pinDataObjectIdToCache(dataObjectId: string): void {
  *
  * @param dataObjectId - Storage data object ID
  *
- * @returns empty promise.
+ * @returns void
  */
 export function unpinDataObjectIdFromCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
@@ -92,6 +92,8 @@ export function unpinDataObjectIdFromCache(dataObjectId: string): void {
  * Deletes data object ID from the local cache.
  *
  * @param dataObjectId - Storage data object ID
+ *
+ * @returns void
  */
 export function deleteDataObjectIdFromCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
