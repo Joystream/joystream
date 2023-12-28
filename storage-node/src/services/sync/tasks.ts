@@ -91,18 +91,9 @@ export class DownloadFileTask implements SyncTask {
   }
 
   async execute(): Promise<void> {
-    // Create an array of operator URL indices to maintain a random URL choice
-    // cannot use the original array because we shouldn't modify the original data.
-    // And cloning it seems like a heavy operation.
-    const operatorUrlIndices: number[] = [...Array(this.operatorUrls.length).keys()]
+    const operatorUrlIndices: number[] = _.shuffle(_.range(this.operatorUrls.length))
 
-    while (!_.isEmpty(operatorUrlIndices)) {
-      const randomUrlIndex = _.sample(operatorUrlIndices)
-      if (randomUrlIndex === undefined) {
-        logger.warn(`Sync - cannot get a random URL`)
-        break
-      }
-
+    for (const randomUrlIndex of operatorUrlIndices) {
       const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
       logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
 
