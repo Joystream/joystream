@@ -78,7 +78,8 @@ export async function pinDataObjectIdToCache(dataObjectId: string): Promise<void
   assert(typeof dataObjectId === 'string')
   assert(idCache.has(dataObjectId))
 
-  const currentPinnedCount = idCache.get(dataObjectId) || 0
+  const currentPinnedCount = idCache.get(dataObjectId)
+  assert(currentPinnedCount !== undefined)
   idCache.set(dataObjectId, currentPinnedCount + 1)
 
   lock.release()
@@ -97,7 +98,9 @@ export async function unpinDataObjectIdFromCache(dataObjectId: string): Promise<
   assert(idCache.has(dataObjectId))
 
   const currentPinnedCount = idCache.get(dataObjectId)
-  idCache.set(dataObjectId, currentPinnedCount ? currentPinnedCount - 1 : 0)
+  assert(currentPinnedCount)
+  assert(currentPinnedCount > 0)
+  idCache.set(dataObjectId, currentPinnedCount - 1)
 
   lock.release()
 }
