@@ -8,7 +8,11 @@ import path from 'path'
 import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
+import {
+  getDataObjectIdFromCache,
+  pinDataObjectIdToCache,
+  unpinDataObjectIdFromCache,
+} from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
@@ -35,17 +39,22 @@ export async function getFile(
   next: express.NextFunction
 ): Promise<void> {
   try {
-    await pinDataObjectIdToCache(req.params.id)
+    const { id } = req.params
+    const dataObjectId = new BN(id).toString()
 
-    const dataObjectId = new BN(req.params.id)
+    if (!(await getDataObjectIdFromCache(dataObjectId))) {
+      sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
+      return
+    }
+
     const uploadsDir = res.locals.uploadsDir
-
-    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
-
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 
     const stream = send(req, fullPath)
+
+    await pinDataObjectIdToCache(id)
 
     stream.on('headers', (res) => {
       // serve all files for download
@@ -58,11 +67,15 @@ export async function getFile(
       sendResponseWithError(res, next, err, 'files')
     })
 
+    stream.on('end', () => {
+      unpinDataObjectIdFromCache(dataObjectId).catch((err) => {
+        logger.warn(`error unpinning data object at end of stream, ${err}`)
+      })
+    })
+
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
-  } finally {
-    await unpinDataObjectIdFromCache(req.params.id)
   }
 }
 
@@ -71,14 +84,20 @@ export async function getFile(
  */
 export async function getFileHeaders(
   req: express.Request<GetFileHeadersRequestParams>,
-  res: express.Response<unknown, AppConfig>
+  res: express.Response<unknown, AppConfig>,
+  next: express.NextFunction
 ): Promise<void> {
   try {
-    await pinDataObjectIdToCache(req.params.id)
+    const { id } = req.params
+    const dataObjectId = new BN(id).toString()
 
-    const dataObjectId = new BN(req.params.id)
+    if (!(await getDataObjectIdFromCache(dataObjectId))) {
+      sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
+      return
+    }
+
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 
@@ -89,8 +108,6 @@ export async function getFileHeaders(
     res.status(200).send()
   } catch (err) {
     res.status(getHttpStatusCodeByError(err)).send()
-  } finally {
-    await unpinDataObjectIdFromCache(req.params.id)
   }
 }
 
