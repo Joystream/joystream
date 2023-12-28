@@ -38,23 +38,23 @@ export async function getFile(
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
+  const { id } = req.params
+  const dataObjectId = new BN(id).toString()
+
+  if (!(await getDataObjectIdFromCache(dataObjectId))) {
+    sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
+    return
+  }
+
+  await pinDataObjectIdToCache(dataObjectId)
+
   try {
-    const { id } = req.params
-    const dataObjectId = new BN(id).toString()
-
-    if (!(await getDataObjectIdFromCache(dataObjectId))) {
-      sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
-      return
-    }
-
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
 
     const stream = send(req, fullPath)
-
-    await pinDataObjectIdToCache(id)
 
     stream.on('headers', (res) => {
       // serve all files for download
@@ -68,6 +68,7 @@ export async function getFile(
     })
 
     stream.on('end', () => {
+      // we assume that if stream.pipe throws, then stream.on('end') will never fire
       unpinDataObjectIdFromCache(dataObjectId).catch((err) => {
         logger.warn(`error unpinning data object at end of stream, ${err}`)
       })
@@ -76,6 +77,10 @@ export async function getFile(
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
+    // we assume that if stream.pipe throws, then stream.on('end') will never fire
+    unpinDataObjectIdFromCache(dataObjectId).catch((err) => {
+      logger.warn(`error unpinning data object, ${err}`)
+    })
   }
 }
 
@@ -87,15 +92,17 @@ export async function getFileHeaders(
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
+  const { id } = req.params
+  const dataObjectId = new BN(id).toString()
+
+  if (!(await getDataObjectIdFromCache(dataObjectId))) {
+    sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
+    return
+  }
+
+  await pinDataObjectIdToCache(dataObjectId)
+
   try {
-    const { id } = req.params
-    const dataObjectId = new BN(id).toString()
-
-    if (!(await getDataObjectIdFromCache(dataObjectId))) {
-      sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
-      return
-    }
-
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
@@ -109,6 +116,8 @@ export async function getFileHeaders(
   } catch (err) {
     res.status(getHttpStatusCodeByError(err)).send()
   }
+
+  await unpinDataObjectIdFromCache(dataObjectId)
 }
 
 /**
