@@ -97,9 +97,6 @@ export class DownloadFileTask implements SyncTask {
       const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
       logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
 
-      // Remove random url from the original list.
-      _.remove(operatorUrlIndices, (index) => index === randomUrlIndex)
-
       const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
       try {
         // Try downloading file
