@@ -54,7 +54,7 @@ export class DeleteLocalFileTask implements SyncTask {
       return
     }
 
-    const cachedDataObjectId = await getDataObjectIdFromCache(dataObjectId)
+    const cachedDataObjectId = getDataObjectIdFromCache(dataObjectId)
     if (cachedDataObjectId && cachedDataObjectId.pinnedCount) {
       logger.warn(
         `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
@@ -64,7 +64,7 @@ export class DeleteLocalFileTask implements SyncTask {
     const fullPath = path.join(this.uploadsDirectory, this.filename)
     await fsPromises.unlink(fullPath)
 
-    await deleteDataObjectIdFromCache(dataObjectId)
+    deleteDataObjectIdFromCache(dataObjectId)
   }
 }
 
@@ -148,7 +148,7 @@ export class DownloadFileTask implements SyncTask {
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await fsPromises.rename(tempFilePath, filepath)
-      await addDataObjectIdToCache(this.dataObjectId)
+      addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
       logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {

@@ -124,7 +124,7 @@ export class AcceptPendingObjectsService {
       } catch {
         // If the file does not exist in the uploads directory, proceed with the rename
         registerNewDataObjectId(dataObjectId)
-        await addDataObjectIdToCache(dataObjectId)
+        addDataObjectIdToCache(dataObjectId)
         await fsPromises.rename(currentPath, newPath)
       }
     } catch (err) {

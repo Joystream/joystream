@@ -1,4 +1,3 @@
-import AwaitLock from 'await-lock'
 import fs from 'fs'
 import logger from '../logger'
 import assert from 'assert'
@@ -11,20 +10,14 @@ type DataObjectPinCount = number
 // Local in-memory cache for IDs.
 const idCache = new Map<DataObjectId, DataObjectPinCount>()
 
-const lock = new AwaitLock()
-
 /**
  * Return the current ID cache.
  *
  * @returns ID array.
  *
  */
-export async function getDataObjectIDs(): Promise<string[]> {
-  await lock.acquireAsync()
-  const ids = [...idCache.keys()]
-  lock.release()
-
-  return ids
+export function getDataObjectIDs(): string[] {
+  return [...idCache.keys()]
 }
 
 /**
@@ -35,8 +28,6 @@ export async function getDataObjectIDs(): Promise<string[]> {
  * @param uploadDir - uploading directory
  */
 export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
-  await lock.acquireAsync()
-
   const names = await getLocalFileNames(uploadDir)
 
   names
@@ -46,8 +37,6 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
     .forEach((id) => idCache.set(id, 0))
 
   logger.debug(`Local ID cache loaded.`)
-
-  lock.release()
 }
 
 /**
@@ -57,13 +46,13 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
  *
  * @returns empty promise.
  */
-export async function addDataObjectIdToCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
+export function addDataObjectIdToCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
-  assert(!idCache.has(dataObjectId))
-
-  idCache.set(dataObjectId, 0)
-  lock.release()
+  // assert(!idCache.has(dataObjectId))
+  // existence check to avoid resetting pin count
+  if (!idCache.has(dataObjectId)) {
+    idCache.set(dataObjectId, 0)
+  }
 }
 
 /**
@@ -73,16 +62,13 @@ export async function addDataObjectIdToCache(dataObjectId: string): Promise<void
  *
  * @returns promise<boolean> - true if object exists and was pinned
  */
-export async function pinDataObjectIdToCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
+export function pinDataObjectIdToCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
   assert(idCache.has(dataObjectId))
 
   const currentPinnedCount = idCache.get(dataObjectId)
   assert(currentPinnedCount !== undefined)
   idCache.set(dataObjectId, currentPinnedCount + 1)
-
-  lock.release()
 }
 
 /**
@@ -92,8 +78,7 @@ export async function pinDataObjectIdToCache(dataObjectId: string): Promise<void
  *
  * @returns empty promise.
  */
-export async function unpinDataObjectIdFromCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
+export function unpinDataObjectIdFromCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
   assert(idCache.has(dataObjectId))
 
@@ -101,8 +86,6 @@ export async function unpinDataObjectIdFromCache(dataObjectId: string): Promise<
   assert(currentPinnedCount)
   assert(currentPinnedCount > 0)
   idCache.set(dataObjectId, currentPinnedCount - 1)
-
-  lock.release()
 }
 
 /**
@@ -110,14 +93,10 @@ export async function unpinDataObjectIdFromCache(dataObjectId: string): Promise<
  *
  * @param dataObjectId - Storage data object ID
  */
-export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
+export function deleteDataObjectIdFromCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
-  assert(idCache.has(dataObjectId))
-
+  // assert(idCache.has(dataObjectId))
   idCache.delete(dataObjectId)
-
-  lock.release()
 }
 
 /**
@@ -125,18 +104,14 @@ export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise
  *
  * @param dataObjectId - Storage data object ID
  */
-export async function getDataObjectIdFromCache(
+export function getDataObjectIdFromCache(
   dataObjectId: string
-): Promise<{ dataObjectId: DataObjectId; pinnedCount: DataObjectPinCount } | undefined> {
-  await lock.acquireAsync()
+): { dataObjectId: DataObjectId; pinnedCount: DataObjectPinCount } | undefined {
   assert(typeof dataObjectId === 'string')
 
   if (idCache.has(dataObjectId)) {
-    const id = { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
-    lock.release()
-    return id
+    return { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
   }
-  lock.release()
 }
 
 /**

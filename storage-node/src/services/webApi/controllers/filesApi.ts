@@ -8,11 +8,7 @@ import path from 'path'
 import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import {
-  getDataObjectIdFromCache,
-  pinDataObjectIdToCache,
-  unpinDataObjectIdFromCache,
-} from '../../caching/localDataObjects'
+import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
@@ -38,15 +34,13 @@ export async function getFile(
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
-  const { id } = req.params
-  const dataObjectId = new BN(id).toString()
-
-  if (!(await getDataObjectIdFromCache(dataObjectId))) {
-    sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
+  const { id: dataObjectId } = req.params
+  try {
+    pinDataObjectIdToCache(dataObjectId)
+  } catch (err) {
+    res.status(404).send()
     return
   }
-
-  await pinDataObjectIdToCache(dataObjectId)
 
   try {
     const uploadsDir = res.locals.uploadsDir
@@ -69,18 +63,14 @@ export async function getFile(
 
     stream.on('end', () => {
       // we assume that if stream.pipe throws, then stream.on('end') will never fire
-      unpinDataObjectIdFromCache(dataObjectId).catch((err) => {
-        logger.warn(`error unpinning data object at end of stream, ${err}`)
-      })
+      unpinDataObjectIdFromCache(dataObjectId)
     })
 
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
     // we assume that if stream.pipe throws, then stream.on('end') will never fire
-    unpinDataObjectIdFromCache(dataObjectId).catch((err) => {
-      logger.warn(`error unpinning data object, ${err}`)
-    })
+    unpinDataObjectIdFromCache(dataObjectId)
   }
 }
 
@@ -89,18 +79,15 @@ export async function getFile(
  */
 export async function getFileHeaders(
   req: express.Request<GetFileHeadersRequestParams>,
-  res: express.Response<unknown, AppConfig>,
-  next: express.NextFunction
+  res: express.Response<unknown, AppConfig>
 ): Promise<void> {
-  const { id } = req.params
-  const dataObjectId = new BN(id).toString()
-
-  if (!(await getDataObjectIdFromCache(dataObjectId))) {
-    sendResponseWithError(res, next, new WebApiError('File Not Found', 404), 'files')
+  const { id: dataObjectId } = req.params
+  try {
+    pinDataObjectIdToCache(dataObjectId)
+  } catch (err) {
+    res.status(404).send()
     return
   }
-
-  await pinDataObjectIdToCache(dataObjectId)
 
   try {
     const uploadsDir = res.locals.uploadsDir
@@ -117,7 +104,7 @@ export async function getFileHeaders(
     res.status(getHttpStatusCodeByError(err)).send()
   }
 
-  await unpinDataObjectIdFromCache(dataObjectId)
+  unpinDataObjectIdFromCache(dataObjectId)
 }
 
 /**
