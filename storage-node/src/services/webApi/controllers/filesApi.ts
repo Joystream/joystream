@@ -8,7 +8,12 @@ import path from 'path'
 import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
+import {
+  pinDataObjectIdToCache,
+  unpinDataObjectIdFromCache,
+  addDataObjectIdToCache,
+} from '../../caching/localDataObjects'
+import { registerNewDataObjectId } from '../../caching/newUploads'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
@@ -47,6 +52,9 @@ export async function getFile(
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
     const fileStats = await fsPromises.stat(fullPath)
+
+    // verify ipfs has of file we are about to serve, just in-case it is corrupt
+    // ....
 
     const stream = send(req, fullPath)
 
@@ -138,11 +146,15 @@ export async function uploadFile(
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId
-    const pendingObjectsDir = res.locals.pendingDataObjectsDir
-    const newPath = path.join(pendingObjectsDir, dataObjectId)
+    const { pendingDataObjectsDir, uploadsDir } = res.locals
+    const newPathPending = path.join(pendingDataObjectsDir, dataObjectId)
+    const newPathUploads = path.join(uploadsDir, dataObjectId)
 
-    // Move file to pending objects Dir.
-    await fsPromises.rename(fileObj.path, newPath)
+    await fsPromises.rename(fileObj.path, newPathPending)
+    await fsPromises.copyFile(newPathPending, newPathUploads)
+
+    registerNewDataObjectId(dataObjectId)
+    addDataObjectIdToCache(dataObjectId)
 
     res.status(201).json({
       id: hash,

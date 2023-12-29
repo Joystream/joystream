@@ -110,12 +110,27 @@ export class AcceptPendingObjectsService {
     if (maybeDeletedObjects.length) {
       // unlink the pending object once we determined it is gone!
       logger.debug(`Found ${maybeDeletedObjects.length} stale pending objects in pending folder`)
+      // Things to consider.
+      // These may be very recently uploaded files, note the uploads api uses chain rpc to
+      // validate upload of object that was created to allow uploads for objects that were created
+      // as soon as possible.
+      // const qnState = await this.qnApi.getQueryNodeState()
+      // get this.api chain head
+      // get timestamp in chain head block.. are we uptodate?
+      // test api.isSyncing?
+      // It would be easier to have query-node store object deleted events.
+      // if we chose a different file name convention for the pending objects,
+      // we could store the bag-id and object id in the filename to make it easy to lookup in runtime state.
     }
 
     const objectsToAccept: PendingObjectDetails = []
 
     await Promise.allSettled(
       pendingDataObjects.map(async (dataObject) => {
+        // verify the ipfshash of the object matches against runtime!
+        // just in-case wrong file was moved into pending folder manually
+        // ...
+
         const storageBucket = dataObject.storageBag.storageBuckets.find(({ id }) => this.uploadBuckets.includes(id))
         if (storageBucket) {
           if (dataObject.isAccepted) {
