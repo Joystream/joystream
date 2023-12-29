@@ -131,26 +131,26 @@ export class DownloadFileTask implements SyncTask {
 
       request.on('response', (res) => {
         if (!res.ok && res.statusCode !== 404) {
-          logger.error(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
+          logger.warn(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
         }
 
         // Handle 'error' event on Response too, because it will be emitted if request was
         // prematurely aborted/closed due to timeout and the response still was not completed
         // See: https://github.com/nodejs/node/blob/cd171576b2d1376dae3eb371b6da5ccf04dc4a85/lib/_http_client.js#L439-L441
         res.on('error', (err: Error) => {
-          logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
+          logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
         })
       })
 
       request.on('error', (err) => {
-        logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
+        logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await fsPromises.rename(tempFilePath, filepath)
       addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
-      logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
+      logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {
         logger.warn(`Cleaning up file ${tempFilePath}`)
         await fsPromises.unlink(tempFilePath)

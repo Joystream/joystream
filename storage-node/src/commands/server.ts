@@ -151,7 +151,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     }),
     maxBatchTxSize: flags.integer({
       description: 'Maximum number of `accept_pending_data_objects` in a batch transactions.',
-      default: 10,
+      default: 20,
       required: false,
     }),
     ...ApiCommandBase.flags,
