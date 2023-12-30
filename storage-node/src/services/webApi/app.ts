@@ -76,7 +76,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
 
     // Pre validate data object id in GET/HEAD file requests
     (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
-      if (req.path === '/api/v1/files' && (req.method === 'GET' || req.method === 'HEAD')) {
+      if (req.path.startsWith('/api/v1/files/') && (req.method === 'GET' || req.method === 'HEAD')) {
         validateDataObjectId(req, res)
           .then(next)
           .catch((error) => sendResponseWithError(res, next, error, 'upload'))
@@ -259,11 +259,6 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
 
   if (dataObject.isEmpty) {
     throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${parsedBagId}`, 400)
-  }
-
-  // Skipping this check to allow re-upload of "lost" objects
-  if (dataObject.accepted.valueOf()) {
-    // throw new WebApiError(`Data object ${dataObjectId} has already been accepted by storage node`, 400)
   }
 
   const isObjectPending = res.locals.acceptPendingObjectsService.pendingObjectExists(dataObjectId.toString())

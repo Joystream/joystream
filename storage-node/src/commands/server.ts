@@ -235,7 +235,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     if (!flags.tempFolder) {
       logger.warn(
         'You did not specify a path to the temporary directory. ' +
-          'A temp folder under the uploads folder willl be used. ' +
+          'A temp folder under the uploads folder will be used. ' +
           'In a future release passing an absolute path to a temporary directory with the ' +
           '"tempFolder" argument will be required.'
       )
@@ -244,7 +244,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     if (!flags.pendingFolder) {
       logger.warn(
         'You did not specify a path to the pending directory. ' +
-          'A pending folder under the uploads folder willl be used. ' +
+          'A pending folder under the uploads folder will be used. ' +
           'In a future release passing an absolute path to a pending directory with the ' +
           '"pendingFolder" argument will be required.'
       )

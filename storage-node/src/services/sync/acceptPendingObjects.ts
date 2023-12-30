@@ -74,20 +74,14 @@ export class AcceptPendingObjectsService {
   }
 
   private runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
-    ;(async () => {
-      for (;;) {
-        try {
-          const ids = await this.getPendingObjectsFromFolder()
-          const objectsToAccept = await this.processPendingObjects(ids)
-          await this.acceptPendingDataObjects(api, workerId, objectsToAccept, maxTxBatchSize)
-          await new Promise((resolve) => setTimeout(resolve, intervalMs))
-        } catch (err) {
-          logger.error(`Error processing pending objects: ${err}`)
-        }
-      }
-    })().catch((err) => {
-      logger.error(`Accept pending objects service died: ${err}`)
-    })
+    const run = () => {
+      this.getPendingObjectsFromFolder()
+        .then((ids) => this.processPendingObjects(ids))
+        .then((objectsToAccept) => this.acceptPendingDataObjects(api, workerId, objectsToAccept, maxTxBatchSize))
+        .catch((err) => logger.error(`Error processing pending objects: ${err}`))
+        .finally(() => setTimeout(run, intervalMs))
+    }
+    run()
   }
 
   private async processPendingObjects(pendingIds: string[]): Promise<PendingObjectDetails> {
@@ -133,9 +127,9 @@ export class AcceptPendingObjectsService {
           }
         } else {
           logger.debug(
-            `Data object ${dataObject.id} in pending directory is no longer assigned to any of the upload buckets: ${this.uploadBuckets}.`
+            `Data object ${dataObject.id} in pending directory is no longer assigned to any of the upload buckets: ${this.uploadBuckets}. Moving it to the uploads directory.`
           )
-          await fsPromises.unlink(path.join(this.pendingDataObjectsDir, dataObject.id))
+          await this.movePendingDataObjectToUploadsDir(dataObject.id)
         }
       })
     )

@@ -48,11 +48,8 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
  */
 export function addDataObjectIdToCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
-  // assert(!idCache.has(dataObjectId))
-  // existence check to avoid resetting pin count
-  if (!idCache.has(dataObjectId)) {
-    idCache.set(dataObjectId, 0)
-  }
+  assert(!idCache.has(dataObjectId))
+  idCache.set(dataObjectId, 0)
 }
 
 /**
@@ -97,7 +94,7 @@ export function unpinDataObjectIdFromCache(dataObjectId: string): void {
  */
 export function deleteDataObjectIdFromCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
-  // assert(idCache.has(dataObjectId))
+  assert(idCache.has(dataObjectId))
   idCache.delete(dataObjectId)
 }
 
