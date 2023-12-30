@@ -47,9 +47,6 @@ export async function getFile(
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
 
-    // verify ipfs has of file we are about to serve, just in-case it is corrupt
-    // ....
-
     const stream = send(req, fullPath)
 
     stream.on('headers', (res) => {
@@ -95,11 +92,10 @@ export async function getFileHeaders(
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
-    const fileStats = await fsPromises.stat(fullPath)
 
     res.setHeader('Content-Disposition', 'inline')
     res.setHeader('Content-Type', fileInfo.mimeType)
-    res.setHeader('Content-Length', fileStats.size)
+    res.setHeader('Content-Length', fileInfo.size)
 
     res.status(200).send()
   } catch (err) {

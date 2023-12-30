@@ -74,16 +74,6 @@ export async function createApp(config: AppConfig): Promise<Express> {
       }
     },
 
-    // Pre validate data object id in GET/HEAD file requests
-    (req: express.Request, res: express.Response<unknown, AppConfig>, next: NextFunction) => {
-      if (req.path.startsWith('/api/v1/files/') && (req.method === 'GET' || req.method === 'HEAD')) {
-        validateDataObjectId(req, res)
-          .then(next)
-          .catch((error) => sendResponseWithError(res, next, error, 'upload'))
-      } else {
-        next()
-      }
-    },
     // Setup OpenAPiValidator
     OpenApiValidator.middleware({
       apiSpec: spec,
@@ -269,14 +259,5 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
   const isInStorage = getDataObjectIdFromCache(dataObjectId.toString())
   if (isInStorage) {
     throw new WebApiError(`Data object ${dataObjectId} already exists`, 400)
-  }
-}
-
-async function validateDataObjectId(req: express.Request, res: express.Response<unknown, AppConfig>) {
-  const { id } = req.params
-  try {
-    new BN(id).toString()
-  } catch (err) {
-    throw new WebApiError(`Invalid object id`, 400)
   }
 }
