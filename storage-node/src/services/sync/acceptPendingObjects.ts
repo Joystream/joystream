@@ -8,6 +8,8 @@ import { registerNewDataObjectId } from '../caching/newUploads'
 import logger from '../logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { acceptPendingDataObjectsBatch } from '../runtime/extrinsics'
+import { hashFile } from '../helpers/hashing'
+
 const fsPromises = fs.promises
 
 export type AcceptPendingDataObjectsParams = {
@@ -114,9 +116,18 @@ export class AcceptPendingObjectsService {
 
     await Promise.allSettled(
       pendingDataObjects.map(async (dataObject) => {
-        // verify the ipfshash of the object matches against runtime!
-        // just in-case wrong file was moved into pending folder manually
-        // ...
+        // Verify the ipfshash. It may be redundant for objects that just came in through the http api and have already been validated.
+        // Bit important however to make sure objects that might have been placed by operator directly into the pending folder
+        // are correct. Operator may do this under following scenarios:
+        // - moving files from other location after chainging pending folder path.
+        // - recovering "lost" objects from a backup/archive and placing them into the pending folder for processing..
+        // - bootstrapping storage from archive (which may be faster than syncing from other nodes..)
+        const ipfsHash = await hashFile(path.join(this.pendingDataObjectsDir, dataObject.id))
+        if (ipfsHash !== dataObject.ipfsHash) {
+          logger.warn(`Dropping object in pending folder with invalid ipfshash ${dataObject.id}`)
+          await fsPromises.unlink(path.join(this.pendingDataObjectsDir, dataObject.id))
+          return
+        }
 
         const storageBucket = dataObject.storageBag.storageBuckets.find(({ id }) => this.uploadBuckets.includes(id))
         if (storageBucket) {

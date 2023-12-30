@@ -148,6 +148,7 @@ fragment DataObjectsWithBagAndBuckets on StorageDataObject {
       id
     }
   }
+  ipfsHash
 }
 
 query getDataObjectsByIds($ids: [ID!], $limit: Int) {
