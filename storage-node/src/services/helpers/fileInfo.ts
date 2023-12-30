@@ -1,5 +1,7 @@
 import FileType from 'file-type'
 import readChunk from 'read-chunk'
+import fs from 'fs'
+const fsPromises = fs.promises
 
 /**
  * Represents information about the file.
@@ -14,6 +16,11 @@ export type FileInfo = {
    * Possible file extension.
    */
   ext: string
+
+  /**
+   * File size
+   */
+  size: number
 }
 
 // Number in bytes to read. Minimum number for file info detection.
@@ -38,13 +45,11 @@ export async function getFileInfo(fullPath: string): Promise<FileInfo> {
 
   const buffer = readChunk.sync(fullPath, 0, MINIMUM_FILE_CHUNK)
   const fileType = await FileType.fromBuffer(buffer)
-
-  if (fileType === undefined) {
-    return DEFAULT_FILE_INFO
-  }
+  const { size } = await fsPromises.stat(fullPath)
 
   return {
-    mimeType: fileType.mime.toString(),
-    ext: fileType.ext.toString(),
+    mimeType: fileType ? fileType.mime.toString() : DEFAULT_FILE_INFO.mimeType,
+    ext: fileType ? fileType.ext.toString() : DEFAULT_FILE_INFO.ext,
+    size,
   }
 }

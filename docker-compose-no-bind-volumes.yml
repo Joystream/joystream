@@ -41,7 +41,8 @@ services:
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
       '--logFilePath=/logs',
-      '--tempFolder=/data/temp/'
+      '--tempFolder=/data/temp/',
+      '--pendingFolder=/data/pending/'
     ]
 
   distributor-1:
@@ -109,7 +110,8 @@ services:
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
       '--logFilePath=/logs',
-      '--tempFolder=/data/temp/'
+      '--tempFolder=/data/temp/',
+      '--pendingFolder=/data/pending/'
     ]
 
   distributor-2:

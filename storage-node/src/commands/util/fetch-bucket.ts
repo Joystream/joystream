@@ -70,7 +70,6 @@ export default class FetchBucket extends Command {
 
     try {
       await performSync(
-        undefined,
         [bucketId],
         flags.syncWorkersNumber,
         flags.syncWorkersTimeout,
