@@ -24,6 +24,7 @@ import {
   UploadTokenRequest,
 } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
+import _ from 'lodash'
 const fsPromises = fs.promises
 
 /**
@@ -42,6 +43,10 @@ export async function getFile(
     return
   }
 
+  const unpin = _.once(() => {
+    unpinDataObjectIdFromCache(dataObjectId)
+  })
+
   try {
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
@@ -58,18 +63,17 @@ export async function getFile(
 
     stream.on('error', (err) => {
       sendResponseWithError(res, next, err, 'files')
+      unpin()
     })
 
     stream.on('end', () => {
-      // we assume that if stream.pipe throws, then stream.on('end') will never fire
-      unpinDataObjectIdFromCache(dataObjectId)
+      unpin()
     })
 
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
-    // we assume that if stream.pipe throws, then stream.on('end') will never fire
-    unpinDataObjectIdFromCache(dataObjectId)
+    unpin()
   }
 }
 
