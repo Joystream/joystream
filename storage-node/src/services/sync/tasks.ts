@@ -54,7 +54,7 @@ export class DeleteLocalFileTask implements SyncTask {
       return
     }
 
-    const cachedDataObjectId = await getDataObjectIdFromCache(dataObjectId)
+    const cachedDataObjectId = getDataObjectIdFromCache(dataObjectId)
     if (cachedDataObjectId && cachedDataObjectId.pinnedCount) {
       logger.warn(
         `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
@@ -64,7 +64,7 @@ export class DeleteLocalFileTask implements SyncTask {
     const fullPath = path.join(this.uploadsDirectory, this.filename)
     await fsPromises.unlink(fullPath)
 
-    await deleteDataObjectIdFromCache(dataObjectId)
+    deleteDataObjectIdFromCache(dataObjectId)
   }
 }
 
@@ -131,26 +131,26 @@ export class DownloadFileTask implements SyncTask {
 
       request.on('response', (res) => {
         if (!res.ok && res.statusCode !== 404) {
-          logger.error(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
+          logger.warn(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
         }
 
         // Handle 'error' event on Response too, because it will be emitted if request was
         // prematurely aborted/closed due to timeout and the response still was not completed
         // See: https://github.com/nodejs/node/blob/cd171576b2d1376dae3eb371b6da5ccf04dc4a85/lib/_http_client.js#L439-L441
         res.on('error', (err: Error) => {
-          logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
+          logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
         })
       })
 
       request.on('error', (err) => {
-        logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
+        logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await fsPromises.rename(tempFilePath, filepath)
-      await addDataObjectIdToCache(this.dataObjectId)
+      addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
-      logger.error(`Sync - fetching data error for ${url}: ${err}`, { err })
+      logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {
         logger.warn(`Cleaning up file ${tempFilePath}`)
         await fsPromises.unlink(tempFilePath)

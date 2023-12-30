@@ -140,15 +140,15 @@ export async function updateStorageBucketsForBags(
  * @param api - runtime API promise
  * @param workerId - runtime storage provider ID (worker ID)
  * @param acceptPendingDataObjectsParams - acceptPendingDataObject extrinsic parameters
- * @returns promise with a list of failedCalls.
+ * @returns promise with a list of successful objects.
  */
 export async function acceptPendingDataObjectsBatch(
   api: ApiPromise,
   workerId: number,
   acceptPendingDataObjectsParams: AcceptPendingDataObjectsParams[]
 ): Promise<string[]> {
-  // a list of failed data objects
-  const failedDataObjects: string[] = []
+  // a list of data objects that succeeded in being accepted
+  const successDataObjects: string[] = []
 
   const txsByTransactorAccount = acceptPendingDataObjectsParams.map(({ account, storageBucket }) => {
     const txs = storageBucket.bags.map((bag) =>
@@ -166,27 +166,20 @@ export async function acceptPendingDataObjectsBatch(
   for (const [account, txs, bags] of txsByTransactorAccount) {
     const txBatch = api.tx.utility.forceBatch(txs)
 
-    const success = await extrinsicWrapper(async () => {
+    await extrinsicWrapper(async () => {
       await sendAndFollowNamedTx(api, account, txBatch, (result) => {
-        // Process individual ItemFailed events
+        // Process individual events
         const events = getEvents(result, 'utility', ['ItemCompleted', 'ItemFailed'])
         events.forEach((e, i) => {
-          if (e.method === 'ItemFailed') {
-            failedDataObjects.push(...bags[i].dataObjects.toString())
+          if (e.method === 'ItemCompleted') {
+            successDataObjects.push(...bags[i].dataObjects)
           }
         })
       })
     })
-
-    if (!success) {
-      // If the batch transaction failed, push all data objects to failed list
-      bags.forEach((bag) => {
-        failedDataObjects.push(...bag.dataObjects.toString())
-      })
-    }
   }
 
-  return failedDataObjects
+  return successDataObjects
 }
 
 /**
