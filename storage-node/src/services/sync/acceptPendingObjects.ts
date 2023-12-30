@@ -59,16 +59,9 @@ export class AcceptPendingObjectsService {
         bucketKeyPairs,
         uploadBuckets
       )
-      await this.instance.initPendingFolder()
       this.instance.runWithInterval(api, workerId, maxTxBatchSize, intervalMs)
     }
     return this.instance
-  }
-
-  private async initPendingFolder(): Promise<void> {
-    if (!fs.existsSync(this.pendingDataObjectsDir)) {
-      await fsPromises.mkdir(this.pendingDataObjectsDir, { recursive: true })
-    }
   }
 
   pendingObjectExists(id: string): boolean {

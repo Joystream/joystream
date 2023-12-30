@@ -55,6 +55,10 @@ export default class Server extends ApiCommandBase {
       description:
         'Directory to store tempory files during sync and upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
     }),
+    pendingFolder: flags.string({
+      description:
+        'Directory to store pending files which are uploaded upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
+    }),
     port: flags.integer({
       char: 'o',
       required: true,
@@ -237,27 +241,40 @@ Supported values: warn, error, debug, info. Default:debug`,
       )
     }
 
+    if (!flags.pendingFolder) {
+      logger.warn(
+        'You did not specify a path to the pending directory. ' +
+          'A pending folder under the uploads folder willl be used. ' +
+          'In a future release passing an absolute path to a pending directory with the ' +
+          '"pendingFolder" argument will be required.'
+      )
+    }
+
     const tempFolder = flags.tempFolder || path.join(flags.uploads, TempDirName)
+    const pendingFolder = flags.pendingFolder || path.join(flags.uploads, PendingDirName)
 
     if (path.relative(tempFolder, flags.uploads) === '') {
       this.error('Paths for temporary and uploads folders must be unique.')
+    }
+
+    if (path.relative(pendingFolder, flags.uploads) === '') {
+      this.error('Paths for pending and uploads folders must be unique.')
     }
 
     await createDirectory(flags.uploads)
     await loadDataObjectIdCache(flags.uploads)
 
     await createDirectory(tempFolder)
+    await createDirectory(pendingFolder)
 
     const X_HOST_ID = uuidv4()
-
-    const pendingDataObjectsDir = path.join(flags.uploads, PendingDirName)
 
     const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
       api,
       qnApi,
       workerId,
       flags.uploads,
-      pendingDataObjectsDir,
+      pendingFolder,
       bucketKeyPairs,
       writableBuckets,
       flags.maxBatchTxSize,
@@ -326,7 +343,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         maxFileSize,
         uploadsDir: flags.uploads,
         tempFileUploadingDir: tempFolder,
-        pendingDataObjectsDir,
+        pendingDataObjectsDir: pendingFolder,
         acceptPendingObjectsService,
         process: this.config,
         enableUploadingAuth,
