@@ -8,12 +8,7 @@ import path from 'path'
 import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import {
-  pinDataObjectIdToCache,
-  unpinDataObjectIdFromCache,
-  addDataObjectIdToCache,
-} from '../../caching/localDataObjects'
-import { registerNewDataObjectId } from '../../caching/newUploads'
+import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
 import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
@@ -51,7 +46,6 @@ export async function getFile(
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
-    const fileStats = await fsPromises.stat(fullPath)
 
     // verify ipfs has of file we are about to serve, just in-case it is corrupt
     // ....
@@ -62,7 +56,7 @@ export async function getFile(
       // serve all files for download
       res.setHeader('Content-Disposition', 'inline')
       res.setHeader('Content-Type', fileInfo.mimeType)
-      res.setHeader('Content-Length', fileStats.size)
+      res.setHeader('Content-Length', fileInfo.size)
     })
 
     stream.on('error', (err) => {
@@ -146,15 +140,10 @@ export async function uploadFile(
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId
-    const { pendingDataObjectsDir, uploadsDir } = res.locals
+    const { pendingDataObjectsDir } = res.locals
     const newPathPending = path.join(pendingDataObjectsDir, dataObjectId)
-    const newPathUploads = path.join(uploadsDir, dataObjectId)
 
     await fsPromises.rename(fileObj.path, newPathPending)
-    await fsPromises.copyFile(newPathPending, newPathUploads)
-
-    registerNewDataObjectId(dataObjectId)
-    addDataObjectIdToCache(dataObjectId)
 
     res.status(201).json({
       id: hash,
