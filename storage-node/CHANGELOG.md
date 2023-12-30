@@ -2,8 +2,10 @@
 
 - **FIX** unhandled `error` events on superagent. [#4988](https://github.com/Joystream/joystream/pull/4998),[#5007](https://github.com/Joystream/joystream/pull/5007)
 - General improvements when setting up uploads and temp folder. Ensure local data objects cache is not polluted by other than object id file names.
-- Added constraint on temp folder, logs and uploads folder needing to be at different paths, and added optional `tempFolder` argument to specify full path to temp folder. This is in preparation for future releases where we will be moving to use different storage backends. [#5000](https://github.com/Joystream/joystream/pull/5000)
+- Added constraint on temp, pending, logs, and uploads folder needing to be at different paths, and added two new optional `--tempFolder` and `--pendingFolder` arguments to specify full path to these folders. This is in preparation for future releases where we will be moving to use different storage backends. [#5000](https://github.com/Joystream/joystream/pull/5000)
 - Improve operator url selection and avoid connecting to self. [#4993](https://github.com/Joystream/joystream/pull/4993)
+- Various bug fixes that were introduced in v3.9.0 in accept pending objects service. [#5016](https://github.com/Joystream/joystream/pull/5016)
+- Syncing worker improvement, no longer relying on `/api/v1/state/data-objects` endpoint to determine which hosts to sync from. [#5014](https://github.com/Joystream/joystream/pull/5014)
 
 ### 3.9.1
 
