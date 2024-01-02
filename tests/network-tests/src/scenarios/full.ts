@@ -39,12 +39,9 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
-<<<<<<< HEAD
 import curatorModerationActions from '../flows/content/curatorModerationActions'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
-=======
 import updateValidatorVerificationStatus from '../flows/membership/updateValidatorVerifications'
->>>>>>> master
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job }) => {
