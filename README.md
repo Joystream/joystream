@@ -51,13 +51,13 @@ Modify the root `package.json` and change volta section to use node version 16.2
 
 ```sh
 # Build local npm packages
-yarn build:packages
+yarn build
 
 # Build joystream/node docker testing image
 RUNTIME_PROFILE=TESTING yarn build:node:docker
 
 # Start a local development network
-RUNTIME_PROFILE=TESTING yarn start
+yarn start
 ```
 
 ## Software
@@ -111,13 +111,13 @@ Look under the 'Assets' section:
 
 ```bash
 # Make sure yarn packages are built
-yarn build:packages
+yarn build
 
 # Build the test joystream-node
 RUNTIME_PROFILE=TESTING yarn build:node:docker
 
 # Run tests
-./tests/network-tests/run-full-tests.sh
+yarn test
 ```
 
 ### Contributing

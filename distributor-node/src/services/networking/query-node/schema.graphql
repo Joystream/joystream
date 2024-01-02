@@ -2006,6 +2006,7 @@ enum MembershipExternalResourceType {
   WECHAT
   WHATSAPP
   LINKEDIN
+  GITHUB
 }
 
 type MemberMetadata implements BaseGraphQLObject {
@@ -2029,7 +2030,6 @@ type MemberMetadata implements BaseGraphQLObject {
   member: Membership
   externalResources: [MembershipExternalResource!]
   isVerifiedValidator: Boolean
-  validatorAccount: String
   membercreatedeventmetadata: [MemberCreatedEvent!]
   memberinvitedeventmetadata: [MemberInvitedEvent!]
   memberprofileupdatedeventnewMetadata: [MemberProfileUpdatedEvent!]
@@ -17753,11 +17753,6 @@ input MemberMetadataWhereInput {
   about_in: [String!]
   isVerifiedValidator_eq: Boolean
   isVerifiedValidator_in: [Boolean!]
-  validatorAccount_eq: String
-  validatorAccount_contains: String
-  validatorAccount_startsWith: String
-  validatorAccount_endsWith: String
-  validatorAccount_in: [String!]
   member: MembershipWhereInput
   externalResources_none: MembershipExternalResourceWhereInput
   externalResources_some: MembershipExternalResourceWhereInput
@@ -17791,7 +17786,6 @@ input MemberMetadataCreateInput {
   avatar: JSONObject!
   about: String
   isVerifiedValidator: Boolean
-  validatorAccount: String
 }
 
 input MemberMetadataUpdateInput {
@@ -17799,7 +17793,6 @@ input MemberMetadataUpdateInput {
   avatar: JSONObject
   about: String
   isVerifiedValidator: Boolean
-  validatorAccount: String
 }
 
 input MembershipGiftedEventWhereInput {
@@ -30518,8 +30511,6 @@ enum MemberMetadataOrderByInput {
   about_DESC
   isVerifiedValidator_ASC
   isVerifiedValidator_DESC
-  validatorAccount_ASC
-  validatorAccount_DESC
 }
 
 enum MemberProfileUpdatedEventOrderByInput {

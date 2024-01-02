@@ -20,6 +20,7 @@ import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
 import { UploadFileQueryParams, UploadToken } from './types'
 import { diskStorage } from '../multer-storage/disk'
+import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -44,6 +45,14 @@ export async function createApp(config: AppConfig): Promise<Express> {
       next()
     },
 
+    // Avoid node connecting to itself
+    (req: express.Request, res: express.Response, next: NextFunction) => {
+      if (res.locals.x_host_id === req.headers['X-COLOSSUS-HOST-ID']) {
+        sendResponseWithError(res, next, new Error('LoopbackRequestDetected'), 'general-request')
+      } else {
+        next()
+      }
+    },
     // Catch aborted requests event early, before we get a chance to handle
     // it in multer middleware. This is an edge case which happens when only
     // a small amount of data is transferred, before multer starts parsing.
@@ -242,7 +251,13 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
     throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${parsedBagId}`, 400)
   }
 
-  if (dataObject.accepted.valueOf()) {
-    throw new WebApiError(`Data object ${dataObjectId} has already been accepted by storage node`, 400)
+  const isObjectPending = res.locals.acceptPendingObjectsService.pendingObjectExists(dataObjectId.toString())
+  if (isObjectPending) {
+    throw new WebApiError(`Data object ${dataObjectId} already exists`, 400)
+  }
+
+  const isInStorage = getDataObjectIdFromCache(dataObjectId.toString())
+  if (isInStorage) {
+    throw new WebApiError(`Data object ${dataObjectId} already exists`, 400)
   }
 }

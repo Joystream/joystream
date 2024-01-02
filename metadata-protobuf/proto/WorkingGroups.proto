@@ -66,5 +66,11 @@ message ModeratePost {
 message RemarkMetadataAction {
   oneof action {
     ModeratePost moderate_post = 1;
+    VerifyValidator verify_validator = 2;
   }
+}
+
+message VerifyValidator {
+  required uint64 member_id = 1;
+  required bool is_verified = 2;
 }

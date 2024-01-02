@@ -7,3 +7,4 @@ export { RemoveStakingAccountsHappyCaseFixture } from './RemoveStakingAccountsHa
 export { TransferInvitesHappyCaseFixture } from './TransferInvitesHappyCaseFixture'
 export { UpdateAccountsHappyCaseFixture } from './UpdateAccountsHappyCaseFixture'
 export { UpdateProfileHappyCaseFixture, MemberProfileData } from './UpdateProfileHappyCaseFixture'
+export { VerifyValidatorMembershipFixture, VerifyValidatorInput } from './VerifyValidatorMembershipFixture'

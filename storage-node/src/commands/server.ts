@@ -1,23 +1,27 @@
 import { flags } from '@oclif/command'
-import { createApp } from '../services/webApi/app'
-import ApiCommandBase from '../command-base/ApiCommandBase'
-import logger, { initNewLogger, DatePatternByFrequency, Frequency } from '../services/logger'
-import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import { ApiPromise } from '@polkadot/api'
-import { performSync, TempDirName } from '../services/sync/synchronizer'
 import sleep from 'sleep-promise'
-import rimraf from 'rimraf'
 import _ from 'lodash'
 import path from 'path'
-import { promisify } from 'util'
-import ExitCodes from './../command-base/ExitCodes'
 import fs from 'fs'
-import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import { Option } from '@polkadot/types-codec'
-import { QueryNodeApi } from '../services/queryNode/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { customFlags } from '../command-base/CustomFlags'
+import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
+import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
+import { QueryNodeApi } from '../services/queryNode/api'
+import {
+  MAXIMUM_QN_LAGGING_THRESHOLD,
+  MINIMUM_REPLICATION_THRESHOLD,
+  performCleanup,
+} from '../services/sync/cleanupService'
+import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
+import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
+import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
+import { createApp } from '../services/webApi/app'
+import ExitCodes from './../command-base/ExitCodes'
+import ApiCommandBase from '../command-base/ApiCommandBase'
+import { v4 as uuidv4 } from 'uuid'
 const fsPromises = fs.promises
 
 /**
@@ -47,6 +51,14 @@ export default class Server extends ApiCommandBase {
       required: true,
       description: 'Data uploading directory (absolute path).',
     }),
+    tempFolder: flags.string({
+      description:
+        'Directory to store tempory files during sync and upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
+    }),
+    pendingFolder: flags.string({
+      description:
+        'Directory to store pending files which are uploaded upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
+    }),
     port: flags.integer({
       char: 'o',
       required: true,
@@ -60,7 +72,21 @@ export default class Server extends ApiCommandBase {
     syncInterval: flags.integer({
       char: 'i',
       description: 'Interval between synchronizations (in minutes)',
-      default: 1,
+      default: 20,
+    }),
+    syncRetryInterval: flags.integer({
+      description: 'Interval before retrying failed synchronization run (in minutes)',
+      default: 3,
+    }),
+    cleanup: flags.boolean({
+      char: 'c',
+      description: 'Enable cleanup/pruning of no-longer assigned assets.',
+      default: false,
+    }),
+    cleanupInterval: flags.integer({
+      char: 'i',
+      description: 'Interval between periodic cleanup actions (in minutes)',
+      default: 360,
     }),
     queryNodeEndpoint: flags.string({
       char: 'q',
@@ -127,17 +153,30 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 'daily',
       required: false,
     }),
+    maxBatchTxSize: flags.integer({
+      description: 'Maximum number of `accept_pending_data_objects` in a batch transactions.',
+      default: 20,
+      required: false,
+    }),
     ...ApiCommandBase.flags,
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
 
-    const logSource = `StorageProvider_${flags.worker}`
+    const api = await this.getApi()
+
+    if (flags.dev) {
+      await this.ensureDevelopmentChain()
+    }
+
+    if (flags.logFilePath && path.relative(flags.logFilePath, flags.uploads) === '') {
+      this.error('Paths for logs and uploads must be unique.')
+    }
 
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
       initNewLogger({
-        elasticSearchlogSource: logSource,
+        elasticSearchlogSource: `StorageProvider_${flags.worker}`,
         elasticSearchEndpoint: flags.elasticSearchEndpoint,
         elasticSearchIndexPrefix: flags.elasticSearchIndexPrefix,
         elasticSearchUser: flags.elasticSearchUser,
@@ -150,8 +189,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
-
-    const api = await this.getApi()
 
     const workerId = flags.worker
 
@@ -195,15 +232,54 @@ Supported values: warn, error, debug, info. Default:debug`,
     const enableUploadingAuth = false
     const operatorRoleKey = undefined
 
-    await recreateTempDirectory(flags.uploads, TempDirName)
-
-    if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName)
+    if (!flags.tempFolder) {
+      logger.warn(
+        'You did not specify a path to the temporary directory. ' +
+          'A temp folder under the uploads folder will be used. ' +
+          'In a future release passing an absolute path to a temporary directory with the ' +
+          '"tempFolder" argument will be required.'
+      )
     }
 
-    if (flags.dev) {
-      await this.ensureDevelopmentChain()
+    if (!flags.pendingFolder) {
+      logger.warn(
+        'You did not specify a path to the pending directory. ' +
+          'A pending folder under the uploads folder will be used. ' +
+          'In a future release passing an absolute path to a pending directory with the ' +
+          '"pendingFolder" argument will be required.'
+      )
     }
+
+    const tempFolder = flags.tempFolder || path.join(flags.uploads, TempDirName)
+    const pendingFolder = flags.pendingFolder || path.join(flags.uploads, PendingDirName)
+
+    if (path.relative(tempFolder, flags.uploads) === '') {
+      this.error('Paths for temporary and uploads folders must be unique.')
+    }
+
+    if (path.relative(pendingFolder, flags.uploads) === '') {
+      this.error('Paths for pending and uploads folders must be unique.')
+    }
+
+    await createDirectory(flags.uploads)
+    await loadDataObjectIdCache(flags.uploads)
+
+    await createDirectory(tempFolder)
+    await createDirectory(pendingFolder)
+
+    const X_HOST_ID = uuidv4()
+
+    const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
+      api,
+      qnApi,
+      workerId,
+      flags.uploads,
+      pendingFolder,
+      bucketKeyPairs,
+      writableBuckets,
+      flags.maxBatchTxSize,
+      6000 // Every block
+    )
 
     // Don't run sync job if no buckets selected, to prevent purging
     // any assets.
@@ -216,12 +292,14 @@ Supported values: warn, error, debug, info. Default:debug`,
             api,
             flags.worker,
             selectedBuckets,
-            flags.queryNodeEndpoint,
+            qnApi,
             flags.uploads,
-            TempDirName,
+            tempFolder,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
-            flags.syncInterval
+            flags.syncInterval,
+            flags.syncRetryInterval,
+            X_HOST_ID
           ),
         0
       )
@@ -229,10 +307,31 @@ Supported values: warn, error, debug, info. Default:debug`,
       logger.warn(`Synchronization is Disabled.`)
     }
 
+    // Don't run cleanup job if no buckets selected, to prevent purging
+    // any assets.
+    if (flags.cleanup && selectedBuckets.length) {
+      logger.info(`Cleanup service is Enabled.`)
+      setTimeout(
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        async () =>
+          runCleanupWithInterval(
+            flags.worker,
+            selectedBuckets,
+            qnApi,
+            flags.uploads,
+            flags.syncWorkersNumber,
+            flags.cleanupInterval,
+            X_HOST_ID
+          ),
+        0
+      )
+    } else {
+      logger.warn(`Cleanup service is Disabled.`)
+    }
+
     try {
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
-      const tempFileUploadingDir = path.join(flags.uploads, TempDirName)
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
       const app = await createApp({
@@ -243,11 +342,21 @@ Supported values: warn, error, debug, info. Default:debug`,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
-        tempFileUploadingDir,
+        tempFileUploadingDir: tempFolder,
+        pendingDataObjectsDir: pendingFolder,
+        acceptPendingObjectsService,
         process: this.config,
         enableUploadingAuth,
         downloadBuckets: selectedBuckets,
         uploadBuckets: writableBuckets,
+        sync: { enabled: flags.sync, interval: flags.syncInterval },
+        cleanup: {
+          enabled: flags.cleanup,
+          interval: flags.cleanupInterval,
+          maxQnLaggingThresholdInBlocks: MAXIMUM_QN_LAGGING_THRESHOLD,
+          minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
+        },
+        x_host_id: X_HOST_ID,
       })
       logger.info(`Listening on http://localhost:${port}`)
       app.listen(port)
@@ -263,15 +372,18 @@ Supported values: warn, error, debug, info. Default:debug`,
 }
 
 /**
- * Run the data syncronization process.
+ * Run the data synchronization process.
  *
+ * @param api - runtime Api promise
  * @param workerId - worker ID
- * @param queryNodeUrl - Query Node for data fetching
+ * @param buckets - Selected storage buckets
+ * @param qnApi - Query Node API
  * @param uploadsDir - data uploading directory
  * @param tempDirectory - temporary data uploading directory
  * @param syncWorkersNumber - defines a number of the async processes for sync
  * @param syncWorkersTimeout - downloading asset timeout
  * @param syncIntervalMinutes - defines an interval between sync runs
+ * @param syncRetryIntervalMinutes - defines an interval before retrying sync run after critical error
  *
  * @returns void promise.
  */
@@ -279,56 +391,74 @@ async function runSyncWithInterval(
   api: ApiPromise,
   workerId: number,
   buckets: string[],
-  queryNodeUrl: string,
+  qnApi: QueryNodeApi,
   uploadsDirectory: string,
   tempDirectory: string,
   syncWorkersNumber: number,
   syncWorkersTimeout: number,
-  syncIntervalMinutes: number
+  syncIntervalMinutes: number,
+  syncRetryIntervalMinutes: number,
+  hostId: string
 ) {
-  const sleepInteval = syncIntervalMinutes * 60 * 1000
+  const sleepInterval = syncIntervalMinutes * 60 * 1000
+  const retrySleepInterval = syncRetryIntervalMinutes * 60 * 1000
   while (true) {
-    logger.info(`Sync paused for ${syncIntervalMinutes} minute(s).`)
-    await sleep(sleepInteval)
     try {
       logger.info(`Resume syncing....`)
-      await performSync(
-        api,
-        workerId,
-        buckets,
-        syncWorkersNumber,
-        syncWorkersTimeout,
-        queryNodeUrl,
-        uploadsDirectory,
-        tempDirectory
-      )
+      await performSync(buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory, hostId)
+      logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
+      await sleep(sleepInterval)
     } catch (err) {
       logger.error(`Critical sync error: ${err}`)
+      logger.info(`Will retry in ${syncRetryIntervalMinutes} minute(s)`)
+      await sleep(retrySleepInterval)
     }
   }
 }
 
 /**
- * Removes and recreates the temporary directory from the uploading directory.
- * All files in the temp directory are deleted.
+ * Run the data cleanup process.
  *
- * @param uploadsDirectory - data uploading directory
- * @param tempDirName - temporary directory name within the uploading directory
+ * @param workerId - worker ID
+ * @param buckets - Selected storage buckets
+ * @param qnApi - Query Node API
+ * @param uploadsDir - data uploading directory
+ * @param syncWorkersNumber - defines a number of the async processes for cleanup/pruning
+ * @param cleanupIntervalMinutes - defines an interval between cleanup/pruning runs
+ *
  * @returns void promise.
  */
-async function recreateTempDirectory(uploadsDirectory: string, tempDirName: string): Promise<void> {
-  try {
-    const tempFileUploadingDir = path.join(uploadsDirectory, tempDirName)
-
-    logger.info(`Removing temp directory ...`)
-    const rimrafAsync = promisify(rimraf)
-    await rimrafAsync(tempFileUploadingDir)
-
-    logger.info(`Creating temp directory ...`)
-    await fsPromises.mkdir(tempFileUploadingDir)
-  } catch (err) {
-    logger.error(`Temp directory IO error: ${err}`)
+async function runCleanupWithInterval(
+  workerId: number,
+  buckets: string[],
+  qnApi: QueryNodeApi,
+  uploadsDirectory: string,
+  syncWorkersNumber: number,
+  cleanupIntervalMinutes: number,
+  hostId: string
+) {
+  const sleepInterval = cleanupIntervalMinutes * 60 * 1000
+  while (true) {
+    logger.info(`Cleanup paused for ${cleanupIntervalMinutes} minute(s).`)
+    await sleep(sleepInterval)
+    try {
+      logger.info(`Resume cleanup....`)
+      await performCleanup(buckets, syncWorkersNumber, qnApi, uploadsDirectory, hostId)
+    } catch (err) {
+      logger.error(`Critical cleanup error: ${err}`)
+    }
   }
+}
+
+/**
+ * Creates a directory recursivly. Like `mkdir -p`
+ *
+ * @param tempDirName - full path to temporary directory
+ * @returns void promise.
+ */
+async function createDirectory(dirName: string): Promise<void> {
+  logger.info(`Creating directory ${dirName}`)
+  await fsPromises.mkdir(dirName, { recursive: true })
 }
 
 async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
@@ -345,13 +475,7 @@ async function constructBucketToAddressMapping(
   const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
   const buckets: [string, PalletStorageStorageBucketRecord][] = (
     await Promise.all(
-      bucketIds.map(
-        async (bucketId) =>
-          [bucketId, await api.query.storage.storageBucketById(bucketId)] as [
-            string,
-            Option<PalletStorageStorageBucketRecord>
-          ]
-      )
+      bucketIds.map(async (bucketId) => [bucketId, await api.query.storage.storageBucketById(bucketId)] as const)
     )
   )
     .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))

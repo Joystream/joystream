@@ -1,3 +1,7 @@
+### 1.8.0
+
+- Add support for validator account verification
+
 ### 1.7.0
 
 - Refactor of mappings for more better handling of error cases. [#4856](https://github.com/Joystream/joystream/pull/4856)

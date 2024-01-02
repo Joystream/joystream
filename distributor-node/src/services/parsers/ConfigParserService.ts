@@ -1,11 +1,11 @@
-import { ValidationError, ValidationService } from '../validation/ValidationService'
-import { Config } from '../../types'
 import fs from 'fs'
+import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
+import _ from 'lodash'
 import path from 'path'
 import YAML from 'yaml'
-import _ from 'lodash'
 import configSchema, { bytesizeUnits } from '../../schemas/configSchema'
-import { JSONSchema4, JSONSchema4TypeName } from 'json-schema'
+import { Config } from '../../types'
+import { ValidationError, ValidationService } from '../validation/ValidationService'
 
 const MIN_CACHE_SIZE = '20G'
 const MIN_MAX_CACHED_ITEM_SIZE = '1M'
@@ -131,6 +131,26 @@ export class ConfigParserService {
     return String(packageJSON.version)
   }
 
+  private setEnvVarsFromInputConfig(inputConfig: Record<string, unknown>) {
+    this.populateEnvVars(inputConfig)
+  }
+
+  private populateEnvVars(config: Record<string, unknown>, prefix = 'JOYSTREAM_DISTRIBUTOR__', path = '') {
+    Object.entries(config).forEach(([key, value]) => {
+      // Transform camelCase to snake_case and then to uppercase
+      const envKey = `${prefix}${path}${this.toSnakeCase(key)}`.toUpperCase()
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        this.populateEnvVars(value as Record<string, unknown>, prefix, `${path}${this.toSnakeCase(key)}__`)
+      } else {
+        process.env[envKey] = String(value)
+      }
+    })
+  }
+
+  private toSnakeCase(str: string): string {
+    return str.replace(/[\w]([A-Z])/g, (m) => `${m[0]}_${m[1]}`).toLowerCase()
+  }
+
   public parse(): Config {
     const { configPath } = this
     let inputConfig: Record<string, unknown> = {}
@@ -148,6 +168,10 @@ export class ConfigParserService {
 
     // Override config with env variables
     this.mergeEnvConfigWith(inputConfig)
+
+    // Export the JSON/YML config as env vars too so that the pieces of code that does not have
+    // access to the config object (e.g. opentelemetry module) can read the config values.
+    this.setEnvVarsFromInputConfig(inputConfig)
 
     // Validate the config
     const configJson = this.validator.validate('Config', inputConfig)

@@ -21,7 +21,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: checks
       run: |
-        yarn build:packages
+        yarn build
 
   tests_build_osx:
     name: MacOS Checks
@@ -37,7 +37,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: checks
       run: |
-        yarn build:packages
+        yarn build
 
   build_images:
     name: Build joystream/node
@@ -173,7 +173,7 @@ jobs:
           docker images
       - name: Install packages and dependencies
         run: |
-          yarn build:packages
+          yarn build
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
@@ -238,7 +238,7 @@ jobs:
       - name: Install packages and dependencies
         if: env.GIT_DIFF
         run: |
-          yarn build:packages
+          yarn build
       - name: Ensure tests are runnable
         if: env.GIT_DIFF
         run: yarn workspace network-tests build

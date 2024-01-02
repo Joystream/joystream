@@ -1,3 +1,24 @@
+### 3.10.0
+
+- **FIX** unhandled `error` events on superagent. [#4988](https://github.com/Joystream/joystream/pull/4998),[#5007](https://github.com/Joystream/joystream/pull/5007)
+- General improvements when setting up uploads and temp folder. Ensure local data objects cache is not polluted by other than object id file names.
+- Added constraint on temp, pending, logs, and uploads folder needing to be at different paths, and added two new optional `--tempFolder` and `--pendingFolder` arguments to specify full path to these folders. This is in preparation for future releases where we will be moving to use different storage backends. [#5000](https://github.com/Joystream/joystream/pull/5000)
+- Improve operator url selection and avoid connecting to self. [#4993](https://github.com/Joystream/joystream/pull/4993)
+- Various bug fixes that were introduced in v3.9.0 in accept pending objects service. [#5016](https://github.com/Joystream/joystream/pull/5016)
+- Syncing worker improvement, no longer relying on `/api/v1/state/data-objects` endpoint to determine which hosts to sync from. [#5014](https://github.com/Joystream/joystream/pull/5014)
+
+### 3.9.1
+
+- **FIX**: Added event handler to handle `error` event on `superagent.get` instance. Previously the unhandled error was causing the application to crash.
+
+### 3.9.0
+
+- Increase default interval between sync runs. Start sync run immediately do not wait initial interval on startup before starting sync. Adds additional optional argument to specify retry interval on failure. [#4924](https://github.com/Joystream/joystream/pull/4924)
+- Add background pruning worker to delete data objects which the node is no longer obligated to store. New optional argument `--cleanup` and `--cleanupInterval`
+- Added new `AcceptPendingObjectsService` that is responsible for periodically sending batch `accept_pending_data_objects` for all the pending data objects. The `POST /files` endpoint now no longer calls the `accept_pending_data_objects` extrinsic for individual uploads, instead, it registers all the pending objects with `AcceptPendingObjectsService`
+- Updated `/state/data` endpoint response headers to return data objects status too i.e. (`pending` or `accepted`)
+- **FIX**: Increase the default timeout value in the `extrinsicWrapper` function to match the transaction validity in the transaction pool
+
 ### 3.8.1
 
 - Hotfix: Fix call stack size exceeded when handling large number of initial object to sync.
@@ -13,7 +34,7 @@
 
 ### 3.7.1
 
-- Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets.
+- Disable open-api express response validation if NODE_ENV == 'production'. This should improve response times when serving assets. [#4810](https://github.com/Joystream/joystream/pull/4810)
 - Include `nodeEnv` in `/api/v1/status` response, to help detect mis-configured nodes.
 
 ### 3.7.0

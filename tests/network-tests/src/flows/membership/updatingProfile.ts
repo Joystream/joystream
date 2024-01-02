@@ -21,7 +21,6 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
     {
       handle: 'New handle 1',
       name: 'New name',
-      validatorAccount: 'validator address',
     },
     {
       handle: 'New handle 2',
@@ -38,7 +37,6 @@ export default async function updatingProfile({ api, query }: FlowProps): Promis
           value: 'A@example.com',
         },
       ],
-      validatorAccount: '',
     },
     // Full update
     {
