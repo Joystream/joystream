@@ -6,10 +6,9 @@ import { customFlags } from '../../command-base/CustomFlags'
  * Verifies supported bag ID types in the string format.
  *
  * @remarks
- * Should be run only during the development.
  * Shell command: "dev:verify-bag-id"
  */
-export default class DevVerifyBagId extends Command {
+export default class VerifyBagId extends Command {
   static description = 'The command verifies bag id supported by the storage node. Requires chain connection.'
 
   static flags = {
@@ -21,7 +20,7 @@ export default class DevVerifyBagId extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(DevVerifyBagId)
+    const { flags } = this.parse(VerifyBagId)
 
     logger.info(`Parsed: ${flags.bagId}`)
   }

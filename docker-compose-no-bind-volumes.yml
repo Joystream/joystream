@@ -36,11 +36,13 @@ services:
       # - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
     entrypoint: ['yarn']
     command: [
-      'start', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'start', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
-      '--logFilePath=/logs'
+      '--logFilePath=/logs',
+      '--tempFolder=/data/temp/',
+      '--pendingFolder=/data/pending/'
     ]
 
   distributor-1:
@@ -103,11 +105,13 @@ services:
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
     entrypoint: ['yarn', 'storage-node']
     command: [
-      'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data',
+      'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
       '--sync', '--syncInterval=1',
       '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
-      '--logFilePath=/logs'
+      '--logFilePath=/logs',
+      '--tempFolder=/data/temp/',
+      '--pendingFolder=/data/pending/'
     ]
 
   distributor-2:

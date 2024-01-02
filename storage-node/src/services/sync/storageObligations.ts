@@ -76,6 +76,11 @@ type DataObject = {
    * Assigned bag ID
    */
   bagId: string
+
+  /**
+   * Data Object hash
+   */
+  ipfsHash: string
 }
 
 /**
@@ -110,6 +115,7 @@ export async function getStorageObligationsFromRuntime(
     dataObjects: assignedDataObjects.map((dataObject) => ({
       id: dataObject.id,
       bagId: dataObject.storageBag.id,
+      ipfsHash: dataObject.ipfsHash,
     })),
   }
 
@@ -182,7 +188,7 @@ async function getAllAssignedDataObjects(
  * Get details of storage data objects by IDs.
  *
  * @param api - initialized QueryNodeApi instance
- * @param bagIds - data objects' IDs
+ * @param dataObjectIds - data objects' IDs
  * @returns storage data objects
  */
 export async function getDataObjectsByIDs(

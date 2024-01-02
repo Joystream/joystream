@@ -49,12 +49,12 @@ export const MINIMUM_REPLICATION_THRESHOLD = 2
  * @param tempDirectory - local directory for temporary data uploading
  */
 export async function performCleanup(
-  workerId: number,
   buckets: string[],
   asyncWorkersNumber: number,
   api: ApiPromise,
   qnApi: QueryNodeApi,
-  uploadDirectory: string
+  uploadDirectory: string,
+  hostId: string
 ): Promise<void> {
   logger.info('Started cleanup service...')
   const squidStatus = await qnApi.getQueryNodeState()
@@ -99,10 +99,11 @@ export async function performCleanup(
     deletedDataObjects.map((dataObject) => new DeleteLocalFileTask(uploadDirectory, dataObject))
   )
   const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
-    workerId,
+    buckets,
     uploadDirectory,
     model,
-    movedDataObjects
+    movedDataObjects,
+    hostId
   )
 
   await workingStack.add(deletionTasksOfDeletedDataObjects)
@@ -114,22 +115,33 @@ export async function performCleanup(
 /**
  * Creates the local file deletion tasks.
  *
- * @param currentWorkerId - Worker ID
+ * @param ownBuckets - list of bucket ids operated by this node
  * @param uploadDirectory - local directory for data uploading
  * @param dataObligations - defines the current data obligations for the node
  * @param movedDataObjects- obsolete (no longer assigned) data objects that has been moved to other buckets
  */
 async function getDeletionTasksFromMovedDataObjects(
-  currentWorkerId: number,
+  ownBuckets: string[],
   uploadDirectory: string,
   dataObligations: DataObligations,
-  movedDataObjects: DataObjectDetailsFragment[]
+  movedDataObjects: DataObjectDetailsFragment[],
+  hostId: string
 ): Promise<DeleteLocalFileTask[]> {
+  const ownOperatorUrls: string[] = []
+  for (const entry of dataObligations.storageBuckets) {
+    if (ownBuckets.includes(entry.id)) {
+      ownOperatorUrls.push(entry.operatorUrl)
+    }
+  }
+
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    // Skip all buckets of the current WorkerId (this storage provider)
-    if (entry.workerId !== currentWorkerId) {
-      bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+    if (!ownBuckets.includes(entry.id)) {
+      if (ownOperatorUrls.includes(entry.operatorUrl)) {
+        logger.warn(`(cleanup) Skipping remote bucket ${entry.id} - ${entry.operatorUrl}`)
+      } else {
+        bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+      }
     }
   }
 
@@ -141,7 +153,7 @@ async function getDeletionTasksFromMovedDataObjects(
 
       for (const { id } of movedDataObject.storageBag.storageBuckets) {
         const url = urljoin(bucketOperatorUrlById.get(id), 'api/v1/files', movedDataObject.id)
-        await superagent.head(url).timeout(timeoutMs)
+        await superagent.head(url).timeout(timeoutMs).set('X-COLOSSUS-HOST-ID', hostId)
         dataObjectReplicationCount++
       }
 

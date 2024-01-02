@@ -24,6 +24,7 @@ import {
   UploadTokenRequest,
 } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
+import _ from 'lodash'
 const fsPromises = fs.promises
 
 /**
@@ -34,16 +35,22 @@ export async function getFile(
   res: express.Response<unknown, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
+  const { id: dataObjectId } = req.params
   try {
-    await pinDataObjectIdToCache(req.params.id)
+    pinDataObjectIdToCache(dataObjectId)
+  } catch (err) {
+    res.status(404).send()
+    return
+  }
 
-    const dataObjectId = new BN(req.params.id)
+  const unpin = _.once(() => {
+    unpinDataObjectIdFromCache(dataObjectId)
+  })
+
+  try {
     const uploadsDir = res.locals.uploadsDir
-
-    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
-
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
-    const fileStats = await fsPromises.stat(fullPath)
 
     const stream = send(req, fullPath)
 
@@ -51,18 +58,22 @@ export async function getFile(
       // serve all files for download
       res.setHeader('Content-Disposition', 'inline')
       res.setHeader('Content-Type', fileInfo.mimeType)
-      res.setHeader('Content-Length', fileStats.size)
+      res.setHeader('Content-Length', fileInfo.size)
     })
 
     stream.on('error', (err) => {
       sendResponseWithError(res, next, err, 'files')
+      unpin()
+    })
+
+    stream.on('end', () => {
+      unpin()
     })
 
     stream.pipe(res)
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
-  } finally {
-    await unpinDataObjectIdFromCache(req.params.id)
+    unpin()
   }
 }
 
@@ -73,25 +84,29 @@ export async function getFileHeaders(
   req: express.Request<GetFileHeadersRequestParams>,
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
+  const { id: dataObjectId } = req.params
   try {
-    await pinDataObjectIdToCache(req.params.id)
+    pinDataObjectIdToCache(dataObjectId)
+  } catch (err) {
+    res.status(404).send()
+    return
+  }
 
-    const dataObjectId = new BN(req.params.id)
+  try {
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId.toString())
+    const fullPath = path.resolve(uploadsDir, dataObjectId)
     const fileInfo = await getFileInfo(fullPath)
-    const fileStats = await fsPromises.stat(fullPath)
 
     res.setHeader('Content-Disposition', 'inline')
     res.setHeader('Content-Type', fileInfo.mimeType)
-    res.setHeader('Content-Length', fileStats.size)
+    res.setHeader('Content-Length', fileInfo.size)
 
     res.status(200).send()
   } catch (err) {
     res.status(getHttpStatusCodeByError(err)).send()
-  } finally {
-    await unpinDataObjectIdFromCache(req.params.id)
   }
+
+  unpinDataObjectIdFromCache(dataObjectId)
 }
 
 /**
@@ -125,17 +140,10 @@ export async function uploadFile(
 
     // Prepare new file name
     const dataObjectId = uploadRequest.dataObjectId
-    const pendingObjectsDir = res.locals.pendingDataObjectsDir
-    const newPath = path.join(pendingObjectsDir, dataObjectId)
+    const { pendingDataObjectsDir } = res.locals
+    const newPathPending = path.join(pendingDataObjectsDir, dataObjectId)
 
-    // Move file to pending objects Dir.
-    await fsPromises.rename(fileObj.path, newPath)
-
-    res.locals.acceptPendingObjectsService.add(
-      uploadRequest.dataObjectId,
-      uploadRequest.storageBucketId,
-      uploadRequest.bagId
-    )
+    await fsPromises.rename(fileObj.path, newPathPending)
 
     res.status(201).json({
       id: hash,

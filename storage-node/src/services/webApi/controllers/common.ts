@@ -207,4 +207,9 @@ export type AppConfig = {
      */
     minReplicationThresholdForPruning: number
   }
+
+  /**
+   * Random unique host id used sent in http request headers to identify the host
+   */
+  x_host_id: string
 }

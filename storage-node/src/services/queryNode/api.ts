@@ -256,7 +256,7 @@ export class QueryNodeApi {
   /**
    * Returns data objects info by pages for the given dataObject IDs.
    *
-   * @param bagIds - query filter: dataObject IDs
+   * @param dataObjectIds - query filter: dataObject IDs
    */
   public async getDataObjectDetails(dataObjectIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
     const allDataObjectIds = [...dataObjectIds] // Copy to avoid modifying the original array

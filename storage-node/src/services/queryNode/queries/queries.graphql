@@ -53,6 +53,7 @@ query getStorageBagDetails($bucketIds: [String!]) {
 
 fragment DataObjectByBagIdsDetails on StorageDataObject {
   id
+  ipfsHash
   storageBag {
     id
   }
@@ -67,13 +68,14 @@ query getDataObjectsByBagIds($bagIds: StorageBagWhereInput) {
 fragment DataObjectDetails on StorageDataObject {
   id
   isAccepted
+  ipfsHash
   storageBag {
     ...StorageBagDetails
   }
 }
 
 query getDataObjects($dataObjectIds: [String!]) {
-  storageDataObjects(where: { id_in: $dataObjectIds, isAccepted_eq: true }) {
+  storageDataObjects(where: { id_in: $dataObjectIds }) {
     ...DataObjectDetails
   }
 }
