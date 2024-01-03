@@ -25,6 +25,7 @@ import {
 } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
 import _ from 'lodash'
+import { moveFile } from 'src/services/helpers/moveFile'
 const fsPromises = fs.promises
 
 /**
@@ -143,7 +144,7 @@ export async function uploadFile(
     const { pendingDataObjectsDir } = res.locals
     const newPathPending = path.join(pendingDataObjectsDir, dataObjectId)
 
-    await fsPromises.rename(fileObj.path, newPathPending)
+    await moveFile(fileObj.path, newPathPending)
 
     res.status(201).json({
       id: hash,
