@@ -25,7 +25,7 @@ import {
 } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
 import _ from 'lodash'
-import { moveFile } from 'src/services/helpers/moveFile'
+import { moveFile } from '../../helpers/moveFile'
 const fsPromises = fs.promises
 
 /**
