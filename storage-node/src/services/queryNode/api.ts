@@ -18,22 +18,19 @@ import logger from '../logger'
 import {
   DataObjectByBagIdsDetailsFragment,
   DataObjectDetailsFragment,
+  DataObjectsWithBagAndBucketsFragment,
   GetBagConnection,
   GetBagConnectionQuery,
   GetBagConnectionQueryVariables,
   GetDataObjectsByBagIdsConnection,
   GetDataObjectsByBagIdsConnectionQuery,
   GetDataObjectsByBagIdsConnectionQueryVariables,
-  GetDataObjectsConnection,
-  GetDataObjectsConnectionQuery,
-  GetDataObjectsConnectionQueryVariables,
-  DataObjectsWithBagAndBucketsFragment,
-  // GetDataObjectConnection,
-  // GetDataObjectConnectionQuery,
-  // GetDataObjectConnectionQueryVariables,
   GetDataObjectsByIds,
   GetDataObjectsByIdsQuery,
   GetDataObjectsByIdsQueryVariables,
+  GetDataObjectsConnection,
+  GetDataObjectsConnectionQuery,
+  GetDataObjectsConnectionQueryVariables,
   GetStorageBucketDetails,
   GetStorageBucketDetailsByWorkerId,
   GetStorageBucketDetailsByWorkerIdQuery,
@@ -308,11 +305,12 @@ export class QueryNodeApi {
    */
   public async getDataObjectDetailsByBagIds(bagIds: string[]): Promise<Array<DataObjectByBagIdsDetailsFragment>> {
     const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    const fullResult: DataObjectByBagIdsDetailsFragment[] = []
+    let fullResult: DataObjectByBagIdsDetailsFragment[] = []
     while (allBagIds.length) {
       const bagIdsBatch = allBagIds.splice(0, 1000)
       const input: StorageBagWhereInput = { id_in: bagIdsBatch }
-      fullResult.push(
+      fullResult = [
+        ...fullResult,
         ...(await this.multipleEntitiesWithPagination<
           DataObjectByBagIdsDetailsFragment,
           GetDataObjectsByBagIdsConnectionQuery,
@@ -321,8 +319,8 @@ export class QueryNodeApi {
           GetDataObjectsByBagIdsConnection,
           { limit: MAX_RESULTS_PER_QUERY, bagIds: input },
           'storageDataObjectsConnection'
-        ))
-      )
+        )),
+      ]
     }
 
     return fullResult
@@ -335,10 +333,11 @@ export class QueryNodeApi {
    */
   public async getDataObjectDetails(dataObjectIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
     const allDataObjectIds = [...dataObjectIds] // Copy to avoid modifying the original array
-    const fullResult: DataObjectDetailsFragment[] = []
+    let fullResult: DataObjectDetailsFragment[] = []
     while (allDataObjectIds.length) {
       const dataObjectIdsBatch = allDataObjectIds.splice(0, 1000)
-      fullResult.push(
+      fullResult = [
+        ...fullResult,
         ...(await this.multipleEntitiesWithPagination<
           DataObjectDetailsFragment,
           GetDataObjectsConnectionQuery,
@@ -347,8 +346,8 @@ export class QueryNodeApi {
           GetDataObjectsConnection,
           { limit: MAX_RESULTS_PER_QUERY, dataObjectIds: dataObjectIdsBatch },
           'storageDataObjectsConnection'
-        ))
-      )
+        )),
+      ]
     }
 
     return fullResult
@@ -361,16 +360,17 @@ export class QueryNodeApi {
    */
   public async getDataObjectsByIds(ids: string[]): Promise<Array<DataObjectsWithBagAndBucketsFragment>> {
     const allIds = [...ids] // Copy to avoid modifying the original array
-    const fullResult: DataObjectsWithBagAndBucketsFragment[] = []
+    let fullResult: DataObjectsWithBagAndBucketsFragment[] = []
     while (allIds.length) {
       const idsBatch = allIds.splice(0, 1000)
-      fullResult.push(
+      fullResult = [
+        ...fullResult,
         ...((await this.multipleEntitiesQuery<GetDataObjectsByIdsQuery, GetDataObjectsByIdsQueryVariables>(
           GetDataObjectsByIds,
           { limit: MAX_RESULTS_PER_QUERY, ids: idsBatch },
           'storageDataObjects'
-        )) || [])
-      )
+        )) || []),
+      ]
     }
 
     return fullResult
