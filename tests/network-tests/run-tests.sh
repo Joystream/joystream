@@ -20,11 +20,12 @@ else
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
-    docker-compose -f ../../docker-compose.yml down -v
 
     if [ "${NO_STORAGE}" != true ]; then
       docker-compose -f ../../docker-compose.storage-squid.yml down -v
     fi
+
+    docker-compose -f ../../docker-compose.yml down -v
   }
 
   trap cleanup EXIT
