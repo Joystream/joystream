@@ -32,6 +32,7 @@ paths:
           description: Data object ID
           schema:
             type: string
+            pattern: ^\d+$ #integer
       responses:
         '200':
           description: Ok

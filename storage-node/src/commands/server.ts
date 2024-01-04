@@ -198,7 +198,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     await recreateTempDirectory(flags.uploads, TempDirName)
 
     if (fs.existsSync(flags.uploads)) {
-      await loadDataObjectIdCache(flags.uploads, TempDirName)
+      await loadDataObjectIdCache(flags.uploads)
     }
 
     if (flags.dev) {
