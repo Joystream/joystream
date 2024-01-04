@@ -6,6 +6,7 @@ import path from 'path'
 import { addDataObjectIdToCache } from '../caching/localDataObjects'
 import { registerNewDataObjectId } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
+import { moveFile } from '../helpers/moveFile'
 import logger from '../logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { acceptPendingDataObjectsBatch } from '../runtime/extrinsics'
@@ -159,7 +160,7 @@ export class AcceptPendingObjectsService {
         await fsPromises.unlink(currentPath)
       } catch {
         // If the file does not exist in the uploads directory, proceed with the rename
-        await fsPromises.rename(currentPath, newPath)
+        await moveFile(currentPath, newPath)
         registerNewDataObjectId(dataObjectId)
         addDataObjectIdToCache(dataObjectId)
       }

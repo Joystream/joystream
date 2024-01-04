@@ -14,6 +14,7 @@ import {
 } from '../caching/localDataObjects'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
+import { moveFile } from '../helpers/moveFile'
 const fsPromises = fs.promises
 
 /**
@@ -147,7 +148,7 @@ export class DownloadFileTask implements SyncTask {
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
-      await fsPromises.rename(tempFilePath, filepath)
+      await moveFile(tempFilePath, filepath)
       addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
