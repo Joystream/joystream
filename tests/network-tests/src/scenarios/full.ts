@@ -41,6 +41,7 @@ import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
 import curatorModerationActions from '../flows/content/curatorModerationActions'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
+import updateValidatorVerificationStatus from '../flows/membership/updateValidatorVerifications'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job }) => {
@@ -74,9 +75,7 @@ scenario('Full', async ({ job }) => {
   const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
-  const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob
-  )
+  const hireLeads = job('lead opening', leadOpening(true)).after(channelPayoutsProposalJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
@@ -85,6 +84,7 @@ scenario('Full', async ({ job }) => {
 
   // Memberships (depending on hired leads)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job('updating validator verification status', updateValidatorVerificationStatus).after(hireLeads)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)

@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
+rm tests/network-tests/output.json || :
+
 # Run a complete joystream development network on your machine using docker
 
 JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG}

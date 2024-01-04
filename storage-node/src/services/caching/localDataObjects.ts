@@ -1,13 +1,14 @@
-import AwaitLock from 'await-lock'
-import path from 'path'
 import fs from 'fs'
 import logger from '../logger'
+import assert from 'assert'
+
 const fsPromises = fs.promises
 
-// Local in-memory cache for IDs.
-let idCache = new Set<string>()
+type DataObjectId = string
+type DataObjectPinCount = number
 
-const lock = new AwaitLock()
+// Local in-memory cache for IDs.
+const idCache = new Map<DataObjectId, DataObjectPinCount>()
 
 /**
  * Return the current ID cache.
@@ -15,12 +16,8 @@ const lock = new AwaitLock()
  * @returns ID array.
  *
  */
-export async function getDataObjectIDs(): Promise<string[]> {
-  await lock.acquireAsync()
-  const ids = Array.from(idCache)
-  lock.release()
-
-  return ids
+export function getDataObjectIDs(): string[] {
+  return [...idCache.keys()]
 }
 
 /**
@@ -29,56 +26,99 @@ export async function getDataObjectIDs(): Promise<string[]> {
  * @returns empty promise.
  *
  * @param uploadDir - uploading directory
- * @param tempDirName - temp directory name
  */
-export async function loadDataObjectIdCache(uploadDir: string, tempDirName: string): Promise<void> {
-  await lock.acquireAsync()
+export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
+  const names = await getLocalFileNames(uploadDir)
 
-  const localIds = await getLocalFileNames(uploadDir)
-  // Filter temporary directory name.
-  const tempDirectoryName = path.parse(tempDirName).name
-  const ids = localIds.filter((dataObjectId) => dataObjectId !== tempDirectoryName)
-
-  idCache = new Set(ids)
+  names
+    // Just incase the directory is polluted with other files,
+    // filter out filenames that do not match with an objectid (number)
+    .filter((name) => Number.isInteger(Number(name)))
+    .forEach((id) => idCache.set(id, 0))
 
   logger.debug(`Local ID cache loaded.`)
-
-  lock.release()
 }
 
 /**
  * Adds data object ID to the local cache.
  *
- * @param dataObjectId - uploading directory
+ * @param dataObjectId - Storage data object ID
  *
- * @returns empty promise.
+ * @returns void
  */
-export async function addDataObjectIdToCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
+export function addDataObjectIdToCache(dataObjectId: string): void {
+  assert(typeof dataObjectId === 'string')
+  assert(!idCache.has(dataObjectId))
+  idCache.set(dataObjectId, 0)
+}
 
-  idCache.add(dataObjectId)
+/**
+ * Pins data object ID in the local cache (increments the data object usage).
+ *
+ * @param dataObjectId - Storage data object ID
+ *
+ * @returns void
+ */
+export function pinDataObjectIdToCache(dataObjectId: string): void {
+  assert(typeof dataObjectId === 'string')
+  assert(idCache.has(dataObjectId))
 
-  lock.release()
+  const currentPinnedCount = idCache.get(dataObjectId)
+  assert(currentPinnedCount !== undefined)
+  idCache.set(dataObjectId, currentPinnedCount + 1)
+}
+
+/**
+ * Un-pins data object ID from the local cache (decrements the data object usage).
+ *
+ * @param dataObjectId - Storage data object ID
+ *
+ * @returns void
+ */
+export function unpinDataObjectIdFromCache(dataObjectId: string): void {
+  assert(typeof dataObjectId === 'string')
+  assert(idCache.has(dataObjectId))
+
+  const currentPinnedCount = idCache.get(dataObjectId)
+  assert(currentPinnedCount)
+  assert(currentPinnedCount > 0)
+  idCache.set(dataObjectId, currentPinnedCount - 1)
 }
 
 /**
  * Deletes data object ID from the local cache.
  *
- * @param dataObjectId - uploading directory
+ * @param dataObjectId - Storage data object ID
+ *
+ * @returns void
  */
-export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
-
+export function deleteDataObjectIdFromCache(dataObjectId: string): void {
+  assert(typeof dataObjectId === 'string')
+  assert(idCache.has(dataObjectId))
   idCache.delete(dataObjectId)
-
-  lock.release()
 }
 
 /**
- * Returns file names from the local directory.
+ * Get data object ID from the local cache, if present.
+ *
+ * @param dataObjectId - Storage data object ID
+ */
+export function getDataObjectIdFromCache(
+  dataObjectId: string
+): { dataObjectId: DataObjectId; pinnedCount: DataObjectPinCount } | undefined {
+  assert(typeof dataObjectId === 'string')
+
+  if (idCache.has(dataObjectId)) {
+    return { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
+  }
+}
+
+/**
+ * Returns file names from the local directory, ignoring subfolders.
  *
  * @param directory - local directory to get file names from
  */
-function getLocalFileNames(directory: string): Promise<string[]> {
-  return fsPromises.readdir(directory)
+async function getLocalFileNames(directory: string): Promise<string[]> {
+  const result = await fsPromises.readdir(directory, { withFileTypes: true })
+  return result.filter((entry) => entry.isFile()).map((entry) => entry.name)
 }

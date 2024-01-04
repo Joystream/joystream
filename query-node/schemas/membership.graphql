@@ -23,6 +23,7 @@ enum MembershipExternalResourceType {
   WECHAT
   WHATSAPP
   LINKEDIN
+  GITHUB
 }
 
 type MembershipExternalResource @entity {
@@ -50,7 +51,6 @@ type MemberMetadata @entity {
   externalResources: [MembershipExternalResource] @derivedFrom(field: "memberMetadata")
 
   isVerifiedValidator: Boolean
-  validatorAccount: String
 }
 
 type MembershipEntryPaid @variant {

@@ -6,6 +6,7 @@
     "build": "yarn generate:all && tsc --noEmit",
     "test": "./run-tests.sh",
     "run-test-scenario": "./run-test-scenario.sh",
+    "run-flow": "./run-fow.sh",
     "node-ts-strict": "node -r ts-node/register --unhandled-rejections=strict",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",

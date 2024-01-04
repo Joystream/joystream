@@ -95,7 +95,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           docker system prune --force
-          yarn build:packages
+          yarn build
           cp docker-compose-no-bind-volumes.yml docker-compose.yml
           ./tests/network-tests/run-tests.sh content-directory
 

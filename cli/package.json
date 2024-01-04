@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -56,7 +56,7 @@
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
     "tslib": "^1.11.1",
-    "@joystream/js": "^1.6.0"
+    "@joystream/js": "^1.6.3"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",

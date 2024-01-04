@@ -4,6 +4,8 @@ import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as Dynamic
 import BN from 'bn.js'
 import { timeout } from 'promise-timeout'
 import logger from '../../services/logger'
+import { parseBagId } from '../helpers/bagTypes'
+import { AcceptPendingDataObjectsParams } from '../sync/acceptPendingObjects'
 import { formatDispatchError, getEvent, getEvents, sendAndFollowNamedTx } from './api'
 
 /**
@@ -126,6 +128,57 @@ export async function updateStorageBucketsForBags(
   })
 
   return [success, failedCalls]
+}
+
+/**
+ * Accepts pending data objects by storage provider in batch transaction.
+ *
+ * @remarks
+ * It sends an batch extrinsic to the runtime.
+ *
+ * @param api - runtime API promise
+ * @param workerId - runtime storage provider ID (worker ID)
+ * @param acceptPendingDataObjectsParams - acceptPendingDataObject extrinsic parameters
+ * @returns promise with a list of successful objects.
+ */
+export async function acceptPendingDataObjectsBatch(
+  api: ApiPromise,
+  workerId: number,
+  acceptPendingDataObjectsParams: AcceptPendingDataObjectsParams[]
+): Promise<string[]> {
+  // a list of data objects that succeeded in being accepted
+  const successDataObjects: string[] = []
+
+  const txsByTransactorAccount = acceptPendingDataObjectsParams.map(({ account, storageBucket }) => {
+    const txs = storageBucket.bags.map((bag) =>
+      api.tx.storage.acceptPendingDataObjects(
+        workerId,
+        storageBucket.id,
+        parseBagId(bag.id),
+        api.createType('BTreeSet<u64>', bag.dataObjects)
+      )
+    )
+
+    return [account, txs, storageBucket.bags] as const
+  })
+
+  for (const [account, txs, bags] of txsByTransactorAccount) {
+    const txBatch = api.tx.utility.forceBatch(txs)
+
+    await extrinsicWrapper(async () => {
+      await sendAndFollowNamedTx(api, account, txBatch, (result) => {
+        // Process individual events
+        const events = getEvents(result, 'utility', ['ItemCompleted', 'ItemFailed'])
+        events.forEach((e, i) => {
+          if (e.method === 'ItemCompleted') {
+            successDataObjects.push(...bags[i].dataObjects)
+          }
+        })
+      })
+    })
+  }
+
+  return successDataObjects
 }
 
 /**
@@ -262,7 +315,9 @@ export async function inviteStorageBucketOperator(
 async function extrinsicWrapper(
   extrinsic: () => Promise<void>,
   throwErr = false,
-  timeoutMs = 25000 // 25s - default extrinsic timeout
+  // 5 mins - based on the default transactions validity of Substrate based chains with
+  // 6s block time: https://polkadot.js.org/docs/api/FAQ/#how-long-do-transactions-live
+  timeoutMs = 300_000
 ): Promise<boolean> {
   try {
     await timeout(extrinsic(), timeoutMs)
