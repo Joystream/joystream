@@ -109,6 +109,17 @@ export class DownloadFileTask implements SyncTask {
         if (!res.ok) {
           logger.error(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
         }
+
+        // Handle 'error' event on Response too, because it will be emitted if request was
+        // prematurely aborted/closed due to timeout and the response still was not completed
+        // See: https://github.com/nodejs/node/blob/cd171576b2d1376dae3eb371b6da5ccf04dc4a85/lib/_http_client.js#L439-L441
+        res.on('error', (err: Error) => {
+          logger.error(`Sync - fetching data error for ${this.url}: ${err}`, { err })
+        })
+      })
+
+      request.on('error', (err) => {
+        logger.error(`Sync - fetching data error for ${this.url}: ${err}`, { err })
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)

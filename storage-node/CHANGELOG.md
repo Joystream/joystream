@@ -1,3 +1,7 @@
+### 3.8.2
+
+- Hotfix - backporting fixes
+
 ### 3.8.1
 
 - Hotfix: Fix call stack size exceeded when handling large number of initial object to sync.

@@ -298,17 +298,18 @@ export class QueryNodeApi {
    */
   public async getDataObjectDetails(bagIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
     const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    const fullResult: DataObjectDetailsFragment[] = []
+    let fullResult: DataObjectDetailsFragment[] = []
     while (allBagIds.length) {
       const bagIdsBatch = allBagIds.splice(0, 1000)
       const input: StorageBagWhereInput = { id_in: bagIdsBatch }
-      fullResult.push(
+      fullResult = [
+        ...fullResult,
         ...(await this.multipleEntitiesWithPagination<
           DataObjectDetailsFragment,
           GetDataObjectConnectionQuery,
           GetDataObjectConnectionQueryVariables
         >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection'))
-      )
+      ]
     }
 
     return fullResult
