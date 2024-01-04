@@ -9,6 +9,7 @@ import logger from '../logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { acceptPendingDataObjectsBatch } from '../runtime/extrinsics'
 import { hashFile } from '../helpers/hashing'
+import { moveFile } from '../helpers/moveFile'
 
 const fsPromises = fs.promises
 
@@ -159,7 +160,7 @@ export class AcceptPendingObjectsService {
         await fsPromises.unlink(currentPath)
       } catch {
         // If the file does not exist in the uploads directory, proceed with the rename
-        await fsPromises.rename(currentPath, newPath)
+        await moveFile(currentPath, newPath)
         registerNewDataObjectId(dataObjectId)
         addDataObjectIdToCache(dataObjectId)
       }
