@@ -36,7 +36,7 @@ export async function getAllLocalDataObjects(
   next: express.NextFunction
 ): Promise<void> {
   try {
-    const ids = await getDataObjectIDs()
+    const ids = getDataObjectIDs()
 
     res.status(200).json(ids)
   } catch (err) {

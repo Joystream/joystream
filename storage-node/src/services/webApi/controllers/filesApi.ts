@@ -124,7 +124,7 @@ export async function uploadFile(
     const newPath = path.join(uploadsDir, dataObjectId)
 
     registerNewDataObjectId(dataObjectId)
-    await addDataObjectIdToCache(dataObjectId)
+    addDataObjectIdToCache(dataObjectId)
 
     // Overwrites existing file.
     await fsPromises.rename(fileObj.path, newPath)

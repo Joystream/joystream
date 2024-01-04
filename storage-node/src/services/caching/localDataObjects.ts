@@ -1,4 +1,3 @@
-import AwaitLock from 'await-lock'
 import fs from 'fs'
 import logger from '../logger'
 const fsPromises = fs.promises
@@ -6,20 +5,14 @@ const fsPromises = fs.promises
 // Local in-memory cache for IDs.
 const idCache = new Set<string>()
 
-const lock = new AwaitLock()
-
 /**
  * Return the current ID cache.
  *
  * @returns ID array.
  *
  */
-export async function getDataObjectIDs(): Promise<string[]> {
-  await lock.acquireAsync()
-  const ids = Array.from(idCache)
-  lock.release()
-
-  return ids
+export function getDataObjectIDs(): string[] {
+  return Array.from(idCache)
 }
 
 /**
@@ -31,8 +24,6 @@ export async function getDataObjectIDs(): Promise<string[]> {
  * @param tempDirName - temp directory name
  */
 export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
-  await lock.acquireAsync()
-
   const names = await getLocalFileNames(uploadDir)
 
   names
@@ -42,8 +33,6 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
     .forEach((id) => idCache.add(id))
 
   logger.debug(`Local ID cache loaded.`)
-
-  lock.release()
 }
 
 /**
@@ -53,12 +42,8 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
  *
  * @returns empty promise.
  */
-export async function addDataObjectIdToCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
-
+export function addDataObjectIdToCache(dataObjectId: string): void {
   idCache.add(dataObjectId)
-
-  lock.release()
 }
 
 /**
@@ -66,12 +51,8 @@ export async function addDataObjectIdToCache(dataObjectId: string): Promise<void
  *
  * @param dataObjectId - uploading directory
  */
-export async function deleteDataObjectIdFromCache(dataObjectId: string): Promise<void> {
-  await lock.acquireAsync()
-
+export function deleteDataObjectIdFromCache(dataObjectId: string): void {
   idCache.delete(dataObjectId)
-
-  lock.release()
 }
 
 /**
