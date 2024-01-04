@@ -308,7 +308,7 @@ export class QueryNodeApi {
           DataObjectDetailsFragment,
           GetDataObjectConnectionQuery,
           GetDataObjectConnectionQueryVariables
-        >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection'))
+        >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection')),
       ]
     }
 
