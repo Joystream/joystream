@@ -440,4 +440,6 @@ export enum MetaprotocolTxError {
   TagIsNotLead = 'TagIsNotLead',
   TagNotFound = 'TagNotFound',
   TagPermNotAllowed = 'TagPermNotAllowed',
+  TagInvalidThreadId = "TagInvalidThreadId",
+  TagInvalidProposalId = "TagInvalidProposalId"
 }

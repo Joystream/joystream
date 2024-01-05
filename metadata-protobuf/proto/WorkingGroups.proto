@@ -82,7 +82,7 @@ message UpdateTag {
   required string tag_id = 1;
 
   // name of tag
-  required string name = 2;
+  optional string name = 2;
 
   // Updated Description of Tag
   optional string description = 3;

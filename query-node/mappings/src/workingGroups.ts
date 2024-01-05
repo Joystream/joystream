@@ -763,49 +763,35 @@ async function processWorkingGroupsRemark(
   }
 
   if (decodedMetadata?.createTag) {
-    return await processCreateTag(store, event, decodedMetadata.createTag, group, isLead, workerId)
+    return await processCreateTag(store, decodedMetadata.createTag, isLead)
   }
 
   if (decodedMetadata?.updateTag) {
-    return await processUpdateTag(store, event, decodedMetadata.updateTag, group, isLead, workerId)
+    return await processUpdateTag(store, decodedMetadata.updateTag, isLead)
   }
 
   if (decodedMetadata?.assignTagToThread) {
-    return await processAssignTagToThread(store, event, decodedMetadata.assignTagToThread, group, isLead, workerId)
+    return await processAssignTagToThread(store, decodedMetadata.assignTagToThread, isLead, workerId)
   }
 
   if (decodedMetadata?.assignTagToProposal) {
-    return await processAssignTagToProposal(store, event, decodedMetadata.assignTagToProposal, group, isLead, workerId)
+    return await processAssignTagToProposal(store, decodedMetadata.assignTagToProposal, isLead, workerId)
   }
 
   if (decodedMetadata?.unassignTagFromThread) {
-    return await processUnassignTagFromThread(
-      store,
-      event,
-      decodedMetadata.unassignTagFromThread,
-      group,
-      isLead,
-      workerId
-    )
+    return await processUnassignTagFromThread(store, decodedMetadata.unassignTagFromThread, isLead, workerId)
   }
 
   if (decodedMetadata?.unassignTagFromProposal) {
-    return await processUnassignTagFromProposal(
-      store,
-      event,
-      decodedMetadata.unassignTagFromProposal,
-      group,
-      isLead,
-      workerId
-    )
+    return await processUnassignTagFromProposal(store, decodedMetadata.unassignTagFromProposal, isLead, workerId)
   }
 
   if (decodedMetadata?.allowTagToWorker) {
-    return await processAllowTagToWorker(store, event, decodedMetadata.allowTagToWorker, group, isLead, workerId)
+    return await processAllowTagToWorker(store, decodedMetadata.allowTagToWorker, isLead)
   }
 
   if (decodedMetadata?.disallowTagToWorker) {
-    return await processDisallowTagToWorker(store, event, decodedMetadata.disallowTagToWorker, group, isLead, workerId)
+    return await processDisallowTagToWorker(store, decodedMetadata.disallowTagToWorker, isLead)
   }
 
   return invalidMetadata('Unrecognized remarked action')

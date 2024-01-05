@@ -1,4 +1,4 @@
-import { DatabaseManager, SubstrateEvent } from '@joystream/hydra-common'
+import { DatabaseManager } from '@joystream/hydra-common'
 import {
   ICreateTag,
   IUpdateTag,
@@ -10,32 +10,19 @@ import {
   IDisallowTagToWorker,
 } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import {
-  WorkingGroup,
-  Tag,
-  TagToWorker,
-  TagToThread,
-  TagToProposal,
-  ForumThread,
-  Proposal,
-} from 'query-node/dist/model'
-import { MetaprotocolTxError, getOneBy, getById, logger, getOneByOrFail, getByIdOrFail } from 'src/common'
+import { Tag, TagToWorker, TagToThread, TagToProposal, ForumThread, Proposal } from 'query-node/dist/model'
+import { MetaprotocolTxError, getOneBy, getById, logger } from 'src/common'
 
 export async function processCreateTag(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<ICreateTag>,
-  workgroup: WorkingGroup,
-  isLead: boolean,
-  workerId: number
+  isLead: boolean
 ): Promise<any> {
   const { name, description, type, visibility } = metadata
 
   if (isLead === false) {
     return MetaprotocolTxError.TagPermNotAllowed
   }
-
-  const tagId = `${event.blockNumber}-${event.indexInBlock}`
 
   const isTagExists = await getOneBy(store, Tag, { name: name })
 
@@ -58,11 +45,8 @@ export async function processCreateTag(
 
 export async function processUpdateTag(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IUpdateTag>,
-  workingGroup: WorkingGroup,
-  isLead: boolean,
-  workerId: number
+  isLead: boolean
 ): Promise<any> {
   const { tagId, name, description, type, visibility } = metadata
 
@@ -100,19 +84,24 @@ export async function processUpdateTag(
 
 export async function processAssignTagToThread(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IAssignTagToThread>,
-  workingGroup: WorkingGroup,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
   const { tagId, threadId } = metadata
 
   if (!isLead) {
-    await getOneByOrFail(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    if (!tagToWorker) {
+      return MetaprotocolTxError.TagPermNotAllowed
+    }  
   }
 
-  await getByIdOrFail(store, ForumThread, threadId)
+  const forumThread: ForumThread | undefined = await getById(store, ForumThread, threadId)
+  if (!forumThread) {
+    return MetaprotocolTxError.TagInvalidThreadId
+  }
+
   const tagToThread: TagToThread | undefined = await getOneBy(store, TagToThread, { tagId: tagId, threadId: threadId })
 
   if (!tagToThread) {
@@ -129,19 +118,24 @@ export async function processAssignTagToThread(
 
 export async function processAssignTagToProposal(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IAssignTagToProposal>,
-  workingGroup: WorkingGroup,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
   const { tagId, proposalId } = metadata
 
   if (!isLead) {
-    await getOneByOrFail(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })    
+    if (!tagToWorker) {
+      return MetaprotocolTxError.TagPermNotAllowed
+    }
   }
 
-  await getByIdOrFail(store, Proposal, proposalId)
+  const proposal: Proposal | undefined = await getById(store, Proposal, proposalId)
+  if (!proposal) {
+    return MetaprotocolTxError.TagInvalidProposalId
+  }
+
   const tagToProposal: TagToProposal | undefined = await getOneBy(store, TagToProposal, {
     tagId: tagId,
     proposalId: proposalId,
@@ -161,19 +155,24 @@ export async function processAssignTagToProposal(
 
 export async function processUnassignTagFromThread(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IUnassignTagFromThread>,
-  workingGroup: WorkingGroup,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
   const { tagId, threadId } = metadata
 
   if (!isLead) {
-    await getOneByOrFail(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    if (!tagToWorker) {
+      return MetaprotocolTxError.TagPermNotAllowed
+    }
   }
 
-  await getByIdOrFail(store, ForumThread, threadId)
+  const forumThread: ForumThread | undefined = await getById(store, ForumThread, threadId)
+  if (!forumThread) {
+    return MetaprotocolTxError.TagInvalidThreadId
+  }
+
   const tagToThread: TagToThread | undefined = await getOneBy(store, TagToThread, { tagId: tagId, threadId: threadId })
 
   if (tagToThread) {
@@ -186,19 +185,23 @@ export async function processUnassignTagFromThread(
 
 export async function processUnassignTagFromProposal(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IUnassignTagFromProposal>,
-  workingGroup: WorkingGroup,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
   const { tagId, proposalId } = metadata
 
   if (!isLead) {
-    await getOneByOrFail(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    if (!tagToWorker) {
+      return MetaprotocolTxError.TagPermNotAllowed
+    }
   }
 
-  await getByIdOrFail(store, Proposal, proposalId)
+  const proposal: Proposal | undefined = await getById(store, Proposal, proposalId)
+  if (!proposal) {
+    return MetaprotocolTxError.TagInvalidProposalId
+  }
 
   const tagToProposal: TagToProposal | undefined = await getOneBy(store, TagToProposal, {
     tagId: tagId,
@@ -215,11 +218,8 @@ export async function processUnassignTagFromProposal(
 
 export async function processAllowTagToWorker(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IAllowTagToWorker>,
-  workingGroup: WorkingGroup,
-  isLead: boolean,
-  workerId: number
+  isLead: boolean
 ): Promise<any> {
   const { tagId, workerId: assigneeId } = metadata
 
@@ -245,11 +245,8 @@ export async function processAllowTagToWorker(
 
 export async function processDisallowTagToWorker(
   store: DatabaseManager,
-  event: SubstrateEvent,
   metadata: DecodedMetadataObject<IDisallowTagToWorker>,
-  workingGroup: WorkingGroup,
-  isLead: boolean,
-  workerId: number
+  isLead: boolean
 ): Promise<any> {
   const { tagId, workerId: assigneeId } = metadata
 
