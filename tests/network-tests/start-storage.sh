@@ -1,14 +1,14 @@
 set -e
 
 TMP=$0
-THIS_DIR=$(dirname $TMP)
+THIS_DIR=`dirname $TMP`
 
 echo "Staring storage infrastructure"
 
 # Start Storage-Squid
 docker-compose -f $THIS_DIR/../../docker-compose.storage-squid.yml up -d
 
-HOST_IP=$($THIS_DIR/get-host-ip.sh)
+HOST_IP=`$THIS_DIR/get-host-ip.sh`
 export COLOSSUS_1_URL="http://${HOST_IP}:3333"
 export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
 export COLOSSUS_2_URL="http://${HOST_IP}:3335"
