@@ -12,7 +12,6 @@ import {
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
   OpeningMetadata,
-  IRemarkMetadataAction,
   RemarkMetadataAction,
   WorkingGroupMetadataAction,
 } from '@joystream/metadata-protobuf'
@@ -119,16 +118,15 @@ import {
   toNumber,
 } from './common'
 import { moderatePost } from './forum'
-
 import {
-  processCreateTag,
-  processUpdateTag,
+  processAllowTagToWorker,
   processAssignTagToProposal,
   processAssignTagToThread,
+  processCreateTag,
+  processDisallowTagToWorker,
   processUnassignTagFromProposal,
   processUnassignTagFromThread,
-  processAllowTagToWorker,
-  processDisallowTagToWorker,
+  processUpdateTag,
 } from './label/tag'
 
 // Reusable functions
@@ -721,37 +719,28 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
-async function processWorkingGroupsRemark(
-  store: DatabaseManager,
-  event: SubstrateEvent,
-  group: WorkingGroup,
-  decodedMetadata: DecodedMetadataObject<IRemarkMetadataAction> | null,
-  isLead = false,
-  workerId: number
-): Promise<any> {
-  // Moderate Post
-  if (decodedMetadata?.moderatePost) {
+export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
+  const group = await getWorkingGroupOrFail(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
     if (group.name !== 'forumWorkingGroup') {
       return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
     }
-
-    const { postId, rationale } = decodedMetadata.moderatePost
-    const actor = isLead
-      ? await getWorkingGroupLeadOrFail(store, group.name)
-      : await getWorkerOrFail(store, group.name, workerId)
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getWorkingGroupLeadOrFail(store, group.name)
 
     const post = await getById(store, ForumPost, postId)
     if (!post) {
       return invalidMetadata(`Forum post not found by id: ${postId}`)
     }
-    return await moderatePost(store, event, 'leadRemark', post, actor, rationale)
-  }
-
-  if (decodedMetadata?.verifyValidator) {
+    await moderatePost(store, event, 'leadRemark', post, actor, rationale)
+  } else if (metadata?.verifyValidator) {
     if (group.name !== 'membershipWorkingGroup') {
       return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
     }
-    const { memberId, isVerified } = decodedMetadata.verifyValidator
+    const { memberId, isVerified } = metadata.verifyValidator
 
     const member = await getById(store, Membership, memberId)
     if (!member) {
@@ -759,50 +748,26 @@ async function processWorkingGroupsRemark(
     }
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
-    return await store.save<Membership>(member)
+    await store.save<Membership>(member)
+  } else if (metadata?.createTag && group.name === 'forumWorkingGroup') {
+    return await processCreateTag(store, metadata?.createTag, true)
+  } else if (metadata?.updateTag && group.name === 'forumWorkingGroup') {
+    return await processUpdateTag(store, metadata?.updateTag, true)
+  } else if (metadata?.assignTagToThread && group.name === 'forumWorkingGroup') {
+    return await processAssignTagToThread(store, metadata?.assignTagToThread, true, 0)
+  } else if (metadata?.assignTagToProposal && group.name === 'forumWorkingGroup') {
+    return await processAssignTagToProposal(store, metadata?.assignTagToProposal, true, 0)
+  } else if (metadata?.unassignTagFromThread && group.name === 'forumWorkingGroup') {
+    return await processUnassignTagFromThread(store, metadata?.unassignTagFromThread, true, 0)
+  } else if (metadata?.unassignTagFromProposal && group.name === 'forumWorkingGroup') {
+    return await processUnassignTagFromProposal(store, metadata?.unassignTagFromProposal, true, 0)
+  } else if (metadata?.allowTagToWorker && group.name === 'forumWorkingGroup') {
+    return await processAllowTagToWorker(store, metadata?.allowTagToWorker, true)
+  } else if (metadata?.disallowTagToWorker && group.name === 'forumWorkingGroup') {
+    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker, true)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
   }
-
-  if (decodedMetadata?.createTag) {
-    return await processCreateTag(store, decodedMetadata.createTag, isLead)
-  }
-
-  if (decodedMetadata?.updateTag) {
-    return await processUpdateTag(store, decodedMetadata.updateTag, isLead)
-  }
-
-  if (decodedMetadata?.assignTagToThread) {
-    return await processAssignTagToThread(store, decodedMetadata.assignTagToThread, isLead, workerId)
-  }
-
-  if (decodedMetadata?.assignTagToProposal) {
-    return await processAssignTagToProposal(store, decodedMetadata.assignTagToProposal, isLead, workerId)
-  }
-
-  if (decodedMetadata?.unassignTagFromThread) {
-    return await processUnassignTagFromThread(store, decodedMetadata.unassignTagFromThread, isLead, workerId)
-  }
-
-  if (decodedMetadata?.unassignTagFromProposal) {
-    return await processUnassignTagFromProposal(store, decodedMetadata.unassignTagFromProposal, isLead, workerId)
-  }
-
-  if (decodedMetadata?.allowTagToWorker) {
-    return await processAllowTagToWorker(store, decodedMetadata.allowTagToWorker, isLead)
-  }
-
-  if (decodedMetadata?.disallowTagToWorker) {
-    return await processDisallowTagToWorker(store, decodedMetadata.disallowTagToWorker, isLead)
-  }
-
-  return invalidMetadata('Unrecognized remarked action')
-}
-
-export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
-  const group = await getWorkingGroupOrFail(store, event)
-
-  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
-  await processWorkingGroupsRemark(store, event, group, metadata, true, 0)
 }
 
 export async function workingGroups_WorkerRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
@@ -810,7 +775,50 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
   const group = await getWorkingGroupOrFail(store, event)
 
   const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
-  return await processWorkingGroupsRemark(store, event, group, metadata, false, workerId.toNumber())
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getWorkerOrFail(store, group.name, workerId)
+
+    const post = await getById(store, ForumPost, postId)
+    if (!post) {
+      return invalidMetadata(`Forum post not found by id: ${postId}`)
+    }
+    await moderatePost(store, event, 'workerRemark', post, actor, rationale)
+  } else if (metadata?.verifyValidator) {
+    if (group.name !== 'membershipWorkingGroup') {
+      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
+    }
+    const { memberId, isVerified } = metadata.verifyValidator
+
+    const member = await getById(store, Membership, memberId)
+    if (!member) {
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
+    }
+    member.metadata.isVerifiedValidator = isVerified
+    await store.save<MemberMetadata>(member.metadata)
+    await store.save<Membership>(member)
+  } else if (metadata?.createTag && group.name === 'forumWorkingGroup') {
+    return await processCreateTag(store, metadata?.createTag, false)
+  } else if (metadata?.updateTag && group.name === 'forumWorkingGroup') {
+    return await processUpdateTag(store, metadata?.updateTag, false)
+  } else if (metadata?.assignTagToThread && group.name === 'forumWorkingGroup') {
+    return await processAssignTagToThread(store, metadata?.assignTagToThread, false, workerId.toNumber())
+  } else if (metadata?.assignTagToProposal && group.name === 'forumWorkingGroup') {
+    return await processAssignTagToProposal(store, metadata?.assignTagToProposal, false, workerId.toNumber())
+  } else if (metadata?.unassignTagFromThread && group.name === 'forumWorkingGroup') {
+    return await processUnassignTagFromThread(store, metadata?.unassignTagFromThread, false, workerId.toNumber())
+  } else if (metadata?.unassignTagFromProposal && group.name === 'forumWorkingGroup') {
+    return await processUnassignTagFromProposal(store, metadata?.unassignTagFromProposal, false, workerId.toNumber())
+  } else if (metadata?.allowTagToWorker && group.name === 'forumWorkingGroup') {
+    return await processAllowTagToWorker(store, metadata?.allowTagToWorker, false)
+  } else if (metadata?.disallowTagToWorker && group.name === 'forumWorkingGroup') {
+    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker, false)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated({

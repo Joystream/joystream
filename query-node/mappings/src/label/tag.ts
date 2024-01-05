@@ -91,10 +91,13 @@ export async function processAssignTagToThread(
   const { tagId, threadId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
+      tagId: tagId,
+      workerId: workerId.toString(),
+    })
     if (!tagToWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
-    }  
+    }
   }
 
   const forumThread: ForumThread | undefined = await getById(store, ForumThread, threadId)
@@ -125,7 +128,10 @@ export async function processAssignTagToProposal(
   const { tagId, proposalId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })    
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
+      tagId: tagId,
+      workerId: workerId.toString(),
+    })
     if (!tagToWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
@@ -162,7 +168,10 @@ export async function processUnassignTagFromThread(
   const { tagId, threadId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
+      tagId: tagId,
+      workerId: workerId.toString(),
+    })
     if (!tagToWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
@@ -192,7 +201,10 @@ export async function processUnassignTagFromProposal(
   const { tagId, proposalId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, { tagId: tagId, workerId: workerId.toString() })
+    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
+      tagId: tagId,
+      workerId: workerId.toString(),
+    })
     if (!tagToWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
