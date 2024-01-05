@@ -1934,4 +1934,3 @@ input VideoSubtitleWhereInput {
 input WhereIdInput {
   id: String!
 }
-

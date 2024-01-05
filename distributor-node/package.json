@@ -138,7 +138,7 @@
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && generate:all",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "generate:docs:cli && git add docs/cli/*",
-    "generate:schema:graphql": "docker run --rm joystream/storage-squid:latest npm run get-graphql-schema > src/services/networking/query-node/schema.graphql",
+    "generate:schema:graphql": "../scripts/save-storage-squid-schema.sh src/services/networking/query-node/schema.graphql",
     "generate:types:json-schema": "yarn ts-node --transpile-only ./src/schemas/scripts/generateTypes.ts",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/networking/query-node/codegen.yml",
     "generate:types:public-api": "yarn openapi-typescript ./src/api-spec/public.yml -o ./src/types/generated/PublicApi.ts -c ../prettierrc.js",

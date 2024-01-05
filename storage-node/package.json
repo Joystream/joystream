@@ -156,7 +156,7 @@
     "format": "yarn prettier ./src --write",
     "lint": "eslint ./src --ext .ts",
     "api:edit": "openapi-editor --file ./src/api-spec/openapi.yaml --port 10021",
-    "generate:schema:graphql": "docker run --rm joystream/storage-squid:latest npm run get-graphql-schema > src/services/queryNode/schema.graphql",
+    "generate:schema:graphql": "../scripts/save-storage-squid-schema.sh src/services/queryNode/schema.graphql",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/queryNode/codegen.yml",
     "generate:types:json-schema": "yarn ts-node --transpile-only ./src/services/metadata/generateTypes.ts",
     "generate:types:api": "yarn openapi-typescript ./src/api-spec/openapi.yaml -o ./src/services/webApi/types/generated.ts -c ../prettierrc.js",
