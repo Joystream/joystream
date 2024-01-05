@@ -81,7 +81,9 @@ query getDataObjectsWithBagsByIds($bagIds: [String!], $limit: Int) {
 fragment DistributionBucketWithBags on DistributionBucket {
   id
   bags {
-    id
+    bag {
+      id
+    }
   }
 }
 

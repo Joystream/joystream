@@ -210,7 +210,7 @@ export class QueryNodeApi {
     const bagIds = distributionBucketsWithBags
       .map((bucket) => bucket.bags)
       .flat()
-      .map((bag) => bag.id)
+      .map(({ bag }) => bag.id)
 
     return this.getDataObjectsByBagIds(bagIds)
   }
@@ -224,7 +224,7 @@ export class QueryNodeApi {
     const bagIds = distributionBucketsWithBags
       .map((bucket) => bucket.bags)
       .flat()
-      .map((bag) => bag.id)
+      .map(({ bag }) => bag.id)
 
     return this.getDataObjectsByBagIds(bagIds)
   }
