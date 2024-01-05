@@ -61,7 +61,7 @@ export default class Server extends ApiCommandBase {
     }),
     port: flags.integer({
       char: 'o',
-      required: true,
+      required: true, // not really required, we can have a default instead
       description: 'Server port.',
     }),
     sync: flags.boolean({
@@ -269,6 +269,8 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     const X_HOST_ID = uuidv4()
 
+    // We create this here to inject into express app as a dependency
+    // Is there a problem that this worker/service is starting before sync and cleanup services?
     const acceptPendingObjectsService = await AcceptPendingObjectsService.create(
       api,
       qnApi,
@@ -331,7 +333,7 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     try {
       const port = flags.port
-      const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
+      const maxFileSize = api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
       const app = await createApp({
@@ -400,6 +402,7 @@ async function runSyncWithInterval(
   syncRetryIntervalMinutes: number,
   hostId: string
 ) {
+  // Protect against very low numbers.. in cli param validation or here with Math.max()?
   const sleepInterval = syncIntervalMinutes * 60 * 1000
   const retrySleepInterval = syncRetryIntervalMinutes * 60 * 1000
   while (true) {
@@ -437,6 +440,7 @@ async function runCleanupWithInterval(
   cleanupIntervalMinutes: number,
   hostId: string
 ) {
+  // Protect against very low number.. in cli param validation or here with Math.max()?
   const sleepInterval = cleanupIntervalMinutes * 60 * 1000
   while (true) {
     logger.info(`Cleanup paused for ${cleanupIntervalMinutes} minute(s).`)

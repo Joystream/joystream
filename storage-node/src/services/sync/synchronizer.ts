@@ -45,17 +45,26 @@ export async function performSync(
   selectedOperatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
+  logger.info('Sync - Fetching obligations...')
+  // This large query is also done by cleanup service.. sync the two services to use the same promise to get result
+  // one-time if queries are concurrent.
   const [model, files] = await Promise.all([getStorageObligationsFromRuntime(qnApi, buckets), getDataObjectIDs()])
 
   const required = model.dataObjects
 
+  // Large arrays.. how performant (cpu and memory wise) are these calls?
+  // and it is being done twice! and second time is only
+  // to count objects..cleanup service does this again
+  logger.info('Sync - Comparing obligations looking for new objects...')
   const added = _.differenceWith(required, files, (required, file) => required.id === file)
+
+  logger.info('Sync - Comparing obligations looking for removed objects...')
   const removed = _.differenceWith(files, required, (file, required) => file === required.id)
 
   logger.debug(`Sync - new objects: ${added.length}`)
-  logger.debug(`Sync - obsolete objects: ${removed.length}`)
+  logger.debug(`Sync - obsolete objects: ${removed.length}`) // no need to log this here,,
 
-  const workingStack = new WorkingStack()
+  const workingStack = new WorkingStack() // review this implementation
 
   const addedTasks = await getDownloadTasks(
     model,
@@ -74,6 +83,11 @@ export async function performSync(
 
   await workingStack.add(addedTasks)
 
+  // How good is this whole taskprocess spawner.. concurrency / io
+  // are there un-necessary delays..
+  // How are we dealing with download timeouts (use two timeouts.. start and final)
+  // How is the number of tasks affecting the performance?
+  // can we make use of superagent plugin `throttle` to do something similar?
   await processSpawner.process()
   logger.info('Sync ended.')
 }

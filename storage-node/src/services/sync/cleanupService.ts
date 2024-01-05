@@ -74,7 +74,7 @@ export async function performCleanup(
     getDataObjectIDs(),
   ])
   const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
-  const removedIds = _.difference(storedObjectsIds, assignedObjectsIds)
+  const removedIds = _.difference(storedObjectsIds, assignedObjectsIds) // expensive!
   const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
 
   logger.debug(`Cleanup - pruning ${removedIds.length} obsolete objects`)

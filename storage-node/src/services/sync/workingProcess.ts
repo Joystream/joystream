@@ -37,7 +37,7 @@ export class WorkingStack implements TaskSink, TaskSource {
   }
 
   async get(): Promise<SyncTask | null> {
-    const task = this.workingStack.pop()
+    const task = this.workingStack.pop() // expensive if array is very large?
 
     if (task !== undefined) {
       return task
@@ -89,7 +89,7 @@ export class TaskProcessor {
 
       if (task !== null) {
         logger.debug(task.description())
-        await task.execute()
+        await task.execute() // catch ? so a failing task doesn't abort all remaining tasks?
       } else {
         if (this.exitOnCompletion) {
           return
@@ -126,6 +126,6 @@ export class TaskProcessorSpawner {
       processes.push(processor.process())
     }
 
-    await Promise.all(processes)
+    await Promise.allSettled(processes)
   }
 }
