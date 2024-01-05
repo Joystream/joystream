@@ -356,8 +356,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         },
         x_host_id: X_HOST_ID,
       })
-      logger.info(`Listening on http://localhost:${port}`)
-      app.listen(port)
+      app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
     } catch (err) {
       logger.error(`Server error: ${err}`)
       this.exit(ExitCodes.ServerError)

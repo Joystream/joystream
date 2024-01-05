@@ -1,28 +1,28 @@
-import axios from 'axios'
-import http from 'http'
-import https from 'https'
-import Mime from 'mime/lite'
-import queue from 'queue'
+import { ReadonlyConfig } from '../../types/config'
+import { QueryFetchPolicy, QueryNodeApi } from './query-node/api'
 import { Logger } from 'winston'
+import { LoggingService } from '../logging'
+import { StorageNodeApi } from './storage-node/api'
+import { StateCacheService } from '../cache/StateCacheService'
+import { DataObjectDetailsFragment } from './query-node/generated/queries'
+import axios from 'axios'
 import {
+  StorageNodeEndpointData,
   DataObjectAccessPoints,
   DataObjectData,
   DataObjectInfo,
+  StorageNodeDownloadResponse,
   DownloadData,
   StatusResponse,
-  StorageNodeDownloadResponse,
-  StorageNodeEndpointData,
 } from '../../types'
-import { ReadonlyConfig } from '../../types/config'
-import { StateCacheService } from '../cache/StateCacheService'
-import { LoggingService } from '../logging'
+import queue from 'queue'
+import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
+import http from 'http'
+import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 import { PendingDownload, PendingDownloadStatusType } from './PendingDownload'
-import { QueryFetchPolicy, QueryNodeApi } from './query-node/api'
-import { DataObjectDetailsFragment } from './query-node/generated/queries'
-import { DistributionBucketOperatorStatus } from './query-node/generated/schema'
+import Mime from 'mime/lite'
 import { RuntimeApi } from './runtime/api'
-import { StorageNodeApi } from './storage-node/api'
 
 // Concurrency limits
 export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT = 10

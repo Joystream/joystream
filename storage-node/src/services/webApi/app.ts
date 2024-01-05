@@ -3,11 +3,7 @@ import path from 'path'
 import cors from 'cors'
 import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
-import { HttpError, OpenAPIV3, ValidateSecurityOpts } from 'express-openapi-validator/dist/framework/types'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiPromise } from '@polkadot/api'
-import { verifyTokenSignature, parseUploadToken } from '../helpers/auth'
-import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
+import { HttpError, OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
 import { AppConfig, sendResponseWithError, WebApiError } from './controllers/common'
 import { verifyBagAssignment, verifyBucketId } from './controllers/filesApi'
 import {
@@ -18,9 +14,10 @@ import {
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
-import { UploadFileQueryParams, UploadToken } from './types'
 import { diskStorage } from '../multer-storage/disk'
 import { getDataObjectIdFromCache } from '../caching/localDataObjects'
+import asyncHandler from 'express-async-handler'
+import { RouteMetadata } from 'express-openapi-validator/dist/framework/openapi.spec.loader'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -82,7 +79,8 @@ export async function createApp(config: AppConfig): Promise<Express> {
       validateRequests: true,
       operationHandlers: {
         basePath: path.join(__dirname, './controllers'),
-        resolver: OpenApiValidator.resolvers.modulePathResolver,
+        resolver: (basePath: string, route: RouteMetadata, apiDoc: OpenAPIV3.Document) =>
+          asyncHandler(OpenApiValidator.resolvers.modulePathResolver(basePath, route, apiDoc)),
       },
       fileUploader: {
         storage: diskStorage({
@@ -123,8 +121,6 @@ export async function createApp(config: AppConfig): Promise<Express> {
         message: err.message,
       })
     }
-
-    next()
   })
 
   return app
