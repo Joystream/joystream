@@ -41,12 +41,14 @@ query getStorageBucketDetails($ids: [String!]) {
 fragment StorageBagDetails on StorageBag {
   id
   storageBuckets {
-    id
+    storageBucket {
+      id
+    }
   }
 }
 
 query getStorageBagDetails($bucketIds: [String!]) {
-  storageBags(where: { storageBuckets_some: { id_in: $bucketIds } }) {
+  storageBags(where: { storageBuckets_some: { storageBucket: { id_in: $bucketIds } } }) {
     ...StorageBagDetails
   }
 }

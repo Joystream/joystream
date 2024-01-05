@@ -130,12 +130,14 @@ export class AcceptPendingObjectsService {
           return
         }
 
-        const storageBucket = dataObject.storageBag.storageBuckets.find(({ id }) => this.uploadBuckets.includes(id))
+        const storageBucket = dataObject.storageBag.storageBuckets.find(({ storageBucket }) =>
+          this.uploadBuckets.includes(storageBucket.id)
+        )
         if (storageBucket) {
           if (dataObject.isAccepted) {
             await this.movePendingDataObjectToUploadsDir(dataObject.id)
           } else {
-            objectsToAccept.push([dataObject.id, [storageBucket.id, dataObject.storageBag.id]])
+            objectsToAccept.push([dataObject.id, [storageBucket.storageBucket.id, dataObject.storageBag.id]])
           }
         } else {
           logger.debug(

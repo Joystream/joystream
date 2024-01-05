@@ -88,7 +88,7 @@ export class DownloadFileTask implements SyncTask {
   }
 
   description(): string {
-    return `Sync - Trying for download of: ${this.dataObjectId} ....`
+    return `Sync - Trying for download of object: ${this.dataObjectId} ...`
   }
 
   async execute(): Promise<void> {

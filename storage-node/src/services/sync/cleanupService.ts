@@ -151,8 +151,8 @@ async function getDeletionTasksFromMovedDataObjects(
     movedDataObjects.map(async (movedDataObject) => {
       let dataObjectReplicationCount = 0
 
-      for (const { id } of movedDataObject.storageBag.storageBuckets) {
-        const url = urljoin(bucketOperatorUrlById.get(id), 'api/v1/files', movedDataObject.id)
+      for (const { storageBucket } of movedDataObject.storageBag.storageBuckets) {
+        const url = urljoin(bucketOperatorUrlById.get(storageBucket.id), 'api/v1/files', movedDataObject.id)
         await superagent.head(url).timeout(timeoutMs).set('X-COLOSSUS-HOST-ID', hostId)
         dataObjectReplicationCount++
       }
