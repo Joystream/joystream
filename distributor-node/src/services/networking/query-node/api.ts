@@ -66,7 +66,7 @@ export class QueryNodeApi {
     })
 
     this.apolloClient = new ApolloClient({
-      link: from([errorLink, new HttpLink({ uri: this.config.endpoints.queryNode, fetch })]),
+      link: from([errorLink, new HttpLink({ uri: this.config.endpoints.storageSquid, fetch })]),
       // Ref: https://www.apollographql.com/docs/react/api/core/ApolloClient/#assumeimmutableresults
       assumeImmutableResults: true,
       cache: new InvalidationPolicyCache({

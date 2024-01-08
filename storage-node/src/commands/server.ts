@@ -88,7 +88,7 @@ export default class Server extends ApiCommandBase {
       description: 'Interval between periodic cleanup actions (in minutes)',
       default: 360,
     }),
-    queryNodeEndpoint: flags.string({
+    storageSquidEndpoint: flags.string({
       char: 'q',
       required: true,
       default: 'http://localhost:4352/graphql',
@@ -188,7 +188,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       })
     }
 
-    logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
+    logger.info(`Storage Squid endpoint set: ${flags.storageSquidEndpoint}`)
 
     const workerId = flags.worker
 
@@ -197,7 +197,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       this.exit(ExitCodes.InvalidWorkerId)
     }
 
-    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+    const qnApi = new QueryNodeApi(flags.storageSquidEndpoint)
 
     const selectedBucketsAndAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
 

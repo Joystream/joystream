@@ -27,7 +27,7 @@ export const configSchema: JSONSchema4 = objectSchema({
     endpoints: objectSchema({
       description: 'Specifies external endpoints that the distributor node will connect to',
       properties: {
-        queryNode: {
+        storageSquid: {
           description: 'Storage-Squid graphql server uri (for example: http://localhost:4352/graphql)',
           type: 'string',
           format: 'uri',
@@ -38,7 +38,7 @@ export const configSchema: JSONSchema4 = objectSchema({
           format: 'uri',
         },
       },
-      required: ['queryNode', 'joystreamNodeWs'],
+      required: ['storageSquid', 'joystreamNodeWs'],
     }),
     directories: objectSchema({
       description: "Specifies paths where node's data will be stored",

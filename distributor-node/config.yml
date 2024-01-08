@@ -1,6 +1,6 @@
 id: test-node
 endpoints:
-  queryNode: http://localhost:4352/graphql
+  storageSquid: http://localhost:4352/graphql
   joystreamNodeWs: ws://localhost:9944
 directories:
   assets: ./local/data

@@ -454,7 +454,7 @@ export class NetworkingService {
     }
 
     return {
-      url: this.config.endpoints.queryNode,
+      url: this.config.endpoints.storageSquid,
       chainHead: (await this.runtimeApi.derive.chain.bestNumber()).toNumber() || 0,
       blocksProcessed: squidStatus?.height || 0,
     }

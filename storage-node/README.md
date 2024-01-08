@@ -753,7 +753,7 @@ OPTIONS
                                                                    a single password can be set in ACCOUNT_PWD
                                                                    environment variable.
 
-  -q, --queryNodeEndpoint=queryNodeEndpoint                        (required) [default: http://localhost:4352/graphql]
+  -q, --storageSquidEndpoint=storageSquidEndpoint                  (required) [default: http://localhost:4352/graphql]
                                                                    Storage Squid graphql server endpoint (e.g.:
                                                                    http://some.com:4352/graphql)
 
