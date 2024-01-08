@@ -68,6 +68,7 @@ export class AcceptPendingObjectsService {
   }
 
   pendingObjectExists(id: string): boolean {
+    // Make this async
     return fs.existsSync(path.join(this.pendingDataObjectsDir, id))
   }
 

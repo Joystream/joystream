@@ -18,11 +18,6 @@ export default class FetchBucket extends Command {
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    workerId: flags.integer({
-      char: 'w',
-      required: true,
-      description: 'Storage node operator worker ID.',
-    }),
     bucketId: flags.integer({
       char: 'b',
       required: true,

@@ -43,6 +43,9 @@ export async function getFileInfo(fullPath: string): Promise<FileInfo> {
     ext: 'bin',
   }
 
+  // Use async version, can we avoid opening file twice?
+  // Maybe cache in memory the file info? or will OS fs caching handle it better?
+  // https://github.com/nodejs/node/issues/38006
   const buffer = readChunk.sync(fullPath, 0, MINIMUM_FILE_CHUNK)
   const fileType = await FileType.fromBuffer(buffer)
   const { size } = await fsPromises.stat(fullPath)

@@ -60,7 +60,7 @@ export async function getLocalDataStats(
     const pendingObjectsDir = res.locals.pendingDataObjectsDir
     const fastFolderSizeAsync = promisify(fastFolderSize)
 
-    const tempFolderExists = fs.existsSync(tempFileDir)
+    const tempFolderExists = fs.existsSync(tempFileDir) // make this async
     const statsPromise = fsPromises.readdir(uploadsDir)
     const sizePromise = fastFolderSizeAsync(uploadsDir)
 

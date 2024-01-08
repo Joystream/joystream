@@ -51,8 +51,9 @@ export async function getFile(
   try {
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
+    // file is being opened twice here
     const fileInfo = await getFileInfo(fullPath)
-
+    // and for third time here?
     const stream = send(req, fullPath)
 
     stream.on('headers', (res) => {

@@ -104,6 +104,7 @@ export class DownloadFileTask implements SyncTask {
         await this.tryDownload(chosenBaseUrl, filepath)
 
         // if download succeeds, break the loop
+        // make this async
         if (fs.existsSync(filepath)) {
           return
         }
