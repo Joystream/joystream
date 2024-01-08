@@ -5,6 +5,14 @@ import assert from 'assert'
 const fsPromises = fs.promises
 
 type DataObjectId = string
+// The intent of this state is to record if an object is being served by the node,
+// to prevent cleanup service from deleting it once it has been selected to be removed
+// because it has been moved to a bucket no longer serviced by the node.
+// The cleanup service should not need this information and instead make decision
+// based on how much time passed since the containing bag was moved out of the bucket.
+// If the purpouse is not deleting the object while it is being streamed then it is also
+// un-necessary. When `unlink`ing a file the OS
+// will still be able to continue streaming it if it is already opened for reading.
 type DataObjectPinCount = number
 
 // Local in-memory cache for IDs.
