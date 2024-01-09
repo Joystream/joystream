@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import { DatabaseManager } from '@joystream/hydra-common'
 import {
   ICreateTag,
@@ -10,7 +11,7 @@ import {
   IDisallowTagToWorker,
 } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
-import { Tag, TagToWorker, TagToThread, TagToProposal, ForumThread, Proposal } from 'query-node/dist/model'
+import { Tag, TagPermittedWorker, ForumThread, Proposal } from 'query-node/dist/model'
 import { MetaprotocolTxError, getOneBy, getById, logger } from 'src/common'
 
 export async function processCreateTag(
@@ -25,7 +26,6 @@ export async function processCreateTag(
   }
 
   const isTagExists = await getOneBy(store, Tag, { name: name })
-
   if (isTagExists) {
     return MetaprotocolTxError.TagAlreadyExists
   }
@@ -55,12 +55,16 @@ export async function processUpdateTag(
   }
 
   const tag: Tag | undefined = await getById(store, Tag, tagId)
-
   if (!tag) {
     return MetaprotocolTxError.TagNotFound
   }
 
   if (name) {
+    const isTagExists = await getOneBy(store, Tag, { name: name })
+    if (isTagExists) {
+      return MetaprotocolTxError.TagAlreadyExists
+    }
+
     tag.name = name
   }
 
@@ -91,11 +95,10 @@ export async function processAssignTagToThread(
   const { tagId, threadId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
-      tagId: tagId,
+    const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
       workerId: workerId.toString(),
     })
-    if (!tagToWorker) {
+    if (!tagPermittedWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
   }
@@ -105,18 +108,20 @@ export async function processAssignTagToThread(
     return MetaprotocolTxError.TagInvalidThreadId
   }
 
-  const tagToThread: TagToThread | undefined = await getOneBy(store, TagToThread, { tagId: tagId, threadId: threadId })
-
-  if (!tagToThread) {
-    const newTagToThread = new TagToThread({
-      tagId: tagId,
-      threadId: threadId,
-    })
-    await store.save<TagToThread>(newTagToThread)
+  const tag: Tag | undefined = await getById(store, Tag, tagId)
+  if (!tag) {
+    return MetaprotocolTxError.TagNotFound
   }
 
-  logger.info('TagToThread has been assigned', { tagId, threadId })
-  return tagToThread
+  const currentTagIds = (forumThread.newTags || []).map((t) => t.id)
+  const tagIdsToSet = _.difference([tagId], currentTagIds)
+  if (tagIdsToSet) {
+    forumThread.newTags.push(tag)
+    await store.save<ForumThread>(forumThread)
+  }
+
+  logger.info('new Tag is assigned to ForumThread', { tagId, threadId })
+  return forumThread
 }
 
 export async function processAssignTagToProposal(
@@ -128,11 +133,10 @@ export async function processAssignTagToProposal(
   const { tagId, proposalId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
-      tagId: tagId,
+    const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
       workerId: workerId.toString(),
     })
-    if (!tagToWorker) {
+    if (!tagPermittedWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
   }
@@ -142,21 +146,20 @@ export async function processAssignTagToProposal(
     return MetaprotocolTxError.TagInvalidProposalId
   }
 
-  const tagToProposal: TagToProposal | undefined = await getOneBy(store, TagToProposal, {
-    tagId: tagId,
-    proposalId: proposalId,
-  })
-
-  if (!tagToProposal) {
-    const newTagToProposal = new TagToProposal({
-      tagId: tagId,
-      proposalId: proposalId,
-    })
-    await store.save<TagToProposal>(newTagToProposal)
+  const tag: Tag | undefined = await getById(store, Tag, tagId)
+  if (!tag) {
+    return MetaprotocolTxError.TagNotFound
   }
 
-  logger.info('TagToProposal has been assigned', { tagId, proposalId })
-  return tagToProposal
+  const currentTagIds = (proposal.tags || []).map((t) => t.id)
+  const tagIdsToSet = _.difference([tagId], currentTagIds)
+  if (tagIdsToSet) {
+    proposal.tags.push(tag)
+    await store.save<Proposal>(proposal)
+  }
+
+  logger.info('new Tag is assigned to proposal', { tagId, proposalId })
+  return proposal
 }
 
 export async function processUnassignTagFromThread(
@@ -168,11 +171,10 @@ export async function processUnassignTagFromThread(
   const { tagId, threadId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
-      tagId: tagId,
+    const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
       workerId: workerId.toString(),
     })
-    if (!tagToWorker) {
+    if (!tagPermittedWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
   }
@@ -182,14 +184,12 @@ export async function processUnassignTagFromThread(
     return MetaprotocolTxError.TagInvalidThreadId
   }
 
-  const tagToThread: TagToThread | undefined = await getOneBy(store, TagToThread, { tagId: tagId, threadId: threadId })
+  const remainedTags = (forumThread.newTags || []).filter((t) => ![tagId].includes(t.id))
+  forumThread.newTags = remainedTags
+  await store.save<ForumThread>(forumThread)
 
-  if (tagToThread) {
-    await store.remove<TagToThread>(tagToThread)
-  }
-
-  logger.info('TagToThread has been unassigned', { tagId, threadId })
-  return tagToThread
+  logger.info('tag is unassigned from forumThread', { tagId, threadId })
+  return forumThread
 }
 
 export async function processUnassignTagFromProposal(
@@ -201,11 +201,10 @@ export async function processUnassignTagFromProposal(
   const { tagId, proposalId } = metadata
 
   if (!isLead) {
-    const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
-      tagId: tagId,
+    const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
       workerId: workerId.toString(),
     })
-    if (!tagToWorker) {
+    if (!tagPermittedWorker) {
       return MetaprotocolTxError.TagPermNotAllowed
     }
   }
@@ -215,65 +214,47 @@ export async function processUnassignTagFromProposal(
     return MetaprotocolTxError.TagInvalidProposalId
   }
 
-  const tagToProposal: TagToProposal | undefined = await getOneBy(store, TagToProposal, {
-    tagId: tagId,
-    proposalId: proposalId,
-  })
+  const remainedTags = (proposal.tags || []).filter((t) => ![tagId].includes(t.id))
+  proposal.tags = remainedTags
+  await store.save<Proposal>(proposal)
 
-  if (tagToProposal) {
-    await store.remove<TagToProposal>(tagToProposal)
-  }
-
-  logger.info('TagToProposal has been unassigned', { tagId, proposalId })
-  return tagToProposal
+  logger.info('tag is unassigned from proposal', { tagId, proposalId })
+  return proposal
 }
 
 export async function processAllowTagToWorker(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IAllowTagToWorker>,
-  isLead: boolean
+  metadata: DecodedMetadataObject<IAllowTagToWorker>
 ): Promise<any> {
-  const { tagId, workerId: assigneeId } = metadata
+  const { workerId: assigneeId } = metadata
 
-  if (!isLead) {
-    return MetaprotocolTxError.TagPermNotAllowed
-  }
-
-  const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
-    tagId: tagId,
-    workerId: assigneeId,
+  const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
+    workerId: assigneeId.toString(),
   })
 
-  if (!tagToWorker) {
-    const newTagToWorker = new TagToWorker({
-      tagId: tagId,
+  if (!tagPermittedWorker) {
+    const newTagToWorker = new TagPermittedWorker({
       workerId: assigneeId,
     })
-    await store.save<TagToWorker>(newTagToWorker)
+    await store.save<TagPermittedWorker>(newTagToWorker)
   }
 
-  logger.info('TagToWorker has been allowed', { tagId, assigneeId })
+  logger.info('TagPermittedWorker has been allowed', { assigneeId })
 }
 
 export async function processDisallowTagToWorker(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IDisallowTagToWorker>,
-  isLead: boolean
+  metadata: DecodedMetadataObject<IDisallowTagToWorker>
 ): Promise<any> {
-  const { tagId, workerId: assigneeId } = metadata
+  const { workerId: assigneeId } = metadata
 
-  if (!isLead) {
-    return MetaprotocolTxError.TagPermNotAllowed
-  }
-
-  const tagToWorker: TagToWorker | undefined = await getOneBy(store, TagToWorker, {
-    tagId: tagId,
-    workerId: assigneeId,
+  const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
+    workerId: assigneeId.toString(),
   })
 
-  if (tagToWorker) {
-    await store.remove<TagToWorker>(tagToWorker)
+  if (tagPermittedWorker) {
+    await store.remove<TagPermittedWorker>(tagPermittedWorker)
   }
 
-  logger.info('TagToWorker has been disallowed', { tagId, assigneeId })
+  logger.info('TagToWorker has been disallowed', { assigneeId })
 }

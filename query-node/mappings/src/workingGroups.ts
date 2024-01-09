@@ -762,9 +762,9 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
   } else if (metadata?.unassignTagFromProposal && group.name === 'forumWorkingGroup') {
     return await processUnassignTagFromProposal(store, metadata?.unassignTagFromProposal, true, 0)
   } else if (metadata?.allowTagToWorker && group.name === 'forumWorkingGroup') {
-    return await processAllowTagToWorker(store, metadata?.allowTagToWorker, true)
+    return await processAllowTagToWorker(store, metadata?.allowTagToWorker)
   } else if (metadata?.disallowTagToWorker && group.name === 'forumWorkingGroup') {
-    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker, true)
+    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
@@ -812,10 +812,6 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     return await processUnassignTagFromThread(store, metadata?.unassignTagFromThread, false, workerId.toNumber())
   } else if (metadata?.unassignTagFromProposal && group.name === 'forumWorkingGroup') {
     return await processUnassignTagFromProposal(store, metadata?.unassignTagFromProposal, false, workerId.toNumber())
-  } else if (metadata?.allowTagToWorker && group.name === 'forumWorkingGroup') {
-    return await processAllowTagToWorker(store, metadata?.allowTagToWorker, false)
-  } else if (metadata?.disallowTagToWorker && group.name === 'forumWorkingGroup') {
-    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker, false)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

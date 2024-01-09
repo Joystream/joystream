@@ -1,4 +1,4 @@
-type tag @entity {
+type Tag @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
   "The name of tag"
@@ -9,31 +9,15 @@ type tag @entity {
   type: String!
   "Visibility of tag"
   visibility: Boolean!
+  "Forum Threads"
+  forumThreads: [ForumThread!] @derivedFrom(field: "newTags")
+  "Proposals"
+  proposals: [Proposal!] @derivedFrom(field: "tags")
 }
 
-type tagToWorker @entity {
+type TagPermittedWorker @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
-  "Id of tag"
-  tagId: ID!
   "Id of worker"
   workerId: ID!
-}
-
-type tagToThread @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-  "Id of tag"
-  tagId: ID!
-  "Id of worker"
-  threadId: ID!
-}
-
-type tagToProposal @entity {
-  "Runtime entity identifier (EntityId)"
-  id: ID!
-  "Id of tag"
-  tagId: ID!
-  "Id of proposal"
-  proposalId: ID!
 }

@@ -127,19 +127,13 @@ message UnassignTagFromProposal {
 }
 
 message AllowTagToWorker {
-  // ID of tag
-  required string tag_id = 1;
-
   // ID of worker
-  required uint64 worker_id = 2;  
+  required uint64 worker_id = 1;
 }
 
 message DisallowTagToWorker {
-  // ID of tag
-  required string tag_id = 1;
-
   // ID of worker
-  required uint64 worker_id = 2;  
+  required uint64 worker_id = 1;  
 }
 
 message RemarkMetadataAction {

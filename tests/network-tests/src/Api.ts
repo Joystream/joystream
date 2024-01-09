@@ -1548,7 +1548,6 @@ export class Api {
 
     const meta = new RemarkMetadataAction({
       allowTagToWorker: new AllowTagToWorker({
-        tagId,
         workerId: Long.fromNumber(workerId),
       }),
     })
@@ -1565,7 +1564,6 @@ export class Api {
 
     const meta = new RemarkMetadataAction({
       disallowTagToWorker: new DisallowTagToWorker({
-        tagId,
         workerId: Long.fromNumber(workerId),
       }),
     })

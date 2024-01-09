@@ -290,6 +290,157 @@ type ForumThreadTag implements BaseGraphQLObject {
   visibleThreadsCount: Int!
 }
 
+type ProposalDiscussionPost implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+  discussionThread: ProposalDiscussionThread!
+  discussionThreadId: String!
+  author: Membership!
+  authorId: String!
+
+  """Current post status"""
+  status: ProposalDiscussionPostStatus!
+
+  """True if the post is either Active or Locked"""
+  isVisible: Boolean!
+
+  """Post's md-formatted text"""
+  text: String!
+  repliesTo: ProposalDiscussionPost
+  repliesToId: String
+  updates: [ProposalDiscussionPostUpdatedEvent!]!
+  createdInEvent: ProposalDiscussionPostCreatedEvent!
+  proposaldiscussionpostrepliesTo: [ProposalDiscussionPost!]
+  proposaldiscussionpostdeletedeventpost: [ProposalDiscussionPostDeletedEvent!]
+}
+
+union ProposalDiscussionPostStatus = ProposalDiscussionPostStatusActive | ProposalDiscussionPostStatusLocked | ProposalDiscussionPostStatusRemoved
+
+union ProposalDiscussionThreadMode = ProposalDiscussionThreadModeOpen | ProposalDiscussionThreadModeClosed
+
+type ProposalDiscussionThread implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+  proposal: Proposal!
+  proposalId: String!
+  posts: [ProposalDiscussionPost!]!
+
+  """Current thread mode"""
+  mode: ProposalDiscussionThreadMode!
+  modeChanges: [ProposalDiscussionThreadModeChangedEvent!]!
+}
+
+union ProposalIntermediateStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant
+
+enum ProposalVoteKind {
+  APPROVE
+  REJECT
+  SLASH
+  ABSTAIN
+}
+
+union ProposalDecisionStatus = ProposalStatusDormant | ProposalStatusGracing | ProposalStatusVetoed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
+
+union ProposalExecutionStatus = ProposalStatusExecuted | ProposalStatusExecutionFailed
+
+type Proposal implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Proposal title"""
+  title: String!
+
+  """Proposal description"""
+  description: String!
+
+  """Proposal details depending on proposal type"""
+  details: ProposalDetails!
+
+  """Staking account with proposal stake (in case a stake is required)"""
+  stakingAccount: String
+  creator: Membership!
+  creatorId: String!
+  createdInEvent: ProposalCreatedEvent!
+
+  """
+  Exact block number the proposal is supposed to be executed at (if specified)
+  """
+  exactExecutionBlock: Int
+  discussionThread: ProposalDiscussionThread!
+
+  """
+  How many prior councils have already approved the proposal (starts with 0)
+  """
+  councilApprovals: Int!
+  proposalStatusUpdates: [ProposalStatusUpdatedEvent!]!
+  votes: [ProposalVotedEvent!]!
+
+  """Current proposal status"""
+  status: ProposalStatus!
+
+  """
+  If true then the proposal status is final and will not change form this point
+  """
+  isFinalized: Boolean
+
+  """Number of the block the current status was set at"""
+  statusSetAtBlock: Int!
+
+  """Time the current status was set at (based on block timestamp)"""
+  statusSetAtTime: DateTime!
+  tags: [Tag!]!
+  proposalcancelledeventproposal: [ProposalCancelledEvent!]
+  proposaldecisionmadeeventproposal: [ProposalDecisionMadeEvent!]
+  proposalexecutedeventproposal: [ProposalExecutedEvent!]
+}
+
+union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails | UpdateGlobalNftLimitProposalDetails
+
+union ProposalStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant | ProposalStatusVetoed | ProposalStatusExecuted | ProposalStatusExecutionFailed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
+
+type Tag implements BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """The name of tag"""
+  name: String!
+
+  """The description of tag"""
+  description: String!
+
+  """The type of tag"""
+  type: String!
+
+  """Visibility of tag"""
+  visibility: Boolean!
+  forumThreads: [ForumThread!]!
+  proposals: [Proposal!]!
+}
+
 type BountyEntrantWhitelist implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -472,6 +623,7 @@ type ForumThread implements BaseGraphQLObject {
   madeStickyInEvents: [CategoryStickyThreadUpdateEvent!]!
   movedInEvents: [ThreadMovedEvent!]!
   tags: [ForumThreadTag!]!
+  newTags: [Tag!]!
   bountydiscussionThread: [Bounty!]
   threaddeletedeventthread: [ThreadDeletedEvent!]
   threadmoderatedeventthread: [ThreadModeratedEvent!]
@@ -2039,131 +2191,6 @@ type MemberMetadata implements BaseGraphQLObject {
 
 union Avatar = AvatarObject | AvatarUri
 
-union ProposalIntermediateStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant
-
-enum ProposalVoteKind {
-  APPROVE
-  REJECT
-  SLASH
-  ABSTAIN
-}
-
-union ProposalDecisionStatus = ProposalStatusDormant | ProposalStatusGracing | ProposalStatusVetoed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
-
-union ProposalExecutionStatus = ProposalStatusExecuted | ProposalStatusExecutionFailed
-
-type Proposal implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Proposal title"""
-  title: String!
-
-  """Proposal description"""
-  description: String!
-
-  """Proposal details depending on proposal type"""
-  details: ProposalDetails!
-
-  """Staking account with proposal stake (in case a stake is required)"""
-  stakingAccount: String
-  creator: Membership!
-  creatorId: String!
-  createdInEvent: ProposalCreatedEvent!
-
-  """
-  Exact block number the proposal is supposed to be executed at (if specified)
-  """
-  exactExecutionBlock: Int
-  discussionThread: ProposalDiscussionThread!
-
-  """
-  How many prior councils have already approved the proposal (starts with 0)
-  """
-  councilApprovals: Int!
-  proposalStatusUpdates: [ProposalStatusUpdatedEvent!]!
-  votes: [ProposalVotedEvent!]!
-
-  """Current proposal status"""
-  status: ProposalStatus!
-
-  """
-  If true then the proposal status is final and will not change form this point
-  """
-  isFinalized: Boolean
-
-  """Number of the block the current status was set at"""
-  statusSetAtBlock: Int!
-
-  """Time the current status was set at (based on block timestamp)"""
-  statusSetAtTime: DateTime!
-  proposalcancelledeventproposal: [ProposalCancelledEvent!]
-  proposaldecisionmadeeventproposal: [ProposalDecisionMadeEvent!]
-  proposalexecutedeventproposal: [ProposalExecutedEvent!]
-}
-
-union ProposalDetails = SignalProposalDetails | RuntimeUpgradeProposalDetails | FundingRequestProposalDetails | SetMaxValidatorCountProposalDetails | CreateWorkingGroupLeadOpeningProposalDetails | FillWorkingGroupLeadOpeningProposalDetails | UpdateWorkingGroupBudgetProposalDetails | DecreaseWorkingGroupLeadStakeProposalDetails | SlashWorkingGroupLeadProposalDetails | SetWorkingGroupLeadRewardProposalDetails | TerminateWorkingGroupLeadProposalDetails | AmendConstitutionProposalDetails | CancelWorkingGroupLeadOpeningProposalDetails | SetMembershipPriceProposalDetails | SetCouncilBudgetIncrementProposalDetails | SetCouncilorRewardProposalDetails | SetInitialInvitationBalanceProposalDetails | SetInitialInvitationCountProposalDetails | SetMembershipLeadInvitationQuotaProposalDetails | SetReferralCutProposalDetails | VetoProposalDetails | UpdateChannelPayoutsProposalDetails | UpdateGlobalNftLimitProposalDetails
-
-union ProposalStatus = ProposalStatusDeciding | ProposalStatusGracing | ProposalStatusDormant | ProposalStatusVetoed | ProposalStatusExecuted | ProposalStatusExecutionFailed | ProposalStatusSlashed | ProposalStatusRejected | ProposalStatusExpired | ProposalStatusCancelled | ProposalStatusCanceledByRuntime
-
-union ProposalDiscussionThreadMode = ProposalDiscussionThreadModeOpen | ProposalDiscussionThreadModeClosed
-
-type ProposalDiscussionThread implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-  proposal: Proposal!
-  proposalId: String!
-  posts: [ProposalDiscussionPost!]!
-
-  """Current thread mode"""
-  mode: ProposalDiscussionThreadMode!
-  modeChanges: [ProposalDiscussionThreadModeChangedEvent!]!
-}
-
-type ProposalDiscussionPost implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-  discussionThread: ProposalDiscussionThread!
-  discussionThreadId: String!
-  author: Membership!
-  authorId: String!
-
-  """Current post status"""
-  status: ProposalDiscussionPostStatus!
-
-  """True if the post is either Active or Locked"""
-  isVisible: Boolean!
-
-  """Post's md-formatted text"""
-  text: String!
-  repliesTo: ProposalDiscussionPost
-  repliesToId: String
-  updates: [ProposalDiscussionPostUpdatedEvent!]!
-  createdInEvent: ProposalDiscussionPostCreatedEvent!
-  proposaldiscussionpostrepliesTo: [ProposalDiscussionPost!]
-  proposaldiscussionpostdeletedeventpost: [ProposalDiscussionPostDeletedEvent!]
-}
-
-union ProposalDiscussionPostStatus = ProposalDiscussionPostStatusActive | ProposalDiscussionPostStatusLocked | ProposalDiscussionPostStatusRemoved
-
 type ProposalDiscussionWhitelist implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -3464,7 +3491,7 @@ type ChannelVisibilitySetByModeratorEvent implements BaseGraphQLObject {
 
 union MetaprotocolTransactionStatus = MetaprotocolTransactionSuccessful | MetaprotocolTransactionErrored
 
-type TagToProposal implements BaseGraphQLObject {
+type TagPermittedWorker implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
   createdById: ID!
@@ -3473,69 +3500,9 @@ type TagToProposal implements BaseGraphQLObject {
   deletedAt: DateTime
   deletedById: ID
   version: Int!
-
-  """Id of tag"""
-  tagId: String!
-
-  """Id of proposal"""
-  proposalId: String!
-}
-
-type TagToThread implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Id of tag"""
-  tagId: String!
-
-  """Id of worker"""
-  threadId: String!
-}
-
-type TagToWorker implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Id of tag"""
-  tagId: String!
 
   """Id of worker"""
   workerId: String!
-}
-
-type Tag implements BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """The name of tag"""
-  name: String!
-
-  """The description of tag"""
-  description: String!
-
-  """The type of tag"""
-  type: String!
-
-  """Visibility of tag"""
-  visibility: Boolean!
 }
 
 type VideoAssetsDeletedByModeratorEvent implements BaseGraphQLObject {
@@ -5616,36 +5583,14 @@ type StorageDataObjectConnection {
   pageInfo: PageInfo!
 }
 
-type TagToProposalEdge {
-  node: TagToProposal!
+type TagPermittedWorkerEdge {
+  node: TagPermittedWorker!
   cursor: String!
 }
 
-type TagToProposalConnection {
+type TagPermittedWorkerConnection {
   totalCount: Int!
-  edges: [TagToProposalEdge!]!
-  pageInfo: PageInfo!
-}
-
-type TagToThreadEdge {
-  node: TagToThread!
-  cursor: String!
-}
-
-type TagToThreadConnection {
-  totalCount: Int!
-  edges: [TagToThreadEdge!]!
-  pageInfo: PageInfo!
-}
-
-type TagToWorkerEdge {
-  node: TagToWorker!
-  cursor: String!
-}
-
-type TagToWorkerConnection {
-  totalCount: Int!
-  edges: [TagToWorkerEdge!]!
+  edges: [TagPermittedWorkerEdge!]!
   pageInfo: PageInfo!
 }
 
@@ -7669,6 +7614,1081 @@ input ForumThreadTagUpdateInput {
   visibleThreadsCount: Float
 }
 
+input ProposalCreatedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  proposal: ProposalWhereInput
+  AND: [ProposalCreatedEventWhereInput!]
+  OR: [ProposalCreatedEventWhereInput!]
+  NOT: [ProposalCreatedEventWhereInput!]
+}
+
+input ProposalCreatedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalCreatedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  proposal: ID!
+}
+
+input ProposalCreatedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  proposal: ID
+}
+
+input ProposalDiscussionPostUpdatedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  text_eq: String
+  text_contains: String
+  text_startsWith: String
+  text_endsWith: String
+  text_in: [String!]
+  post: ProposalDiscussionPostWhereInput
+  AND: [ProposalDiscussionPostUpdatedEventWhereInput!]
+  OR: [ProposalDiscussionPostUpdatedEventWhereInput!]
+  NOT: [ProposalDiscussionPostUpdatedEventWhereInput!]
+}
+
+input ProposalDiscussionPostUpdatedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDiscussionPostUpdatedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  post: ID!
+  text: String!
+}
+
+input ProposalDiscussionPostUpdatedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  post: ID
+  text: String
+}
+
+input ProposalDiscussionPostCreatedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  text_eq: String
+  text_contains: String
+  text_startsWith: String
+  text_endsWith: String
+  text_in: [String!]
+  post: ProposalDiscussionPostWhereInput
+  AND: [ProposalDiscussionPostCreatedEventWhereInput!]
+  OR: [ProposalDiscussionPostCreatedEventWhereInput!]
+  NOT: [ProposalDiscussionPostCreatedEventWhereInput!]
+}
+
+input ProposalDiscussionPostCreatedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDiscussionPostCreatedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  post: ID!
+  text: String!
+}
+
+input ProposalDiscussionPostCreatedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  post: ID
+  text: String
+}
+
+input ProposalDiscussionPostDeletedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  post: ProposalDiscussionPostWhereInput
+  actor: MembershipWhereInput
+  AND: [ProposalDiscussionPostDeletedEventWhereInput!]
+  OR: [ProposalDiscussionPostDeletedEventWhereInput!]
+  NOT: [ProposalDiscussionPostDeletedEventWhereInput!]
+}
+
+input ProposalDiscussionPostDeletedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDiscussionPostDeletedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  post: ID!
+  actor: ID!
+}
+
+input ProposalDiscussionPostDeletedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  post: ID
+  actor: ID
+}
+
+input ProposalDiscussionPostWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  status_json: JSONObject
+  isVisible_eq: Boolean
+  isVisible_in: [Boolean!]
+  text_eq: String
+  text_contains: String
+  text_startsWith: String
+  text_endsWith: String
+  text_in: [String!]
+  discussionThread: ProposalDiscussionThreadWhereInput
+  author: MembershipWhereInput
+  repliesTo: ProposalDiscussionPostWhereInput
+  updates_none: ProposalDiscussionPostUpdatedEventWhereInput
+  updates_some: ProposalDiscussionPostUpdatedEventWhereInput
+  updates_every: ProposalDiscussionPostUpdatedEventWhereInput
+  createdInEvent: ProposalDiscussionPostCreatedEventWhereInput
+  proposaldiscussionpostrepliesTo_none: ProposalDiscussionPostWhereInput
+  proposaldiscussionpostrepliesTo_some: ProposalDiscussionPostWhereInput
+  proposaldiscussionpostrepliesTo_every: ProposalDiscussionPostWhereInput
+  proposaldiscussionpostdeletedeventpost_none: ProposalDiscussionPostDeletedEventWhereInput
+  proposaldiscussionpostdeletedeventpost_some: ProposalDiscussionPostDeletedEventWhereInput
+  proposaldiscussionpostdeletedeventpost_every: ProposalDiscussionPostDeletedEventWhereInput
+  AND: [ProposalDiscussionPostWhereInput!]
+  OR: [ProposalDiscussionPostWhereInput!]
+  NOT: [ProposalDiscussionPostWhereInput!]
+}
+
+input ProposalDiscussionPostWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDiscussionPostCreateInput {
+  discussionThread: ID!
+  author: ID!
+  status: JSONObject!
+  isVisible: Boolean!
+  text: String!
+  repliesTo: ID
+}
+
+input ProposalDiscussionPostUpdateInput {
+  discussionThread: ID
+  author: ID
+  status: JSONObject
+  isVisible: Boolean
+  text: String
+  repliesTo: ID
+}
+
+input ProposalDiscussionThreadModeChangedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  newMode_json: JSONObject
+  thread: ProposalDiscussionThreadWhereInput
+  actor: MembershipWhereInput
+  AND: [ProposalDiscussionThreadModeChangedEventWhereInput!]
+  OR: [ProposalDiscussionThreadModeChangedEventWhereInput!]
+  NOT: [ProposalDiscussionThreadModeChangedEventWhereInput!]
+}
+
+input ProposalDiscussionThreadModeChangedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDiscussionThreadModeChangedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  thread: ID!
+  newMode: JSONObject!
+  actor: ID!
+}
+
+input ProposalDiscussionThreadModeChangedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  thread: ID
+  newMode: JSONObject
+  actor: ID
+}
+
+input ProposalDiscussionThreadWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  mode_json: JSONObject
+  proposal: ProposalWhereInput
+  posts_none: ProposalDiscussionPostWhereInput
+  posts_some: ProposalDiscussionPostWhereInput
+  posts_every: ProposalDiscussionPostWhereInput
+  modeChanges_none: ProposalDiscussionThreadModeChangedEventWhereInput
+  modeChanges_some: ProposalDiscussionThreadModeChangedEventWhereInput
+  modeChanges_every: ProposalDiscussionThreadModeChangedEventWhereInput
+  AND: [ProposalDiscussionThreadWhereInput!]
+  OR: [ProposalDiscussionThreadWhereInput!]
+  NOT: [ProposalDiscussionThreadWhereInput!]
+}
+
+input ProposalDiscussionThreadWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDiscussionThreadCreateInput {
+  proposal: ID!
+  mode: JSONObject!
+}
+
+input ProposalDiscussionThreadUpdateInput {
+  proposal: ID
+  mode: JSONObject
+}
+
+input ProposalStatusUpdatedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  newStatus_json: JSONObject
+  proposal: ProposalWhereInput
+  AND: [ProposalStatusUpdatedEventWhereInput!]
+  OR: [ProposalStatusUpdatedEventWhereInput!]
+  NOT: [ProposalStatusUpdatedEventWhereInput!]
+}
+
+input ProposalStatusUpdatedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalStatusUpdatedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  proposal: ID!
+  newStatus: JSONObject!
+}
+
+input ProposalStatusUpdatedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  proposal: ID
+  newStatus: JSONObject
+}
+
+input ProposalVotedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  voteKind_eq: ProposalVoteKind
+  voteKind_in: [ProposalVoteKind!]
+  rationale_eq: String
+  rationale_contains: String
+  rationale_startsWith: String
+  rationale_endsWith: String
+  rationale_in: [String!]
+  votingRound_eq: Int
+  votingRound_gt: Int
+  votingRound_gte: Int
+  votingRound_lt: Int
+  votingRound_lte: Int
+  votingRound_in: [Int!]
+  voter: MembershipWhereInput
+  proposal: ProposalWhereInput
+  AND: [ProposalVotedEventWhereInput!]
+  OR: [ProposalVotedEventWhereInput!]
+  NOT: [ProposalVotedEventWhereInput!]
+}
+
+input ProposalVotedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalVotedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  voter: ID!
+  voteKind: ProposalVoteKind!
+  proposal: ID!
+  rationale: String!
+  votingRound: Float!
+}
+
+input ProposalVotedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  voter: ID
+  voteKind: ProposalVoteKind
+  proposal: ID
+  rationale: String
+  votingRound: Float
+}
+
+input ProposalCancelledEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  proposal: ProposalWhereInput
+  AND: [ProposalCancelledEventWhereInput!]
+  OR: [ProposalCancelledEventWhereInput!]
+  NOT: [ProposalCancelledEventWhereInput!]
+}
+
+input ProposalCancelledEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalCancelledEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  proposal: ID!
+}
+
+input ProposalCancelledEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  proposal: ID
+}
+
+input ProposalDecisionMadeEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  decisionStatus_json: JSONObject
+  proposal: ProposalWhereInput
+  AND: [ProposalDecisionMadeEventWhereInput!]
+  OR: [ProposalDecisionMadeEventWhereInput!]
+  NOT: [ProposalDecisionMadeEventWhereInput!]
+}
+
+input ProposalDecisionMadeEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalDecisionMadeEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  proposal: ID!
+  decisionStatus: JSONObject!
+}
+
+input ProposalDecisionMadeEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  proposal: ID
+  decisionStatus: JSONObject
+}
+
+input ProposalExecutedEventWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  inExtrinsic_eq: String
+  inExtrinsic_contains: String
+  inExtrinsic_startsWith: String
+  inExtrinsic_endsWith: String
+  inExtrinsic_in: [String!]
+  inBlock_eq: Int
+  inBlock_gt: Int
+  inBlock_gte: Int
+  inBlock_lt: Int
+  inBlock_lte: Int
+  inBlock_in: [Int!]
+  network_eq: Network
+  network_in: [Network!]
+  indexInBlock_eq: Int
+  indexInBlock_gt: Int
+  indexInBlock_gte: Int
+  indexInBlock_lt: Int
+  indexInBlock_lte: Int
+  indexInBlock_in: [Int!]
+  executionStatus_json: JSONObject
+  proposal: ProposalWhereInput
+  AND: [ProposalExecutedEventWhereInput!]
+  OR: [ProposalExecutedEventWhereInput!]
+  NOT: [ProposalExecutedEventWhereInput!]
+}
+
+input ProposalExecutedEventWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalExecutedEventCreateInput {
+  inExtrinsic: String
+  inBlock: Float!
+  network: Network!
+  indexInBlock: Float!
+  proposal: ID!
+  executionStatus: JSONObject!
+}
+
+input ProposalExecutedEventUpdateInput {
+  inExtrinsic: String
+  inBlock: Float
+  network: Network
+  indexInBlock: Float
+  proposal: ID
+  executionStatus: JSONObject
+}
+
+input ProposalWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  title_eq: String
+  title_contains: String
+  title_startsWith: String
+  title_endsWith: String
+  title_in: [String!]
+  description_eq: String
+  description_contains: String
+  description_startsWith: String
+  description_endsWith: String
+  description_in: [String!]
+  details_json: JSONObject
+  stakingAccount_eq: String
+  stakingAccount_contains: String
+  stakingAccount_startsWith: String
+  stakingAccount_endsWith: String
+  stakingAccount_in: [String!]
+  exactExecutionBlock_eq: Int
+  exactExecutionBlock_gt: Int
+  exactExecutionBlock_gte: Int
+  exactExecutionBlock_lt: Int
+  exactExecutionBlock_lte: Int
+  exactExecutionBlock_in: [Int!]
+  councilApprovals_eq: Int
+  councilApprovals_gt: Int
+  councilApprovals_gte: Int
+  councilApprovals_lt: Int
+  councilApprovals_lte: Int
+  councilApprovals_in: [Int!]
+  status_json: JSONObject
+  isFinalized_eq: Boolean
+  isFinalized_in: [Boolean!]
+  statusSetAtBlock_eq: Int
+  statusSetAtBlock_gt: Int
+  statusSetAtBlock_gte: Int
+  statusSetAtBlock_lt: Int
+  statusSetAtBlock_lte: Int
+  statusSetAtBlock_in: [Int!]
+  statusSetAtTime_eq: DateTime
+  statusSetAtTime_lt: DateTime
+  statusSetAtTime_lte: DateTime
+  statusSetAtTime_gt: DateTime
+  statusSetAtTime_gte: DateTime
+  creator: MembershipWhereInput
+  createdInEvent: ProposalCreatedEventWhereInput
+  discussionThread: ProposalDiscussionThreadWhereInput
+  proposalStatusUpdates_none: ProposalStatusUpdatedEventWhereInput
+  proposalStatusUpdates_some: ProposalStatusUpdatedEventWhereInput
+  proposalStatusUpdates_every: ProposalStatusUpdatedEventWhereInput
+  votes_none: ProposalVotedEventWhereInput
+  votes_some: ProposalVotedEventWhereInput
+  votes_every: ProposalVotedEventWhereInput
+  tags_none: TagWhereInput
+  tags_some: TagWhereInput
+  tags_every: TagWhereInput
+  proposalcancelledeventproposal_none: ProposalCancelledEventWhereInput
+  proposalcancelledeventproposal_some: ProposalCancelledEventWhereInput
+  proposalcancelledeventproposal_every: ProposalCancelledEventWhereInput
+  proposaldecisionmadeeventproposal_none: ProposalDecisionMadeEventWhereInput
+  proposaldecisionmadeeventproposal_some: ProposalDecisionMadeEventWhereInput
+  proposaldecisionmadeeventproposal_every: ProposalDecisionMadeEventWhereInput
+  proposalexecutedeventproposal_none: ProposalExecutedEventWhereInput
+  proposalexecutedeventproposal_some: ProposalExecutedEventWhereInput
+  proposalexecutedeventproposal_every: ProposalExecutedEventWhereInput
+  AND: [ProposalWhereInput!]
+  OR: [ProposalWhereInput!]
+  NOT: [ProposalWhereInput!]
+}
+
+input ProposalWhereUniqueInput {
+  id: ID!
+}
+
+input ProposalCreateInput {
+  title: String!
+  description: String!
+  details: JSONObject!
+  stakingAccount: String
+  creator: ID!
+  exactExecutionBlock: Float
+  councilApprovals: Float!
+  status: JSONObject!
+  isFinalized: Boolean
+  statusSetAtBlock: Float!
+  statusSetAtTime: DateTime!
+}
+
+input ProposalUpdateInput {
+  title: String
+  description: String
+  details: JSONObject
+  stakingAccount: String
+  creator: ID
+  exactExecutionBlock: Float
+  councilApprovals: Float
+  status: JSONObject
+  isFinalized: Boolean
+  statusSetAtBlock: Float
+  statusSetAtTime: DateTime
+}
+
+input TagWhereInput {
+  id_eq: ID
+  id_in: [ID!]
+  createdAt_eq: DateTime
+  createdAt_lt: DateTime
+  createdAt_lte: DateTime
+  createdAt_gt: DateTime
+  createdAt_gte: DateTime
+  createdById_eq: ID
+  createdById_in: [ID!]
+  updatedAt_eq: DateTime
+  updatedAt_lt: DateTime
+  updatedAt_lte: DateTime
+  updatedAt_gt: DateTime
+  updatedAt_gte: DateTime
+  updatedById_eq: ID
+  updatedById_in: [ID!]
+  deletedAt_all: Boolean
+  deletedAt_eq: DateTime
+  deletedAt_lt: DateTime
+  deletedAt_lte: DateTime
+  deletedAt_gt: DateTime
+  deletedAt_gte: DateTime
+  deletedById_eq: ID
+  deletedById_in: [ID!]
+  name_eq: String
+  name_contains: String
+  name_startsWith: String
+  name_endsWith: String
+  name_in: [String!]
+  description_eq: String
+  description_contains: String
+  description_startsWith: String
+  description_endsWith: String
+  description_in: [String!]
+  type_eq: String
+  type_contains: String
+  type_startsWith: String
+  type_endsWith: String
+  type_in: [String!]
+  visibility_eq: Boolean
+  visibility_in: [Boolean!]
+  forumThreads_none: ForumThreadWhereInput
+  forumThreads_some: ForumThreadWhereInput
+  forumThreads_every: ForumThreadWhereInput
+  proposals_none: ProposalWhereInput
+  proposals_some: ProposalWhereInput
+  proposals_every: ProposalWhereInput
+  AND: [TagWhereInput!]
+  OR: [TagWhereInput!]
+  NOT: [TagWhereInput!]
+}
+
+input TagWhereUniqueInput {
+  id: ID!
+}
+
+input TagCreateInput {
+  name: String!
+  description: String!
+  type: String!
+  visibility: Boolean!
+}
+
+input TagUpdateInput {
+  name: String
+  description: String
+  type: String
+  visibility: Boolean
+}
+
 input BountyEntrantWhitelistWhereInput {
   id_eq: ID
   id_in: [ID!]
@@ -9211,6 +10231,9 @@ input ForumThreadWhereInput {
   tags_none: ForumThreadTagWhereInput
   tags_some: ForumThreadTagWhereInput
   tags_every: ForumThreadTagWhereInput
+  newTags_none: TagWhereInput
+  newTags_some: TagWhereInput
+  newTags_every: TagWhereInput
   bountydiscussionThread_none: BountyWhereInput
   bountydiscussionThread_some: BountyWhereInput
   bountydiscussionThread_every: BountyWhereInput
@@ -17999,1007 +19022,6 @@ input MembershipGiftedEventUpdateInput {
   metadata: ID
 }
 
-input ProposalCreatedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  proposal: ProposalWhereInput
-  AND: [ProposalCreatedEventWhereInput!]
-  OR: [ProposalCreatedEventWhereInput!]
-  NOT: [ProposalCreatedEventWhereInput!]
-}
-
-input ProposalCreatedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalCreatedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  proposal: ID!
-}
-
-input ProposalCreatedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  proposal: ID
-}
-
-input ProposalStatusUpdatedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  newStatus_json: JSONObject
-  proposal: ProposalWhereInput
-  AND: [ProposalStatusUpdatedEventWhereInput!]
-  OR: [ProposalStatusUpdatedEventWhereInput!]
-  NOT: [ProposalStatusUpdatedEventWhereInput!]
-}
-
-input ProposalStatusUpdatedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalStatusUpdatedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  proposal: ID!
-  newStatus: JSONObject!
-}
-
-input ProposalStatusUpdatedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  proposal: ID
-  newStatus: JSONObject
-}
-
-input ProposalVotedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  voteKind_eq: ProposalVoteKind
-  voteKind_in: [ProposalVoteKind!]
-  rationale_eq: String
-  rationale_contains: String
-  rationale_startsWith: String
-  rationale_endsWith: String
-  rationale_in: [String!]
-  votingRound_eq: Int
-  votingRound_gt: Int
-  votingRound_gte: Int
-  votingRound_lt: Int
-  votingRound_lte: Int
-  votingRound_in: [Int!]
-  voter: MembershipWhereInput
-  proposal: ProposalWhereInput
-  AND: [ProposalVotedEventWhereInput!]
-  OR: [ProposalVotedEventWhereInput!]
-  NOT: [ProposalVotedEventWhereInput!]
-}
-
-input ProposalVotedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalVotedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  voter: ID!
-  voteKind: ProposalVoteKind!
-  proposal: ID!
-  rationale: String!
-  votingRound: Float!
-}
-
-input ProposalVotedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  voter: ID
-  voteKind: ProposalVoteKind
-  proposal: ID
-  rationale: String
-  votingRound: Float
-}
-
-input ProposalCancelledEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  proposal: ProposalWhereInput
-  AND: [ProposalCancelledEventWhereInput!]
-  OR: [ProposalCancelledEventWhereInput!]
-  NOT: [ProposalCancelledEventWhereInput!]
-}
-
-input ProposalCancelledEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalCancelledEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  proposal: ID!
-}
-
-input ProposalCancelledEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  proposal: ID
-}
-
-input ProposalDecisionMadeEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  decisionStatus_json: JSONObject
-  proposal: ProposalWhereInput
-  AND: [ProposalDecisionMadeEventWhereInput!]
-  OR: [ProposalDecisionMadeEventWhereInput!]
-  NOT: [ProposalDecisionMadeEventWhereInput!]
-}
-
-input ProposalDecisionMadeEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDecisionMadeEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  proposal: ID!
-  decisionStatus: JSONObject!
-}
-
-input ProposalDecisionMadeEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  proposal: ID
-  decisionStatus: JSONObject
-}
-
-input ProposalExecutedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  executionStatus_json: JSONObject
-  proposal: ProposalWhereInput
-  AND: [ProposalExecutedEventWhereInput!]
-  OR: [ProposalExecutedEventWhereInput!]
-  NOT: [ProposalExecutedEventWhereInput!]
-}
-
-input ProposalExecutedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalExecutedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  proposal: ID!
-  executionStatus: JSONObject!
-}
-
-input ProposalExecutedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  proposal: ID
-  executionStatus: JSONObject
-}
-
-input ProposalWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  title_eq: String
-  title_contains: String
-  title_startsWith: String
-  title_endsWith: String
-  title_in: [String!]
-  description_eq: String
-  description_contains: String
-  description_startsWith: String
-  description_endsWith: String
-  description_in: [String!]
-  details_json: JSONObject
-  stakingAccount_eq: String
-  stakingAccount_contains: String
-  stakingAccount_startsWith: String
-  stakingAccount_endsWith: String
-  stakingAccount_in: [String!]
-  exactExecutionBlock_eq: Int
-  exactExecutionBlock_gt: Int
-  exactExecutionBlock_gte: Int
-  exactExecutionBlock_lt: Int
-  exactExecutionBlock_lte: Int
-  exactExecutionBlock_in: [Int!]
-  councilApprovals_eq: Int
-  councilApprovals_gt: Int
-  councilApprovals_gte: Int
-  councilApprovals_lt: Int
-  councilApprovals_lte: Int
-  councilApprovals_in: [Int!]
-  status_json: JSONObject
-  isFinalized_eq: Boolean
-  isFinalized_in: [Boolean!]
-  statusSetAtBlock_eq: Int
-  statusSetAtBlock_gt: Int
-  statusSetAtBlock_gte: Int
-  statusSetAtBlock_lt: Int
-  statusSetAtBlock_lte: Int
-  statusSetAtBlock_in: [Int!]
-  statusSetAtTime_eq: DateTime
-  statusSetAtTime_lt: DateTime
-  statusSetAtTime_lte: DateTime
-  statusSetAtTime_gt: DateTime
-  statusSetAtTime_gte: DateTime
-  creator: MembershipWhereInput
-  createdInEvent: ProposalCreatedEventWhereInput
-  discussionThread: ProposalDiscussionThreadWhereInput
-  proposalStatusUpdates_none: ProposalStatusUpdatedEventWhereInput
-  proposalStatusUpdates_some: ProposalStatusUpdatedEventWhereInput
-  proposalStatusUpdates_every: ProposalStatusUpdatedEventWhereInput
-  votes_none: ProposalVotedEventWhereInput
-  votes_some: ProposalVotedEventWhereInput
-  votes_every: ProposalVotedEventWhereInput
-  proposalcancelledeventproposal_none: ProposalCancelledEventWhereInput
-  proposalcancelledeventproposal_some: ProposalCancelledEventWhereInput
-  proposalcancelledeventproposal_every: ProposalCancelledEventWhereInput
-  proposaldecisionmadeeventproposal_none: ProposalDecisionMadeEventWhereInput
-  proposaldecisionmadeeventproposal_some: ProposalDecisionMadeEventWhereInput
-  proposaldecisionmadeeventproposal_every: ProposalDecisionMadeEventWhereInput
-  proposalexecutedeventproposal_none: ProposalExecutedEventWhereInput
-  proposalexecutedeventproposal_some: ProposalExecutedEventWhereInput
-  proposalexecutedeventproposal_every: ProposalExecutedEventWhereInput
-  AND: [ProposalWhereInput!]
-  OR: [ProposalWhereInput!]
-  NOT: [ProposalWhereInput!]
-}
-
-input ProposalWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalCreateInput {
-  title: String!
-  description: String!
-  details: JSONObject!
-  stakingAccount: String
-  creator: ID!
-  exactExecutionBlock: Float
-  councilApprovals: Float!
-  status: JSONObject!
-  isFinalized: Boolean
-  statusSetAtBlock: Float!
-  statusSetAtTime: DateTime!
-}
-
-input ProposalUpdateInput {
-  title: String
-  description: String
-  details: JSONObject
-  stakingAccount: String
-  creator: ID
-  exactExecutionBlock: Float
-  councilApprovals: Float
-  status: JSONObject
-  isFinalized: Boolean
-  statusSetAtBlock: Float
-  statusSetAtTime: DateTime
-}
-
-input ProposalDiscussionThreadModeChangedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  newMode_json: JSONObject
-  thread: ProposalDiscussionThreadWhereInput
-  actor: MembershipWhereInput
-  AND: [ProposalDiscussionThreadModeChangedEventWhereInput!]
-  OR: [ProposalDiscussionThreadModeChangedEventWhereInput!]
-  NOT: [ProposalDiscussionThreadModeChangedEventWhereInput!]
-}
-
-input ProposalDiscussionThreadModeChangedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDiscussionThreadModeChangedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  thread: ID!
-  newMode: JSONObject!
-  actor: ID!
-}
-
-input ProposalDiscussionThreadModeChangedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  thread: ID
-  newMode: JSONObject
-  actor: ID
-}
-
-input ProposalDiscussionThreadWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  mode_json: JSONObject
-  proposal: ProposalWhereInput
-  posts_none: ProposalDiscussionPostWhereInput
-  posts_some: ProposalDiscussionPostWhereInput
-  posts_every: ProposalDiscussionPostWhereInput
-  modeChanges_none: ProposalDiscussionThreadModeChangedEventWhereInput
-  modeChanges_some: ProposalDiscussionThreadModeChangedEventWhereInput
-  modeChanges_every: ProposalDiscussionThreadModeChangedEventWhereInput
-  AND: [ProposalDiscussionThreadWhereInput!]
-  OR: [ProposalDiscussionThreadWhereInput!]
-  NOT: [ProposalDiscussionThreadWhereInput!]
-}
-
-input ProposalDiscussionThreadWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDiscussionThreadCreateInput {
-  proposal: ID!
-  mode: JSONObject!
-}
-
-input ProposalDiscussionThreadUpdateInput {
-  proposal: ID
-  mode: JSONObject
-}
-
-input ProposalDiscussionPostUpdatedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  text_eq: String
-  text_contains: String
-  text_startsWith: String
-  text_endsWith: String
-  text_in: [String!]
-  post: ProposalDiscussionPostWhereInput
-  AND: [ProposalDiscussionPostUpdatedEventWhereInput!]
-  OR: [ProposalDiscussionPostUpdatedEventWhereInput!]
-  NOT: [ProposalDiscussionPostUpdatedEventWhereInput!]
-}
-
-input ProposalDiscussionPostUpdatedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDiscussionPostUpdatedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  post: ID!
-  text: String!
-}
-
-input ProposalDiscussionPostUpdatedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  post: ID
-  text: String
-}
-
-input ProposalDiscussionPostCreatedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  text_eq: String
-  text_contains: String
-  text_startsWith: String
-  text_endsWith: String
-  text_in: [String!]
-  post: ProposalDiscussionPostWhereInput
-  AND: [ProposalDiscussionPostCreatedEventWhereInput!]
-  OR: [ProposalDiscussionPostCreatedEventWhereInput!]
-  NOT: [ProposalDiscussionPostCreatedEventWhereInput!]
-}
-
-input ProposalDiscussionPostCreatedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDiscussionPostCreatedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  post: ID!
-  text: String!
-}
-
-input ProposalDiscussionPostCreatedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  post: ID
-  text: String
-}
-
-input ProposalDiscussionPostWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  status_json: JSONObject
-  isVisible_eq: Boolean
-  isVisible_in: [Boolean!]
-  text_eq: String
-  text_contains: String
-  text_startsWith: String
-  text_endsWith: String
-  text_in: [String!]
-  discussionThread: ProposalDiscussionThreadWhereInput
-  author: MembershipWhereInput
-  repliesTo: ProposalDiscussionPostWhereInput
-  updates_none: ProposalDiscussionPostUpdatedEventWhereInput
-  updates_some: ProposalDiscussionPostUpdatedEventWhereInput
-  updates_every: ProposalDiscussionPostUpdatedEventWhereInput
-  createdInEvent: ProposalDiscussionPostCreatedEventWhereInput
-  proposaldiscussionpostrepliesTo_none: ProposalDiscussionPostWhereInput
-  proposaldiscussionpostrepliesTo_some: ProposalDiscussionPostWhereInput
-  proposaldiscussionpostrepliesTo_every: ProposalDiscussionPostWhereInput
-  proposaldiscussionpostdeletedeventpost_none: ProposalDiscussionPostDeletedEventWhereInput
-  proposaldiscussionpostdeletedeventpost_some: ProposalDiscussionPostDeletedEventWhereInput
-  proposaldiscussionpostdeletedeventpost_every: ProposalDiscussionPostDeletedEventWhereInput
-  AND: [ProposalDiscussionPostWhereInput!]
-  OR: [ProposalDiscussionPostWhereInput!]
-  NOT: [ProposalDiscussionPostWhereInput!]
-}
-
-input ProposalDiscussionPostWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDiscussionPostCreateInput {
-  discussionThread: ID!
-  author: ID!
-  status: JSONObject!
-  isVisible: Boolean!
-  text: String!
-  repliesTo: ID
-}
-
-input ProposalDiscussionPostUpdateInput {
-  discussionThread: ID
-  author: ID
-  status: JSONObject
-  isVisible: Boolean
-  text: String
-  repliesTo: ID
-}
-
-input ProposalDiscussionPostDeletedEventWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  inExtrinsic_eq: String
-  inExtrinsic_contains: String
-  inExtrinsic_startsWith: String
-  inExtrinsic_endsWith: String
-  inExtrinsic_in: [String!]
-  inBlock_eq: Int
-  inBlock_gt: Int
-  inBlock_gte: Int
-  inBlock_lt: Int
-  inBlock_lte: Int
-  inBlock_in: [Int!]
-  network_eq: Network
-  network_in: [Network!]
-  indexInBlock_eq: Int
-  indexInBlock_gt: Int
-  indexInBlock_gte: Int
-  indexInBlock_lt: Int
-  indexInBlock_lte: Int
-  indexInBlock_in: [Int!]
-  post: ProposalDiscussionPostWhereInput
-  actor: MembershipWhereInput
-  AND: [ProposalDiscussionPostDeletedEventWhereInput!]
-  OR: [ProposalDiscussionPostDeletedEventWhereInput!]
-  NOT: [ProposalDiscussionPostDeletedEventWhereInput!]
-}
-
-input ProposalDiscussionPostDeletedEventWhereUniqueInput {
-  id: ID!
-}
-
-input ProposalDiscussionPostDeletedEventCreateInput {
-  inExtrinsic: String
-  inBlock: Float!
-  network: Network!
-  indexInBlock: Float!
-  post: ID!
-  actor: ID!
-}
-
-input ProposalDiscussionPostDeletedEventUpdateInput {
-  inExtrinsic: String
-  inBlock: Float
-  network: Network
-  indexInBlock: Float
-  post: ID
-  actor: ID
-}
-
 input ProposalDiscussionWhitelistWhereInput {
   id_eq: ID
   id_in: [ID!]
@@ -23136,7 +23158,7 @@ input StakeReleasedEventUpdateInput {
   stakingAccount: String
 }
 
-input TagToProposalWhereInput {
+input TagPermittedWorkerWhereInput {
   id_eq: ID
   id_in: [ID!]
   createdAt_eq: DateTime
@@ -23161,206 +23183,26 @@ input TagToProposalWhereInput {
   deletedAt_gte: DateTime
   deletedById_eq: ID
   deletedById_in: [ID!]
-  tagId_eq: String
-  tagId_contains: String
-  tagId_startsWith: String
-  tagId_endsWith: String
-  tagId_in: [String!]
-  proposalId_eq: String
-  proposalId_contains: String
-  proposalId_startsWith: String
-  proposalId_endsWith: String
-  proposalId_in: [String!]
-  AND: [TagToProposalWhereInput!]
-  OR: [TagToProposalWhereInput!]
-  NOT: [TagToProposalWhereInput!]
-}
-
-input TagToProposalWhereUniqueInput {
-  id: ID!
-}
-
-input TagToProposalCreateInput {
-  tagId: String!
-  proposalId: String!
-}
-
-input TagToProposalUpdateInput {
-  tagId: String
-  proposalId: String
-}
-
-input TagToThreadWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  tagId_eq: String
-  tagId_contains: String
-  tagId_startsWith: String
-  tagId_endsWith: String
-  tagId_in: [String!]
-  threadId_eq: String
-  threadId_contains: String
-  threadId_startsWith: String
-  threadId_endsWith: String
-  threadId_in: [String!]
-  AND: [TagToThreadWhereInput!]
-  OR: [TagToThreadWhereInput!]
-  NOT: [TagToThreadWhereInput!]
-}
-
-input TagToThreadWhereUniqueInput {
-  id: ID!
-}
-
-input TagToThreadCreateInput {
-  tagId: String!
-  threadId: String!
-}
-
-input TagToThreadUpdateInput {
-  tagId: String
-  threadId: String
-}
-
-input TagToWorkerWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  tagId_eq: String
-  tagId_contains: String
-  tagId_startsWith: String
-  tagId_endsWith: String
-  tagId_in: [String!]
   workerId_eq: String
   workerId_contains: String
   workerId_startsWith: String
   workerId_endsWith: String
   workerId_in: [String!]
-  AND: [TagToWorkerWhereInput!]
-  OR: [TagToWorkerWhereInput!]
-  NOT: [TagToWorkerWhereInput!]
+  AND: [TagPermittedWorkerWhereInput!]
+  OR: [TagPermittedWorkerWhereInput!]
+  NOT: [TagPermittedWorkerWhereInput!]
 }
 
-input TagToWorkerWhereUniqueInput {
+input TagPermittedWorkerWhereUniqueInput {
   id: ID!
 }
 
-input TagToWorkerCreateInput {
-  tagId: String!
+input TagPermittedWorkerCreateInput {
   workerId: String!
 }
 
-input TagToWorkerUpdateInput {
-  tagId: String
+input TagPermittedWorkerUpdateInput {
   workerId: String
-}
-
-input TagWhereInput {
-  id_eq: ID
-  id_in: [ID!]
-  createdAt_eq: DateTime
-  createdAt_lt: DateTime
-  createdAt_lte: DateTime
-  createdAt_gt: DateTime
-  createdAt_gte: DateTime
-  createdById_eq: ID
-  createdById_in: [ID!]
-  updatedAt_eq: DateTime
-  updatedAt_lt: DateTime
-  updatedAt_lte: DateTime
-  updatedAt_gt: DateTime
-  updatedAt_gte: DateTime
-  updatedById_eq: ID
-  updatedById_in: [ID!]
-  deletedAt_all: Boolean
-  deletedAt_eq: DateTime
-  deletedAt_lt: DateTime
-  deletedAt_lte: DateTime
-  deletedAt_gt: DateTime
-  deletedAt_gte: DateTime
-  deletedById_eq: ID
-  deletedById_in: [ID!]
-  name_eq: String
-  name_contains: String
-  name_startsWith: String
-  name_endsWith: String
-  name_in: [String!]
-  description_eq: String
-  description_contains: String
-  description_startsWith: String
-  description_endsWith: String
-  description_in: [String!]
-  type_eq: String
-  type_contains: String
-  type_startsWith: String
-  type_endsWith: String
-  type_in: [String!]
-  visibility_eq: Boolean
-  visibility_in: [Boolean!]
-  AND: [TagWhereInput!]
-  OR: [TagWhereInput!]
-  NOT: [TagWhereInput!]
-}
-
-input TagWhereUniqueInput {
-  id: ID!
-}
-
-input TagCreateInput {
-  name: String!
-  description: String!
-  type: String!
-  visibility: Boolean!
-}
-
-input TagUpdateInput {
-  name: String
-  description: String
-  type: String
-  visibility: Boolean
 }
 
 input VideoAssetsDeletedByModeratorEventWhereInput {
@@ -24268,6 +24110,321 @@ type ThreadMovedEvent implements Event & BaseGraphQLObject {
   newCategoryId: String!
   actor: Worker!
   actorId: String!
+}
+
+type ProposalCreatedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  proposal: Proposal!
+  proposalId: String!
+}
+
+type ProposalDiscussionPostUpdatedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  post: ProposalDiscussionPost!
+  postId: String!
+
+  """New post text"""
+  text: String!
+}
+
+type ProposalDiscussionPostCreatedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  post: ProposalDiscussionPost!
+  postId: String!
+
+  """Initial post text"""
+  text: String!
+}
+
+type ProposalDiscussionPostDeletedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  post: ProposalDiscussionPost!
+  postId: String!
+  actor: Membership!
+  actorId: String!
+}
+
+type ProposalDiscussionThreadModeChangedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  thread: ProposalDiscussionThread!
+  threadId: String!
+
+  """The new thread mode"""
+  newMode: ProposalDiscussionThreadMode!
+  actor: Membership!
+  actorId: String!
+}
+
+type ProposalStatusUpdatedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  proposal: Proposal!
+  proposalId: String!
+
+  """The new proposal intermediate status (Deciding/Gracing/Dormant)"""
+  newStatus: ProposalIntermediateStatus!
+}
+
+type ProposalVotedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  voter: Membership!
+  voterId: String!
+
+  """The kind of the vote that was casted"""
+  voteKind: ProposalVoteKind!
+  proposal: Proposal!
+  proposalId: String!
+
+  """The rationale behind the vote"""
+  rationale: String!
+
+  """
+  The voting round - number representing which Deciding period the vote was casted in (starting with 1), useful when the proposal must be approved during multiple council terms (constitution > 1)
+  """
+  votingRound: Int!
+}
+
+type ProposalCancelledEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  proposal: Proposal!
+  proposalId: String!
+}
+
+type ProposalDecisionMadeEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  proposal: Proposal!
+  proposalId: String!
+
+  """The voting decision status"""
+  decisionStatus: ProposalDecisionStatus!
+}
+
+type ProposalExecutedEvent implements Event & BaseGraphQLObject {
+  id: ID!
+  createdAt: DateTime!
+  createdById: ID!
+  updatedAt: DateTime
+  updatedById: ID
+  deletedAt: DateTime
+  deletedById: ID
+  version: Int!
+
+  """Hash of the extrinsic which caused the event to be emitted"""
+  inExtrinsic: String
+
+  """Blocknumber of the block in which the event was emitted."""
+  inBlock: Int!
+
+  """Network the block was produced in"""
+  network: Network!
+
+  """Index of event in block from which it was emitted."""
+  indexInBlock: Int!
+
+  """Filtering options for interface implementers"""
+  type: EventTypeOptions
+  proposal: Proposal!
+  proposalId: String!
+
+  """The execution status"""
+  executionStatus: ProposalExecutionStatus!
 }
 
 type BountyFundedEvent implements Event & BaseGraphQLObject {
@@ -26719,321 +26876,6 @@ type MembershipGiftedEvent implements Event & BaseGraphQLObject {
   metadataId: String!
 }
 
-type ProposalCreatedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  proposal: Proposal!
-  proposalId: String!
-}
-
-type ProposalStatusUpdatedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  proposal: Proposal!
-  proposalId: String!
-
-  """The new proposal intermediate status (Deciding/Gracing/Dormant)"""
-  newStatus: ProposalIntermediateStatus!
-}
-
-type ProposalVotedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  voter: Membership!
-  voterId: String!
-
-  """The kind of the vote that was casted"""
-  voteKind: ProposalVoteKind!
-  proposal: Proposal!
-  proposalId: String!
-
-  """The rationale behind the vote"""
-  rationale: String!
-
-  """
-  The voting round - number representing which Deciding period the vote was casted in (starting with 1), useful when the proposal must be approved during multiple council terms (constitution > 1)
-  """
-  votingRound: Int!
-}
-
-type ProposalCancelledEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  proposal: Proposal!
-  proposalId: String!
-}
-
-type ProposalDecisionMadeEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  proposal: Proposal!
-  proposalId: String!
-
-  """The voting decision status"""
-  decisionStatus: ProposalDecisionStatus!
-}
-
-type ProposalExecutedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  proposal: Proposal!
-  proposalId: String!
-
-  """The execution status"""
-  executionStatus: ProposalExecutionStatus!
-}
-
-type ProposalDiscussionThreadModeChangedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  thread: ProposalDiscussionThread!
-  threadId: String!
-
-  """The new thread mode"""
-  newMode: ProposalDiscussionThreadMode!
-  actor: Membership!
-  actorId: String!
-}
-
-type ProposalDiscussionPostUpdatedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  post: ProposalDiscussionPost!
-  postId: String!
-
-  """New post text"""
-  text: String!
-}
-
-type ProposalDiscussionPostCreatedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  post: ProposalDiscussionPost!
-  postId: String!
-
-  """Initial post text"""
-  text: String!
-}
-
-type ProposalDiscussionPostDeletedEvent implements Event & BaseGraphQLObject {
-  id: ID!
-  createdAt: DateTime!
-  createdById: ID!
-  updatedAt: DateTime
-  updatedById: ID
-  deletedAt: DateTime
-  deletedById: ID
-  version: Int!
-
-  """Hash of the extrinsic which caused the event to be emitted"""
-  inExtrinsic: String
-
-  """Blocknumber of the block in which the event was emitted."""
-  inBlock: Int!
-
-  """Network the block was produced in"""
-  network: Network!
-
-  """Index of event in block from which it was emitted."""
-  indexInBlock: Int!
-
-  """Filtering options for interface implementers"""
-  type: EventTypeOptions
-  post: ProposalDiscussionPost!
-  postId: String!
-  actor: Membership!
-  actorId: String!
-}
-
 type VoteCastEvent implements Event & BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -28574,15 +28416,9 @@ type Query {
   storageDataObjects(offset: Int, limit: Int = 50, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): [StorageDataObject!]!
   storageDataObjectByUniqueInput(where: StorageDataObjectWhereUniqueInput!): StorageDataObject
   storageDataObjectsConnection(first: Int, after: String, last: Int, before: String, where: StorageDataObjectWhereInput, orderBy: [StorageDataObjectOrderByInput!]): StorageDataObjectConnection!
-  tagToProposals(offset: Int, limit: Int = 50, where: TagToProposalWhereInput, orderBy: [TagToProposalOrderByInput!]): [TagToProposal!]!
-  tagToProposalByUniqueInput(where: TagToProposalWhereUniqueInput!): TagToProposal
-  tagToProposalsConnection(first: Int, after: String, last: Int, before: String, where: TagToProposalWhereInput, orderBy: [TagToProposalOrderByInput!]): TagToProposalConnection!
-  tagToThreads(offset: Int, limit: Int = 50, where: TagToThreadWhereInput, orderBy: [TagToThreadOrderByInput!]): [TagToThread!]!
-  tagToThreadByUniqueInput(where: TagToThreadWhereUniqueInput!): TagToThread
-  tagToThreadsConnection(first: Int, after: String, last: Int, before: String, where: TagToThreadWhereInput, orderBy: [TagToThreadOrderByInput!]): TagToThreadConnection!
-  tagToWorkers(offset: Int, limit: Int = 50, where: TagToWorkerWhereInput, orderBy: [TagToWorkerOrderByInput!]): [TagToWorker!]!
-  tagToWorkerByUniqueInput(where: TagToWorkerWhereUniqueInput!): TagToWorker
-  tagToWorkersConnection(first: Int, after: String, last: Int, before: String, where: TagToWorkerWhereInput, orderBy: [TagToWorkerOrderByInput!]): TagToWorkerConnection!
+  tagPermittedWorkers(offset: Int, limit: Int = 50, where: TagPermittedWorkerWhereInput, orderBy: [TagPermittedWorkerOrderByInput!]): [TagPermittedWorker!]!
+  tagPermittedWorkerByUniqueInput(where: TagPermittedWorkerWhereUniqueInput!): TagPermittedWorker
+  tagPermittedWorkersConnection(first: Int, after: String, last: Int, before: String, where: TagPermittedWorkerWhereInput, orderBy: [TagPermittedWorkerOrderByInput!]): TagPermittedWorkerConnection!
   tags(offset: Int, limit: Int = 50, where: TagWhereInput, orderBy: [TagOrderByInput!]): [Tag!]!
   tagByUniqueInput(where: TagWhereUniqueInput!): Tag
   tagsConnection(first: Int, after: String, last: Int, before: String, where: TagWhereInput, orderBy: [TagOrderByInput!]): TagConnection!
@@ -32329,41 +32165,13 @@ enum StorageDataObjectOrderByInput {
   unsetAt_DESC
 }
 
-enum TagToProposalOrderByInput {
+enum TagPermittedWorkerOrderByInput {
   createdAt_ASC
   createdAt_DESC
   updatedAt_ASC
   updatedAt_DESC
   deletedAt_ASC
   deletedAt_DESC
-  tagId_ASC
-  tagId_DESC
-  proposalId_ASC
-  proposalId_DESC
-}
-
-enum TagToThreadOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  tagId_ASC
-  tagId_DESC
-  threadId_ASC
-  threadId_DESC
-}
-
-enum TagToWorkerOrderByInput {
-  createdAt_ASC
-  createdAt_DESC
-  updatedAt_ASC
-  updatedAt_DESC
-  deletedAt_ASC
-  deletedAt_DESC
-  tagId_ASC
-  tagId_DESC
   workerId_ASC
   workerId_DESC
 }
