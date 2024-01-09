@@ -1581,6 +1581,8 @@ impl<T: Config>
         member_id: T::MemberId,
         params: AmmParamsOf<T>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_data = Self::ensure_token_exists(token_id)?;
 
         ensure!(
@@ -1624,6 +1626,8 @@ impl<T: Config>
     /// - state set to idle
     /// - event deposited
     fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_data = Self::ensure_token_exists(token_id)?;
         Self::ensure_amm_can_be_deactivated(&token_data)?;
 

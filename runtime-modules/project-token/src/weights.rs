@@ -227,6 +227,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+	// Storage: Token PalletFrozen (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
 	// Storage: Token TokenInfoById (r:1 w:1)
@@ -246,9 +247,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 85_398 nanoseconds.
 		Weight::from_parts(87_934_000, 0u64)
 			.saturating_add(Weight::from_parts(0, 20547))
-			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
+	// Storage: Token PalletFrozen (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
 	// Storage: Token TokenInfoById (r:1 w:1)
@@ -268,9 +270,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 86_178 nanoseconds.
 		Weight::from_parts(88_253_000, 0u64)
 			.saturating_add(Weight::from_parts(0, 20547))
-			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
+	// Storage: Token PalletFrozen (r:1 w:0)
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
 	// Storage: Token TokenInfoById (r:1 w:1)
@@ -288,7 +291,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 73_200 nanoseconds.
 		Weight::from_parts(75_404_000, 0u64)
 			.saturating_add(Weight::from_parts(0, 19046))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
 }
