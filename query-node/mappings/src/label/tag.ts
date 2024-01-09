@@ -3,10 +3,10 @@ import { DatabaseManager } from '@joystream/hydra-common'
 import {
   ICreateTag,
   IUpdateTag,
-  IAssignTagToThread,
-  IAssignTagToProposal,
-  IUnassignTagFromThread,
-  IUnassignTagFromProposal,
+  IAssignTagsToThread,
+  IAssignTagsToProposal,
+  IUnassignTagsFromThread,
+  IUnassignTagsFromProposal,
   IAllowTagToWorker,
   IDisallowTagToWorker,
 } from '@joystream/metadata-protobuf'
@@ -86,13 +86,13 @@ export async function processUpdateTag(
   return tag
 }
 
-export async function processAssignTagToThread(
+export async function processAssignTagsToThread(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IAssignTagToThread>,
+  metadata: DecodedMetadataObject<IAssignTagsToThread>,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
-  const { tagId, threadId } = metadata
+  const { tagIds, threadId } = metadata
 
   if (!isLead) {
     const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
@@ -106,31 +106,27 @@ export async function processAssignTagToThread(
   const forumThread: ForumThread | undefined = await getById(store, ForumThread, threadId)
   if (!forumThread) {
     return MetaprotocolTxError.TagInvalidThreadId
-  }
-
-  const tag: Tag | undefined = await getById(store, Tag, tagId)
-  if (!tag) {
-    return MetaprotocolTxError.TagNotFound
   }
 
   const currentTagIds = (forumThread.newTags || []).map((t) => t.id)
-  const tagIdsToSet = _.difference([tagId], currentTagIds)
+  const tagIdsToSet = _.union(currentTagIds, tagIds)
   if (tagIdsToSet) {
-    forumThread.newTags.push(tag)
+    const tags = await Promise.all(tagIdsToSet.map(async (tagId: string) => await getById(store, Tag, tagId)))
+    forumThread.newTags = tags.filter((t): t is Tag => !!t)
     await store.save<ForumThread>(forumThread)
   }
 
-  logger.info('new Tag is assigned to ForumThread', { tagId, threadId })
+  logger.info('new Tag is assigned to ForumThread', { tagIds, threadId })
   return forumThread
 }
 
-export async function processAssignTagToProposal(
+export async function processAssignTagsToProposal(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IAssignTagToProposal>,
+  metadata: DecodedMetadataObject<IAssignTagsToProposal>,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
-  const { tagId, proposalId } = metadata
+  const { tagIds, proposalId } = metadata
 
   if (!isLead) {
     const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
@@ -146,29 +142,25 @@ export async function processAssignTagToProposal(
     return MetaprotocolTxError.TagInvalidProposalId
   }
 
-  const tag: Tag | undefined = await getById(store, Tag, tagId)
-  if (!tag) {
-    return MetaprotocolTxError.TagNotFound
-  }
-
   const currentTagIds = (proposal.tags || []).map((t) => t.id)
-  const tagIdsToSet = _.difference([tagId], currentTagIds)
+  const tagIdsToSet = _.union(currentTagIds, tagIds)
   if (tagIdsToSet) {
-    proposal.tags.push(tag)
+    const tags = await Promise.all(tagIdsToSet.map(async (tagId: string) => await getById(store, Tag, tagId)))
+    proposal.tags = tags.filter((t): t is Tag => !!t)
     await store.save<Proposal>(proposal)
   }
 
-  logger.info('new Tag is assigned to proposal', { tagId, proposalId })
+  logger.info('new Tag is assigned to proposal', { tagIds, proposalId })
   return proposal
 }
 
-export async function processUnassignTagFromThread(
+export async function processUnassignTagsFromThread(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IUnassignTagFromThread>,
+  metadata: DecodedMetadataObject<IUnassignTagsFromThread>,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
-  const { tagId, threadId } = metadata
+  const { tagIds, threadId } = metadata
 
   if (!isLead) {
     const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
@@ -184,21 +176,21 @@ export async function processUnassignTagFromThread(
     return MetaprotocolTxError.TagInvalidThreadId
   }
 
-  const remainedTags = (forumThread.newTags || []).filter((t) => ![tagId].includes(t.id))
+  const remainedTags = (forumThread.newTags || []).filter((t) => !(tagIds || []).includes(t.id))
   forumThread.newTags = remainedTags
   await store.save<ForumThread>(forumThread)
 
-  logger.info('tag is unassigned from forumThread', { tagId, threadId })
+  logger.info('tag is unassigned from forumThread', { tagIds, threadId })
   return forumThread
 }
 
-export async function processUnassignTagFromProposal(
+export async function processUnassignTagsFromProposal(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IUnassignTagFromProposal>,
+  metadata: DecodedMetadataObject<IUnassignTagsFromProposal>,
   isLead: boolean,
   workerId: number
 ): Promise<any> {
-  const { tagId, proposalId } = metadata
+  const { tagIds, proposalId } = metadata
 
   if (!isLead) {
     const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
@@ -214,11 +206,11 @@ export async function processUnassignTagFromProposal(
     return MetaprotocolTxError.TagInvalidProposalId
   }
 
-  const remainedTags = (proposal.tags || []).filter((t) => ![tagId].includes(t.id))
+  const remainedTags = (proposal.tags || []).filter((t) => !(tagIds || []).includes(t.id))
   proposal.tags = remainedTags
   await store.save<Proposal>(proposal)
 
-  logger.info('tag is unassigned from proposal', { tagId, proposalId })
+  logger.info('tag is unassigned from proposal', { tagIds, proposalId })
   return proposal
 }
 

@@ -94,33 +94,33 @@ message UpdateTag {
   optional bool visibility = 5;
 }
 
-message AssignTagToThread {
+message AssignTagsToThread {
   // ID of tag
-  required string tag_id = 1;
+  repeated string tag_ids = 1;
 
   // ID of thread
   required string thread_id = 2;  
 }
 
-message UnassignTagFromThread {
+message UnassignTagsFromThread {
   // ID of tag
-  required string tag_id = 1;
+  repeated string tag_ids = 1;
 
   // ID of thread
   required string thread_id = 2;  
 }
 
-message AssignTagToProposal {
+message AssignTagsToProposal {
   // ID of tag
-  required string tag_id = 1;
+  repeated string tag_ids = 1;
 
   // ID of proposal
   required string proposal_id = 2;  
 }
 
-message UnassignTagFromProposal {
+message UnassignTagsFromProposal {
   // ID of tag
-  required string tag_id = 1;
+  repeated string tag_ids = 1;
 
   // ID of proposal
   required string proposal_id = 2;  
@@ -142,10 +142,10 @@ message RemarkMetadataAction {
     VerifyValidator verify_validator = 2;
     CreateTag create_tag = 3;
     UpdateTag update_tag = 4;
-    AssignTagToThread assign_tag_to_thread = 5;
-    UnassignTagFromThread unassign_tag_from_thread = 6;
-    AssignTagToProposal assign_tag_to_proposal = 7;
-    UnassignTagFromProposal unassign_tag_from_proposal = 8;
+    AssignTagsToThread assign_tags_to_thread = 5;
+    UnassignTagsFromThread unassign_tags_from_thread = 6;
+    AssignTagsToProposal assign_tags_to_proposal = 7;
+    UnassignTagsFromProposal unassign_tags_from_proposal = 8;
     AllowTagToWorker allow_tag_to_worker = 9;
     DisallowTagToWorker disallow_tag_to_worker = 10;
   }

@@ -67,15 +67,15 @@ import {
   DisallowTagToWorker,
   AllowTagToWorker,
   AppAction,
-  AssignTagToProposal,
-  AssignTagToThread,
+  AssignTagsToProposal,
+  AssignTagsToThread,
   CreateTag,
   CreateVideoCategory,
   IAppAction,
   MemberRemarked,
   RemarkMetadataAction,
-  UnassignTagFromProposal,
-  UnassignTagFromThread,
+  UnassignTagsFromProposal,
+  UnassignTagsFromThread,
   UpdateTag,
 } from '@joystream/metadata-protobuf'
 import { PERBILL_ONE_PERCENT } from '../../../query-node/mappings/src/temporaryConstants'
@@ -1474,13 +1474,13 @@ export class Api {
     )
   }
 
-  async assignTagToThread(tagId: string, threadId: string) {
+  async assignTagsToThread(tagId: string, threadId: string) {
     const [, worker] = await this.getLeader('forumWorkingGroup')
     const memberController = await this.getControllerAccountOfMember(worker.memberId)
 
     const meta = new RemarkMetadataAction({
-      assignTagToThread: new AssignTagToThread({
-        tagId,
+      assignTagsToThread: new AssignTagsToThread({
+        tagIds: [tagId],
         threadId,
       }),
     })
@@ -1491,13 +1491,13 @@ export class Api {
     )
   }
 
-  async unassignTagFromThread(tagId: string, threadId: string) {
+  async unassignTagsFromThread(tagId: string, threadId: string) {
     const [, worker] = await this.getLeader('forumWorkingGroup')
     const memberController = await this.getControllerAccountOfMember(worker.memberId)
 
     const meta = new RemarkMetadataAction({
-      unassignTagFromThread: new UnassignTagFromThread({
-        tagId,
+      unassignTagsFromThread: new UnassignTagsFromThread({
+        tagIds: [tagId],
         threadId,
       }),
     })
@@ -1508,13 +1508,13 @@ export class Api {
     )
   }
 
-  async assignTagToProposal(tagId: string, proposalId: string) {
+  async assignTagsToProposal(tagId: string, proposalId: string) {
     const [, worker] = await this.getLeader('forumWorkingGroup')
     const memberController = await this.getControllerAccountOfMember(worker.memberId)
 
     const meta = new RemarkMetadataAction({
-      assignTagToProposal: new AssignTagToProposal({
-        tagId,
+      assignTagsToProposal: new AssignTagsToProposal({
+        tagIds: [tagId],
         proposalId,
       }),
     })
@@ -1525,13 +1525,13 @@ export class Api {
     )
   }
 
-  async unassignTagFromProposal(tagId: string, proposalId: string) {
+  async unassignTagsFromProposal(tagId: string, proposalId: string) {
     const [, worker] = await this.getLeader('forumWorkingGroup')
     const memberController = await this.getControllerAccountOfMember(worker.memberId)
 
     const meta = new RemarkMetadataAction({
-      unassignTagFromProposal: new UnassignTagFromProposal({
-        tagId,
+      unassignTagsFromProposal: new UnassignTagsFromProposal({
+        tagIds: [tagId],
         proposalId,
       }),
     })

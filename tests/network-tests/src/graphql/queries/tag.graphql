@@ -4,8 +4,12 @@ fragment TagFields on Tag {
   description
   type
   visibility
-  forumThreads
-  proposals
+  forumThreads {
+    id
+  }
+  proposals {
+    id
+  }
 }
 
 query getAllTags {
