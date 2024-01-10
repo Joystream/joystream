@@ -2,7 +2,7 @@ import _ from 'lodash'
 import logger from '../logger'
 import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from '../queryNode/api'
 import {
-  DataObjectByBagIdsDetailsFragment,
+  // DataObjectByBagIdsDetailsFragment,
   DataObjectDetailsFragment,
   StorageBagDetailsFragment,
   StorageBucketDetailsFragment,
@@ -91,35 +91,31 @@ type DataObject = {
  * @param workerId - worker ID
  * @returns promise for the DataObligations
  */
-export async function getStorageObligationsFromRuntime(
-  qnApi: QueryNodeApi,
-  bucketIds: string[]
-): Promise<DataObligations> {
+export async function* getStorageObligationsFromRuntime(qnApi: QueryNodeApi, bucketIds: string[]) {
   const allBuckets = await getAllBuckets(qnApi)
-
   const assignedBags = await getAllAssignedBags(qnApi, bucketIds)
-
   const bagIds = assignedBags.map((bag) => bag.id)
-  const assignedDataObjects = await getAllAssignedDataObjects(qnApi, bagIds)
 
-  const model: DataObligations = {
-    storageBuckets: allBuckets.map((bucket) => ({
-      id: bucket.id,
-      operatorUrl: bucket.operatorMetadata?.nodeEndpoint ?? '',
-      workerId: bucket.operatorStatus?.workerId,
-    })),
-    bags: assignedBags.map((bag) => ({
-      id: bag.id,
-      buckets: bag.storageBuckets.map((bucketInBag) => bucketInBag.id),
-    })),
-    dataObjects: assignedDataObjects.map((dataObject) => ({
-      id: dataObject.id,
-      bagId: dataObject.storageBagId,
-      ipfsHash: dataObject.ipfsHash,
-    })),
+  for await (const assignedDataObjects of getAllAssignedDataObjects(qnApi, bagIds)) {
+    const model: DataObligations = {
+      storageBuckets: allBuckets.map((bucket) => ({
+        id: bucket.id,
+        operatorUrl: bucket.operatorMetadata?.nodeEndpoint ?? '',
+        workerId: bucket.operatorStatus?.workerId,
+      })),
+      bags: assignedBags.map((bag) => ({
+        id: bag.id,
+        buckets: bag.storageBuckets.map((bucketInBag) => bucketInBag.id),
+      })),
+      dataObjects: assignedDataObjects.map((dataObject) => ({
+        id: dataObject.id,
+        bagId: dataObject.storageBagId,
+        ipfsHash: dataObject.ipfsHash,
+      })),
+    }
+
+    yield model
   }
-
-  return model
 }
 
 /**
@@ -144,7 +140,11 @@ export async function getStorageBucketIdsByWorkerId(qnApi: QueryNodeApi, workerI
  * @returns data object IDs
  */
 export async function getDataObjectIDsByBagId(qnApi: QueryNodeApi, bagId: string): Promise<string[]> {
-  const dataObjects = await getAllAssignedDataObjects(qnApi, [bagId])
+  const dataObjects = []
+
+  for await (const objects of getAllAssignedDataObjects(qnApi, [bagId])) {
+    dataObjects.push(...objects)
+  }
 
   return dataObjects.map((obj) => obj.id)
 }
@@ -177,11 +177,10 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
  * @param bagIds - assigned storage bags' IDs
  * @returns storage bag data
  */
-async function getAllAssignedDataObjects(
-  api: QueryNodeApi,
-  bagIds: string[]
-): Promise<DataObjectByBagIdsDetailsFragment[]> {
-  return await api.getDataObjectDetailsByBagIds(bagIds)
+async function* getAllAssignedDataObjects(api: QueryNodeApi, bagIds: string[]) {
+  for await (const objects of api.getDataObjectDetailsByBagIds(bagIds)) {
+    yield objects
+  }
 }
 
 /**

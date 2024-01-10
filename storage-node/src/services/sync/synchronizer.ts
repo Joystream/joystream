@@ -1,9 +1,8 @@
-import _ from 'lodash'
-import { getDataObjectIDs } from '../../services/caching/localDataObjects'
+import { objectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
-import { DownloadFileTask } from './tasks'
+import { DownloadFileTask, SyncTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
 
 /**
@@ -46,50 +45,46 @@ export async function performSync(
 ): Promise<void> {
   logger.info('Started syncing...')
   logger.info('Sync - Fetching obligations...')
-  // This large query is also done by cleanup service.. sync the two services to use the same promise to get result
-  // one-time if queries are concurrent.
-  const [model, files] = await Promise.all([getStorageObligationsFromRuntime(qnApi, buckets), getDataObjectIDs()])
 
-  const required = model.dataObjects
+  for await (const model of getStorageObligationsFromRuntime(qnApi, buckets)) {
+    const required = model.dataObjects
 
-  // Large arrays.. how performant (cpu and memory wise) are these calls?
-  // and it is being done twice! and second time is only
-  // to count objects..cleanup service does this again
-  logger.info('Sync - Comparing obligations looking for new objects...')
-  const added = _.differenceWith(required, files, (required, file) => required.id === file)
+    // Large arrays.. how performant (cpu and memory wise) are these calls?
+    // and it is being done twice! and second time is only
+    // to count objects..cleanup service does this again
+    logger.info('Sync - Comparing obligations looking for new objects...')
+    const added = required.filter((obj) => !objectIdInCache(obj.id))
 
-  logger.info('Sync - Comparing obligations looking for removed objects...')
-  const removed = _.differenceWith(files, required, (file, required) => file === required.id)
+    logger.debug(`Sync - new objects to fetch: ${added.length}`)
 
-  logger.debug(`Sync - new objects: ${added.length}`)
-  logger.debug(`Sync - obsolete objects: ${removed.length}`) // no need to log this here,,
+    const addedTasks = await getDownloadTasks(
+      model,
+      buckets,
+      added,
+      uploadDirectory,
+      tempDirectory,
+      asyncWorkersTimeout,
+      hostId,
+      selectedOperatorUrl
+    )
 
-  const workingStack = new WorkingStack() // review this implementation
+    logger.debug(`Sync - started processing...`)
 
-  const addedTasks = await getDownloadTasks(
-    model,
-    buckets,
-    added,
-    uploadDirectory,
-    tempDirectory,
-    asyncWorkersTimeout,
-    hostId,
-    selectedOperatorUrl
-  )
+    const workingStack = new WorkingStack() // review this implementation
+    const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
-  logger.debug(`Sync - started processing...`)
+    await workingStack.add(addedTasks)
 
-  const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
-
-  await workingStack.add(addedTasks)
-
-  // How good is this whole taskprocess spawner.. concurrency / io
-  // are there un-necessary delays..
-  // How are we dealing with download timeouts (use two timeouts.. start and final)
-  // How is the number of tasks affecting the performance?
-  // can we make use of superagent plugin `throttle` to do something similar?
-  await processSpawner.process()
+    // How good is this whole taskprocess spawner.. concurrency / io
+    // are there un-necessary delays..
+    // How are we dealing with download timeouts (use two timeouts.. start and final)
+    // How is the number of tasks affecting the performance?
+    // can we make use of superagent plugin `throttle` to do something similar?
+    await processSpawner.process()
+  }
   logger.info('Sync ended.')
+  // record which fetches failed to retry on next run
+  // record highest object id fetched, on next run don't query by bucket/bag.. just objects and check they belong to us
 }
 
 /**
@@ -114,7 +109,7 @@ async function getDownloadTasks(
   asyncWorkersTimeout: number,
   hostId: string,
   selectedOperatorUrl?: string
-): Promise<DownloadFileTask[]> {
+): Promise<SyncTask[]> {
   const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
     bagIdByDataObjectId.set(entry.id, entry.bagId)

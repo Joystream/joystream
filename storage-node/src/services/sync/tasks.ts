@@ -32,6 +32,17 @@ export interface SyncTask {
   execute(): Promise<void>
 }
 
+export class NoopTask implements SyncTask {
+  description(): string {
+    return 'noop'
+  }
+
+  async execute(): Promise<void> {
+    // noop
+    console.log('Noop Task Executed')
+  }
+}
+
 /**
  * Deletes the file in the local storage by its name.
  */

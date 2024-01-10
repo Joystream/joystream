@@ -61,7 +61,7 @@ export default class Server extends ApiCommandBase {
     }),
     port: flags.integer({
       char: 'o',
-      required: true, // not really required, we can have a default instead
+      required: true,
       description: 'Server port.',
     }),
     sync: flags.boolean({

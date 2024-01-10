@@ -69,42 +69,42 @@ export async function performCleanup(
     )
   }
 
-  const [model, storedObjectsIds] = await Promise.all([
-    getStorageObligationsFromRuntime(qnApi, buckets),
-    getDataObjectIDs(),
-  ])
-  const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
-  const removedIds = _.difference(storedObjectsIds, assignedObjectsIds) // expensive!
-  const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
+  const storedObjectsIds = getDataObjectIDs()
 
-  logger.debug(`Cleanup - pruning ${removedIds.length} obsolete objects`)
+  for await (const model of getStorageObligationsFromRuntime(qnApi, buckets)) {
+    const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
+    const removedIds = _.difference(storedObjectsIds, assignedObjectsIds) // expensive!
+    const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
 
-  // Data objects permanently deleted from the runtime
-  const deletedDataObjects = removedIds.filter(
-    (removedId) => !removedObjects.some((removedObject) => removedObject.id === removedId)
-  )
+    logger.debug(`Cleanup - pruning ${removedIds.length} obsolete objects`)
 
-  // Data objects no-longer assigned to current storage-node
-  // operated buckets, and have been moved to other buckets
-  const movedDataObjects = removedObjects
+    // Data objects permanently deleted from the runtime
+    const deletedDataObjects = removedIds.filter(
+      (removedId) => !removedObjects.some((removedObject) => removedObject.id === removedId)
+    )
 
-  const workingStack = new WorkingStack()
-  const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
+    // Data objects no-longer assigned to current storage-node
+    // operated buckets, and have been moved to other buckets
+    const movedDataObjects = removedObjects
 
-  const deletionTasksOfDeletedDataObjects = await Promise.all(
-    deletedDataObjects.map((dataObject) => new DeleteLocalFileTask(uploadDirectory, dataObject))
-  )
-  const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
-    buckets,
-    uploadDirectory,
-    model,
-    movedDataObjects,
-    hostId
-  )
+    const workingStack = new WorkingStack()
+    const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
-  await workingStack.add(deletionTasksOfDeletedDataObjects)
-  await workingStack.add(deletionTasksOfMovedDataObjects)
-  await processSpawner.process()
+    const deletionTasksOfDeletedDataObjects = await Promise.all(
+      deletedDataObjects.map((dataObject) => new DeleteLocalFileTask(uploadDirectory, dataObject))
+    )
+    const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
+      buckets,
+      uploadDirectory,
+      model,
+      movedDataObjects,
+      hostId
+    )
+
+    await workingStack.add(deletionTasksOfDeletedDataObjects)
+    await workingStack.add(deletionTasksOfMovedDataObjects)
+    await processSpawner.process()
+  }
   logger.info('Cleanup ended.')
 }
 

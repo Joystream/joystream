@@ -89,13 +89,18 @@ export class TaskProcessor {
 
       if (task !== null) {
         logger.debug(task.description())
-        await task.execute() // catch ? so a failing task doesn't abort all remaining tasks?
+        // catch so a failing task doesn't abort all remaining tasks
+        try {
+          await task.execute()
+        } catch (err) {
+          logger.warn(err)
+        }
       } else {
         if (this.exitOnCompletion) {
           return
         }
 
-        await sleep(this.sleepTime)
+        await sleep(this.sleepTime) // why ?
       }
     }
   }

@@ -161,14 +161,25 @@ export class QueryNodeApi {
     NodeT,
     QueryT extends { [k: string]: PaginationQueryResult<NodeT> },
     CustomVariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: CustomVariablesT,
-    resultKey: keyof QueryT,
-    itemsPerPage = MAX_RESULTS_PER_QUERY
-  ): Promise<NodeT[]> {
+  >(query: DocumentNode, variables: CustomVariablesT, resultKey: keyof QueryT, itemsPerPage = MAX_RESULTS_PER_QUERY) {
+    const results = []
+    for await (const result of this.multipleEntitiesWithPaginationGenerator<NodeT, QueryT, CustomVariablesT>(
+      query,
+      variables,
+      resultKey,
+      itemsPerPage
+    )) {
+      results.push(...result)
+    }
+    return results
+  }
+
+  protected async *multipleEntitiesWithPaginationGenerator<
+    NodeT,
+    QueryT extends { [k: string]: PaginationQueryResult<NodeT> },
+    CustomVariablesT extends Record<string, unknown>
+  >(query: DocumentNode, variables: CustomVariablesT, resultKey: keyof QueryT, itemsPerPage = MAX_RESULTS_PER_QUERY) {
     let hasNextPage = true
-    let results: NodeT[] = []
     let lastCursor: string | undefined
     while (hasNextPage) {
       const paginationVariables = { limit: itemsPerPage, cursor: lastCursor }
@@ -180,15 +191,15 @@ export class QueryNodeApi {
       })
 
       if (!result?.data) {
-        return results
+        yield []
+        return
       }
 
       const page = result.data[resultKey]
-      results = results.concat(page.edges.map((e) => e.node))
       hasNextPage = page.pageInfo.hasNextPage
       lastCursor = page.pageInfo.endCursor || undefined
+      yield page.edges.map((e) => e.node)
     }
-    return results
   }
 
   /**
@@ -303,27 +314,25 @@ export class QueryNodeApi {
    *
    * @param bagIds - query filter: bag IDs
    */
-  public async getDataObjectDetailsByBagIds(bagIds: string[]): Promise<Array<DataObjectByBagIdsDetailsFragment>> {
+  public async *getDataObjectDetailsByBagIds(bagIds: string[]) {
     const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    let fullResult: DataObjectByBagIdsDetailsFragment[] = []
+
     while (allBagIds.length) {
       const bagIdsBatch = allBagIds.splice(0, 1000)
       const input: StorageBagWhereInput = { id_in: bagIdsBatch }
-      fullResult = [
-        ...fullResult,
-        ...(await this.multipleEntitiesWithPagination<
-          DataObjectByBagIdsDetailsFragment,
-          GetDataObjectsByBagIdsConnectionQuery,
-          GetDataObjectsByBagIdsConnectionQueryVariables
-        >(
-          GetDataObjectsByBagIdsConnection,
-          { limit: MAX_RESULTS_PER_QUERY, bagIds: input },
-          'storageDataObjectsConnection'
-        )),
-      ]
-    }
 
-    return fullResult
+      for await (const page of this.multipleEntitiesWithPaginationGenerator<
+        DataObjectByBagIdsDetailsFragment,
+        GetDataObjectsByBagIdsConnectionQuery,
+        GetDataObjectsByBagIdsConnectionQueryVariables
+      >(
+        GetDataObjectsByBagIdsConnection,
+        { limit: MAX_RESULTS_PER_QUERY, bagIds: input },
+        'storageDataObjectsConnection'
+      )) {
+        yield page
+      }
+    }
   }
 
   /**

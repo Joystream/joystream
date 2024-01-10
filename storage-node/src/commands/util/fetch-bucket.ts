@@ -1,9 +1,16 @@
 import { Command, flags } from '@oclif/command'
 import { performSync } from '../../services/sync/synchronizer'
-import { QueryNodeApi } from '../..//services/queryNode/api'
+import { QueryNodeApi } from '../../services/queryNode/api'
 import logger from '../../services/logger'
 import stringify from 'fast-safe-stringify'
 import path from 'path'
+import {
+  loadDataObjectIdCache,
+  // addDataObjectIdToCache,
+  // getDataObjectIDs,
+  // objectIdInCache,
+} from '../../services/caching/localDataObjects'
+// import _ from 'lodash'
 
 /**
  * CLI command:
@@ -18,10 +25,11 @@ export default class FetchBucket extends Command {
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    bucketId: flags.integer({
+    bucket: flags.integer({
       char: 'b',
       required: true,
-      description: 'The buckerId to fetch',
+      description: 'The bucket id to fetch',
+      multiple: true,
     }),
     syncWorkersNumber: flags.integer({
       char: 'n',
@@ -46,7 +54,7 @@ export default class FetchBucket extends Command {
       required: false,
       description: 'Storage node url base (e.g.: http://some.com:3333) to get data from.',
     }),
-    uploads: flags.string({
+    destination: flags.string({
       char: 'd',
       required: true,
       description: 'Data uploading directory (absolute path).',
@@ -59,18 +67,55 @@ export default class FetchBucket extends Command {
 
   async run(): Promise<void> {
     const { flags } = this.parse(FetchBucket)
-    const bucketId = flags.bucketId.toString()
+    const buckets = []
+    if (Array.isArray(flags.bucket)) {
+      buckets.push(...flags.bucket)
+    } else {
+      buckets.push(flags.bucket)
+    }
+
+    await loadDataObjectIdCache(flags.destination)
+
+    // logger.info('creating fake files data')
+    // _.range(0, 100_000).forEach((id) => addDataObjectIdToCache(id.toString()))
+    // const files = getDataObjectIDs()
+
+    // logger.info('creating fake query result data')
+    // const required = _.range(0, 100_000).map((id) => ({
+    //   id: id.toString(),
+    // }))
+
+    // logger.info('looking for difference')
+    // let stop1 = Date.now()
+    // const added1 = _.differenceWith(required, files, (required, file) => required.id === file)
+    // let stop2 = Date.now()
+    // const added2 = required.filter((obj) => !files.includes(obj.id))
+    // let stop3 = Date.now()
+    // const added3 = required.filter((obj) => !objectIdInCache(obj.id))
+    // let stop4 = Date.now()
+    // console.log('difference', stop2 - stop1)
+    // console.log('filter with array.includes', stop3 - stop2)
+    // console.log('filter map.has', stop4 - stop3)
+    // logger.info('Done!')
+    // return
+    /*
+          difference 14439
+          filter with array.includes 8691
+          filter map.has 3
+    */
+
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
-    logger.info('Fetching bucket...')
+
+    logger.info(`Fetching buckets... ${flags.bucket}`)
 
     try {
       await performSync(
-        [bucketId],
+        buckets.map((id) => id.toString()),
         flags.syncWorkersNumber,
         flags.syncWorkersTimeout,
         qnApi,
-        flags.uploads,
-        flags.tempFolder ? flags.tempFolder : path.join(flags.uploads, 'temp'),
+        flags.destination,
+        flags.tempFolder ? flags.tempFolder : path.join(flags.destination, 'temp'),
         '',
         flags.dataSourceOperatorUrl
       )
