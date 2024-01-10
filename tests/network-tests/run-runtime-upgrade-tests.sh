@@ -166,7 +166,6 @@ function main {
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
-<<<<<<< HEAD
 
     # 4. early chain db init
     export JOYSTREAM_NODE_TAG=${RUNTIME}
@@ -187,29 +186,13 @@ function main {
     # Wait for chain and query node to get in sync
     sleep 200
 
-    # 6. Bootstrap storage infra
-    ./start-storage.sh
-    export REUSE_KEYS=true
-    export SKIP_STORAGE_AND_DISTRIBUTION=true
-
-    # Do some setup and checks before the upgrade
-    ./run-test-scenario.sh preRuntimeUpgrade
-=======
-    # 4. copy chainspec to disk
-    export_chainspec_file_to_disk
-    echo >&2 "chainspec exported"
-    # 5. start node
-    CONTAINER_ID=$(start_old_joystream_node)
-    echo >&2 "mainnet node starting"
-
-    # wait 1 minute
-    sleep 90
-
     # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
     if [ "${NO_STORAGE}" != true ]; then
         ./start-storage.sh
     fi
->>>>>>> master
+
+    # Do some setup and checks before the upgrade
+    ./run-test-scenario.sh preRuntimeUpgrade
 
     ./run-test-scenario.sh runtimeUpgrade
 
