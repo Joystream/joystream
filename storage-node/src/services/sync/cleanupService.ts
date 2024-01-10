@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import superagent from 'superagent'
 import urljoin from 'url-join'
 import { getDataObjectIDs } from '../../services/caching/localDataObjects'
@@ -73,8 +72,8 @@ export async function performCleanup(
     getStorageObligationsFromRuntime(qnApi, buckets),
     getDataObjectIDs(),
   ])
-  const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
-  const removedIds = _.difference(storedObjectsIds, assignedObjectsIds)
+  const assignedObjectsIds = new Set(model.dataObjects.map((obj) => obj.id))
+  const removedIds = storedObjectsIds.filter((id) => !assignedObjectsIds.has(id))
   const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
 
   logger.debug(`Cleanup - pruning ${removedIds.length} obsolete objects`)

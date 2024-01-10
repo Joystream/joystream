@@ -1,5 +1,4 @@
-import _ from 'lodash'
-import { getDataObjectIDs } from '../../services/caching/localDataObjects'
+import { isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
@@ -45,15 +44,13 @@ export async function performSync(
   selectedOperatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
-  const [model, files] = await Promise.all([getStorageObligationsFromRuntime(qnApi, buckets), getDataObjectIDs()])
+  const model = await getStorageObligationsFromRuntime(qnApi, buckets)
 
   const required = model.dataObjects
 
-  const added = _.differenceWith(required, files, (required, file) => required.id === file)
-  const removed = _.differenceWith(files, required, (file, required) => file === required.id)
+  const added = required.filter((obj) => !isDataObjectIdInCache(obj.id))
 
   logger.debug(`Sync - new objects: ${added.length}`)
-  logger.debug(`Sync - obsolete objects: ${removed.length}`)
 
   const workingStack = new WorkingStack()
 
