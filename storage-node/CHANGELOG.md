@@ -1,3 +1,8 @@
+### 3.10.2
+- Fix processing large arrays causing high cpu during sync and cleanup runs [#5033](https://github.com/Joystream/joystream/pull/5033)
+
+- Fix task runner to avoid ending prematurely on individual task failure [#5033](https://github.com/Joystream/joystream/pull/5033)
+
 ### 3.10.1
 
 - Bug fix: call stack size exceeded error - [#5021](https://github.com/Joystream/joystream/pull/5021)
