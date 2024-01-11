@@ -1,4 +1,3 @@
-import _ from 'lodash'
 import superagent from 'superagent'
 import urljoin from 'url-join'
 import { getDataObjectIDs } from '../../services/caching/localDataObjects'
@@ -8,6 +7,7 @@ import { DataObjectDetailsFragment } from '../queryNode/generated/queries'
 import { DataObligations, getDataObjectsByIDs, getStorageObligationsFromRuntime } from './storageObligations'
 import { DeleteLocalFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
+import _ from 'lodash'
 
 /**
  * The maximum allowed threshold by which the QN processor can lag behind
@@ -69,10 +69,9 @@ export async function performCleanup(
     )
   }
 
-  const [model, storedObjectsIds] = await Promise.all([
-    getStorageObligationsFromRuntime(qnApi, buckets),
-    getDataObjectIDs(),
-  ])
+  const model = await getStorageObligationsFromRuntime(qnApi, buckets)
+  const storedObjectsIds = getDataObjectIDs()
+
   const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
   const removedIds = _.difference(storedObjectsIds, assignedObjectsIds)
   const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
