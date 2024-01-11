@@ -3,7 +3,6 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios'
 import { LoggingService } from '../../logging'
 import { Logger } from 'winston'
 import { ReadonlyConfig, StorageNodeDownloadResponse } from '../../../types'
-import { parseAxiosError } from '../../parsers/errors'
 
 export class StorageNodeApi {
   private logger: Logger
