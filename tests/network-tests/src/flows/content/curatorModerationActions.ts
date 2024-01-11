@@ -21,6 +21,7 @@ import {
   DeleteVideoAssetsAsModeratorParams,
 } from '../../fixtures/content/curatorModeration/DeleteVideoAssetsByModerator'
 import { createJoystreamCli } from '../utils'
+import sleep from 'sleep-promise'
 
 export default async function curatorModerationActions({ api, query }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:curator-moderation-actions')
@@ -72,6 +73,9 @@ export default async function curatorModerationActions({ api, query }: FlowProps
   await new FixtureRunner(createChannelsAndVideos).run()
 
   const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
+
+  // Allow time for processor to process videos created
+  await sleep(10 * 1000)
 
   // create curator & curator group
 

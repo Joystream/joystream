@@ -9,6 +9,7 @@ import {
 } from '../../fixtures/content'
 import BN from 'bn.js'
 import { createJoystreamCli } from '../utils'
+import sleep from 'sleep-promise'
 
 export default async function activeVideoCounters({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:active-video-counters')
@@ -49,6 +50,9 @@ export default async function activeVideoCounters({ api, query, env }: FlowProps
   )
   await new FixtureRunner(createChannelsAndVideos).run()
   const { channelIds, videosData } = createChannelsAndVideos.getCreatedItems()
+
+  // Allow time for processor to process videos created
+  await sleep(10 * 1000)
 
   // check that active video counters are working
   const activeVideoCountersFixture = new ActiveVideoCountersFixture(
