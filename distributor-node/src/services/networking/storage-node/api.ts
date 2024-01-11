@@ -48,7 +48,7 @@ export class StorageNodeApi {
       return true
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        this.logger.debug('Data object not available', { objectId, err: parseAxiosError(err) })
+        this.logger.debug('Data object not available', { objectId, err })
         return false
       }
       this.logger.error('Unexpected error while requesting data object', { objectId, err })

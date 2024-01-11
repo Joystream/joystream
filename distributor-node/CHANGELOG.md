@@ -1,3 +1,7 @@
+## 1.5.1
+
+- Added parsing of Axios errors on logger level so that we never log the whole Axios client instance (which is a circular object and causes the node to crash)
+
 ## 1.5.0
 
 - Changed Elasticsearch transport to use data streams instead of regular indices. Renamed `config.logs.elastic.index` to `config.logs.elastic.indexPrefix`. Node ID from config will be automatically appended to the index name.
