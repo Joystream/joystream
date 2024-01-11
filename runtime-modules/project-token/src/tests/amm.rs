@@ -5,6 +5,7 @@ use crate::tests::mock::*;
 use crate::types::{AmmCurve, AmmOperation, VestingScheduleParamsOf};
 use crate::{joy, last_event_eq, member, token, Error, RawEvent, RepayableBloatBondOf};
 use frame_support::{assert_err, assert_ok};
+use frame_system::RawOrigin;
 use sp_arithmetic::traits::One;
 use sp_runtime::{traits::Zero, DispatchError, Permill};
 
@@ -976,5 +977,63 @@ fn amm_deactivation_ok_with_event_deposit() {
             creator_id,
             amount_burned
         ));
+    })
+}
+
+#[test]
+fn amm_buy_fails_when_pallet_frozen() {
+    let token_id = token!(1);
+    let amm_joy_variation = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
+    let (_, user_account_id) = member!(2);
+    build_default_test_externalities_with_balances(vec![(
+        user_account_id,
+        amm_joy_variation + ed(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        AmmBuyFixture::default()
+            .with_amount(DEFAULT_AMM_BUY_AMOUNT)
+            .execute_call()
+            .unwrap();
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+
+        assert_err!(
+            AmmBuyFixture::default()
+                .with_amount(DEFAULT_AMM_BUY_AMOUNT)
+                .execute_call(),
+            Error::<Test>::PalletFrozen
+        );
+    })
+}
+
+#[test]
+fn amm_sell_fails_when_pallet_frozen() {
+    let amm_joy_variation = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
+    let (_, user_account_id) = member!(2);
+    build_default_test_externalities_with_balances(vec![(
+        user_account_id,
+        amm_joy_variation + ed(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+        AmmBuyFixture::default().execute_call().unwrap();
+
+        AmmSellFixture::default()
+            .with_amount(0u32.into())
+            .execute_call()
+            .unwrap();
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+
+        assert_err!(
+            AmmSellFixture::default()
+                .with_amount(0u32.into())
+                .execute_call(),
+            Error::<Test>::PalletFrozen
+        );
     })
 }
