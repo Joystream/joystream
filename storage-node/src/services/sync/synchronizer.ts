@@ -1,9 +1,10 @@
-import { isDataObjectIdInCache } from '../../services/caching/localDataObjects'
+import { getDataObjectIDs, isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
 import { DownloadFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
+import _ from 'lodash'
 
 /**
  * Temporary directory name for data uploading.
@@ -45,12 +46,16 @@ export async function performSync(
 ): Promise<void> {
   logger.info('Started syncing...')
   const model = await getStorageObligationsFromRuntime(qnApi, buckets)
+  const storedObjectIds = getDataObjectIDs()
 
-  const required = model.dataObjects
+  const assignedObjects = model.dataObjects
+  const assignedObjectIds = assignedObjects.map((obj) => obj.id)
 
-  const added = required.filter((obj) => !isDataObjectIdInCache(obj.id))
+  const added = assignedObjects.filter((obj) => !isDataObjectIdInCache(obj.id))
+  const removed = _.difference(storedObjectIds, assignedObjectIds)
 
   logger.debug(`Sync - new objects: ${added.length}`)
+  logger.debug(`Sync - obsolete objects: ${removed.length}`)
 
   const workingStack = new WorkingStack()
 
