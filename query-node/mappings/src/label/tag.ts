@@ -9,10 +9,47 @@ import {
   IUnassignTagsFromProposal,
   IAllowTagToWorker,
   IDisallowTagToWorker,
+  IRemarkMetadataAction,
 } from '@joystream/metadata-protobuf'
 import { DecodedMetadataObject } from '@joystream/metadata-protobuf/types'
 import { Tag, TagPermittedWorker, ForumThread, Proposal } from 'query-node/dist/model'
-import { MetaprotocolTxError, getOneBy, getById, logger } from 'src/common'
+import { MetaprotocolTxError, getOneBy, getById, logger, invalidMetadata } from 'src/common'
+
+export async function processTagMessage(
+  store: DatabaseManager,
+  metadata: DecodedMetadataObject<IRemarkMetadataAction>,
+  groupName: string,
+  isLead: boolean,
+  workerId = 0
+): Promise<any> {
+  if (groupName !== 'forumWorkingGroup') {
+    return invalidMetadata(`The ${groupName} is not allowed for Tags.`)
+  }
+
+  if (isLead === false && (metadata?.allowTagToWorker || metadata?.disallowTagToWorker)) {
+    return invalidMetadata(`The Worker is not permitted for this operation.`)
+  }
+
+  if (metadata?.createTag) {
+    return await processCreateTag(store, metadata?.createTag, isLead)
+  } else if (metadata?.updateTag) {
+    return await processUpdateTag(store, metadata?.updateTag, isLead)
+  } else if (metadata?.assignTagsToThread) {
+    return await processAssignTagsToThread(store, metadata?.assignTagsToThread, isLead, workerId)
+  } else if (metadata?.assignTagsToProposal) {
+    return await processAssignTagsToProposal(store, metadata?.assignTagsToProposal, isLead, workerId)
+  } else if (metadata?.unassignTagsFromThread) {
+    return await processUnassignTagsFromThread(store, metadata?.unassignTagsFromThread, isLead, workerId)
+  } else if (metadata?.unassignTagsFromProposal) {
+    return await processUnassignTagsFromProposal(store, metadata?.unassignTagsFromProposal, isLead, workerId)
+  } else if (metadata?.allowTagToWorker) {
+    return await processAllowTagToWorker(store, metadata?.allowTagToWorker)
+  } else if (metadata?.disallowTagToWorker) {
+    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker)
+  } else {
+    return invalidMetadata('Unrecognized Tag format') // Never reached here
+  }
+}
 
 export async function processCreateTag(
   store: DatabaseManager,

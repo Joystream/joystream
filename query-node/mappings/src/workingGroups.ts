@@ -118,16 +118,7 @@ import {
   toNumber,
 } from './common'
 import { moderatePost } from './forum'
-import {
-  processAllowTagToWorker,
-  processAssignTagsToProposal,
-  processAssignTagsToThread,
-  processCreateTag,
-  processDisallowTagToWorker,
-  processUnassignTagsFromProposal,
-  processUnassignTagsFromThread,
-  processUpdateTag,
-} from './label/tag'
+import { processTagMessage } from './label/tag'
 
 // Reusable functions
 async function getWorkingGroupLeadOrFail(store: DatabaseManager, groupName: WorkingGroupModuleName): Promise<Worker> {
@@ -749,22 +740,17 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
-  } else if (metadata?.createTag && group.name === 'forumWorkingGroup') {
-    return await processCreateTag(store, metadata?.createTag, true)
-  } else if (metadata?.updateTag && group.name === 'forumWorkingGroup') {
-    return await processUpdateTag(store, metadata?.updateTag, true)
-  } else if (metadata?.assignTagsToThread && group.name === 'forumWorkingGroup') {
-    return await processAssignTagsToThread(store, metadata?.assignTagsToThread, true, 0)
-  } else if (metadata?.assignTagsToProposal && group.name === 'forumWorkingGroup') {
-    return await processAssignTagsToProposal(store, metadata?.assignTagsToProposal, true, 0)
-  } else if (metadata?.unassignTagsFromThread && group.name === 'forumWorkingGroup') {
-    return await processUnassignTagsFromThread(store, metadata?.unassignTagsFromThread, true, 0)
-  } else if (metadata?.unassignTagsFromProposal && group.name === 'forumWorkingGroup') {
-    return await processUnassignTagsFromProposal(store, metadata?.unassignTagsFromProposal, true, 0)
-  } else if (metadata?.allowTagToWorker && group.name === 'forumWorkingGroup') {
-    return await processAllowTagToWorker(store, metadata?.allowTagToWorker)
-  } else if (metadata?.disallowTagToWorker && group.name === 'forumWorkingGroup') {
-    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker)
+  } else if (
+    metadata?.createTag ||
+    metadata?.updateTag ||
+    metadata?.assignTagsToThread ||
+    metadata?.assignTagsToProposal ||
+    metadata?.unassignTagsFromThread ||
+    metadata?.unassignTagsFromProposal ||
+    metadata?.allowTagToWorker ||
+    metadata?.disallowTagToWorker
+  ) {
+    return await processTagMessage(store, metadata, group.name, true)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
@@ -800,18 +786,17 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
-  } else if (metadata?.createTag && group.name === 'forumWorkingGroup') {
-    return await processCreateTag(store, metadata?.createTag, false)
-  } else if (metadata?.updateTag && group.name === 'forumWorkingGroup') {
-    return await processUpdateTag(store, metadata?.updateTag, false)
-  } else if (metadata?.assignTagsToThread && group.name === 'forumWorkingGroup') {
-    return await processAssignTagsToThread(store, metadata?.assignTagsToThread, false, workerId.toNumber())
-  } else if (metadata?.assignTagsToProposal && group.name === 'forumWorkingGroup') {
-    return await processAssignTagsToProposal(store, metadata?.assignTagsToProposal, false, workerId.toNumber())
-  } else if (metadata?.unassignTagsFromThread && group.name === 'forumWorkingGroup') {
-    return await processUnassignTagsFromThread(store, metadata?.unassignTagsFromThread, false, workerId.toNumber())
-  } else if (metadata?.unassignTagsFromProposal && group.name === 'forumWorkingGroup') {
-    return await processUnassignTagsFromProposal(store, metadata?.unassignTagsFromProposal, false, workerId.toNumber())
+  } else if (
+    metadata?.createTag ||
+    metadata?.updateTag ||
+    metadata?.assignTagsToThread ||
+    metadata?.assignTagsToProposal ||
+    metadata?.unassignTagsFromThread ||
+    metadata?.unassignTagsFromProposal ||
+    metadata?.allowTagToWorker ||
+    metadata?.disallowTagToWorker
+  ) {
+    return await processTagMessage(store, metadata, group.name, false, workerId.toNumber())
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
