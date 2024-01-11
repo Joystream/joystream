@@ -750,7 +750,7 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     metadata?.allowTagToWorker ||
     metadata?.disallowTagToWorker
   ) {
-    return await processTagMessage(store, metadata, group.name, true)
+    return await processTagMessage(store, metadata, group.name)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

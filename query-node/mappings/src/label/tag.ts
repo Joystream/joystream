@@ -19,15 +19,11 @@ export async function processTagMessage(
   store: DatabaseManager,
   metadata: DecodedMetadataObject<IRemarkMetadataAction>,
   groupName: string,
-  isLead: boolean,
+  isLead = true,
   workerId = 0
 ): Promise<any> {
   if (groupName !== 'forumWorkingGroup') {
     return invalidMetadata(`The ${groupName} is not allowed for Tags.`)
-  }
-
-  if (isLead === false && (metadata?.allowTagToWorker || metadata?.disallowTagToWorker)) {
-    return invalidMetadata(`The Worker is not permitted for this operation.`)
   }
 
   if (metadata?.createTag) {
@@ -43,9 +39,9 @@ export async function processTagMessage(
   } else if (metadata?.unassignTagsFromProposal) {
     return await processUnassignTagsFromProposal(store, metadata?.unassignTagsFromProposal, isLead, workerId)
   } else if (metadata?.allowTagToWorker) {
-    return await processAllowTagToWorker(store, metadata?.allowTagToWorker)
+    return await processAllowTagToWorker(store, metadata?.allowTagToWorker, isLead)
   } else if (metadata?.disallowTagToWorker) {
-    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker)
+    return await processDisallowTagToWorker(store, metadata?.disallowTagToWorker, isLead)
   } else {
     return invalidMetadata('Unrecognized Tag format') // Never reached here
   }
@@ -253,9 +249,14 @@ export async function processUnassignTagsFromProposal(
 
 export async function processAllowTagToWorker(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IAllowTagToWorker>
+  metadata: DecodedMetadataObject<IAllowTagToWorker>,
+  isLead: boolean
 ): Promise<any> {
   const { workerId: assigneeId } = metadata
+
+  if (isLead === false) {
+    return invalidMetadata(`The Worker is not permitted for this operation.`)
+  }
 
   const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
     workerId: assigneeId.toString(),
@@ -273,9 +274,14 @@ export async function processAllowTagToWorker(
 
 export async function processDisallowTagToWorker(
   store: DatabaseManager,
-  metadata: DecodedMetadataObject<IDisallowTagToWorker>
+  metadata: DecodedMetadataObject<IDisallowTagToWorker>,
+  isLead: boolean
 ): Promise<any> {
   const { workerId: assigneeId } = metadata
+
+  if (isLead === false) {
+    return invalidMetadata(`The Worker is not permitted for this operation.`)
+  }
 
   const tagPermittedWorker: TagPermittedWorker | undefined = await getOneBy(store, TagPermittedWorker, {
     workerId: assigneeId.toString(),
