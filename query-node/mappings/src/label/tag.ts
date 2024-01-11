@@ -115,7 +115,7 @@ export async function processUpdateTag(
 
   await store.save<Tag>(tag)
 
-  logger.info('Tag has been created', { name })
+  logger.info('Tag has been updated', { tagId, name, description })
   return tag
 }
 
@@ -143,13 +143,12 @@ export async function processAssignTagsToThread(
 
   const currentTagIds = (forumThread.newTags || []).map((t) => t.id)
   const tagIdsToSet = _.union(currentTagIds, tagIds)
-  if (tagIdsToSet) {
-    const tags = await Promise.all(tagIdsToSet.map(async (tagId: string) => await getById(store, Tag, tagId)))
-    forumThread.newTags = tags.filter((t): t is Tag => !!t)
-    await store.save<ForumThread>(forumThread)
-  }
 
-  logger.info('new Tag is assigned to ForumThread', { tagIds, threadId })
+  const tags = await Promise.all(tagIdsToSet.map(async (tagId: string) => await getById(store, Tag, tagId)))
+  forumThread.newTags = tags.filter((t): t is Tag => !!t)
+  await store.save<ForumThread>(forumThread)
+
+  logger.info('Assigned forum thread tags', { threadId, tagIdsToSet })
   return forumThread
 }
 
@@ -177,13 +176,12 @@ export async function processAssignTagsToProposal(
 
   const currentTagIds = (proposal.tags || []).map((t) => t.id)
   const tagIdsToSet = _.union(currentTagIds, tagIds)
-  if (tagIdsToSet) {
-    const tags = await Promise.all(tagIdsToSet.map(async (tagId: string) => await getById(store, Tag, tagId)))
-    proposal.tags = tags.filter((t): t is Tag => !!t)
-    await store.save<Proposal>(proposal)
-  }
 
-  logger.info('new Tag is assigned to proposal', { tagIds, proposalId })
+  const tags = await Promise.all(tagIdsToSet.map(async (tagId: string) => await getById(store, Tag, tagId)))
+  proposal.tags = tags.filter((t): t is Tag => !!t)
+  await store.save<Proposal>(proposal)
+
+  logger.info('Assigned proposal tags', { proposalId, tagIdsToSet })
   return proposal
 }
 
@@ -209,11 +207,11 @@ export async function processUnassignTagsFromThread(
     return MetaprotocolTxError.TagInvalidThreadId
   }
 
-  const remainedTags = (forumThread.newTags || []).filter((t) => !(tagIds || []).includes(t.id))
-  forumThread.newTags = remainedTags
+  const remainingTags = (forumThread.newTags || []).filter((t) => !(tagIds || []).includes(t.id))
+  forumThread.newTags = remainingTags
   await store.save<ForumThread>(forumThread)
 
-  logger.info('tag is unassigned from forumThread', { tagIds, threadId })
+  logger.info('Unassigned forum thread tags', { threadId, remainingTags })
   return forumThread
 }
 
@@ -239,11 +237,11 @@ export async function processUnassignTagsFromProposal(
     return MetaprotocolTxError.TagInvalidProposalId
   }
 
-  const remainedTags = (proposal.tags || []).filter((t) => !(tagIds || []).includes(t.id))
-  proposal.tags = remainedTags
+  const remainingTags = (proposal.tags || []).filter((t) => !(tagIds || []).includes(t.id))
+  proposal.tags = remainingTags
   await store.save<Proposal>(proposal)
 
-  logger.info('tag is unassigned from proposal', { tagIds, proposalId })
+  logger.info('Unassigned proposal tags', { proposalId, remainingTags })
   return proposal
 }
 
@@ -267,9 +265,10 @@ export async function processAllowTagToWorker(
       workerId: assigneeId,
     })
     await store.save<TagPermittedWorker>(newTagToWorker)
+    logger.info(`The worker's permission is allowed`, { assigneeId })
+  } else {
+    return invalidMetadata(`The Worker's permission is already allowed.`)
   }
-
-  logger.info('TagPermittedWorker has been allowed', { assigneeId })
 }
 
 export async function processDisallowTagToWorker(
@@ -289,7 +288,8 @@ export async function processDisallowTagToWorker(
 
   if (tagPermittedWorker) {
     await store.remove<TagPermittedWorker>(tagPermittedWorker)
+    logger.info(`The worker's permission is denied`, { assigneeId })
+  } else {
+    return invalidMetadata(`The Worker's permission is already denied.`)
   }
-
-  logger.info('TagToWorker has been disallowed', { assigneeId })
 }
