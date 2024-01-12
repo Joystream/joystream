@@ -2,7 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { xxhashAsHex } from '@polkadot/util-crypto'
 import fs from 'fs'
 import path from 'path'
-import bfj from 'bfj'
+const bfj = require('bfj')
 
 /**
  * All module prefixes except those mentioned in the skippedModulesPrefix will be added to this by the script.
