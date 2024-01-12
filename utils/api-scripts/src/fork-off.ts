@@ -2,6 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { xxhashAsHex } from '@polkadot/util-crypto'
 import fs from 'fs'
 import path from 'path'
+import bfj from 'bfj'
 
 /**
  * All module prefixes except those mentioned in the skippedModulesPrefix will be added to this by the script.
@@ -62,8 +63,8 @@ async function main() {
   })
 
   // blank starting chainspec guaranteed to exist
-  const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
-  const chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
+  const storage: Storage = await bfj.read(storagePath)
+  const chainSpec = await bfj.read(specPath)
 
   // Grab the items to be moved, then iterate through and insert into storage
   storage.result
