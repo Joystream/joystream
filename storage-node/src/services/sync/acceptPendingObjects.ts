@@ -92,6 +92,8 @@ export class AcceptPendingObjectsService {
     const pendingDataObjects = await this.qnApi.getDataObjectsByIds(pendingIds)
 
     // objects not found in the query node
+    // Consider re-factoring this not to use differenceWith incase pendingIds.length
+    // and pendingDataObjects.length are very large
     const maybeDeletedObjects = _.differenceWith(
       pendingIds,
       pendingDataObjects,

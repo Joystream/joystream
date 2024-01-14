@@ -79,6 +79,7 @@ export async function performCleanup(
     logger.debug(`Cleanup - pruning ${removedIds.length} obsolete objects`)
 
     // Data objects permanently deleted from the runtime
+    // Evaluate performance of this computation..
     const deletedDataObjects = removedIds.filter(
       (removedId) => !removedObjects.some((removedObject) => removedObject.id === removedId)
     )
