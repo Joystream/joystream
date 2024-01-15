@@ -1,3 +1,13 @@
+### 3.10.2
+- Fix processing large arrays causing high cpu during sync and cleanup runs [#5033](https://github.com/Joystream/joystream/pull/5033)
+
+- Fix task runner to avoid ending prematurely on individual task failure [#5033](https://github.com/Joystream/joystream/pull/5033)
+
+### 3.10.1
+
+- Bug fix: call stack size exceeded error - [#5021](https://github.com/Joystream/joystream/pull/5021)
+- Bug fix: moveFile instead of rename to support moving files across volumes [#5024](https://github.com/Joystream/joystream/pull/5024)
+
 ### 3.10.0
 
 - **FIX** unhandled `error` events on superagent. [#4988](https://github.com/Joystream/joystream/pull/4998),[#5007](https://github.com/Joystream/joystream/pull/5007)

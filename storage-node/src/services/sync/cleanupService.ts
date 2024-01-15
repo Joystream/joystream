@@ -73,10 +73,9 @@ export async function performCleanup(
     )
   }
 
-  const [model, storedObjectsIds] = await Promise.all([
-    getStorageObligationsFromRuntime(qnApi, buckets),
-    getDataObjectIDs(),
-  ])
+  const model = await getStorageObligationsFromRuntime(qnApi, buckets)
+  const storedObjectsIds = getDataObjectIDs()
+
   const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
   const removedIds = _.difference(storedObjectsIds, assignedObjectsIds)
   const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)

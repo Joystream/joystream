@@ -2,12 +2,13 @@ import { Command, flags } from '@oclif/command'
 import stringify from 'fast-safe-stringify'
 import path from 'path'
 import { QueryNodeApi } from '../..//services/queryNode/api'
+import { loadDataObjectIdCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { performSync } from '../../services/sync/synchronizer'
 
 /**
  * CLI command:
- * Fetch all data objects from a bucket into local store.
+ * Fetch data objects assigned to assigned bucket from remote node(s) into local store.
  *
  * @remarks
  * Should not be executed while server is running.
@@ -18,11 +19,6 @@ export default class FetchBucket extends Command {
 
   static flags = {
     help: flags.help({ char: 'h' }),
-    workerId: flags.integer({
-      char: 'w',
-      required: true,
-      description: 'Storage node operator worker ID.',
-    }),
     bucketId: flags.integer({
       char: 'b',
       required: true,
@@ -66,6 +62,8 @@ export default class FetchBucket extends Command {
     const { flags } = this.parse(FetchBucket)
     const bucketId = flags.bucketId.toString()
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+    await loadDataObjectIdCache(flags.uploads)
+
     logger.info('Fetching bucket...')
 
     try {
