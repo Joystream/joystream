@@ -6,9 +6,6 @@ cd $SCRIPT_PATH
 
 rm ./output.json || :
 
-# Log only to stderr
-# Only output from this script should be the container id of the node at the very end
-
 # Location that will be mounted to /spec in containers
 # This is where the initial balances files and generated chainspec files will be located.
 DATA_PATH=$PWD/data
@@ -118,6 +115,7 @@ function fork_off_init() {
 
     # download the raw storage state
     if ! [[ -f ${DATA_PATH}/storage.json ]]; then
+        echo >&2 "fetching state storage from $HTTP_RPC_ENDPOINT"
         curl $HTTP_RPC_ENDPOINT -H \
             "Content-type: application/json" -d \
             '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
@@ -125,7 +123,8 @@ function fork_off_init() {
         echo >&2 "storage trie downloaded at ${DATA_PATH}/storage.json"
     fi
 
-    yarn workspace api-scripts tsnode-strict src/fork-off.ts ${DATA_PATH} ${WS_RPC_ENDPOINT}
+    yarn workspace api-scripts tsnode-strict --max-old-space-size=6144 \
+        src/fork-off.ts ${DATA_PATH} ${WS_RPC_ENDPOINT}
 }
 
 #######################################
@@ -163,6 +162,8 @@ function main {
     # 2. clone live chainspec with fork it
     fork_off_init
     echo >&2 "storage downloaded & dumped into the raw chainspec"
+    return
+
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
