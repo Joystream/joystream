@@ -82,6 +82,16 @@ query getDataObjects($dataObjectIds: [String!]) {
   }
 }
 
+query getDataObjectsDeletedEvents($dataObjectIds: [String!]) {
+  events(where: { data: { isTypeOf_eq: "DataObjectDeletedEventData", dataObjectId_in: $dataObjectIds } }) {
+    data {
+      ... on DataObjectDeletedEventData {
+        dataObjectId
+      }
+    }
+  }
+}
+
 fragment SquidStatusFields on SquidStatus {
   height
 }

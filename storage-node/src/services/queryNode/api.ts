@@ -10,6 +10,9 @@ import {
   GetDataObjectsByBagIds,
   GetDataObjectsByBagIdsQuery,
   GetDataObjectsByBagIdsQueryVariables,
+  GetDataObjectsDeletedEvents,
+  GetDataObjectsDeletedEventsQuery,
+  GetDataObjectsDeletedEventsQueryVariables,
   GetDataObjectsQuery,
   GetDataObjectsQueryVariables,
   GetStorageBagDetails,
@@ -287,6 +290,21 @@ export class QueryNodeApi {
       {},
       'storageBuckets'
     )
+
+    if (!result) {
+      return []
+    }
+
+    return result
+  }
+
+  public async getDataObjectDeletedEvents(
+    dataObjectIds: string[]
+  ): Promise<Array<GetDataObjectsDeletedEventsQuery['events'][number]>> {
+    const result = await this.multipleEntitiesQuery<
+      GetDataObjectsDeletedEventsQuery,
+      GetDataObjectsDeletedEventsQueryVariables
+    >(GetDataObjectsDeletedEvents, { dataObjectIds }, 'events')
 
     if (!result) {
       return []

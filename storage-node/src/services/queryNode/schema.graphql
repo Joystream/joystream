@@ -17,6 +17,11 @@ enum Continent {
   SA
 }
 
+type DataObjectDeletedEventData {
+  """Runtime ID of deleted the deleted object"""
+  dataObjectId: String!
+}
+
 union DataObjectType = DataObjectTypeVideoSubtitle
 
 type DataObjectTypeVideoSubtitle {
@@ -666,11 +671,28 @@ type Event {
   data: EventData!
 }
 
-union EventData = MetaprotocolTransactionStatusEventData
+union EventData = MetaprotocolTransactionStatusEventData | DataObjectDeletedEventData
 
 input EventDataWhereInput {
   result_isNull: Boolean
   result: MetaprotocolTransactionResultWhereInput
+  dataObjectId_isNull: Boolean
+  dataObjectId_eq: String
+  dataObjectId_not_eq: String
+  dataObjectId_gt: String
+  dataObjectId_gte: String
+  dataObjectId_lt: String
+  dataObjectId_lte: String
+  dataObjectId_in: [String!]
+  dataObjectId_not_in: [String!]
+  dataObjectId_contains: String
+  dataObjectId_not_contains: String
+  dataObjectId_containsInsensitive: String
+  dataObjectId_not_containsInsensitive: String
+  dataObjectId_startsWith: String
+  dataObjectId_not_startsWith: String
+  dataObjectId_endsWith: String
+  dataObjectId_not_endsWith: String
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -716,6 +738,10 @@ enum EventOrderByInput {
   timestamp_DESC
   timestamp_ASC_NULLS_FIRST
   timestamp_DESC_NULLS_LAST
+  data_dataObjectId_ASC
+  data_dataObjectId_DESC
+  data_dataObjectId_ASC_NULLS_FIRST
+  data_dataObjectId_DESC_NULLS_LAST
   data_isTypeOf_ASC
   data_isTypeOf_DESC
   data_isTypeOf_ASC_NULLS_FIRST
