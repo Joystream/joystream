@@ -162,8 +162,6 @@ function main {
     # 2. clone live chainspec with fork it
     fork_off_init
     echo >&2 "storage downloaded & dumped into the raw chainspec"
-    return
-
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
