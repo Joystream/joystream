@@ -33,7 +33,8 @@
     "long": "^4.0.0",
     "node-cleanup": "^2.1.2",
     "@joystream/js": "^1.6.0",
-    "uuid": "^7.0.3"
+    "uuid": "^7.0.3",
+    "sleep-promise": "^9.1.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
