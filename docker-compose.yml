@@ -237,7 +237,7 @@ services:
       "
 
   indexer:
-    image: hydra-indexer
+    image: joystream/hydra-indexer:v5.0.0-alpha.1
     container_name: indexer
     restart: unless-stopped
     env_file:
