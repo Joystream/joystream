@@ -92,13 +92,13 @@ query getDataObjectsDeletedEvents($dataObjectIds: [String!]) {
   }
 }
 
-fragment StorageSquidVersion on SquidVersion {
+fragment SquidVersionFields on SquidVersion {
   version
 }
 
 query getSquidVersion {
-  squidVersions {
-    ...StorageSquidVersion
+  squidVersion {
+    ...SquidVersionFields
   }
 }
 
@@ -108,6 +108,6 @@ fragment SquidStatusFields on SquidStatus {
 
 query squidStatus {
   squidStatus {
-    height
+    ...SquidStatusFields
   }
 }

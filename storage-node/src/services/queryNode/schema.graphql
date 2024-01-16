@@ -983,18 +983,14 @@ type PageInfo {
 }
 
 type Query {
-  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
-  videoSubtitleById(id: String!): VideoSubtitle
-  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
-  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
   events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
   eventById(id: String!): Event
   eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
   eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
-  squidVersions(where: SquidVersionWhereInput, orderBy: [SquidVersionOrderByInput!], offset: Int, limit: Int): [SquidVersion!]!
-  squidVersionById(id: String!): SquidVersion
-  squidVersionByUniqueInput(where: WhereIdInput!): SquidVersion @deprecated(reason: "Use squidVersionById")
-  squidVersionsConnection(orderBy: [SquidVersionOrderByInput!]!, after: String, first: Int, where: SquidVersionWhereInput): SquidVersionsConnection!
+  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
+  videoSubtitleById(id: String!): VideoSubtitle
+  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
+  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
   storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
   storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
   storageBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): StorageBucketOperatorMetadata @deprecated(reason: "Use storageBucketOperatorMetadataById")
@@ -1040,6 +1036,7 @@ type Query {
   distributionBucketFamilyByUniqueInput(where: WhereIdInput!): DistributionBucketFamily @deprecated(reason: "Use distributionBucketFamilyById")
   distributionBucketFamiliesConnection(orderBy: [DistributionBucketFamilyOrderByInput!]!, after: String, first: Int, where: DistributionBucketFamilyWhereInput): DistributionBucketFamiliesConnection!
   squidStatus: SquidStatus
+  squidVersion: SquidVersion!
 }
 
 type SquidStatus {
@@ -1048,71 +1045,7 @@ type SquidStatus {
 }
 
 type SquidVersion {
-  id: String!
-
-  """Current version of the storage squid package"""
   version: String!
-}
-
-type SquidVersionEdge {
-  node: SquidVersion!
-  cursor: String!
-}
-
-enum SquidVersionOrderByInput {
-  id_ASC
-  id_DESC
-  id_ASC_NULLS_FIRST
-  id_DESC_NULLS_LAST
-  version_ASC
-  version_DESC
-  version_ASC_NULLS_FIRST
-  version_DESC_NULLS_LAST
-}
-
-type SquidVersionsConnection {
-  edges: [SquidVersionEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-input SquidVersionWhereInput {
-  id_isNull: Boolean
-  id_eq: String
-  id_not_eq: String
-  id_gt: String
-  id_gte: String
-  id_lt: String
-  id_lte: String
-  id_in: [String!]
-  id_not_in: [String!]
-  id_contains: String
-  id_not_contains: String
-  id_containsInsensitive: String
-  id_not_containsInsensitive: String
-  id_startsWith: String
-  id_not_startsWith: String
-  id_endsWith: String
-  id_not_endsWith: String
-  version_isNull: Boolean
-  version_eq: String
-  version_not_eq: String
-  version_gt: String
-  version_gte: String
-  version_lt: String
-  version_lte: String
-  version_in: [String!]
-  version_not_in: [String!]
-  version_contains: String
-  version_not_contains: String
-  version_containsInsensitive: String
-  version_not_containsInsensitive: String
-  version_startsWith: String
-  version_not_startsWith: String
-  version_endsWith: String
-  version_not_endsWith: String
-  AND: [SquidVersionWhereInput!]
-  OR: [SquidVersionWhereInput!]
 }
 
 type StorageBag {

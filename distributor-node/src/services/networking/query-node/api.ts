@@ -240,10 +240,10 @@ export class QueryNodeApi {
   }
 
   public async getPackageVersion(): Promise<string> {
-    const squidVersion = await this.firstEntityQuery<GetSquidVersionQuery, GetSquidVersionQueryVariables>(
+    const squidVersion = await this.uniqueEntityQuery<GetSquidVersionQuery, GetSquidVersionQueryVariables>(
       GetSquidVersion,
       {},
-      'squidVersions'
+      'squidVersion'
     )
     return squidVersion?.version || ''
   }
