@@ -109,11 +109,6 @@ export type AppConfig = {
   bucketKeyPairs: Map<string, KeyringPair>
 
   /**
-   * KeyringPair instances of the role key, used for upload authentication
-   */
-  operatorRoleKey: KeyringPair | undefined
-
-  /**
    * Storage provider ID (worker ID)
    */
   workerId: number
@@ -144,11 +139,6 @@ export type AppConfig = {
     version: string
     userAgent: string
   }
-
-  /**
-   * Enables uploading auth-schema validation
-   */
-  enableUploadingAuth: boolean
 
   /**
    * Max file size for uploading limit.

@@ -228,10 +228,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     logger.info(`Buckets synced and served: ${selectedBuckets}`)
     logger.info(`Buckets accepting uploads: ${writableBuckets}`)
 
-    // when enabling upload auth ensure the keyring has the operator role key and set it here.
-    const enableUploadingAuth = false
-    const operatorRoleKey = undefined
-
     if (!flags.tempFolder) {
       logger.warn(
         'You did not specify a path to the temporary directory. ' +
@@ -336,7 +332,6 @@ Supported values: warn, error, debug, info. Default:debug`,
         api,
         qnApi,
         bucketKeyPairs,
-        operatorRoleKey,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
@@ -344,7 +339,6 @@ Supported values: warn, error, debug, info. Default:debug`,
         pendingDataObjectsDir: pendingFolder,
         acceptPendingObjectsService,
         process: this.config,
-        enableUploadingAuth,
         downloadBuckets: selectedBuckets,
         uploadBuckets: writableBuckets,
         sync: { enabled: flags.sync, interval: flags.syncInterval },
