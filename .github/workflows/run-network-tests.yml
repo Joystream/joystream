@@ -186,7 +186,11 @@ jobs:
     name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
+    # Disabling until we find a workaround
+    # as it is no longer practical to start the node
+    # while importing huge state from production network in genesis block.
+    # if: github.ref != 'refs/heads/master'
+    if: false
     steps:
       # Checkout master branch
       - name: check out master repo
