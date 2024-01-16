@@ -51,6 +51,18 @@ export interface DataStatsResponse {
      * @memberof DataStatsResponse
      */
     'tempDownloads'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    'pendingDirSize'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    'pendingObjects'?: number;
 }
 /**
  * 
@@ -188,6 +200,12 @@ export interface StatusResponseQueryNodeStatus {
      * @memberof StatusResponseQueryNodeStatus
      */
     'blocksProcessed': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'packageVersion': string;
 }
 /**
  * 
