@@ -112,6 +112,16 @@ query getActiveStorageBucketOperatorsData {
   }
 }
 
+fragment StorageSquidVersion on SquidVersion {
+  version
+}
+
+query getSquidVersion {
+  squidVersions {
+    ...StorageSquidVersion
+  }
+}
+
 fragment SquidStatusFields on SquidStatus {
   height
 }

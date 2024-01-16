@@ -17,6 +17,11 @@ enum Continent {
   SA
 }
 
+type DataObjectDeletedEventData {
+  """Runtime ID of deleted the deleted object"""
+  dataObjectId: String!
+}
+
 union DataObjectType = DataObjectTypeVideoSubtitle
 
 type DataObjectTypeVideoSubtitle {
@@ -666,11 +671,28 @@ type Event {
   data: EventData!
 }
 
-union EventData = MetaprotocolTransactionStatusEventData
+union EventData = MetaprotocolTransactionStatusEventData | DataObjectDeletedEventData
 
 input EventDataWhereInput {
   result_isNull: Boolean
   result: MetaprotocolTransactionResultWhereInput
+  dataObjectId_isNull: Boolean
+  dataObjectId_eq: String
+  dataObjectId_not_eq: String
+  dataObjectId_gt: String
+  dataObjectId_gte: String
+  dataObjectId_lt: String
+  dataObjectId_lte: String
+  dataObjectId_in: [String!]
+  dataObjectId_not_in: [String!]
+  dataObjectId_contains: String
+  dataObjectId_not_contains: String
+  dataObjectId_containsInsensitive: String
+  dataObjectId_not_containsInsensitive: String
+  dataObjectId_startsWith: String
+  dataObjectId_not_startsWith: String
+  dataObjectId_endsWith: String
+  dataObjectId_not_endsWith: String
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -716,6 +738,10 @@ enum EventOrderByInput {
   timestamp_DESC
   timestamp_ASC_NULLS_FIRST
   timestamp_DESC_NULLS_LAST
+  data_dataObjectId_ASC
+  data_dataObjectId_DESC
+  data_dataObjectId_ASC_NULLS_FIRST
+  data_dataObjectId_DESC_NULLS_LAST
   data_isTypeOf_ASC
   data_isTypeOf_DESC
   data_isTypeOf_ASC_NULLS_FIRST
@@ -965,6 +991,10 @@ type Query {
   eventById(id: String!): Event
   eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
   eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
+  squidVersions(where: SquidVersionWhereInput, orderBy: [SquidVersionOrderByInput!], offset: Int, limit: Int): [SquidVersion!]!
+  squidVersionById(id: String!): SquidVersion
+  squidVersionByUniqueInput(where: WhereIdInput!): SquidVersion @deprecated(reason: "Use squidVersionById")
+  squidVersionsConnection(orderBy: [SquidVersionOrderByInput!]!, after: String, first: Int, where: SquidVersionWhereInput): SquidVersionsConnection!
   storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
   storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
   storageBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): StorageBucketOperatorMetadata @deprecated(reason: "Use storageBucketOperatorMetadataById")
@@ -1015,6 +1045,74 @@ type Query {
 type SquidStatus {
   """The height of the processed part of the chain"""
   height: Int
+}
+
+type SquidVersion {
+  id: String!
+
+  """Current version of the storage squid package"""
+  version: String!
+}
+
+type SquidVersionEdge {
+  node: SquidVersion!
+  cursor: String!
+}
+
+enum SquidVersionOrderByInput {
+  id_ASC
+  id_DESC
+  id_ASC_NULLS_FIRST
+  id_DESC_NULLS_LAST
+  version_ASC
+  version_DESC
+  version_ASC_NULLS_FIRST
+  version_DESC_NULLS_LAST
+}
+
+type SquidVersionsConnection {
+  edges: [SquidVersionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input SquidVersionWhereInput {
+  id_isNull: Boolean
+  id_eq: String
+  id_not_eq: String
+  id_gt: String
+  id_gte: String
+  id_lt: String
+  id_lte: String
+  id_in: [String!]
+  id_not_in: [String!]
+  id_contains: String
+  id_not_contains: String
+  id_containsInsensitive: String
+  id_not_containsInsensitive: String
+  id_startsWith: String
+  id_not_startsWith: String
+  id_endsWith: String
+  id_not_endsWith: String
+  version_isNull: Boolean
+  version_eq: String
+  version_not_eq: String
+  version_gt: String
+  version_gte: String
+  version_lt: String
+  version_lte: String
+  version_in: [String!]
+  version_not_in: [String!]
+  version_contains: String
+  version_not_contains: String
+  version_containsInsensitive: String
+  version_not_containsInsensitive: String
+  version_startsWith: String
+  version_not_startsWith: String
+  version_endsWith: String
+  version_not_endsWith: String
+  AND: [SquidVersionWhereInput!]
+  OR: [SquidVersionWhereInput!]
 }
 
 type StorageBag {
