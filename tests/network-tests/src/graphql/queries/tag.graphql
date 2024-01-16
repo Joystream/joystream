@@ -1,0 +1,19 @@
+fragment TagFields on Tag {
+  id
+  name
+  description
+  type
+  visibility
+  forumThreads {
+    id
+  }
+  proposals {
+    id
+  }
+}
+
+query getAllTags {
+  tags {
+    ...TagFields
+  }
+}

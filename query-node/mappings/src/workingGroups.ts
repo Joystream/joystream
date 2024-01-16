@@ -118,6 +118,7 @@ import {
   toNumber,
 } from './common'
 import { moderatePost } from './forum'
+import { processTagMessage } from './label/tag'
 
 // Reusable functions
 async function getWorkingGroupLeadOrFail(store: DatabaseManager, groupName: WorkingGroupModuleName): Promise<Worker> {
@@ -739,6 +740,17 @@ export async function workingGroups_LeadRemarked({ store, event }: EventContext 
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
+  } else if (
+    metadata?.createTag ||
+    metadata?.updateTag ||
+    metadata?.assignTagsToThread ||
+    metadata?.assignTagsToProposal ||
+    metadata?.unassignTagsFromThread ||
+    metadata?.unassignTagsFromProposal ||
+    metadata?.allowTagToWorker ||
+    metadata?.disallowTagToWorker
+  ) {
+    return await processTagMessage(store, metadata, group.name)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }
@@ -774,6 +786,17 @@ export async function workingGroups_WorkerRemarked({ store, event }: EventContex
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
+  } else if (
+    metadata?.createTag ||
+    metadata?.updateTag ||
+    metadata?.assignTagsToThread ||
+    metadata?.assignTagsToProposal ||
+    metadata?.unassignTagsFromThread ||
+    metadata?.unassignTagsFromProposal ||
+    metadata?.allowTagToWorker ||
+    metadata?.disallowTagToWorker
+  ) {
+    return await processTagMessage(store, metadata, group.name, false, workerId.toNumber())
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

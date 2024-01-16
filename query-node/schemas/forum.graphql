@@ -113,8 +113,12 @@ type ForumThread @entity {
 
   "Assigned thread tags"
   tags: [ForumThreadTag!]
+
+  "New tag/label properties"
+  newTags: [Tag!]
 }
 
+# Deprecated
 type ForumThreadTag @entity {
   "Tag id (and simultaneously - tag label)"
   id: ID!

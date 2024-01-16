@@ -63,10 +63,91 @@ message ModeratePost {
   required string rationale = 2;
 }
 
+message CreateTag {
+  // Name of new Tag, e.g : roadmap
+  required string name = 1;
+
+  // Description of new Tag, e.g : Roadmap covering the Joystream ecosystem
+  required string description = 2;
+
+  // Type of new Tag : e.g : roadmap
+  required string type = 3;
+
+  // Visibility of new Tag : e.g : true
+  required bool visibility = 4;
+}
+
+message UpdateTag {
+  // ID of tag 
+  required string tag_id = 1;
+
+  // name of tag
+  optional string name = 2;
+
+  // Updated Description of Tag
+  optional string description = 3;
+
+  // Updated Type of Tag
+  optional string type = 4;
+
+  // Updated Visibility of Tag
+  optional bool visibility = 5;
+}
+
+message AssignTagsToThread {
+  // ID of tag
+  repeated string tag_ids = 1;
+
+  // ID of thread
+  required string thread_id = 2;  
+}
+
+message UnassignTagsFromThread {
+  // ID of tag
+  repeated string tag_ids = 1;
+
+  // ID of thread
+  required string thread_id = 2;  
+}
+
+message AssignTagsToProposal {
+  // ID of tag
+  repeated string tag_ids = 1;
+
+  // ID of proposal
+  required string proposal_id = 2;  
+}
+
+message UnassignTagsFromProposal {
+  // ID of tag
+  repeated string tag_ids = 1;
+
+  // ID of proposal
+  required string proposal_id = 2;  
+}
+
+message AllowTagToWorker {
+  // ID of worker
+  required uint64 worker_id = 1;
+}
+
+message DisallowTagToWorker {
+  // ID of worker
+  required uint64 worker_id = 1;  
+}
+
 message RemarkMetadataAction {
   oneof action {
     ModeratePost moderate_post = 1;
     VerifyValidator verify_validator = 2;
+    CreateTag create_tag = 3;
+    UpdateTag update_tag = 4;
+    AssignTagsToThread assign_tags_to_thread = 5;
+    UnassignTagsFromThread unassign_tags_from_thread = 6;
+    AssignTagsToProposal assign_tags_to_proposal = 7;
+    UnassignTagsFromProposal unassign_tags_from_proposal = 8;
+    AllowTagToWorker allow_tag_to_worker = 9;
+    DisallowTagToWorker disallow_tag_to_worker = 10;
   }
 }
 

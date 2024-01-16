@@ -148,6 +148,9 @@ type Proposal @entity {
 
   "Time the current status was set at (based on block timestamp)"
   statusSetAtTime: DateTime!
+
+  "Tags for proposal"
+  tags: [Tag!]
 }
 
 type SignalProposalDetails @variant {

@@ -434,4 +434,12 @@ export enum MetaprotocolTxError {
 
   // Channel errors
   InvalidChannelRewardAccount = 'InvalidChannelRewardAccount',
+
+  // Tag errors
+  TagAlreadyExists = 'TagAlreadyExists',
+  TagIsNotLead = 'TagIsNotLead',
+  TagNotFound = 'TagNotFound',
+  TagPermNotAllowed = 'TagPermNotAllowed',
+  TagInvalidThreadId = 'TagInvalidThreadId',
+  TagInvalidProposalId = 'TagInvalidProposalId',
 }

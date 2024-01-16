@@ -1,0 +1,23 @@
+type Tag @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+  "The name of tag"
+  name: String!
+  "The description of tag"
+  description: String!
+  "The type of tag"
+  type: String!
+  "Visibility of tag"
+  visibility: Boolean!
+  "Forum Threads"
+  forumThreads: [ForumThread!] @derivedFrom(field: "newTags")
+  "Proposals"
+  proposals: [Proposal!] @derivedFrom(field: "tags")
+}
+
+type TagPermittedWorker @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+  "Id of worker"
+  workerId: ID!
+}
