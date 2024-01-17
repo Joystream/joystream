@@ -1310,6 +1310,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Proof: Content CuratorGroupById (max_values: None, max_size: Some(1037), added: 3512, mode: MaxEncodedLen)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Proof: Token TokenInfoById (max_values: None, max_size: Some(352), added: 2827, mode: MaxEncodedLen)
+	// Storage: Token PalletFrozen (r:1 w:0)
 	// Storage: Token MinAmmSlopeParameter (r:1 w:0)
 	// Proof: Token MinAmmSlopeParameter (max_values: Some(1), max_size: Some(16), added: 511, mode: MaxEncodedLen)
 	// Storage: System Account (r:1 w:1)
@@ -1321,7 +1322,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 188_296 nanoseconds.
 		Weight::from_parts(192_189_000, 0u64)
 			.saturating_add(Weight::from_parts(0, 21427))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)
@@ -1332,6 +1333,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Proof: Content CuratorGroupById (max_values: None, max_size: Some(1037), added: 3512, mode: MaxEncodedLen)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Proof: Token TokenInfoById (max_values: None, max_size: Some(352), added: 2827, mode: MaxEncodedLen)
+	// Storage: Token PalletFrozen (r:1 w:0)
 	// Storage: Token AmmDeactivationThreshold (r:1 w:0)
 	// Proof: Token AmmDeactivationThreshold (max_values: Some(1), max_size: Some(4), added: 499, mode: MaxEncodedLen)
 	// Storage: System Account (r:1 w:0)
@@ -1343,7 +1345,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Minimum execution time: 164_519 nanoseconds.
 		Weight::from_parts(166_906_000, 0u64)
 			.saturating_add(Weight::from_parts(0, 21415))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	// Storage: Content ChannelById (r:1 w:0)

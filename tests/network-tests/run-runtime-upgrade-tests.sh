@@ -6,9 +6,6 @@ cd $SCRIPT_PATH
 
 rm ./output.json || :
 
-# Log only to stderr
-# Only output from this script should be the container id of the node at the very end
-
 # Location that will be mounted to /spec in containers
 # This is where the initial balances files and generated chainspec files will be located.
 DATA_PATH=$PWD/data
@@ -118,6 +115,7 @@ function fork_off_init() {
 
     # download the raw storage state
     if ! [[ -f ${DATA_PATH}/storage.json ]]; then
+        echo >&2 "fetching state storage from $HTTP_RPC_ENDPOINT"
         curl $HTTP_RPC_ENDPOINT -H \
             "Content-type: application/json" -d \
             '{"jsonrpc":"2.0","id":1,"method":"state_getPairs","params":["0x"]}' \
@@ -125,7 +123,8 @@ function fork_off_init() {
         echo >&2 "storage trie downloaded at ${DATA_PATH}/storage.json"
     fi
 
-    yarn workspace api-scripts tsnode-strict src/fork-off.ts ${DATA_PATH} ${WS_RPC_ENDPOINT}
+    yarn workspace api-scripts tsnode-strict --max-old-space-size=6144 \
+        src/fork-off.ts ${DATA_PATH} ${WS_RPC_ENDPOINT}
 }
 
 #######################################
@@ -166,7 +165,6 @@ function main {
     # 3. set path to new runtime.wasm
     set_new_runtime_wasm_path
     echo >&2 "new wasm path set"
-<<<<<<< HEAD
 
     # 4. early chain db init
     export JOYSTREAM_NODE_TAG=${RUNTIME}
@@ -187,29 +185,13 @@ function main {
     # Wait for chain and query node to get in sync
     sleep 200
 
-    # 6. Bootstrap storage infra
-    ./start-storage.sh
-    export REUSE_KEYS=true
-    export SKIP_STORAGE_AND_DISTRIBUTION=true
-
-    # Do some setup and checks before the upgrade
-    ./run-test-scenario.sh preRuntimeUpgrade
-=======
-    # 4. copy chainspec to disk
-    export_chainspec_file_to_disk
-    echo >&2 "chainspec exported"
-    # 5. start node
-    CONTAINER_ID=$(start_old_joystream_node)
-    echo >&2 "mainnet node starting"
-
-    # wait 1 minute
-    sleep 90
-
     # 6. Bootstrap storage infra because we need to run content-directory tests after runtime upgrade
     if [ "${NO_STORAGE}" != true ]; then
         ./start-storage.sh
     fi
->>>>>>> master
+
+    # Do some setup and checks before the upgrade
+    ./run-test-scenario.sh preRuntimeUpgrade
 
     ./run-test-scenario.sh runtimeUpgrade
 

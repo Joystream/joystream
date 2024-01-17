@@ -2,6 +2,9 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+use project_token::Error as ProjectTokenError;
 
 #[test]
 fn unsuccessful_deactivate_amm_non_existing_channel() {
@@ -133,5 +136,17 @@ fn successful_deactivate_curator_channel_creator_token_amm_by_lead() {
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn unsuccessful_deactivate_creator_token_amm_with_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        ActivateAmmFixture::default().call_and_assert(Ok(()));
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        DeactivateAmmFixture::default()
+            .call_and_assert(Err(ProjectTokenError::<Test>::PalletFrozen.into()));
     })
 }

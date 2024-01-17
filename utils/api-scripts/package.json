@@ -21,6 +21,7 @@
     "@polkadot/util": "9.5.1",
     "@polkadot/util-crypto": "9.5.1",
     "@types/bn.js": "^5.1.0",
+    "bfj": "^8.0.0",
     "bn.js": "^5.2.1"
   },
   "devDependencies": {

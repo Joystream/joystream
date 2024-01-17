@@ -836,6 +836,8 @@ decl_module! {
         /// - event deposited
         #[weight = WeightInfoToken::<T>::buy_on_amm_with_existing_account()]
         fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             if amount.is_zero() {
                 return Ok(()); // noop
             }
@@ -916,6 +918,8 @@ decl_module! {
         /// - event deposited
         #[weight = WeightInfoToken::<T>::sell_on_amm()]
         fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             if amount.is_zero() {
                return Ok(()); // noop
             }
@@ -1577,6 +1581,8 @@ impl<T: Config>
         member_id: T::MemberId,
         params: AmmParamsOf<T>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_data = Self::ensure_token_exists(token_id)?;
 
         ensure!(
@@ -1620,6 +1626,8 @@ impl<T: Config>
     /// - state set to idle
     /// - event deposited
     fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_data = Self::ensure_token_exists(token_id)?;
         Self::ensure_amm_can_be_deactivated(&token_data)?;
 

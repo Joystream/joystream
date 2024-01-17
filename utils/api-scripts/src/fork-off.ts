@@ -1,7 +1,8 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { xxhashAsHex } from '@polkadot/util-crypto'
-import fs from 'fs'
 import path from 'path'
+
+const bfj = require('bfj')
 
 /**
  * All module prefixes except those mentioned in the skippedModulesPrefix will be added to this by the script.
@@ -35,6 +36,12 @@ const skippedModulesPrefix = [
   'Instance3WorkingGroup', // empty content working group
   'Instance9WorkingGroup', // empty distribution working group
 ]
+const skippedKeys = [
+  // encoded storage key for `minAuctionDuration` key
+  '0xb5a494c92fa4747cc071573e93b32b87f9ad4eaa35a4c52d9289acbc42eba9d9',
+  // encoded storage key for `nftLimitsEnabled` key
+  '0xb5a494c92fa4747cc071573e93b32b87d2c14024f1b303fdc87019c4c1facfde'
+]
 
 async function main() {
   // paths & env variables
@@ -62,22 +69,20 @@ async function main() {
   })
 
   // blank starting chainspec guaranteed to exist
-  const storage: Storage = JSON.parse(fs.readFileSync(storagePath, 'utf8'))
-  const chainSpec = JSON.parse(fs.readFileSync(specPath, 'utf8'))
+  console.error('Loading state storage')
+  const storage: Storage = await bfj.read(storagePath, { bufferLength: 4096 })
+  console.error('Loading raw chain spec')
+  const chainSpec = await bfj.read(specPath)
 
   // Grab the items to be moved, then iterate through and insert into storage
-  storage.result
-    .filter((i) => prefixes.some((prefix) => i[0].startsWith(prefix)))
-    .forEach(([key, value]) => {
-      if (
-        // encoded storage key for `minAuctionDuration` key
-        key !== '0xb5a494c92fa4747cc071573e93b32b87f9ad4eaa35a4c52d9289acbc42eba9d9' &&
-        // encoded storage key for `nftLimitsEnabled` key
-        key !== '0xb5a494c92fa4747cc071573e93b32b87d2c14024f1b303fdc87019c4c1facfde'
-      ) {
-        chainSpec.genesis.raw.top[key] = value
-      }
-    })
+  // We are not using a storage.result.forEach to preserve memory
+  console.error('constructing final genesis chainspec')
+  for (let pair; pair = storage.result.pop();) {
+    const [key, value] = pair
+    if (skippedKeys.includes(key)) continue
+    if (!prefixes.some((prefix) => key.startsWith(prefix))) continue
+    chainSpec.genesis.raw.top[key] = value
+  }
 
   // Delete System.LastRuntimeUpgrade to ensure that the on_runtime_upgrade event is triggered
   delete chainSpec.genesis.raw.top['0x26aa394eea5630e07c48ae0c9558cef7f9cce9c888469bb1a0dceaa129672ef8']
@@ -85,12 +90,11 @@ async function main() {
   // To prevent the validator set from changing mid-test, set Staking.ForceEra to ForceNone ('0x02')
   chainSpec.genesis.raw.top['0x5f3e4907f716ac89b6347d15ececedcaf7dad0317324aecae8744b87fc95f2f3'] = '0x02'
 
-  fs.writeFileSync(forkedSpecPath, JSON.stringify(chainSpec, null, 4))
-
-  process.exit()
+  console.error('Writing chainspec to', forkedSpecPath)
+  await bfj.write(forkedSpecPath, chainSpec, { space: 4, bufferLength: 4096 })
 }
 
-main().catch(console.error)
+main().catch(console.error).finally(() => process.exit())
 
 interface Storage {
   'jsonrpc': string

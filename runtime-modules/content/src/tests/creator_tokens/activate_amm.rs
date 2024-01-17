@@ -2,6 +2,9 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+use project_token::Error as ProjectTokenError;
 
 #[test]
 fn unsuccessful_activate_amm_non_existing_channel() {
@@ -153,5 +156,16 @@ fn unsuccessful_activate_member_channel_creator_token_amm_with_ongoing_transfer(
 
         ActivateAmmFixture::default()
             .call_and_assert(Err(Error::<Test>::InvalidChannelTransferStatus.into()));
+    })
+}
+
+#[test]
+fn unsuccessful_activate_creator_token_amm_with_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        ActivateAmmFixture::default()
+            .call_and_assert(Err(ProjectTokenError::<Test>::PalletFrozen.into()));
     })
 }
