@@ -149,6 +149,7 @@ export async function getStatus(req: express.Request, res: express.Response<Stat
   // Copy from an object, because the actual object could contain more data.
   res.status(200).json({
     version: proc.version,
+    uptime: Math.floor(process.uptime()),
     uploadBuckets,
     downloadBuckets,
     sync,
