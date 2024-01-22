@@ -60,39 +60,33 @@ export async function getLocalDataStats(
     const pendingObjectsDir = res.locals.pendingDataObjectsDir
     const fastFolderSizeAsync = promisify(fastFolderSize)
 
-    const tempFolderExists = fs.existsSync(tempFileDir)
-    const statsPromise = fsPromises.readdir(uploadsDir)
+    const statsPromise = fsPromises.readdir(uploadsDir, { withFileTypes: true })
     const sizePromise = fastFolderSizeAsync(uploadsDir)
 
     const [stats, totalSize] = await Promise.all([statsPromise, sizePromise])
 
-    let objectNumber = stats.length
+    const objectNumber = stats.filter((entry) => entry.isFile).length
     let tempDownloads = 0
     let tempDirSize = 0
     let pendingObjects = 0
     let pendingDirSize = 0
-    if (tempFolderExists) {
-      if (objectNumber > 0) {
-        objectNumber--
-      }
 
-      const tempDirStatsPromise = fsPromises.readdir(tempFileDir)
-      const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
-      const pendingDirStatsPromise = fsPromises.readdir(pendingObjectsDir)
-      const pendingDirSizePromise = fastFolderSizeAsync(pendingObjectsDir)
+    const tempDirStatsPromise = fsPromises.readdir(tempFileDir, { withFileTypes: true })
+    const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
+    const pendingDirStatsPromise = fsPromises.readdir(pendingObjectsDir, { withFileTypes: true })
+    const pendingDirSizePromise = fastFolderSizeAsync(pendingObjectsDir)
 
-      const [tempDirStats, tempSize, pendingDirStats, pendingSize] = await Promise.all([
-        tempDirStatsPromise,
-        tempDirSizePromise,
-        pendingDirStatsPromise,
-        pendingDirSizePromise,
-      ])
+    const [tempDirStats, tempSize, pendingDirStats, pendingSize] = await Promise.all([
+      tempDirStatsPromise,
+      tempDirSizePromise,
+      pendingDirStatsPromise,
+      pendingDirSizePromise,
+    ])
 
-      tempDirSize = tempSize ?? 0
-      tempDownloads = tempDirStats.length
-      pendingDirSize = pendingSize ?? 0
-      pendingObjects = pendingDirStats.length
-    }
+    tempDirSize = tempSize ?? 0
+    tempDownloads = tempDirStats.filter((entry) => entry.isFile).length
+    pendingDirSize = pendingSize ?? 0
+    pendingObjects = pendingDirStats.filter((entry) => entry.isFile).length
 
     res.status(200).json({
       objectNumber,
