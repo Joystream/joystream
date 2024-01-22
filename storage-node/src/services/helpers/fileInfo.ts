@@ -43,7 +43,7 @@ export async function getFileInfo(fullPath: string): Promise<FileInfo> {
     ext: 'bin',
   }
 
-  const buffer = readChunk.sync(fullPath, 0, MINIMUM_FILE_CHUNK)
+  const buffer = await readChunk(fullPath, 0, MINIMUM_FILE_CHUNK)
   const fileType = await FileType.fromBuffer(buffer)
   const { size } = await fsPromises.stat(fullPath)
 
