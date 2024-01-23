@@ -53,8 +53,14 @@ export default class VerifyValidatorCommand extends WorkingGroupsCommandBase {
     const message = metadataToString(RemarkMetadataAction, meta)
 
     const keyPair = await this.getDecodedPair(worker.roleAccount)
-    await this.sendAndFollowNamedTx(keyPair, 'membershipWorkingGroup', 'workerRemark', [worker.workerId, message])
+    const result = await this.sendAndFollowNamedTx(keyPair, 'membershipWorkingGroup', 'workerRemark', [
+      worker.workerId,
+      message,
+    ])
 
-    this.log(chalk.green(`The validator profile ${args.memberId} is now${verifyValidator ? '' : ' not'} verified`))
+    const block = result.status.isInBlock ? result.status.asInBlock : undefined
+    const successMessage = `The validator profile ${args.memberId} was set to${verifyValidator ? '' : ' not'} verified.`
+    const inBlockMessage = block ? `(In block ${block})` : ''
+    this.log(chalk.green(`${successMessage} ${inBlockMessage}`))
   }
 }
