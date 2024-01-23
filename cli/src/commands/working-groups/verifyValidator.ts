@@ -7,20 +7,21 @@ import Long from 'long'
 import chalk from 'chalk'
 
 export default class VerifyValidatorCommand extends WorkingGroupsCommandBase {
-  static description = 'Membership lead/worker verifies validator membership profile'
+  static description =
+    'Verify or un-verify the membership profile bound to a validator account. Available to membership workers only.'
 
   static args = [
     {
       name: 'memberId',
       required: true,
-      description: 'Membership ID of the validator to verify',
+      description: 'ID of the membership bound to the validator account.',
     },
   ]
 
   static flags = {
     unverify: flags.boolean({
       default: false,
-      description: 'Verification state of the validator',
+      description: 'Whether the profile should be un-verified.',
     }),
 
     ...WorkingGroupsCommandBase.flags,
