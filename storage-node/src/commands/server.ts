@@ -1,27 +1,27 @@
 import { flags } from '@oclif/command'
 import { ApiPromise } from '@polkadot/api'
-import sleep from 'sleep-promise'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
+import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
-import fs from 'fs'
-import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import { KeyringPair } from '@polkadot/keyring/types'
+import sleep from 'sleep-promise'
+import { v4 as uuidv4 } from 'uuid'
+import ApiCommandBase from '../command-base/ApiCommandBase'
 import { customFlags } from '../command-base/CustomFlags'
 import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
+import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
 import {
   MAXIMUM_QN_LAGGING_THRESHOLD,
   MINIMUM_REPLICATION_THRESHOLD,
   performCleanup,
 } from '../services/sync/cleanupService'
-import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
 import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
-import { PendingDirName, performSync, TempDirName } from '../services/sync/synchronizer'
+import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-import ApiCommandBase from '../command-base/ApiCommandBase'
-import { v4 as uuidv4 } from 'uuid'
 const fsPromises = fs.promises
 
 /**
@@ -88,11 +88,11 @@ export default class Server extends ApiCommandBase {
       description: 'Interval between periodic cleanup actions (in minutes)',
       default: 360,
     }),
-    queryNodeEndpoint: flags.string({
+    storageSquidEndpoint: flags.string({
       char: 'q',
       required: true,
-      default: 'http://localhost:8081/graphql',
-      description: 'Query node endpoint (e.g.: http://some.com:8081/graphql)',
+      default: 'http://localhost:4352/graphql',
+      description: 'Storage Squid graphql server endpoint (e.g.: http://some.com:4352/graphql)',
     }),
     syncWorkersNumber: flags.integer({
       char: 'r',
@@ -188,7 +188,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       })
     }
 
-    logger.info(`Query node endpoint set: ${flags.queryNodeEndpoint}`)
+    logger.info(`Storage Squid endpoint set: ${flags.storageSquidEndpoint}`)
 
     const workerId = flags.worker
 
@@ -197,7 +197,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       this.exit(ExitCodes.InvalidWorkerId)
     }
 
-    const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+    const qnApi = new QueryNodeApi(flags.storageSquidEndpoint)
 
     const selectedBucketsAndAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
 
@@ -227,10 +227,6 @@ Supported values: warn, error, debug, info. Default:debug`,
 
     logger.info(`Buckets synced and served: ${selectedBuckets}`)
     logger.info(`Buckets accepting uploads: ${writableBuckets}`)
-
-    // when enabling upload auth ensure the keyring has the operator role key and set it here.
-    const enableUploadingAuth = false
-    const operatorRoleKey = undefined
 
     if (!flags.tempFolder) {
       logger.warn(
@@ -289,8 +285,6 @@ Supported values: warn, error, debug, info. Default:debug`,
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
           runSyncWithInterval(
-            api,
-            flags.worker,
             selectedBuckets,
             qnApi,
             flags.uploads,
@@ -315,8 +309,8 @@ Supported values: warn, error, debug, info. Default:debug`,
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
           runCleanupWithInterval(
-            flags.worker,
             selectedBuckets,
+            api,
             qnApi,
             flags.uploads,
             flags.syncWorkersNumber,
@@ -338,7 +332,6 @@ Supported values: warn, error, debug, info. Default:debug`,
         api,
         qnApi,
         bucketKeyPairs,
-        operatorRoleKey,
         workerId,
         maxFileSize,
         uploadsDir: flags.uploads,
@@ -346,7 +339,6 @@ Supported values: warn, error, debug, info. Default:debug`,
         pendingDataObjectsDir: pendingFolder,
         acceptPendingObjectsService,
         process: this.config,
-        enableUploadingAuth,
         downloadBuckets: selectedBuckets,
         uploadBuckets: writableBuckets,
         sync: { enabled: flags.sync, interval: flags.syncInterval },
@@ -358,8 +350,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         },
         x_host_id: X_HOST_ID,
       })
-      logger.info(`Listening on http://localhost:${port}`)
-      app.listen(port)
+      app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
     } catch (err) {
       logger.error(`Server error: ${err}`)
       this.exit(ExitCodes.ServerError)
@@ -388,8 +379,6 @@ Supported values: warn, error, debug, info. Default:debug`,
  * @returns void promise.
  */
 async function runSyncWithInterval(
-  api: ApiPromise,
-  workerId: number,
   buckets: string[],
   qnApi: QueryNodeApi,
   uploadsDirectory: string,
@@ -429,8 +418,8 @@ async function runSyncWithInterval(
  * @returns void promise.
  */
 async function runCleanupWithInterval(
-  workerId: number,
   buckets: string[],
+  api: ApiPromise,
   qnApi: QueryNodeApi,
   uploadsDirectory: string,
   syncWorkersNumber: number,
@@ -443,7 +432,7 @@ async function runCleanupWithInterval(
     await sleep(sleepInterval)
     try {
       logger.info(`Resume cleanup....`)
-      await performCleanup(buckets, syncWorkersNumber, qnApi, uploadsDirectory, hostId)
+      await performCleanup(buckets, syncWorkersNumber, api, qnApi, uploadsDirectory, hostId)
     } catch (err) {
       logger.error(`Critical cleanup error: ${err}`)
     }

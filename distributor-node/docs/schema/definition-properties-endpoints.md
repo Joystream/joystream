@@ -6,14 +6,14 @@
 
 | Property                            | Type     | Required | Nullable       | Defined by                                                                                                                                                                                    |
 | :---------------------------------- | :------- | :------- | :------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [queryNode](#querynode)             | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-querynode.md "https://joystream.org/schemas/argus/config#/properties/endpoints/properties/queryNode")             |
+| [storageSquid](#storagesquid)       | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-storagesquid.md "https://joystream.org/schemas/argus/config#/properties/endpoints/properties/storageSquid")       |
 | [joystreamNodeWs](#joystreamnodews) | `string` | Required | cannot be null | [Distributor node configuration](definition-properties-endpoints-properties-joystreamnodews.md "https://joystream.org/schemas/argus/config#/properties/endpoints/properties/joystreamNodeWs") |
 
-## queryNode
+## storageSquid
 
-Query node graphql server uri (for example: <http://localhost:8081/graphql>)
+Storage-Squid graphql server uri (for example: <http://localhost:4352/graphql>)
 
-`queryNode`
+`storageSquid`
 
 *   is required
 
@@ -21,13 +21,13 @@ Query node graphql server uri (for example: <http://localhost:8081/graphql>)
 
 *   cannot be null
 
-*   defined in: [Distributor node configuration](definition-properties-endpoints-properties-querynode.md "https://joystream.org/schemas/argus/config#/properties/endpoints/properties/queryNode")
+*   defined in: [Distributor node configuration](definition-properties-endpoints-properties-storagesquid.md "https://joystream.org/schemas/argus/config#/properties/endpoints/properties/storageSquid")
 
-### queryNode Type
+### storageSquid Type
 
 `string`
 
-### queryNode Constraints
+### storageSquid Constraints
 
 **URI**: the string must be a URI, according to [RFC 3986](https://tools.ietf.org/html/rfc3986 "check the specification")
 
