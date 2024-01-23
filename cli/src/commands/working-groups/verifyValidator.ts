@@ -5,57 +5,55 @@ import { VerifyValidator, RemarkMetadataAction } from '@joystream/metadata-proto
 import { metadataToString } from '../../helpers/serialization'
 import Long from 'long'
 import chalk from 'chalk'
-export default class VerifyValidatorAccountCommand extends WorkingGroupsCommandBase {
+
+export default class VerifyValidatorCommand extends WorkingGroupsCommandBase {
   static description = 'Membership lead/worker verifies validator membership profile'
-  static flags = {
-    memberId: flags.integer({
+
+  static args = [
+    {
+      name: 'memberId',
       required: true,
       description: 'Membership ID of the validator to verify',
-    }),
-    isVerified: flags.boolean({
-      required: true,
+    },
+  ]
+
+  static flags = {
+    unverify: flags.boolean({
+      default: false,
       description: 'Verification state of the validator',
     }),
 
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async run(): Promise<void> {
-    const { memberId, isVerified } = this.parse(VerifyValidatorAccountCommand).flags
+  async init(): Promise<void> {
+    await super.init()
+    this._group = WorkingGroups.Membership
+  }
 
-    const id = Long.fromNumber(memberId)
+  async run(): Promise<void> {
+    const { args, flags } = this.parse(VerifyValidatorCommand)
+    const memberId = Long.fromNumber(args.memberId)
+    const verifyValidator = !flags.unverify
+
     const meta = new RemarkMetadataAction({
       verifyValidator: new VerifyValidator({
-        memberId: id,
-        isVerified,
+        memberId,
+        isVerified: verifyValidator,
       }),
     })
 
-    const message = metadataToString(RemarkMetadataAction, meta)
-
-    const nowGroup = this.group
-
-    await this.setPreservedState({ defaultWorkingGroup: WorkingGroups.Membership })
-
     const worker = await this.getRequiredWorkerContext()
 
-    const [Id, controllerAccount] = await this.getValidatedMemberRemarkParams()
-
     if (!worker) {
-      this.error('Only membership WG lead/worker can perform this command')
-    } else {
-      const keypair = await this.getDecodedPair(controllerAccount)
-      const result = await this.sendAndFollowNamedTx(keypair, 'membershipWorkingGroup', 'workerRemark', [Id, message])
-
-      const [workerid] = this.getEvent(result, 'membershipWorkingGroup', 'WorkerRemarked').data
-
-      this.log(
-        chalk.green(
-          `member ${memberId} verified successfully by membership WG worker ${workerid}!`
-        )
-      )
+      return this.error('Only membership workers can perform this command')
     }
 
-    await this.setPreservedState({ defaultWorkingGroup: nowGroup })
+    const message = metadataToString(RemarkMetadataAction, meta)
+
+    const keyPair = await this.getDecodedPair(worker.roleAccount)
+    await this.sendAndFollowNamedTx(keyPair, 'membershipWorkingGroup', 'workerRemark', [worker.workerId, message])
+
+    this.log(chalk.green(`The validator profile ${args.memberId} is now${verifyValidator ? '' : ' not'} verified`))
   }
 }
