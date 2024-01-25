@@ -26,8 +26,6 @@ export type FileInfo = {
 // Number in bytes to read. Minimum number for file info detection.
 const MINIMUM_FILE_CHUNK = 4100
 
-const FileInfoCache = new Map<string, FileInfo>()
-
 // Default file info if nothing could be detected.
 const DEFAULT_FILE_INFO = {
   mimeType: 'application/octet-stream',
@@ -45,10 +43,6 @@ const DEFAULT_FILE_INFO = {
  * @returns promise with file information.
  */
 export async function getFileInfo(fullPath: string): Promise<FileInfo> {
-  if (FileInfoCache.has(fullPath)) {
-    return FileInfoCache.get(fullPath)!
-  }
-
   const buffer = await readChunk(fullPath, 0, MINIMUM_FILE_CHUNK)
   const fileType = await FileType.fromBuffer(buffer)
   const { size } = await fsPromises.stat(fullPath)
@@ -59,6 +53,5 @@ export async function getFileInfo(fullPath: string): Promise<FileInfo> {
     size,
   }
 
-  FileInfoCache.set(fullPath, info)
   return info
 }
