@@ -118,7 +118,7 @@ export class Utils {
     return Utils.bytesToString(createType('Bytes', textOrHex))
   }
 
-  public static assert<T>(condition: T | undefined | null, msg?: string): asserts condition is T {
+  public static assert(condition: any, msg?: string): asserts condition {
     if (!condition) {
       throw new Error(msg || 'Assertion failed')
     }
