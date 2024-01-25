@@ -27,12 +27,12 @@ export default class VerifyValidatorCommand extends WorkingGroupsCommandBase {
     ...WorkingGroupsCommandBase.flags,
   }
 
-  async init(): Promise<void> {
-    await super.init()
-    this._group = WorkingGroups.Membership
-  }
-
   async run(): Promise<void> {
+    const worker = await this.getRequiredWorkerContext()
+    if (!worker || this.group === WorkingGroups.Membership) {
+      return this.error('Only membership workers can perform this command')
+    }
+
     const { args, flags } = this.parse(VerifyValidatorCommand)
     const memberId = Long.fromNumber(args.memberId)
     const verifyValidator = !flags.unverify
@@ -43,13 +43,6 @@ export default class VerifyValidatorCommand extends WorkingGroupsCommandBase {
         isVerified: verifyValidator,
       }),
     })
-
-    const worker = await this.getRequiredWorkerContext()
-
-    if (!worker) {
-      return this.error('Only membership workers can perform this command')
-    }
-
     const message = metadataToString(RemarkMetadataAction, meta)
 
     const keyPair = await this.getDecodedPair(worker.roleAccount)
