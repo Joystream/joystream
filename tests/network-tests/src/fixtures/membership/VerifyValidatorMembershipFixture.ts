@@ -9,6 +9,7 @@ import { AnyQueryNodeEvent, EventDetails } from '../../types'
 import { Utils } from '../../utils'
 import { MembershipFieldsFragment } from '../../graphql/generated/queries'
 import { WithMembershipWorkersFixture } from './WithMembershipWorkersFixture'
+import { assert } from 'chai'
 
 export type VerifyValidatorInput = {
   memberId: MemberId
@@ -34,8 +35,8 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
       const metadata = Utils.metadataToBytes(RemarkMetadataAction, {
         verifyValidator: { memberId: Long.fromString(u.memberId.toString()), isVerified: u.isVerified },
       })
-      return u.memberId
-        ? this.api.tx.membershipWorkingGroup.workerRemark(u.memberId, metadata)
+      return u.asWorker
+        ? this.api.tx.membershipWorkingGroup.workerRemark(u.asWorker, metadata)
         : this.api.tx.membershipWorkingGroup.leadRemark(metadata)
     })
   }
@@ -49,22 +50,38 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
   }
 
   private assertQueriedMembershipsAreValid(qMembers: MembershipFieldsFragment[]): void {
-    this.events.map((e, i) => {
+    this.events.forEach((e, i) => {
       const verification = this.verifications[i]
       if (verification.expectFailure) return
 
       const qMembership = qMembers.find((p) => p.id === verification.memberId.toString())
       Utils.assert(qMembership, 'Query node: Membership not found')
+
+      const { id, metadata } = qMembership
+      const isVerified = verification.isVerified
+      const expectedOutcome = isVerified ? 'verified' : 'unverified'
+      assert.equal(metadata.isVerifiedValidator, isVerified, `Member ${id} was not ${expectedOutcome}.`)
     })
   }
 
   protected assertQueryNodeEventIsValid(qEvent: AnyQueryNodeEvent, i: number): void {
-    // TODO: implement QN checks
+    // NOTE: These transactions do not create any QN events
   }
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
-    const qMembers = await this.query.getMembersByIds(this.verifications.map((m) => m.memberId))
-    this.assertQueriedMembershipsAreValid(qMembers)
+
+    const memberIds = this.verifications.reduce(
+      (ids, { memberId }) => (ids.some((id) => memberId.eq(id)) ? ids : [...ids, memberId]),
+      [] as MemberId[]
+    )
+    await this.query.tryQueryWithTimeout(
+      () => this.query.getMembersByIds(memberIds),
+      (qMembers) => {
+        const missingMemberIds = memberIds.map(String).filter((id) => !qMembers.some((member) => member.id === id))
+        assert.equal(missingMemberIds.length, 0, `Query node: missing memberships: [${missingMemberIds.join(', ')}]`)
+        this.assertQueriedMembershipsAreValid(qMembers)
+      }
+    )
   }
 }
