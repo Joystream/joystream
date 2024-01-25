@@ -1,3 +1,4 @@
+import { ApiPromise } from '@polkadot/api'
 import * as express from 'express'
 import fastFolderSize from 'fast-folder-size'
 import fs from 'fs'
@@ -143,7 +144,7 @@ export async function getVersion(
  * A public endpoint: returns the server status.
  */
 export async function getStatus(req: express.Request, res: express.Response<StatusResponse, AppConfig>): Promise<void> {
-  const { qnApi, process: proc, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
+  const { qnApi, api, process: proc, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
 
   // Copy from an object, because the actual object could contain more data.
   res.status(200).json({
@@ -152,7 +153,7 @@ export async function getStatus(req: express.Request, res: express.Response<Stat
     downloadBuckets,
     sync,
     cleanup,
-    queryNodeStatus: await getQueryNodeStatus(qnApi),
+    queryNodeStatus: await getQueryNodeStatus(api, qnApi),
     nodeEnv: process.env.NODE_ENV,
   })
 }
@@ -174,16 +175,16 @@ async function getCachedDataObjectsObligations(qnApi: QueryNodeApi, bagId: strin
   return dataCache.get(entryName) ?? []
 }
 
-async function getQueryNodeStatus(qnApi: QueryNodeApi): Promise<StatusResponse['queryNodeStatus']> {
-  const qnState = await qnApi.getQueryNodeState()
+async function getQueryNodeStatus(api: ApiPromise, qnApi: QueryNodeApi): Promise<StatusResponse['queryNodeStatus']> {
+  const squidStatus = await qnApi.getQueryNodeState()
 
-  if (qnState === null) {
-    logger.error("Couldn't fetch the state from connected query-node")
+  if (squidStatus === null) {
+    logger.error("Couldn't fetch the state from connected storage-squid")
   }
 
   return {
     url: qnApi.endpoint,
-    chainHead: qnState?.chainHead || 0,
-    blocksProcessed: qnState?.lastCompleteBlock || 0,
+    chainHead: (await api.derive.chain.bestNumber()).toNumber() || 0,
+    blocksProcessed: squidStatus?.height || 0,
   }
 }

@@ -6,7 +6,7 @@ import { DefaultInstrumentation, DistributorNodeInstrumentation, StorageNodeInst
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO)
 
-async function addInstrumentation() {
+function addInstrumentation() {
   const applicationName = process.env.OTEL_APPLICATION
 
   let instrumentation: NodeSDK
@@ -46,5 +46,4 @@ async function addInstrumentation() {
   })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
 addInstrumentation()

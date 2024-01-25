@@ -1,10 +1,11 @@
 import { Command, flags } from '@oclif/command'
-import { performSync } from '../../services/sync/synchronizer'
-import { QueryNodeApi } from '../..//services/queryNode/api'
-import logger from '../../services/logger'
 import stringify from 'fast-safe-stringify'
 import path from 'path'
+import { QueryNodeApi } from '../..//services/queryNode/api'
 import { loadDataObjectIdCache } from '../../services/caching/localDataObjects'
+import logger from '../../services/logger'
+import { performSync } from '../../services/sync/synchronizer'
+
 /**
  * CLI command:
  * Fetch data objects assigned to assigned bucket from remote node(s) into local store.
@@ -38,8 +39,8 @@ export default class FetchBucket extends Command {
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
-      default: 'https://query.joystream.org/graphql',
-      description: 'Query node endpoint (e.g.: https://query.joystream.org/graphql)',
+      default: 'http://localhost:4352/graphql',
+      description: 'Storage Squid graphql server endpoint (e.g.: http://some.com:4352/graphql)',
     }),
     dataSourceOperatorUrl: flags.string({
       char: 'o',

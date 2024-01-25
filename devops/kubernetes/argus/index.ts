@@ -112,7 +112,7 @@ const deployment = new k8s.apps.v1.Deployment(
               workingDir: '/joystream/distributor-node',
               env: [
                 {
-                  name: 'JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE',
+                  name: 'JOYSTREAM_DISTRIBUTOR__ENDPOINTS__STORAGE_SQUID',
                   value: queryNodeHost,
                 },
                 {

@@ -49,10 +49,9 @@
     "bn.js": "^5.2.1",
     "rxjs": "^7.4.0",
     "typeorm": "https://github.com/Joystream/typeorm/releases/download/0.3.5/typeorm-v0.3.5.tgz",
-    "graphql": "^15.3.0",
+    "**/graphql-binding/graphql": "^15.3.0",
     "graphql-tools": "^4.0.8",
     "pg": "^8.4.0",
-    "chalk": "^4.0.0",
     "@types/bn.js": "^5.1.0",
     "@substrate/txwrapper-core": "=3.1.3"
   },
