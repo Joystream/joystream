@@ -434,7 +434,8 @@ async function applyWorkingGroupsRemark(
     if (!post) {
       return invalidMetadata(`Forum post not found by id: ${postId}`)
     }
-    await moderatePost(store, event, 'workerRemark', post, actor, rationale)
+    const eventType = actor.isLead ? 'leadRemark' : 'workerRemark'
+    await moderatePost(store, event, eventType, post, actor, rationale)
   } else if (metadata?.verifyValidator) {
     if (group.name !== 'membershipWorkingGroup') {
       return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
