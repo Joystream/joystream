@@ -523,6 +523,9 @@ decl_error! {
 
         /// Cannot withdraw: insufficient budget balance.
         InsufficientBalanceForTransfer,
+
+        /// Cannot reduce the budget by the given amount.
+        ReductionAmountTooLarge
     }
 }
 
@@ -858,20 +861,29 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = 10_000_000] // TODO: adjust
-        pub fn decrease_council_budget(origin, amount: Balance<T>) -> Result<(), Error<T>> {
+        pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
+            // If reduction amount is zero then no op
+            if reduction_amount == Zero::zero() {
+                return Ok(())
+            }
+
             // ensure action can be started
             EnsureChecks::<T>::can_decrease_council_budget(origin)?;
 
+            // As security checks ensure proper bounds are respected
+            if reduction_amount > Self::budget() {
+                return Err(Error::<T>::ReductionAmountTooLarge)
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
             // update state
-            Mutations::<T>::decrease_budget(amount);
+            Mutations::<T>::decrease_budget(reduction_amount);
 
             // emit event
-            Self::deposit_event(RawEvent::CouncilBudgetDecreased(amount));
+            Self::deposit_event(RawEvent::CouncilBudgetDecreased(reduction_amount));
 
             Ok(())
         }
