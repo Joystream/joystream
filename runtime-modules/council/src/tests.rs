@@ -10,7 +10,7 @@ use common::council::CouncilOriginValidator;
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::Currency;
 use frame_support::WeakBoundedVec;
-use frame_support::{assert_err, assert_ok, StorageValue};
+use frame_support::{assert_err, assert_noop, assert_ok, StorageValue};
 use frame_system::RawOrigin;
 use staking_handler::StakingHandler;
 
@@ -2095,5 +2095,105 @@ fn candidate_remark_unsuccessful_with_invalid_origin() {
             Council::candidate_remark(origin.into(), member_id, msg),
             Error::<Runtime>::MemberIdNotMatchAccount,
         );
+    });
+}
+
+#[test]
+fn decrease_council_budget_fails_with_non_root_origin() {
+    let config = default_genesis_config();
+    let initial_budget = 1_000u64;
+    let reduction_amount = 100u64;
+    let account_id = 0;
+    let root_origin = OriginType::Root;
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::set_budget(root_origin, initial_budget, Ok(()));
+
+        assert_noop!(
+            Council::decrease_council_budget(
+                RawOrigin::Signed(account_id).into(),
+                reduction_amount
+            ),
+            Error::<Runtime>::BadOrigin,
+        );
+    });
+}
+
+#[test]
+fn decrease_council_budget_fails_with_reduction_amount_too_large() {
+    let config = default_genesis_config();
+    let initial_budget = 100u64;
+    let reduction_amount = 200u64;
+    let root_origin = OriginType::Root;
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::set_budget(root_origin, initial_budget, Ok(()));
+
+        assert_noop!(
+            Council::decrease_council_budget(RawOrigin::Root.into(), reduction_amount),
+            Error::<Runtime>::ReductionAmountTooLarge,
+        );
+    });
+}
+
+#[test]
+fn decrease_council_budget_noop_with_zero_reduction_amount() {
+    let config = default_genesis_config();
+    let initial_budget = 100u64;
+    let reduction_amount = 0u64;
+    let root_origin = OriginType::Root;
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::set_budget(root_origin, initial_budget, Ok(()));
+
+        assert_ok!(Council::decrease_council_budget(
+            RawOrigin::Root.into(),
+            reduction_amount
+        ));
+
+        assert_eq!(Budget::<Runtime>::get(), initial_budget);
+    });
+}
+
+#[test]
+fn decrease_council_budget_ok_with_reduction_accounted() {
+    let config = default_genesis_config();
+    let initial_budget = 100u64;
+    let reduction_amount = 10u64;
+    let root_origin = OriginType::Root;
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::set_budget(root_origin, initial_budget, Ok(()));
+
+        assert_ok!(Council::decrease_council_budget(
+            RawOrigin::Root.into(),
+            reduction_amount
+        ));
+
+        assert_eq!(
+            Budget::<Runtime>::get(),
+            initial_budget.saturating_sub(reduction_amount)
+        );
+    });
+}
+
+#[test]
+fn decrease_council_budget_ok_with_event_deposited() {
+    let config = default_genesis_config();
+    let initial_budget = 100u64;
+    let reduction_amount = 10u64;
+    let root_origin = OriginType::Root;
+
+    build_test_externalities(config).execute_with(|| {
+        Mocks::set_budget(root_origin, initial_budget, Ok(()));
+
+        assert_ok!(Council::decrease_council_budget(
+            RawOrigin::Root.into(),
+            reduction_amount
+        ));
+
+        EventFixture::assert_last_crate_event(crate::RawEvent::CouncilBudgetDecreased(
+            reduction_amount,
+        ));
     });
 }
