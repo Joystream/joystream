@@ -862,18 +862,8 @@ decl_module! {
         /// # </weight>
         #[weight = 10_000_000] // TODO: adjust
         pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
-            // If reduction amount is zero then no op
-            if reduction_amount == Zero::zero() {
-                return Ok(())
-            }
-
             // ensure action can be started
             EnsureChecks::<T>::can_decrease_council_budget(origin)?;
-
-            // As security checks ensure proper bounds are respected
-            if reduction_amount > Self::budget() {
-                return Err(Error::<T>::ReductionAmountTooLarge)
-            }
 
             //
             // == MUTATION SAFE ==

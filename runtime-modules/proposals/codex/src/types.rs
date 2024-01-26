@@ -122,6 +122,9 @@ pub enum ProposalDetails<
 
     /// `SetPalletFozenStatus` proposal
     SetPalletFozenStatus(bool, FreezablePallet),
+
+    /// `DecreaseCouncilBudget` proposal
+    DecreaseCouncilBudget(Balance),
 }
 
 impl<
