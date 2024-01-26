@@ -25,6 +25,10 @@ docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-2
 # to help debug tests
 sleep 30
 
+echo "## squid_graphql-server"
+docker logs squid_graphql-server --tail 300
+echo "## squid_processor"
+docker logs squid_processor --tail 300
 echo "## colossus-1"
 docker logs colossus-1 --tail 300
 echo "## colossus-2"

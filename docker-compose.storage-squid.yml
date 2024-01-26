@@ -4,7 +4,7 @@ services:
   squid_db:
     container_name: squid_db
     hostname: squid-db
-    image: postgres:14
+    image: postgres:16
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${SQUID_DB_NAME}
@@ -12,9 +12,9 @@ services:
     networks:
       - joystream
     ports:
-      - '${SQUID_DB_PORT}:${SQUID_DB_PORT}'
+      - '127.0.0.1:${SQUID_DB_PORT}:${SQUID_DB_PORT}'
     command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf', '-p', '${SQUID_DB_PORT}']
-    shm_size: 1g
+    shm_size: 1.1g # A bit higher than `shared_buffers` value in postgres.conf
     volumes:
       - squid_db_data:/var/lib/postgresql/data
       - ./postgres.conf:/etc/postgresql/postgresql.conf

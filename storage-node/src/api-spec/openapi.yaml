@@ -226,36 +226,6 @@ paths:
           description: Unexpected server error
 components:
   schemas:
-    TokenRequest:
-      type: object
-      required:
-        - data
-        - signature
-      properties:
-        data:
-          type: object
-          required:
-            - memberId
-            - accountId
-            - dataObjectId
-            - storageBucketId
-            - bagId
-          properties:
-            memberId:
-              type: integer
-              format: int64
-            accountId:
-              type: string
-            dataObjectId:
-              type: integer
-              format: int64
-            storageBucketId:
-              type: integer
-              format: int64
-            bagId:
-              type: string
-        signature:
-          type: string
     ErrorResponse:
       type: object
       required:
@@ -362,7 +332,6 @@ components:
               type: integer
             minReplicationThresholdForPruning:
               type: integer
-
     DataObjectResponse:
       type: array
       items:

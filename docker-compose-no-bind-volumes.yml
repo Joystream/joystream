@@ -307,7 +307,7 @@ services:
       - '127.0.0.1:${ORION_DB_PORT}:${ORION_DB_PORT}'
     command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf', '-p', '${ORION_DB_PORT}']
     # command: ['postgres', '-p', '${ORION_DB_PORT}']
-    shm_size: 1g
+    shm_size: 1.1g # A bit higher than `shared_buffers` value in postgres.conf
     volumes:
       - orion-db-data:/var/lib/postgresql/data
       - ./orion-postgres.conf:/etc/postgresql/postgresql.conf

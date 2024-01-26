@@ -229,62 +229,6 @@ export interface StatusResponseSync {
 /**
  * 
  * @export
- * @interface TokenRequest
- */
-export interface TokenRequest {
-    /**
-     * 
-     * @type {TokenRequestData}
-     * @memberof TokenRequest
-     */
-    'data': TokenRequestData;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequest
-     */
-    'signature': string;
-}
-/**
- * 
- * @export
- * @interface TokenRequestData
- */
-export interface TokenRequestData {
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'memberId': number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequestData
-     */
-    'accountId': string;
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'dataObjectId': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'storageBucketId': number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequestData
-     */
-    'bagId': string;
-}
-/**
- * 
- * @export
  * @interface VersionResponse
  */
 export interface VersionResponse {

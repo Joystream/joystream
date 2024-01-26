@@ -1,7 +1,7 @@
 {
   "name": "storage-node",
   "description": "Joystream storage subsystem.",
-  "version": "3.10.2",
+  "version": "4.0.0",
   "author": "Joystream contributors",
   "bin": {
     "storage-node": "./bin/run"
