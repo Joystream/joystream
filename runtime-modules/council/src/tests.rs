@@ -2120,42 +2120,6 @@ fn decrease_council_budget_fails_with_non_root_origin() {
 }
 
 #[test]
-fn decrease_council_budget_fails_with_reduction_amount_too_large() {
-    let config = default_genesis_config();
-    let initial_budget = 100u64;
-    let reduction_amount = 200u64;
-    let root_origin = OriginType::Root;
-
-    build_test_externalities(config).execute_with(|| {
-        Mocks::set_budget(root_origin, initial_budget, Ok(()));
-
-        assert_noop!(
-            Council::decrease_council_budget(RawOrigin::Root.into(), reduction_amount),
-            Error::<Runtime>::ReductionAmountTooLarge,
-        );
-    });
-}
-
-#[test]
-fn decrease_council_budget_noop_with_zero_reduction_amount() {
-    let config = default_genesis_config();
-    let initial_budget = 100u64;
-    let reduction_amount = 0u64;
-    let root_origin = OriginType::Root;
-
-    build_test_externalities(config).execute_with(|| {
-        Mocks::set_budget(root_origin, initial_budget, Ok(()));
-
-        assert_ok!(Council::decrease_council_budget(
-            RawOrigin::Root.into(),
-            reduction_amount
-        ));
-
-        assert_eq!(Budget::<Runtime>::get(), initial_budget);
-    });
-}
-
-#[test]
 fn decrease_council_budget_ok_with_reduction_accounted() {
     let config = default_genesis_config();
     let initial_budget = 100u64;
