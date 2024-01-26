@@ -109,4 +109,7 @@ parameter_types! {
 
     pub SetPalletFozenStatusProposalParameters: ProposalParameters<BlockNumber, Balance> =
         freeze_pallet_proposal();
+
+    pub DecreaseCouncilBudgetProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        decrease_council_budget();
 }
