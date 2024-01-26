@@ -392,9 +392,6 @@ decl_error! {
         /// Arithmeic Error
         ArithmeticError,
 
-        /// Reduction Amount Too Large
-        ReductionAmountTooLarge,
-
         /// Reduction Amount Zero
         ReductionAmountZero,
     }
@@ -894,10 +891,6 @@ impl<T: Config> Module<T> {
                 ensure!(
                     !(*reduction_amount).is_zero(),
                     Error::<T>::ReductionAmountZero
-                );
-                ensure!(
-                    <council::Pallet<T>>::budget() >= *reduction_amount,
-                    Error::<T>::ReductionAmountTooLarge
                 );
             }
         }
