@@ -865,6 +865,12 @@ decl_module! {
             // ensure action can be started
             EnsureChecks::<T>::can_decrease_council_budget(origin)?;
 
+            // ensure reduction amount is not too large
+            ensure!(
+                reduction_amount <= Self::budget(),
+                Error::<T>::ReductionAmountTooLarge
+            );
+
             //
             // == MUTATION SAFE ==
             //

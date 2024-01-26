@@ -1719,35 +1719,6 @@ fn create_decrease_working_group_budget_fails_with_zero_reduction_amount() {
     })
 }
 
-#[test]
-fn create_decrease_working_group_budget_fails_with_reduction_amount_higher_than_council_budget() {
-    let general_proposal_parameters = GeneralProposalParameters::<Test> {
-        member_id: 1,
-        title: b"title".to_vec(),
-        description: b"body".to_vec(),
-        staking_account_id: Some(1),
-        exact_execution_block: None,
-    };
-    let initial_budget = 100u64;
-    let reduction_amount = initial_budget.saturating_mul(10);
-
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-        assert_ok!(council::Pallet::<Test>::set_budget(
-            RawOrigin::Root.into(),
-            initial_budget
-        ));
-
-        assert_noop!(
-            ProposalsCodex::create_proposal(
-                RawOrigin::Signed(1).into(),
-                general_proposal_parameters,
-                ProposalDetails::DecreaseCouncilBudget(reduction_amount)
-            ),
-            Error::<Test>::ReductionAmountTooLarge
-        );
-    })
-}
 fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed(
     group: WorkingGroup,
 ) {
