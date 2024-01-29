@@ -149,13 +149,13 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
     throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${parsedBagId}`, 400)
   }
 
-  const isObjectPending = res.locals.acceptPendingObjectsService.pendingObjectExists(dataObjectId.toString())
+  const isObjectPending = await res.locals.acceptPendingObjectsService.pendingObjectExists(dataObjectId.toString())
   if (isObjectPending) {
-    throw new WebApiError(`Data object ${dataObjectId} already exists`, 400)
+    throw new WebApiError(`Data object ${dataObjectId} already exists (pending)`, 400)
   }
 
   const isInStorage = getDataObjectIdFromCache(dataObjectId.toString())
   if (isInStorage) {
-    throw new WebApiError(`Data object ${dataObjectId} already exists`, 400)
+    throw new WebApiError(`Data object ${dataObjectId} already exists (in storage)`, 400)
   }
 }

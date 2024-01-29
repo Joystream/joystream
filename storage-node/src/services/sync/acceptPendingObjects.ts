@@ -67,8 +67,11 @@ export class AcceptPendingObjectsService {
     return this.instance
   }
 
-  pendingObjectExists(id: string): boolean {
-    return fs.existsSync(path.join(this.pendingDataObjectsDir, id))
+  async pendingObjectExists(id: string): Promise<boolean> {
+    return fsPromises
+      .access(path.join(this.pendingDataObjectsDir, id), fs.constants.F_OK)
+      .then(() => true)
+      .catch(() => false)
   }
 
   private async getPendingObjectsFromFolder(): Promise<string[]> {

@@ -10,7 +10,7 @@ import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
 import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { parseBagId } from '../../helpers/bagTypes'
-import { getFileInfo } from '../../helpers/fileInfo'
+import { getFileInfo, FileInfo } from '../../helpers/fileInfo'
 import { hashFile } from '../../helpers/hashing'
 import { moveFile } from '../../helpers/moveFile'
 import logger from '../../logger'
@@ -18,6 +18,17 @@ import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
 const fsPromises = fs.promises
+
+const FileInfoCache = new Map<string, FileInfo>()
+
+async function getCachedFileInfo(baseDir: string, objectId: string): Promise<FileInfo> {
+  if (FileInfoCache.has(objectId)) {
+    return FileInfoCache.get(objectId)!
+  }
+  const info = await getFileInfo(path.resolve(baseDir, objectId))
+  FileInfoCache.set(objectId, info)
+  return info
+}
 
 /**
  * A public endpoint: serves files by data object ID.
@@ -42,7 +53,7 @@ export async function getFile(
   try {
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
-    const fileInfo = await getFileInfo(fullPath)
+    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
 
     const stream = send(req, fullPath)
 
@@ -86,8 +97,7 @@ export async function getFileHeaders(
 
   try {
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId)
-    const fileInfo = await getFileInfo(fullPath)
+    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
 
     res.setHeader('Content-Disposition', 'inline')
     res.setHeader('Content-Type', fileInfo.mimeType)
