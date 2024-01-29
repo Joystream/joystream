@@ -51,6 +51,18 @@ export interface DataStatsResponse {
      * @memberof DataStatsResponse
      */
     'tempDownloads'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    'pendingDirSize'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    'pendingObjects'?: number;
 }
 /**
  * 
@@ -207,62 +219,6 @@ export interface StatusResponseSync {
      * @memberof StatusResponseSync
      */
     'interval': number;
-}
-/**
- * 
- * @export
- * @interface TokenRequest
- */
-export interface TokenRequest {
-    /**
-     * 
-     * @type {TokenRequestData}
-     * @memberof TokenRequest
-     */
-    'data': TokenRequestData;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequest
-     */
-    'signature': string;
-}
-/**
- * 
- * @export
- * @interface TokenRequestData
- */
-export interface TokenRequestData {
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'memberId': number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequestData
-     */
-    'accountId': string;
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'dataObjectId': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'storageBucketId': number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequestData
-     */
-    'bagId': string;
 }
 /**
  * 

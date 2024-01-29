@@ -1,32 +1,34 @@
 import { ApiPromise } from '@polkadot/api'
-import { PalletStorageBagIdType as BagId, PalletMembershipMembershipObject as Membership } from '@polkadot/types/lookup'
+import { PalletStorageBagIdType as BagId } from '@polkadot/types/lookup'
 import { hexToString } from '@polkadot/util'
 import BN from 'bn.js'
 import * as express from 'express'
 import fs from 'fs'
+import _ from 'lodash'
 import path from 'path'
-import { timeout } from 'promise-timeout'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
 import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
-import { createNonce, getTokenExpirationTime } from '../../caching/tokenNonceKeeper'
-import { createUploadToken, verifyTokenSignature } from '../../helpers/auth'
 import { parseBagId } from '../../helpers/bagTypes'
-import { getFileInfo } from '../../helpers/fileInfo'
+import { getFileInfo, FileInfo } from '../../helpers/fileInfo'
 import { hashFile } from '../../helpers/hashing'
+import { moveFile } from '../../helpers/moveFile'
 import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
-import {
-  GetFileHeadersRequestParams,
-  GetFileRequestParams,
-  UploadFileQueryParams,
-  UploadTokenBody,
-  UploadTokenRequest,
-} from '../types'
+import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
-import _ from 'lodash'
-import { moveFile } from '../../helpers/moveFile'
 const fsPromises = fs.promises
+
+const FileInfoCache = new Map<string, FileInfo>()
+
+async function getCachedFileInfo(baseDir: string, objectId: string): Promise<FileInfo> {
+  if (FileInfoCache.has(objectId)) {
+    return FileInfoCache.get(objectId)!
+  }
+  const info = await getFileInfo(path.resolve(baseDir, objectId))
+  FileInfoCache.set(objectId, info)
+  return info
+}
 
 /**
  * A public endpoint: serves files by data object ID.
@@ -51,7 +53,7 @@ export async function getFile(
   try {
     const uploadsDir = res.locals.uploadsDir
     const fullPath = path.resolve(uploadsDir, dataObjectId)
-    const fileInfo = await getFileInfo(fullPath)
+    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
 
     const stream = send(req, fullPath)
 
@@ -95,8 +97,7 @@ export async function getFileHeaders(
 
   try {
     const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId)
-    const fileInfo = await getFileInfo(fullPath)
+    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
 
     res.setHeader('Content-Disposition', 'inline')
     res.setHeader('Content-Type', fileInfo.mimeType)
@@ -155,39 +156,6 @@ export async function uploadFile(
     sendResponseWithError(res, next, err, 'upload')
   }
 }
-
-/**
- * A public endpoint: creates auth token for file uploads.
- */
-export async function authTokenForUploading(
-  req: express.Request,
-  res: express.Response<unknown, AppConfig>,
-  next: express.NextFunction
-): Promise<void> {
-  try {
-    // Function is not used
-    const account = res.locals.operatorRoleKey
-    if (!account) return
-    const tokenRequest = getTokenRequest(req)
-    const api = res.locals.api
-
-    await validateTokenRequest(api, tokenRequest)
-
-    const tokenBody: UploadTokenBody = {
-      nonce: createNonce(),
-      validUntil: getTokenExpirationTime(),
-      ...tokenRequest.data,
-    }
-    const signedToken = createUploadToken(tokenBody, account)
-
-    res.status(201).json({
-      token: signedToken,
-    })
-  } catch (err) {
-    sendResponseWithError(res, next, err, 'authtoken')
-  }
-}
-
 /**
  * Returns Multer.File object from the request.
  *
@@ -206,46 +174,6 @@ function getFileObject(req: express.Request<unknown, unknown, unknown, UploadFil
   }
 
   throw new WebApiError('No file uploaded', 400)
-}
-
-/**
- * Returns UploadTokenRequest object from the request.
- *
- * @remarks
- * This is a helper function. It parses the request object for a variable and
- * throws an error on failure.
- */
-function getTokenRequest(req: express.Request): UploadTokenRequest {
-  const tokenRequest = req.body as UploadTokenRequest
-  if (tokenRequest) {
-    return tokenRequest
-  }
-
-  throw new WebApiError('No token request provided.', 401)
-}
-
-/**
- * Validates token request. It verifies token signature and compares the
- * member ID and account ID from the runtime with token data.
- *
- * @param api - runtime API promise
- * @param tokenRequest - UploadTokenRequest instance
- * @returns void promise.
- */
-async function validateTokenRequest(api: ApiPromise, tokenRequest: UploadTokenRequest): Promise<void> {
-  const result = verifyTokenSignature(tokenRequest, tokenRequest.data.accountId)
-
-  if (!result) {
-    throw new WebApiError('Invalid upload token request signature.', 401)
-  }
-
-  const membershipPromise = api.query.members.membershipById(tokenRequest.data.memberId)
-
-  const membership = (await timeout(membershipPromise, 5000)).unwrap() as Membership
-
-  if (membership.controllerAccount.toString() !== tokenRequest.data.accountId) {
-    throw new WebApiError(`Provided controller account and member id don't match.`, 401)
-  }
 }
 
 /**

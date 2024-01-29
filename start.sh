@@ -19,6 +19,7 @@ else
   function down()
   {
       # Stop containers and clear volumes
+      docker-compose -f ./docker-compose.storage-squid.yml down -v
       docker-compose down -v
   }
 
@@ -36,6 +37,9 @@ fi
 
 ## Orion
 ./start-orion.sh
+
+## Storage Squid
+docker-compose -f ./docker-compose.storage-squid.yml up -d
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then

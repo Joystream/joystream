@@ -1,16 +1,5 @@
 import { components, operations } from './generated'
 
-// Upload tokens (currently unused)
-export type UploadTokenRequest = components['schemas']['TokenRequest']
-export type UploadTokenBody = UploadTokenRequest['data'] & {
-  nonce: string
-  validUntil: number
-}
-export type UploadToken = {
-  data: UploadTokenBody
-  signature: string
-}
-
 // filesApi.uploadFile
 export type UploadFileQueryParams = operations['filesApi.uploadFile']['parameters']['query']
 

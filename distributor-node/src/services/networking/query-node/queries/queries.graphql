@@ -34,15 +34,19 @@ fragment DataObjectDetails on StorageDataObject {
   }
   storageBag {
     storageBuckets {
-      ...StorageBucketDetails
+      storageBucket {
+        ...StorageBucketDetails
+      }
     }
     distributionBuckets {
-      ...DistributionBucketDetails
+      distributionBucket {
+        ...DistributionBucketDetails
+      }
     }
   }
 }
 
-query getDataObjectDetails($id: ID!) {
+query getDataObjectDetails($id: String!) {
   storageDataObjectByUniqueInput(where: { id: $id }) {
     ...DataObjectDetails
   }
@@ -68,7 +72,7 @@ fragment StorageBagWithObjects on StorageBag {
   }
 }
 
-query getDataObjectsWithBagsByIds($bagIds: [ID!], $limit: Int) {
+query getDataObjectsWithBagsByIds($bagIds: [String!], $limit: Int) {
   storageBags(where: { id_in: $bagIds }, limit: $limit) {
     ...StorageBagWithObjects
   }
@@ -77,11 +81,13 @@ query getDataObjectsWithBagsByIds($bagIds: [ID!], $limit: Int) {
 fragment DistributionBucketWithBags on DistributionBucket {
   id
   bags {
-    id
+    bag {
+      id
+    }
   }
 }
 
-query getDistributionBucketsWithBagsByIds($ids: [ID!]) {
+query getDistributionBucketsWithBagsByIds($ids: [String!]) {
   distributionBuckets(where: { id_in: $ids }) {
     ...DistributionBucketWithBags
   }
@@ -100,35 +106,18 @@ fragment StorageBucketOperatorFields on StorageBucket {
   }
 }
 
-fragment StorageBucketsConnectionFields on StorageBucketConnection {
-  edges {
-    node {
-      ...StorageBucketOperatorFields
-    }
-  }
-  pageInfo {
-    hasNextPage
-    endCursor
+query getActiveStorageBucketOperatorsData {
+  storageBuckets(where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }) {
+    ...StorageBucketOperatorFields
   }
 }
 
-query getActiveStorageBucketOperatorsData($limit: Int!, $lastCursor: String) {
-  storageBucketsConnection(
-    first: $limit
-    after: $lastCursor
-    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
-  ) {
-    ...StorageBucketsConnectionFields
-  }
+fragment SquidStatusFields on SquidStatus {
+  height
 }
 
-fragment QueryNodeStateFields on ProcessorState {
-  chainHead
-  lastCompleteBlock
-}
-
-subscription queryNodeState {
-  stateSubscription {
-    ...QueryNodeStateFields
+query squidStatus {
+  squidStatus {
+    height
   }
 }

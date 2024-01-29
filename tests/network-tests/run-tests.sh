@@ -9,8 +9,7 @@ rm ./output.json || :
 export RUNTIME_PROFILE=TESTING
 CONTAINER_ID=$(./run-node-docker.sh)
 
-if [ "${PERSIST}" == true ]
-then
+if [ "${PERSIST}" == true ]; then
   echo "Starting services"
 else
   function cleanup() {
@@ -21,6 +20,11 @@ else
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
+
+    if [ "${NO_STORAGE}" != true ]; then
+      docker-compose -f ../../docker-compose.storage-squid.yml down -v
+    fi
+
     docker-compose -f ../../docker-compose.yml down -v
   }
 
@@ -33,13 +37,11 @@ sleep 3
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
 # Start a query-node
-if [ "${NO_QN}" != true ]
-then
+if [ "${NO_QN}" != true ]; then
   ../../query-node/start.sh
 fi
 
-if [ "${NO_STORAGE}" != true ]
-then
+if [ "${NO_STORAGE}" != true ]; then
   ./start-storage.sh
 fi
 
