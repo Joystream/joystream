@@ -983,14 +983,14 @@ type PageInfo {
 }
 
 type Query {
-  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
-  videoSubtitleById(id: String!): VideoSubtitle
-  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
-  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
   events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
   eventById(id: String!): Event
   eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
   eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
+  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
+  videoSubtitleById(id: String!): VideoSubtitle
+  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
+  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
   storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
   storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
   storageBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): StorageBucketOperatorMetadata @deprecated(reason: "Use storageBucketOperatorMetadataById")
@@ -1036,11 +1036,16 @@ type Query {
   distributionBucketFamilyByUniqueInput(where: WhereIdInput!): DistributionBucketFamily @deprecated(reason: "Use distributionBucketFamilyById")
   distributionBucketFamiliesConnection(orderBy: [DistributionBucketFamilyOrderByInput!]!, after: String, first: Int, where: DistributionBucketFamilyWhereInput): DistributionBucketFamiliesConnection!
   squidStatus: SquidStatus
+  squidVersion: SquidVersion!
 }
 
 type SquidStatus {
   """The height of the processed part of the chain"""
   height: Int
+}
+
+type SquidVersion {
+  version: String!
 }
 
 type StorageBag {
@@ -1960,3 +1965,4 @@ input VideoSubtitleWhereInput {
 input WhereIdInput {
   id: String!
 }
+
