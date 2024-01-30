@@ -163,6 +163,12 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
         SetPalletFozenStatus: [false, 'ProjectToken'],
       }),
     },
+    {
+      // Setting freeze status to false incase other tests need pallet to not be frozen
+      details: createType('PalletProposalsCodexProposalDetails', {
+        DecreaseCouncilBudget: 100,
+      }),
+    },
   ]
 
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)
