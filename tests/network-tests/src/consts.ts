@@ -72,6 +72,7 @@ export const proposalTypeToProposalParamsKey = {
   'AmendConstitution': 'amendConstitutionProposalParameters',
   'CancelWorkingGroupLeadOpening': 'cancelWorkingGroupLeadOpeningProposalParameters',
   'CreateWorkingGroupLeadOpening': 'createWorkingGroupLeadOpeningProposalParameters',
+  'DecreaseCouncilBudget': 'decreaseCouncilBudgetProposalParameters',
   'DecreaseWorkingGroupLeadStake': 'decreaseWorkingGroupLeadStakeProposalParameters',
   'FillWorkingGroupLeadOpening': 'fillWorkingGroupOpeningProposalParameters',
   'FundingRequest': 'fundingRequestProposalParameters',
