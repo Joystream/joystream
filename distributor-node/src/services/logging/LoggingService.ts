@@ -1,3 +1,4 @@
+import axios from 'axios'
 import winston, { Logger, LoggerOptions } from 'winston'
 import escFormat from '@elastic/ecs-winston-format'
 import { ElasticsearchTransport } from 'winston-elasticsearch'
@@ -8,6 +9,7 @@ import stringify from 'fast-safe-stringify'
 import NodeCache from 'node-cache'
 import path from 'path'
 import 'winston-daily-rotate-file'
+import { parseAxiosError } from '../parsers/errors'
 
 const cliColors = {
   error: 'red',
@@ -51,6 +53,15 @@ const errorFormat: (opts: ErrorFormatOpts) => Format = winston.format((info, opt
   return info
 })
 
+const axiosErrorFormat = winston.format((info) => {
+  Object.entries(info).forEach(([key, value]) => {
+    if (axios.isAxiosError(value)) {
+      info[key] = parseAxiosError(value)
+    }
+  })
+  return info
+})
+
 const cliFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
   errorFormat({ filedName: 'err' }),
@@ -91,7 +102,7 @@ export class LoggingService {
         index,
         dataStream: true,
         level: config.logs.elastic.level,
-        format: winston.format.combine(pauseFormat({ id: 'es' }), escFormat()),
+        format: winston.format.combine(axiosErrorFormat(), pauseFormat({ id: 'es' }), escFormat()),
         retryLimit: 10,
         flushInterval: 5000,
         // apply custom transform so that tracing data (if present) is placed in the top level of the log
@@ -144,7 +155,7 @@ export class LoggingService {
         maxSize: config.logs.file.maxSize,
         maxFiles: config.logs.file.maxFiles,
         level: config.logs.file.level,
-        format: winston.format.combine(pauseFormat({ id: 'file' }), escFormat()),
+        format: winston.format.combine(axiosErrorFormat(), pauseFormat({ id: 'file' }), escFormat()),
       })
       transports.push(fileTransport)
     }
@@ -152,7 +163,7 @@ export class LoggingService {
     if (config.logs?.console) {
       const consoleTransport = new winston.transports.Console({
         level: config.logs.console.level,
-        format: winston.format.combine(pauseFormat({ id: 'cli' }), cliFormat),
+        format: winston.format.combine(axiosErrorFormat(), pauseFormat({ id: 'cli' }), cliFormat),
       })
       transports.push(consoleTransport)
     }

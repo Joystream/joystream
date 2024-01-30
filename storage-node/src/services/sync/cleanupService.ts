@@ -1,3 +1,4 @@
+import { ApiPromise } from '@polkadot/api'
 import _ from 'lodash'
 import superagent from 'superagent'
 import urljoin from 'url-join'
@@ -50,17 +51,20 @@ export const MINIMUM_REPLICATION_THRESHOLD = 2
 export async function performCleanup(
   buckets: string[],
   asyncWorkersNumber: number,
+  api: ApiPromise,
   qnApi: QueryNodeApi,
   uploadDirectory: string,
   hostId: string
 ): Promise<void> {
   logger.info('Started cleanup service...')
-  const qnState = await qnApi.getQueryNodeState()
-  if (!qnState) {
+  const squidStatus = await qnApi.getQueryNodeState()
+  if (!squidStatus || !squidStatus.height) {
     throw new Error("Can't perform cleanup because QueryNode state info is unavailable")
   }
 
-  const qnCurrentLag = qnState.chainHead - qnState.lastCompleteBlock
+  const chainHead = (await api.derive.chain.bestNumber()).toNumber() || 0
+
+  const qnCurrentLag = chainHead - squidStatus.height
 
   if (qnCurrentLag > MAXIMUM_QN_LAGGING_THRESHOLD) {
     throw new Error(
@@ -69,10 +73,9 @@ export async function performCleanup(
     )
   }
 
-  const [model, storedObjectsIds] = await Promise.all([
-    getStorageObligationsFromRuntime(qnApi, buckets),
-    getDataObjectIDs(),
-  ])
+  const model = await getStorageObligationsFromRuntime(qnApi, buckets)
+  const storedObjectsIds = getDataObjectIDs()
+
   const assignedObjectsIds = model.dataObjects.map((obj) => obj.id)
   const removedIds = _.difference(storedObjectsIds, assignedObjectsIds)
   const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
@@ -147,8 +150,8 @@ async function getDeletionTasksFromMovedDataObjects(
     movedDataObjects.map(async (movedDataObject) => {
       let dataObjectReplicationCount = 0
 
-      for (const { id } of movedDataObject.storageBag.storageBuckets) {
-        const url = urljoin(bucketOperatorUrlById.get(id), 'api/v1/files', movedDataObject.id)
+      for (const { storageBucket } of movedDataObject.storageBag.storageBuckets) {
+        const url = urljoin(bucketOperatorUrlById.get(storageBucket.id), 'api/v1/files', movedDataObject.id)
         await superagent.head(url).timeout(timeoutMs).set('X-COLOSSUS-HOST-ID', hostId)
         dataObjectReplicationCount++
       }

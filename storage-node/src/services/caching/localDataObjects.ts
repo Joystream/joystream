@@ -114,6 +114,15 @@ export function getDataObjectIdFromCache(
 }
 
 /**
+ * Checks if data object is present.
+ * @param dataObjectId
+ * @returns boolean
+ */
+export function isDataObjectIdInCache(dataObjectId: string): boolean {
+  return idCache.has(dataObjectId)
+}
+
+/**
  * Returns file names from the local directory, ignoring subfolders.
  *
  * @param directory - local directory to get file names from

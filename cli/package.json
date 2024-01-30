@@ -39,7 +39,7 @@
     "cross-fetch": "^3.0.6",
     "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.0",
-    "graphql": "^14.7.0",
+    "graphql": "^15.3.0",
     "graphql-tag": "^2.12.6",
     "inquirer": "^7.1.0",
     "inquirer-datepicker-prompt": "^0.4.2",

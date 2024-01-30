@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -12,7 +12,7 @@
     "@elastic/ecs-winston-format": "^1.1.0",
     "@joystream/metadata-protobuf": "^2.8.0",
     "@joystream/opentelemetry": "1.0.0",
-    "@joystream/storage-node-client": "^3.0.0",
+    "@joystream/storage-node-client": "^4.0.0",
     "@joystream/types": "^4.0.0",
     "@nerdwallet/apollo-cache-policies": "2.10.0",
     "@oclif/command": "^1",
@@ -31,7 +31,7 @@
     "express-winston": "^4.1.0",
     "fast-safe-stringify": "^2.1.1",
     "file-type": "^16.5.1",
-    "graphql": "^14.7.0",
+    "graphql": "^15.3.0",
     "graphql-tag": "^2.12.6",
     "inquirer": "^8.1.2",
     "js-image-generator": "^1.0.3",
@@ -138,6 +138,7 @@
     "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && generate:all",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "generate:docs:cli && git add docs/cli/*",
+    "generate:schema:graphql": "../scripts/save-storage-squid-schema.sh src/services/networking/query-node/schema.graphql",
     "generate:types:json-schema": "yarn ts-node --transpile-only ./src/schemas/scripts/generateTypes.ts",
     "generate:types:graphql": "yarn graphql-codegen -c ./src/services/networking/query-node/codegen.yml",
     "generate:types:public-api": "yarn openapi-typescript ./src/api-spec/public.yml -o ./src/types/generated/PublicApi.ts -c ../prettierrc.js",

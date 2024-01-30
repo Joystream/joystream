@@ -14,8 +14,13 @@ function cleanup() {
     docker logs colossus-1 --tail 100 || :
     echo "# Colossus-2 Logs"
     docker logs colossus-2 --tail 100 || :
-    docker-compose -f ../../docker-compose.yml down -v || :
-}
+
+    if [ "${NO_STORAGE}" != true ]; then
+      docker-compose -f ../../docker-compose.storage-squid.yml down -v
+    fi
+
+    docker-compose -f ../../docker-compose.yml down -v
+  }
 
 trap cleanup EXIT ERR SIGINT SIGTERM
 
@@ -28,13 +33,11 @@ sleep 30
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
 # Start a query-node
-if [ "${NO_QN}" != true ]
-then
+if [ "${NO_QN}" != true ]; then
   ../../query-node/start.sh
 fi
 
-if [ "${NO_STORAGE}" != true ]
-then
+if [ "${NO_STORAGE}" != true ]; then
   ./start-storage.sh
 fi
 
