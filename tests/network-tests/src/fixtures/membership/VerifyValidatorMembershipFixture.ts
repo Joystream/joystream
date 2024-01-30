@@ -71,10 +71,7 @@ export class VerifyValidatorMembershipFixture extends WithMembershipWorkersFixtu
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
 
-    const memberIds = this.verifications.reduce(
-      (ids, { memberId }) => (ids.some((id) => memberId.eq(id)) ? ids : [...ids, memberId]),
-      [] as MemberId[]
-    )
+    const memberIds = [...new Set(this.verifications.map((v) => v.memberId))]
     await this.query.tryQueryWithTimeout(
       () => this.query.getMembersByIds(memberIds),
       (qMembers) => {
