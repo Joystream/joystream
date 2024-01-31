@@ -516,6 +516,10 @@ decl_module! {
         const DecreaseCouncilBudgetProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::DecreaseCouncilBudgetProposalParameters::get();
 
+        /// Set Pallet Frozen status
+        const SetPalletFozenStatusProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
+
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
