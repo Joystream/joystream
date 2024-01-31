@@ -65,7 +65,7 @@ pub use weights::WeightInfo;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
-use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
+use frame_support::{decl_event, decl_module, decl_storage, ensure, PalletId, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
@@ -86,6 +86,7 @@ use staking_handler::StakingHandler;
 type Balances<T> = balances::Pallet<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
+type VestingInfoOf<T> = vesting::VestingInfo<BalanceOf<T>, T::BlockNumber>;
 
 /// The _Group_ main _Config_
 pub trait Config<I: Instance = DefaultInstance>:
@@ -129,6 +130,9 @@ pub trait Config<I: Instance = DefaultInstance>:
 
     /// Stake needed to create an opening
     type LeaderOpeningStake: Get<Self::Balance>;
+
+    /// Type for the Module Id account in order to locked payment the budget.
+    type ModuleId: Get<PalletId>;
 }
 
 decl_event!(
@@ -145,7 +149,8 @@ decl_event!(
        StakePolicy = StakePolicy<<T as frame_system::Config>::BlockNumber, BalanceOf<T>>,
        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
        MemberId = MemberId<T>,
-       Hash = <T as frame_system::Config>::Hash
+       Hash = <T as frame_system::Config>::Hash,
+       VestingInfo = VestingInfoOf<T>
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -265,9 +270,9 @@ decl_event!(
         /// Emits on budget from the working group being spent
         /// Params:
         /// - Receiver Account Id.
-        /// - Balance spent.
+        /// - Vesting scheduled
         /// - Rationale.
-        BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
+        BudgetSpending(AccountId, VestingInfo, Option<Vec<u8>>),
 
         /// Emits on paying the reward.
         /// Params:
@@ -1136,22 +1141,25 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
+        #[transactional] // should be default, this will protect against failure on the vesting transfer
         #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
         pub fn spend_from_budget(
             origin,
             account_id: T::AccountId,
-            amount: BalanceOf<T>,
+            vesting_schedule: VestingInfoOf<T>,
             rationale: Option<Vec<u8>>,
         ) {
             // Ensure group leader privilege.
             checks::ensure_origin_is_active_leader::<T,I>(origin)?;
 
-            ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
+            let amount = vesting_schedule.locked();
+
+            ensure!(!amount.is_zero(), Error::<T, I>::CannotSpendZero);
 
             // Ensures that the budget is sufficient for the spending of specified amount
             let (_, potential_missed_payment) = Self::calculate_possible_payment(amount);
             ensure!(
-                potential_missed_payment == Zero::zero(),
+                potential_missed_payment.is_zero(),
                 Error::<T, I>::InsufficientBudgetForSpending
             );
 
@@ -1159,11 +1167,37 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::pay_from_budget(&account_id, amount);
+            // that is the payment amount is equal to the locked amount
+            let immediate_payment = vesting_schedule.locked() == vesting_schedule.per_block();
+
+            if !immediate_payment {
+                // Get the treasury account for the balance and if it's empty deposit ExistentialDeposit
+                // we do this to avoid migrations when updating to Luxor
+                let treasury_account_id = T::ModuleId::get().into_sub_account_truncating(I::INDEX);
+                let treasury_amount = Balances::<T>::usable_balance(&treasury_account_id);
+                if treasury_amount < T::ExistentialDeposit::get() {
+                    let treasury_initial_deposit = T::ExistentialDeposit::get().saturating_sub(treasury_amount);
+                    let _ = <balances::Pallet<T>>::deposit_creating(&treasury_account_id, treasury_initial_deposit);
+                }
+
+                // first mint into the treasury account
+                Self::pay_from_budget(&treasury_account_id, amount);
+
+                // proceed with vested transfer into worker reward account
+                let _ = vesting::Pallet::<T>::do_vested_transfer(
+                    &treasury_account_id,
+                    &account_id,
+                    vesting_schedule,
+                );
+            } else {
+                // else mint directly into worker reward account
+                Self::pay_from_budget(&account_id, amount);
+            }
 
             // Trigger event
-            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
+            Self::deposit_event(RawEvent::BudgetSpending(account_id, vesting_schedule, rationale));
         }
+
 
         /// Fund working group budget by a member.
         /// <weight>
@@ -1625,6 +1659,11 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .map(|(worker_id, _)| worker_id)
             .collect()
+    }
+
+    /// Returns the account for the  module used for vested spending
+    fn module_treasury_account() -> T::AccountId {
+        <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 }
 

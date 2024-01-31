@@ -5913,6 +5913,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "parity-scale-codec",
  "scale-info",
  "serde",

@@ -3,6 +3,7 @@
 use codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
+use vesting::VestingInfo;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
