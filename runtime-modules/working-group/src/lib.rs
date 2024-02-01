@@ -62,35 +62,35 @@ mod types;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use common::{costs::burn_from_usable, StakingAccountValidator};
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, PalletId, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
-use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_runtime::traits::{AccountIdConversion, Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use sp_std::{vec, vec::Vec};
+use sp_std::vec::Vec;
 
 pub use errors::Error;
 pub use types::*;
 use types::{ApplicationInfo, WorkerInfo};
 
-use common::costs::burn_from_usable;
 use common::membership::MemberOriginValidator;
 use common::to_kb;
-use common::{MemberId, StakingAccountValidator};
+use common::MemberId;
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 type Balances<T> = balances::Pallet<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
-type VestingInfoOf<T> = vesting::VestingInfo<BalanceOf<T>, T::BlockNumber>;
+type VestingInfoOf<T> =
+    vesting::VestingInfo<BalanceOf<T>, <T as frame_system::Config>::BlockNumber>;
 
 /// The _Group_ main _Config_
 pub trait Config<I: Instance = DefaultInstance>:
-    frame_system::Config + balances::Config + common::membership::MembershipTypes
+    frame_system::Config + balances::Config + common::membership::MembershipTypes + vesting::Config
 {
     /// _Administration_ event type.
     type RuntimeEvent: From<Event<Self, I>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
@@ -1141,7 +1141,6 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[transactional] // should be default, this will protect against failure on the vesting transfer
         #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
         pub fn spend_from_budget(
             origin,
@@ -1184,11 +1183,11 @@ decl_module! {
                 Self::pay_from_budget(&treasury_account_id, amount);
 
                 // proceed with vested transfer into worker reward account
-                let _ = vesting::Pallet::<T>::do_vested_transfer(
-                    &treasury_account_id,
-                    &account_id,
-                    vesting_schedule,
-                );
+                // let _ = vesting::Pallet::<T>::do_vested_transfer(
+                //     &treasury_account_id,
+                //     &account_id,
+                //     vesting_schedule,
+                // );
             } else {
                 // else mint directly into worker reward account
                 Self::pay_from_budget(&account_id, amount);
@@ -1662,8 +1661,8 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
     }
 
     /// Returns the account for the  module used for vested spending
-    fn module_treasury_account() -> T::AccountId {
-        <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
+    pub fn module_treasury_account() -> T::AccountId {
+        <T as Config<I>>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 }
 
@@ -1677,7 +1676,6 @@ impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator
     fn ensure_leader_origin(origin: T::RuntimeOrigin) -> DispatchResult {
         checks::ensure_origin_is_active_leader::<T, I>(origin)
     }
-
     fn get_leader_member_id() -> Option<T::MemberId> {
         checks::ensure_lead_is_set::<T, I>()
             .map(Self::worker_by_id)

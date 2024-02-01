@@ -11,7 +11,7 @@ use super::mock::{Balances, LockId, RuntimeEvent, System, Test, TestWorkingGroup
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
-    OpeningType, RawEvent, StakePolicy, Worker,
+    OpeningType, RawEvent, StakePolicy, VestingInfoOf, Worker,
 };
 use staking_handler::StakingHandler;
 
@@ -41,6 +41,7 @@ impl EventFixture {
             ApplyOnOpeningParameters<Test>,
             u64,
             <Test as frame_system::Config>::Hash,
+            VestingInfoOf<Test>,
             DefaultInstance,
         >,
     ) {
@@ -72,6 +73,7 @@ impl EventFixture {
             ApplyOnOpeningParameters<Test>,
             u64,
             <Test as frame_system::Config>::Hash,
+            VestingInfoOf<Test>,
             DefaultInstance,
         >,
     ) {
@@ -1162,7 +1164,7 @@ impl SetStatusTextFixture {
 pub struct SpendFromBudgetFixture {
     origin: RawOrigin<u64>,
     account_id: u64,
-    amount: u64,
+    vesting_schedule: VestingInfoOf<Test>,
     rationale: Option<Vec<u8>>,
 }
 
@@ -1171,7 +1173,7 @@ impl Default for SpendFromBudgetFixture {
         Self {
             origin: RawOrigin::Signed(1),
             account_id: 1,
-            amount: 100,
+            vesting_schedule: VestingInfoOf::<Test>::new(100, 10, 0),
             rationale: None,
         }
     }
@@ -1186,15 +1188,23 @@ impl SpendFromBudgetFixture {
         Self { account_id, ..self }
     }
 
+    pub fn with_vesting_schedule(self, total_amount: u64, per_block: u64) -> Self {
+        let vesting_schedule = VestingInfoOf::<Test>::new(total_amount, per_block, 0);
+        Self {
+            vesting_schedule,
+            ..self
+        }
+    }
+
     pub fn with_amount(self, amount: u64) -> Self {
-        Self { amount, ..self }
+        self.with_vesting_schedule(amount, amount)
     }
 
     pub fn call(&self) -> DispatchResult {
         TestWorkingGroup::spend_from_budget(
             self.origin.clone().into(),
             self.account_id,
-            self.amount,
+            self.vesting_schedule,
             self.rationale.clone(),
         )
     }
@@ -1209,10 +1219,11 @@ impl SpendFromBudgetFixture {
 
         let new_budget = TestWorkingGroup::budget();
         let new_balance = Balances::usable_balance(&self.account_id);
+        let amount = self.vesting_schedule.locked();
 
         if actual_result.is_ok() {
-            assert_eq!(new_budget, old_budget - self.amount);
-            assert_eq!(new_balance, old_balance + self.amount);
+            assert_eq!(new_budget, old_budget - amount);
+            assert_eq!(new_balance, old_balance + amount);
         } else {
             assert_eq!(old_budget, new_budget);
             assert_eq!(old_balance, new_balance);

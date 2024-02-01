@@ -1,8 +1,9 @@
-use frame_support::parameter_types;
-use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier};
+use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::{parameter_types, PalletId};
 
 use sp_core::H256;
+use sp_runtime::traits::Identity;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -17,7 +18,7 @@ use frame_support::dispatch::DispatchError;
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 10;
+    pub const ExistentialDeposit: u64 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const DefaultMemberInvitesCount: u32 = 2;
@@ -39,6 +40,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Balances: balances,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T> },
         Timestamp: pallet_timestamp,
         TestWorkingGroup: working_group::{Pallet, Call, Storage, Event<T>},
     }
@@ -76,6 +78,22 @@ impl pallet_timestamp::Config for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 1;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = Identity;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
 }
 
 impl balances::Config for Test {
@@ -122,6 +140,7 @@ parameter_types! {
     pub const MinimumApplicationStake: u64 = 50;
     pub const LockId: [u8; 8] = [1; 8];
     pub const LeaderOpeningStake: u64 = 20;
+    pub const WorkingGroupModuleId: PalletId = PalletId(*b"mworking"); // module storage
 }
 
 impl Config for Test {
@@ -135,6 +154,7 @@ impl Config for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl common::StakingAccountValidator<Test> for () {

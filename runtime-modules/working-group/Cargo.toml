@@ -48,6 +48,7 @@ std = [
 	'sp-arithmetic/std',
 	'sp-std/std',
 	'common/std',
+	'vesting/std',
 	'balances/std',
 	'staking-handler/std',
 	'membership/std',
