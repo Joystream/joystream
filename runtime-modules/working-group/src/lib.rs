@@ -60,15 +60,19 @@ mod errors;
 mod tests;
 mod types;
 pub mod weights;
+use sp_runtime::MultiAddress;
 pub use weights::WeightInfo;
 
 use common::{costs::burn_from_usable, StakingAccountValidator};
+use frame_support::dispatch::RawOrigin;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, PalletId, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
-use sp_runtime::traits::{AccountIdConversion, Hash, One, SaturatedConversion, Saturating, Zero};
+use sp_runtime::traits::{
+    AccountIdConversion, Hash, One, SaturatedConversion, Saturating, StaticLookup, Zero,
+};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
@@ -1145,7 +1149,7 @@ decl_module! {
         pub fn spend_from_budget(
             origin,
             account_id: T::AccountId,
-            vesting_schedule: VestingInfoOf<T>,
+            vesting_schedule: vesting::VestingInfo<BalanceOf<T>, T::BlockNumber>,
             rationale: Option<Vec<u8>>,
         ) {
             // Ensure group leader privilege.
@@ -1183,11 +1187,12 @@ decl_module! {
                 Self::pay_from_budget(&treasury_account_id, amount);
 
                 // proceed with vested transfer into worker reward account
-                // let _ = vesting::Pallet::<T>::do_vested_transfer(
-                //     &treasury_account_id,
-                //     &account_id,
-                //     vesting_schedule,
-                // );
+                let _ = vesting::Pallet::<T>::vested_transfer(
+                    RawOrigin::Signed(treasury_account_id.clone()).into(),
+                    <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
+                    // TODO: fix this
+                    vesting::VestingInfo::<_,_>::new(10u32.into(), 10u32.into(), 0u32.into()),
+                )?;
             } else {
                 // else mint directly into worker reward account
                 Self::pay_from_budget(&account_id, amount);
