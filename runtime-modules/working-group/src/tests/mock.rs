@@ -3,7 +3,7 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{parameter_types, PalletId};
 
 use sp_core::H256;
-use sp_runtime::traits::Identity;
+use sp_runtime::traits::{Convert, Identity};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -11,7 +11,7 @@ use sp_runtime::{
 use staking_handler::LockComparator;
 use std::convert::{TryFrom, TryInto};
 
-use crate as working_group;
+use crate::{self as working_group, BalanceOf, VestingBalanceOf};
 use crate::{Config, Module};
 use frame_support::dispatch::DispatchError;
 
@@ -145,6 +145,7 @@ parameter_types! {
 
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
+    type VestingBalanceToBalance = BalanceConverter;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = ();
@@ -155,6 +156,13 @@ impl Config for Test {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type ModuleId = WorkingGroupModuleId;
+}
+
+pub struct BalanceConverter();
+impl Convert<BalanceOf<Test>, VestingBalanceOf<Test>> for BalanceConverter {
+    fn convert(balance: BalanceOf<Test>) -> VestingBalanceOf<Test> {
+        balance as u64
+    }
 }
 
 impl common::StakingAccountValidator<Test> for () {

@@ -60,7 +60,6 @@ mod errors;
 mod tests;
 mod types;
 pub mod weights;
-use sp_runtime::MultiAddress;
 pub use weights::WeightInfo;
 
 use common::{costs::burn_from_usable, StakingAccountValidator};
@@ -70,12 +69,13 @@ use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, PalletId, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
+use sp_runtime::traits::Convert;
 use sp_runtime::traits::{
     AccountIdConversion, Hash, One, SaturatedConversion, Saturating, StaticLookup, Zero,
 };
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 pub use errors::Error;
 pub use types::*;
@@ -90,7 +90,7 @@ type Balances<T> = balances::Pallet<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
 type VestingInfoOf<T> =
-    vesting::VestingInfo<BalanceOf<T>, <T as frame_system::Config>::BlockNumber>;
+    vesting::VestingInfo<VestingBalanceOf<T>, <T as frame_system::Config>::BlockNumber>;
 
 /// The _Group_ main _Config_
 pub trait Config<I: Instance = DefaultInstance>:
@@ -119,6 +119,9 @@ pub trait Config<I: Instance = DefaultInstance>:
         MemberId<Self>,
         Self::AccountId,
     >;
+
+    /// Balances Converter: delay all conversion until actual balance type is specified (in our case u128 for prod and u64 for tests)
+    type VestingBalanceToBalance: Convert<VestingBalanceOf<Self>, BalanceOf<Self>>;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
@@ -1149,13 +1152,13 @@ decl_module! {
         pub fn spend_from_budget(
             origin,
             account_id: T::AccountId,
-            vesting_schedule: vesting::VestingInfo<BalanceOf<T>, T::BlockNumber>,
+            vesting_schedule: VestingInfoOf<T>,
             rationale: Option<Vec<u8>>,
         ) {
             // Ensure group leader privilege.
             checks::ensure_origin_is_active_leader::<T,I>(origin)?;
 
-            let amount = vesting_schedule.locked();
+            let amount = T::VestingBalanceToBalance::convert(vesting_schedule.locked());
 
             ensure!(!amount.is_zero(), Error::<T, I>::CannotSpendZero);
 
@@ -1187,11 +1190,11 @@ decl_module! {
                 Self::pay_from_budget(&treasury_account_id, amount);
 
                 // proceed with vested transfer into worker reward account
-                let _ = vesting::Pallet::<T>::vested_transfer(
-                    RawOrigin::Signed(treasury_account_id.clone()).into(),
+                vesting::Pallet::<T>::vested_transfer(
+                    RawOrigin::Signed(treasury_account_id).into(),
                     <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
                     // TODO: fix this
-                    vesting::VestingInfo::<_,_>::new(10u32.into(), 10u32.into(), 0u32.into()),
+                    vesting_schedule,
                 )?;
             } else {
                 // else mint directly into worker reward account

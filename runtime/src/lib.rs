@@ -1355,6 +1355,7 @@ parameter_types! {
     pub const MinimumApplicationStake: Balance = dollars!(20);
     // This should be more costly than `add_opening` fee
     pub const LeaderOpeningStake: Balance = dollars!(100);
+    pub const WorkingGroupModuleId: PalletId = PalletId(*b"mworking"); // module storage
 }
 
 // Make sure that one cannot leave before a slashing proposal for lead can go through.
@@ -1428,6 +1429,8 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
@@ -1441,6 +1444,8 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
@@ -1454,6 +1459,8 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
@@ -1467,6 +1474,8 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
@@ -1480,6 +1489,8 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
@@ -1493,6 +1504,8 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
@@ -1506,6 +1519,8 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
@@ -1519,6 +1534,8 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
@@ -1532,6 +1549,8 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = WorkingGroupModuleId;
 }
 
 parameter_types! {
