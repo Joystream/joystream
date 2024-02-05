@@ -89,7 +89,12 @@ export class TaskProcessor {
 
       if (task !== null) {
         logger.debug(task.description())
-        await task.execute()
+        try {
+          await task.execute()
+        } catch (err) {
+          // Catch the task failure to avoid the current process worker failing
+          logger.warn(`task failed: ${err.message}`)
+        }
       } else {
         if (this.exitOnCompletion) {
           return
@@ -126,6 +131,6 @@ export class TaskProcessorSpawner {
       processes.push(processor.process())
     }
 
-    await Promise.all(processes)
+    await Promise.allSettled(processes)
   }
 }

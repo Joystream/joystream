@@ -41,7 +41,7 @@ services:
     command: [
       'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data/uploads/',
       '--sync', '--syncInterval=1',
-      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
+      '--storageSquidEndpoint=${COLOSSUS_STORAGE_SQUID_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
       '--logFilePath=/logs',
       '--tempFolder=/data/temp/',
@@ -70,7 +70,7 @@ services:
     # Node configuration can be overriden via env, for exampe:
     environment:
       JOYSTREAM_DISTRIBUTOR__ID: distributor-1
-      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__STORAGE_SQUID: ${DISTRIBUTOR_STORAGE_SQUID_URL}
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_1_ACCOUNT_URI}\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_1_WORKER_ID}
       JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
@@ -113,7 +113,7 @@ services:
     command: [
       'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
       '--sync', '--syncInterval=1',
-      '--queryNodeEndpoint=${COLOSSUS_QUERY_NODE_URL}',
+      '--storageSquidEndpoint=${COLOSSUS_STORAGE_SQUID_URL}',
       '--apiUrl=${JOYSTREAM_NODE_WS}',
       '--logFilePath=/logs',
       '--tempFolder=/data/temp/',
@@ -142,7 +142,7 @@ services:
     # Node configuration can be overriden via env, for exampe:
     environment:
       JOYSTREAM_DISTRIBUTOR__ID: distributor-2
-      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__QUERY_NODE: ${DISTRIBUTOR_QUERY_NODE_URL}
+      JOYSTREAM_DISTRIBUTOR__ENDPOINTS__STORAGE_SQUID: ${DISTRIBUTOR_STORAGE_SQUID_URL}
       JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_2_ACCOUNT_URI}\"}]"
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_2_WORKER_ID}
       JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
@@ -324,10 +324,10 @@ services:
       - '127.0.0.1:${ORION_DB_PORT}:${ORION_DB_PORT}'
     command: ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.conf', '-p', '${ORION_DB_PORT}']
     # command: ['postgres', '-p', '${ORION_DB_PORT}']
-    shm_size: 1g
+    shm_size: 1.1g # A bit higher than `shared_buffers` value in postgres.conf
     volumes:
       - orion-db-data:/var/lib/postgresql/data
-      - ./orion-postgres.conf:/etc/postgresql/postgresql.conf
+      - ./postgres.conf:/etc/postgresql/postgresql.conf
 
   # Orion processor
   orion-processor:
@@ -344,6 +344,7 @@ services:
       - DB_PORT=${ORION_DB_PORT}
       - DB_HOST=orion-db
       - GQL_PORT=${GRAPHQL_API_PORT}
+      - ARCHIVE_GATEWAY_URL=${ORION_ARCHIVE_GATEWAY_URL}
     volumes:
       - ./db/export:/squid/db/export
     command: >

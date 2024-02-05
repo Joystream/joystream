@@ -14,6 +14,7 @@ import {
 } from '../caching/localDataObjects'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
+import { moveFile } from '../helpers/moveFile'
 const fsPromises = fs.promises
 
 /**
@@ -87,11 +88,16 @@ export class DownloadFileTask implements SyncTask {
   }
 
   description(): string {
-    return `Sync - Trying for download of: ${this.dataObjectId} ....`
+    return `Sync - Trying for download of object: ${this.dataObjectId} ...`
   }
 
   async execute(): Promise<void> {
     const operatorUrlIndices: number[] = _.shuffle(_.range(this.operatorUrls.length))
+
+    if (operatorUrlIndices.length === 0) {
+      logger.warn(`Sync - No operator URLs for ${this.dataObjectId}`)
+      return
+    }
 
     for (const randomUrlIndex of operatorUrlIndices) {
       const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
@@ -103,15 +109,18 @@ export class DownloadFileTask implements SyncTask {
         await this.tryDownload(chosenBaseUrl, filepath)
 
         // if download succeeds, break the loop
-        if (fs.existsSync(filepath)) {
+        try {
+          await fsPromises.access(filepath, fs.constants.F_OK)
           return
+        } catch (err) {
+          continue
         }
       } catch (err) {
         logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
       }
     }
 
-    logger.warn(`Sync - cannot get operator URLs for ${this.dataObjectId}`)
+    logger.warn(`Sync - Failed to download ${this.dataObjectId}`)
   }
 
   async tryDownload(url: string, filepath: string): Promise<void> {
@@ -147,7 +156,7 @@ export class DownloadFileTask implements SyncTask {
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
-      await fsPromises.rename(tempFilePath, filepath)
+      await moveFile(tempFilePath, filepath)
       addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
