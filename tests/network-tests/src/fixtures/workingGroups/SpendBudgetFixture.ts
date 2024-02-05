@@ -9,15 +9,27 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
 import { BudgetSpendingEventFieldsFragment, WorkingGroupFieldsFragment } from '../../graphql/generated/queries'
 
+export type VestingSchedule = {
+  locked: BN
+  perBlock: BN
+  startingBlock?: BN
+}
+
 export class SpendBudgetFixture extends BaseWorkingGroupFixture {
   protected recievers: string[]
-  protected amounts: BN[]
+  protected vestingSchedules: VestingSchedule[]
   protected preExecuteBudget?: BN
 
-  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, recievers: string[], amounts: BN[]) {
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    recievers: string[],
+    vestingSchedules: VestingSchedule[]
+  ) {
     super(api, query, group)
     this.recievers = recievers
-    this.amounts = amounts
+    this.vestingSchedules = vestingSchedules
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
@@ -26,7 +38,7 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
     return this.recievers.map((reciever, i) =>
-      this.api.tx[this.group].spendFromBudget(reciever, this.amounts[i], this.getRationale(reciever))
+      this.api.tx[this.group].spendFromBudget(reciever, this.vestingSchedules[i], this.getRationale(reciever))
     )
   }
 
@@ -45,14 +57,17 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
 
   protected assertQueryNodeEventIsValid(qEvent: BudgetSpendingEventFieldsFragment, i: number): void {
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.amount, this.amounts[i].toString())
+    assert.equal(qEvent.amount, this.vestingSchedules[i].locked.toString())
     assert.equal(qEvent.reciever, this.recievers[i])
     assert.equal(qEvent.rationale, this.getRationale(this.recievers[i]))
   }
 
   protected assertQueriedGroupIsValid(qGroup: WorkingGroupFieldsFragment | null): void {
     Utils.assert(qGroup, 'Query node: Working group not found!')
-    assert.equal(qGroup.budget, this.preExecuteBudget!.sub(this.amounts.reduce((a, b) => a.add(b), new BN(0))))
+    assert.equal(
+      qGroup.budget,
+      this.preExecuteBudget!.sub(this.vestingSchedules.reduce((a, b) => a.add(b.locked), new BN(0)))
+    )
   }
 
   async runQueryNodeChecks(): Promise<void> {

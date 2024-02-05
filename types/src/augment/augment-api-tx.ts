@@ -181,7 +181,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -1512,7 +1512,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -1920,7 +1920,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -2451,7 +2451,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -3008,7 +3008,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -3373,7 +3373,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -3622,7 +3622,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -3871,7 +3871,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
@@ -5343,7 +5343,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - O(1) doesn't depend on the state or parameters
        * # </weight>
        **/
-      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
+      spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
        * Requires signed leader origin or the root (to terminate the leader role).
