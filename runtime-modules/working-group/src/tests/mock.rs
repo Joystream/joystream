@@ -3,7 +3,7 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{parameter_types, PalletId};
 
 use sp_core::H256;
-use sp_runtime::traits::{Convert, Identity};
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -87,7 +87,7 @@ parameter_types! {
 }
 
 impl vesting::Config for Test {
-    type BlockNumberToBalance = Identity;
+    type BlockNumberToBalance = BlockNumberToBalance;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
     const MAX_VESTING_SCHEDULES: u32 = 3;
@@ -158,6 +158,14 @@ impl Config for Test {
     type ModuleId = WorkingGroupModuleId;
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, BalanceOf<Test>>
+    for BlockNumberToBalance
+{
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> BalanceOf<Test> {
+        block as u64
+    }
+}
 pub struct BalanceConverter();
 impl Convert<BalanceOf<Test>, VestingBalanceOf<Test>> for BalanceConverter {
     fn convert(balance: BalanceOf<Test>) -> VestingBalanceOf<Test> {

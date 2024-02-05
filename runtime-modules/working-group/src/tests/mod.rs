@@ -6,6 +6,7 @@ pub use mock::{build_test_externalities, Test, DEFAULT_WORKER_ACCOUNT_ID};
 
 use frame_system::RawOrigin;
 use sp_arithmetic::traits::Zero;
+use vesting::VestingInfo;
 
 use crate::tests::fixtures::{
     get_current_lead_account_id, set_invitation_lock, CancelOpeningFixture,
@@ -15,7 +16,7 @@ use crate::tests::fixtures::{
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
-    ExistentialDeposit, Vesting, STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
+    BlockNumberToBalance, ExistentialDeposit, Vesting, STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
     STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
@@ -2348,6 +2349,60 @@ fn spend_from_budget_succeeded() {
             VestingInfoOf::<Test>::new(amount, amount, Zero::zero()),
             None,
         ));
+    });
+}
+#[test]
+fn spend_from_budget_succeeded_with_vesting_correctly_added() {
+    let get_vesting = |account_id: u64| -> VestingInfo<u64, u64> {
+        let v = Vesting::vesting(&account_id).unwrap();
+        v.last().copied().unwrap()
+    };
+    let account_id = 2;
+    let amount = 100;
+    let mut block_number = 1;
+    let vesting_period = 10;
+    let per_block = amount / vesting_period;
+    let vested_amount = |block_number: u64| -> u64 { per_block * block_number };
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        run_to_block(block_number);
+
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(1000);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        assert_ok!(SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_vesting_schedule(amount, per_block)
+            .call());
+
+        // amount at vesting block should be amount / 10
+        assert_eq!(
+            get_vesting(account_id).locked_at::<BlockNumberToBalance>(block_number),
+            amount - vested_amount(block_number)
+        );
+
+        // halfway through the vesting period amount vested should be exactly half
+        block_number += vesting_period / 2;
+        run_to_block(block_number);
+        assert_eq!(
+            get_vesting(account_id).locked_at::<BlockNumberToBalance>(block_number),
+            amount - vested_amount(block_number)
+        );
+
+        // last block
+        block_number += vesting_period / 2;
+        run_to_block(block_number);
+        assert!(get_vesting(account_id)
+            .locked_at::<BlockNumberToBalance>(block_number)
+            .is_zero());
+
+        // past last block
+        block_number += 1;
+        run_to_block(block_number);
+        assert!(get_vesting(account_id)
+            .locked_at::<BlockNumberToBalance>(block_number)
+            .is_zero());
     });
 }
 
