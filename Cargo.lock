@@ -5259,6 +5259,7 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-storage",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",

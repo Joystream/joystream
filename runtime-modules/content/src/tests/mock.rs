@@ -4,11 +4,12 @@ use common::membership::MemberOriginValidator;
 use common::working_group::WorkingGroupAuthenticator;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{
-    ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize,
+    ConstU16, ConstU32, ConstU64, LockIdentifier, OnFinalize, OnInitialize, WithdrawReasons,
 };
 use frame_support::{parameter_types, PalletId};
 pub use membership::WeightInfo;
 use sp_core::{H256, U256};
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -17,6 +18,7 @@ use sp_runtime::{
 use sp_std::cell::RefCell;
 use sp_std::convert::{TryFrom, TryInto};
 use staking_handler::LockComparator;
+use working_group::VestingBalanceOf;
 
 use crate::Config;
 use crate::ContentActorAuthenticator;
@@ -154,6 +156,7 @@ frame_support::construct_runtime!(
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
         ContentWorkingGroup: working_group::<Instance3>::{Pallet, Call, Storage, Event<T, I>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -476,6 +479,15 @@ impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
     }
 }
 
+parameter_types! {
+    pub const DWGModuleId: PalletId = PalletId(*b"m_distwg");
+    pub const SWGModuleId: PalletId = PalletId(*b"m_storwg");
+    pub const CWGModuleId: PalletId = PalletId(*b"m_contwg");
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -490,6 +502,8 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = SWGModuleId;
 }
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
@@ -505,6 +519,32 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
+    type ModuleId = DWGModuleId;
+}
+
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, BalanceOf<Test>>
+    for BlockNumberToBalance
+{
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> BalanceOf<Test> {
+        block as u64
+    }
+}
+pub struct BalanceConverter();
+impl Convert<BalanceOf<Test>, VestingBalanceOf<Test>> for BalanceConverter {
+    fn convert(balance: BalanceOf<Test>) -> VestingBalanceOf<Test> {
+        balance as u64
+    }
+}
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
 }
 
 // Content working group instance alias.
@@ -521,6 +561,8 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type ModuleId = CWGModuleId;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, U256> for () {
