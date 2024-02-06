@@ -5780,6 +5780,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
