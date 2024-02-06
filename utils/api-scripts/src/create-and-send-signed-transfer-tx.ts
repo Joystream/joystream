@@ -23,15 +23,42 @@ async function main() {
   // Get the next account nonce
   const nonce = await api.rpc.system.accountNextIndex(keyringPair.address)
 
-  // Sign and send the transaction
-  const unsubscribe = await tx.signAndSend(keyringPair, { nonce }, (result) => {
-    // log result at each transaction life cycle step
-    console.log(result)
+  const signedTx = tx.sign(keyringPair, { nonce })
+
+  await signedTx.send((result) => {
+    if (result.status.isInBlock) {
+      console.error('Included in block', result.status.asInBlock.toHex())
+    }
+
+    if (result.status.isReady) {
+      console.error('Ready')
+    }
+
+    if (result.status.isFinalized) {
+      const blockHash = result.status.asFinalized
+      console.log(
+        JSON.stringify(
+          {
+            'blockHash': blockHash.toHex(),
+            'txIndex': result.txIndex,
+            'txHash': result.txHash.toHex(),
+            'txSignature': signedTx.signature.toHex(),
+          },
+          null,
+          2
+        )
+      )
+      process.exit(0)
+    }
+
+    if (result.isError) {
+      console.error('Error', result.toHuman())
+      process.exit(-2)
+    }
   })
-  unsubscribe()
-  await api.disconnect()
 }
 
-main()
-  .catch(console.error)
-  .finally(() => process.exit())
+main().catch((err) => {
+  console.error(err)
+  process.exit(-1)
+})
