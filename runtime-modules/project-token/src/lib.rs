@@ -154,7 +154,7 @@ decl_storage! { generate_storage_info
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
 
         /// Percentage threshold for deactivating the amm functionality
-        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill = Permill::from_percent(1_u32);
+        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill = Permill::zero();
 
         /// AMM buy transaction fee percentage
         pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill = Permill::from_perthousand(3_u32);
