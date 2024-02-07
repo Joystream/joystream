@@ -1,10 +1,17 @@
 ### Version 12.2002.0 - Nara release
   - Updated runtime `spec_version` to `2002`
-  - Update substrate version based on [v0.9.39](https://github.com/paritytech/substrate/tree/polkadot-v0.9.39) release. [#4705](https://github.com/Joystream/joystream/pull/4705)
-  - Apply substrate pallet runtime migrations from `v0.9.24-1` to `v0.9.39`
+  - Update substrate version based on [v0.9.41](https://github.com/paritytech/substrate/tree/polkadot-v0.9.41) release. [#4705](https://github.com/Joystream/joystream/pull/4705)
+  - Apply substrate pallet runtime migrations from `v0.9.24-1` to `v0.9.41`
   - Added `try-runtime` command support and runtime upgrade tests.
   - Updated benchmarks and re-generated weights
   - Fix [#4745](https://github.com/Joystream/joystream/issues/4745): `cargo-chef` build issue by renaming crate 'pallet-utility' to 'pallet-joystream-utility'
+  - Added a new "warp-time" and "fast-block-production" cargo feature flags
+  - Enabled creator tokens functionality
+  - Added AMM to creator tokens pallet
+  - Added feature to enable freezing creator tokens pallet functionality via new proposal
+  - Changed some workging group max workers values
+  - Changed council and election periods
+  - Removed some privileges of content moderators such as deleting channels and videos
 
 ### Version 12.2001.0 - Ephesus release
   - Bug fix in update_channel_payouts implementation
