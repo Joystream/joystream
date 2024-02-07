@@ -1,3 +1,7 @@
+### 2.0.0
+
+- Add support for Nara release - CRTs, freeze pallet proposal, new chain metadata spec
+
 ### 1.8.0
 
 - Add support for validator account verification
