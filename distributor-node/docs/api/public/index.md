@@ -89,7 +89,8 @@ Returns json object describing current node status.
   "queryNodeStatus": {
     "url": "string",
     "chainHead": 0,
-    "blocksProcessed": 0
+    "blocksProcessed": 0,
+    "packageVersion": "string"
   }
 }
 ```
@@ -345,7 +346,8 @@ This operation does not require authentication
   "queryNodeStatus": {
     "url": "string",
     "chainHead": 0,
-    "blocksProcessed": 0
+    "blocksProcessed": 0,
+    "packageVersion": "string"
   }
 }
 
@@ -368,6 +370,7 @@ This operation does not require authentication
 |» url|string|true|none|none|
 |» chainHead|integer|true|none|none|
 |» blocksProcessed|integer|true|none|none|
+|» packageVersion|string|true|none|none|
 
 <h2 id="tocS_BucketsResponse">BucketsResponse</h2>
 
