@@ -23,6 +23,9 @@ import {
   GetDistributionBucketsWithBagsByWorkerId,
   GetDistributionBucketsWithBagsByWorkerIdQuery,
   GetDistributionBucketsWithBagsByWorkerIdQueryVariables,
+  GetSquidVersion,
+  GetSquidVersionQuery,
+  GetSquidVersionQueryVariables,
   MinimalDataObjectFragment,
   SquidStatus,
   SquidStatusFieldsFragment,
@@ -236,7 +239,16 @@ export class QueryNodeApi {
     >(GetActiveStorageBucketOperatorsData, {}, 'storageBuckets')
   }
 
-  public async getQueryNodeState(): Promise<SquidStatusFieldsFragment | null> {
+  public async getPackageVersion(): Promise<string> {
+    const squidVersion = await this.uniqueEntityQuery<GetSquidVersionQuery, GetSquidVersionQueryVariables>(
+      GetSquidVersion,
+      {},
+      'squidVersion'
+    )
+    return squidVersion?.version || ''
+  }
+
+  public async getState(): Promise<SquidStatusFieldsFragment | null> {
     const squidStatus = await this.uniqueEntityQuery<SquidStatusQuery, SquidStatusQueryVariables>(
       SquidStatus,
       {},

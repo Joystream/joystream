@@ -200,6 +200,12 @@ export interface StatusResponseQueryNodeStatus {
      * @memberof StatusResponseQueryNodeStatus
      */
     'blocksProcessed': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'packageVersion': string;
 }
 /**
  * 

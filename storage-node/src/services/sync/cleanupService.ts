@@ -57,7 +57,7 @@ export async function performCleanup(
   hostId: string
 ): Promise<void> {
   logger.info('Started cleanup service...')
-  const squidStatus = await qnApi.getQueryNodeState()
+  const squidStatus = await qnApi.getState()
   if (!squidStatus || !squidStatus.height) {
     throw new Error("Can't perform cleanup because QueryNode state info is unavailable")
   }
