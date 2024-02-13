@@ -1123,6 +1123,7 @@ impl project_token::Config for Test {
     type MembershipInfoProvider = TestMemberships;
     type MaxOutputs = MaxOutputs;
     type WeightInfo = ();
+    type BlockNumberToBalance = BlockNumberToBalance;
 }
 
 pub(crate) fn set_default_nft_limits() {

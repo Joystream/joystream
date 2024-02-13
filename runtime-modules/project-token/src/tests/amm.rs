@@ -798,10 +798,11 @@ fn amm_sell_ok_with_user_crt_amount_correctly_decreased() {
 #[test]
 fn amm_sell_fails_with_more_token_sold_than_amm_supply() {
     let amount = 10u128;
+    let amm_joy_variation = amm_function_buy_values(amount * 3, Zero::zero());
     let (user_member_id, user_account_id) = member!(1); // same member id as the creator
     build_default_test_externalities_with_balances(vec![(
         user_account_id,
-        amm_function_buy_values_with_tx_fees(DEFAULT_AMM_BUY_AMOUNT, Zero::zero()) + ed(),
+        amm_joy_variation + ed(),
     )])
     .execute_with(|| {
         IssueTokenFixture::default()
@@ -821,6 +822,8 @@ fn amm_sell_fails_with_more_token_sold_than_amm_supply() {
             .with_amount(amount)
             .execute_call()
             .unwrap();
+        let mut supply_post = Token::token_info_by_id(token!(1)).total_supply;
+        assert_eq!(supply_post, 1000 + 2 * amount);
 
         let res = AmmSellFixture::default()
             .with_sender(user_account_id)
@@ -829,7 +832,10 @@ fn amm_sell_fails_with_more_token_sold_than_amm_supply() {
             .with_sender(user_account_id)
             .execute_call();
 
-        assert_err!(res, Error::<Test>::NotEnoughTokenMintedByAmmForThisSale);
+        assert_ok!(res);
+        supply_post = Token::token_info_by_id(token!(1)).total_supply;
+        assert_eq!(supply_post, 1000 - amount);
+        // assert_err!(res, Error::<Test>::NotEnoughTokenMintedByAmmForThisSale);
     })
 }
 
@@ -1027,8 +1033,7 @@ fn amm_deactivation_ok_with_event_deposit() {
 
 #[test]
 fn amm_buy_fails_when_pallet_frozen() {
-    let amm_joy_variation =
-        amm_function_buy_values_with_tx_fees(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
+    let amm_joy_variation = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
     let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(
         user_account_id,

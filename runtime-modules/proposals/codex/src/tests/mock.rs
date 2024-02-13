@@ -89,6 +89,7 @@ frame_support::construct_runtime!(
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
 
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
@@ -146,6 +147,7 @@ impl frame_system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
+
 impl balances::Config for Test {
     type MaxLocks = frame_support::traits::ConstU32<1024>;
     type MaxReserves = ();

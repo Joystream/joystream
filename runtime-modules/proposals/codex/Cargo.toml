@@ -38,6 +38,7 @@ frame-benchmarking = { package = 'frame-benchmarking', default-features = false,
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 strum = { version = "0.19", default-features = false }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../staking-handler' }
