@@ -789,6 +789,50 @@ fn amm_sell_ok_with_user_crt_amount_correctly_decreased() {
 }
 
 #[test]
+fn amm_sell_fails_with_more_token_sold_than_amm_supply() {
+    let amount = 10u128;
+    let amm_joy_variation = amm_function_buy_values(amount * 3, Zero::zero());
+    let (user_member_id, user_account_id) = member!(1); // same member id as the creator
+    build_default_test_externalities_with_balances(vec![(
+        user_account_id,
+        amm_joy_variation + ed(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default()
+            .with_supply(1000)
+            .execute_call()
+            .unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+        AmmBuyFixture::default()
+            .with_sender(user_account_id)
+            .with_member_id(user_member_id)
+            .with_amount(amount)
+            .execute_call()
+            .unwrap();
+        AmmBuyFixture::default()
+            .with_sender(user_account_id)
+            .with_member_id(user_member_id)
+            .with_amount(amount)
+            .execute_call()
+            .unwrap();
+        let mut supply_post = Token::token_info_by_id(token!(1)).total_supply;
+        assert_eq!(supply_post, 1000 + 2 * amount);
+
+        let res = AmmSellFixture::default()
+            .with_sender(user_account_id)
+            .with_amount(amount * 3)
+            .with_member_id(user_member_id)
+            .with_sender(user_account_id)
+            .execute_call();
+
+        assert_ok!(res);
+        supply_post = Token::token_info_by_id(token!(1)).total_supply;
+        assert_eq!(supply_post, 1000 - amount);
+        // assert_err!(res, Error::<Test>::NotEnoughTokenMintedByAmmForThisSale);
+    })
+}
+
+#[test]
 fn amm_sell_ok_with_event_deposited() {
     let token_id = token!(1);
     let amm_joy_variation = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero()) + ed();
@@ -982,7 +1026,6 @@ fn amm_deactivation_ok_with_event_deposit() {
 
 #[test]
 fn amm_buy_fails_when_pallet_frozen() {
-    let token_id = token!(1);
     let amm_joy_variation = amm_function_buy_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
     let (_, user_account_id) = member!(2);
     build_default_test_externalities_with_balances(vec![(

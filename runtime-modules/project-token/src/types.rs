@@ -607,7 +607,7 @@ pub struct AmmCurve<Balance> {
     pub provided_supply: Balance,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum AmmOperation {
     Sell,
     Buy,
@@ -634,6 +634,12 @@ impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
         amount: Balance,
         bond_operation: AmmOperation,
     ) -> Result<Balance, DispatchError> {
+        // if AmmOperation::Sell == bond_operation {
+        //     ensure!(
+        //         amount <= self.provided_supply,
+        //         Error::<T>::NotEnoughTokenMintedByAmmForThisSale
+        //     );
+        // }
         let amount_sq = amount
             .checked_mul(&amount)
             .ok_or(Error::<T>::ArithmeticError)?;

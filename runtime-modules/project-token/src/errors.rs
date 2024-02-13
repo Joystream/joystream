@@ -186,6 +186,9 @@ decl_error! {
         /// Curve slope parameters below minimum allowed
         CurveSlopeParametersTooLow,
 
+        /// Attempting to sell more than amm provided supply
+        NotEnoughTokenMintedByAmmForThisSale,
+
         /// -------- Patronage --------------------------------------------------
 
         /// Target Rate is higher than current patronage rate
