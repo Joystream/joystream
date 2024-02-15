@@ -1,5 +1,6 @@
-use core::ops::Div;
+use core::{fmt::Debug, ops::Div};
 
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedMul, CheckedNeg, CheckedSub};
 use sp_runtime::{
     traits::{One, Saturating},
     FixedPointNumber, FixedU128, PerThing, Permill, Perquintill,
@@ -87,11 +88,108 @@ pub fn one_plus_interest_pow_fixed(interest: Permill, exp: FixedU128) -> FixedU1
     base_pow_int.mul(base_pow_frac)
 }
 
+// computes integral of integral at + b dt from x to y = a (y^2/2 - x^2/2) + b (y - x)
+#[derive(Debug, PartialEq)]
+pub enum SignedResult<Number> {
+    Positive(Number),
+    Negative(Number),
+}
+pub fn amm_eval_inner<
+    Number: CheckedAdd + CheckedSub + CheckedMul + CheckedNeg + AtLeast32BitUnsigned + Copy,
+>(
+    x: Number,
+    y: Number,
+    a: Number,
+    b: Number,
+) -> Option<SignedResult<Number>> {
+    if x == y {
+        return Some(SignedResult::Positive(Number::zero()));
+    }
+    let lower_bound = y.min(x);
+    let upper_bound = y.max(x);
+    let upper_bound_sq = upper_bound.checked_mul(&upper_bound);
+    let lower_bound_sq = upper_bound.checked_mul(&lower_bound);
+    let first_term_coeff = a.div(2u32.into());
+
+    // squared diff between two Option<Number>: upper_bound_sq - lower_bound_sq
+    let diff_sq = upper_bound_sq.and_then(|upper_| lower_bound_sq.map(|lower_| upper_.sub(lower_)));
+    let diff = upper_bound.sub(lower_bound);
+    let first_term = diff_sq
+        .map(|diff_sq| diff_sq.checked_mul(&first_term_coeff))
+        .flatten();
+    let second_term = diff.checked_mul(&b);
+
+    // diff
+    let res = first_term
+        .and_then(|first_term_| {
+            second_term.map(|second_term_| first_term_.checked_add(&second_term_))
+        })
+        .flatten();
+
+    if lower_bound == x {
+        res.map(|res_| SignedResult::Positive(res_))
+    } else {
+        res.map(|res_| SignedResult::Positive(res_))
+    }
+}
+
 #[cfg(test)]
 mod numerical_tests {
     use sp_runtime::traits::Zero;
 
     use super::*;
+
+    #[test]
+    fn amm_eval_inner_returns_positive_zero_when_x_equals_y() {
+        let x = 10u32;
+        let y = 10u32;
+        let a = 2u32;
+        let b = 4u32;
+        let expected = Some(SignedResult::Positive(0));
+
+        let result = amm_eval_inner(x, y, a, b);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn amm_eval_inner_returns_positive_result_for_normal_case() {
+        let x = 5u32;
+        let y = 10u32;
+        let a = 2u32;
+        let b = 4u32;
+        let expected = Some(SignedResult::Positive(95));
+
+        let result = amm_eval_inner(x, y, a, b);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn amm_eval_inner_returns_negative_result_for_normal_case() {
+        let x = 10u32;
+        let y = 5u32;
+        let a = 2u32;
+        let b = 4u32;
+        let expected = Some(SignedResult::Negative(95));
+
+        let result = amm_eval_inner(x, y, a, b);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn amm_eval_inner_handles_overflow() {
+        let x = u32::MAX;
+        let y = u32::MAX;
+        let a = 2u32;
+        let b = 4u32;
+        let expected = None;
+
+        let result = amm_eval_inner(x, y, a, b);
+
+        assert_eq!(result, expected);
+    }
 
     #[test]
     fn log_approximation_is_accurate_up_to_14_dec_places() {
