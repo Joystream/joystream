@@ -735,8 +735,14 @@ pub fn set_staking_candidate_lock(
     <Test as membership::Config>::StakingCandidateStakingHandler::lock(&who, amount);
 }
 
-pub(crate) fn amm_function_buy_values(amount: Balance, supply: Balance) -> JoyBalance {
-    amm_function_values(amount, supply, AmmOperation::Buy)
+pub(crate) fn amm_function_buy_values_with_tx_fees(amount: Balance, supply: Balance) -> JoyBalance {
+    amm_function_values_with_tx_fees(amount, supply, AmmOperation::Buy)
+}
+pub(crate) fn amm_function_sell_values_with_tx_fees(
+    amount: Balance,
+    supply: Balance,
+) -> JoyBalance {
+    amm_function_values_with_tx_fees(amount, supply, AmmOperation::Sell)
 }
 
 pub(crate) fn amm_function_values(
@@ -756,6 +762,14 @@ pub(crate) fn amm_function_values(
                 + AMM_CURVE_INTERCEPT * amount
         }
     };
+    res
+}
+pub(crate) fn amm_function_values_with_tx_fees(
+    amount: Balance,
+    supply: Balance,
+    bond_operation: AmmOperation,
+) -> JoyBalance {
+    let res = amm_function_values(amount, supply, bond_operation.clone());
 
     match bond_operation {
         AmmOperation::Buy => res + DEFAULT_AMM_BUY_FEES.mul_floor(res),
