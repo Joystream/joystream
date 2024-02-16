@@ -392,6 +392,10 @@ mappings:
       handler: workingGroups_WorkerStartedLeaving
     - event: membershipWorkingGroup.WorkingGroupBudgetFunded
       handler: workingGroups_WorkingGroupBudgetFunded
+    - event: membershipWorkingGroup.LeadRemarked
+      handler: workingGroups_LeadRemarked
+    - event: membershipWorkingGroup.WorkerRemarked
+      handler: workingGroups_WorkerRemarked
     # Content directory working group
     - event: contentWorkingGroup.OpeningAdded
       handler: workingGroups_OpeningAdded
