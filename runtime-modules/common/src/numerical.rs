@@ -108,15 +108,13 @@ pub fn amm_eval_inner<
     let lower_bound = y.min(x);
     let upper_bound = y.max(x);
     let upper_bound_sq = upper_bound.checked_mul(&upper_bound);
-    let lower_bound_sq = upper_bound.checked_mul(&lower_bound);
+    let lower_bound_sq = lower_bound.checked_mul(&lower_bound);
     let first_term_coeff = a.div(2u32.into());
 
     // squared diff between two Option<Number>: upper_bound_sq - lower_bound_sq
     let diff_sq = upper_bound_sq.and_then(|upper_| lower_bound_sq.map(|lower_| upper_.sub(lower_)));
     let diff = upper_bound.sub(lower_bound);
-    let first_term = diff_sq
-        .map(|diff_sq| diff_sq.checked_mul(&first_term_coeff))
-        .flatten();
+    let first_term = diff_sq.and_then(|diff_sq| diff_sq.checked_mul(&first_term_coeff));
     let second_term = diff.checked_mul(&b);
 
     // diff
@@ -129,7 +127,7 @@ pub fn amm_eval_inner<
     if lower_bound == x {
         res.map(|res_| SignedResult::Positive(res_))
     } else {
-        res.map(|res_| SignedResult::Positive(res_))
+        res.map(|res_| SignedResult::Negative(res_))
     }
 }
 
@@ -181,7 +179,7 @@ mod numerical_tests {
     #[test]
     fn amm_eval_inner_handles_overflow() {
         let x = u32::MAX;
-        let y = u32::MAX;
+        let y = u32::MAX - 1;
         let a = 2u32;
         let b = 4u32;
         let expected = None;
