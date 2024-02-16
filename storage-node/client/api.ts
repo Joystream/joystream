@@ -110,6 +110,12 @@ export interface StatusResponse {
     'version': string;
     /**
      * 
+     * @type {number}
+     * @memberof StatusResponse
+     */
+    'uptime': number;
+    /**
+     * 
      * @type {string}
      * @memberof StatusResponse
      */
