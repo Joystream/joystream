@@ -124,56 +124,38 @@ pub fn amm_eval_inner<
 
 #[cfg(test)]
 mod numerical_tests {
+    use parameterized::parameterized;
     use sp_runtime::traits::Zero;
 
     use super::*;
 
-    #[test]
-    fn amm_eval_inner_returns_positive_zero_when_x_equals_y() {
-        let x = 10u32;
-        let y = 10u32;
-        let a = 2u32;
-        let b = 4u32;
-        let expected = Some(0);
+    #[parameterized(
+        input = {
+            (5u128, 10u128, 2u128, 4u128), // x < y
+            (10u128, 5u128, 2u128, 4u128), // x > y
+            (10u128, 10u128, 2u128, 4u128), // x = y
+            (u128::MAX - 1, u128::MAX , 2u128, 4u128), // overflow
+            (u128::MAX, u128::MAX , 2u128, 4u128), // x = y = u128::MAX
+            (10u128, 10u128, 0u128, 0u128), // a = b = 0
+            (10u128, 5u128, u128::MAX, u128::MAX), // overflow
+            (10u128, 10u128, u128::MAX, u128::MAX), // zero
+            (10u128, 5u128, 5u128, 2u128), // a = odd 
+        },
+        expected = {
+            Some(95),
+            Some(95),
+            Some(0),
+            None,
+            Some(0),
+            Some(0),
+            None,
+            Some(0),
+            Some(160)
 
-        let result = amm_eval_inner(x, y, a, b);
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn amm_eval_inner_returns_positive_result_for_normal_case() {
-        let x = 5u32;
-        let y = 10u32;
-        let a = 2u32;
-        let b = 4u32;
-        let expected = Some(95);
-
-        let result = amm_eval_inner(x, y, a, b);
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn amm_eval_inner_returns_negative_result_for_normal_case() {
-        let x = 10u32;
-        let y = 5u32;
-        let a = 2u32;
-        let b = 4u32;
-        let expected = Some(95);
-
-        let result = amm_eval_inner(x, y, a, b);
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn amm_eval_inner_handles_overflow() {
-        let x = u32::MAX;
-        let y = u32::MAX - 1;
-        let a = 2u32;
-        let b = 4u32;
-        let expected = None;
+        }
+    )]
+    fn amm_eval_inner_base_test(input: (u128, u128, u128, u128), expected: Option<u128>) {
+        let (x, y, a, b) = input;
 
         let result = amm_eval_inner(x, y, a, b);
 
