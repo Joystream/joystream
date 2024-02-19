@@ -112,14 +112,11 @@ pub fn amm_eval_inner<
     let first_term = diff_sq.and_then(|diff_sq| diff_sq.checked_mul(&first_term_coeff));
     let second_term = diff.checked_mul(&b);
 
-    // diff
-    let res = first_term
+    first_term
         .and_then(|first_term_| {
             second_term.map(|second_term_| first_term_.checked_add(&second_term_))
         })
-        .flatten();
-
-    res
+        .flatten()
 }
 
 #[cfg(test)]
