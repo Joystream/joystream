@@ -1,3 +1,7 @@
+### 1.9.0
+
+- Add `isShort` field to `Video` entity. and updated mappings to process/set this filed
+
 ### 1.8.2
 
 - Fix validator profile verification - [#5061](https://github.com/Joystream/joystream/pull/5061)
