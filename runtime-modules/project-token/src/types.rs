@@ -2,7 +2,9 @@ use sp_std::iter::Sum;
 
 use codec::{Decode, Encode, MaxEncodedLen};
 use common::{
-    bloat_bond::RepayableBloatBond, numerical::one_plus_interest_pow_fixed, MembershipTypes,
+    bloat_bond::RepayableBloatBond,
+    numerical::{amm_eval_inner, one_plus_interest_pow_fixed},
+    MembershipTypes,
 };
 use frame_support::{
     dispatch::{fmt::Debug, DispatchError, DispatchResult},
@@ -634,34 +636,26 @@ impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
         amount: Balance,
         bond_operation: AmmOperation,
     ) -> Result<Balance, DispatchError> {
-        if AmmOperation::Sell == bond_operation {
+        let provided_supply_pre = self.provided_supply;
+        let provided_supply_post = if AmmOperation::Sell == bond_operation {
             ensure!(
                 amount <= self.provided_supply,
                 Error::<T>::NotEnoughTokenMintedByAmmForThisSale
             );
-        }
-        let amount_sq = amount
-            .checked_mul(&amount)
-            .ok_or(Error::<T>::ArithmeticError)?;
-        let first_term = self.slope.saturating_mul(amount_sq).div(2u32.into());
-        let second_term = self.intercept.saturating_mul(amount);
-        let mixed = amount
-            .checked_mul(&self.provided_supply)
-            .ok_or(Error::<T>::ArithmeticError)?;
-        let third_term = self.slope.saturating_mul(mixed);
-        let res = match bond_operation {
-            AmmOperation::Buy => first_term
-                .checked_add(&second_term)
-                .ok_or(Error::<T>::ArithmeticError)?
-                .checked_add(&third_term)
-                .ok_or(Error::<T>::ArithmeticError)?,
-            AmmOperation::Sell => second_term
-                .checked_add(&third_term)
-                .ok_or(Error::<T>::ArithmeticError)?
-                .checked_sub(&first_term)
-                .ok_or(Error::<T>::ArithmeticError)?,
+            self.provided_supply.sub(amount)
+        } else {
+            self.provided_supply.add(amount)
         };
-        Ok(res)
+
+        let res = amm_eval_inner::<Balance>(
+            provided_supply_pre,
+            provided_supply_post,
+            self.slope,
+            self.intercept,
+        )
+        .ok_or(Error::<T>::ArithmeticError.into());
+
+        res
     }
 }
 

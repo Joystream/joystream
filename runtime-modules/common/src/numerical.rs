@@ -1,4 +1,4 @@
-use core::{fmt::Debug, ops::Div};
+use core::ops::Div;
 
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedMul, CheckedNeg, CheckedSub};
 use sp_runtime::{
@@ -89,11 +89,6 @@ pub fn one_plus_interest_pow_fixed(interest: Permill, exp: FixedU128) -> FixedU1
 }
 
 // computes integral of integral at + b dt from x to y = a (y^2/2 - x^2/2) + b (y - x)
-#[derive(Debug, PartialEq)]
-pub enum SignedResult<Number> {
-    Positive(Number),
-    Negative(Number),
-}
 pub fn amm_eval_inner<
     Number: CheckedAdd + CheckedSub + CheckedMul + CheckedNeg + AtLeast32BitUnsigned + Copy,
 >(
@@ -101,9 +96,9 @@ pub fn amm_eval_inner<
     y: Number,
     a: Number,
     b: Number,
-) -> Option<SignedResult<Number>> {
+) -> Option<Number> {
     if x == y {
-        return Some(SignedResult::Positive(Number::zero()));
+        return Some(Number::zero());
     }
     let lower_bound = y.min(x);
     let upper_bound = y.max(x);
@@ -124,11 +119,7 @@ pub fn amm_eval_inner<
         })
         .flatten();
 
-    if lower_bound == x {
-        res.map(|res_| SignedResult::Positive(res_))
-    } else {
-        res.map(|res_| SignedResult::Negative(res_))
-    }
+    res
 }
 
 #[cfg(test)]
@@ -143,7 +134,7 @@ mod numerical_tests {
         let y = 10u32;
         let a = 2u32;
         let b = 4u32;
-        let expected = Some(SignedResult::Positive(0));
+        let expected = Some(0);
 
         let result = amm_eval_inner(x, y, a, b);
 
@@ -156,7 +147,7 @@ mod numerical_tests {
         let y = 10u32;
         let a = 2u32;
         let b = 4u32;
-        let expected = Some(SignedResult::Positive(95));
+        let expected = Some(95);
 
         let result = amm_eval_inner(x, y, a, b);
 
@@ -169,7 +160,7 @@ mod numerical_tests {
         let y = 5u32;
         let a = 2u32;
         let b = 4u32;
-        let expected = Some(SignedResult::Negative(95));
+        let expected = Some(95);
 
         let result = amm_eval_inner(x, y, a, b);
 
