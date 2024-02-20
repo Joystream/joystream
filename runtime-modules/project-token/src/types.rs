@@ -647,15 +647,13 @@ impl<Balance: TokenBalanceTrait> AmmCurve<Balance> {
             self.provided_supply.add(amount)
         };
 
-        let res = amm_eval_inner::<Balance>(
+        amm_eval_inner::<Balance>(
             provided_supply_pre,
             provided_supply_post,
             self.slope,
             self.intercept,
         )
-        .ok_or(Error::<T>::ArithmeticError.into());
-
-        res
+        .ok_or_else(|| Error::<T>::ArithmeticError.into())
     }
 }
 

@@ -900,7 +900,7 @@ decl_module! {
             // burn tx_fee * price
             let _ = burn_from_usable::<T>(&amm_treasury_account, buy_tx_fee);
 
-            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, price));
+            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, buy_price));
 
             Ok(())
         }
@@ -956,7 +956,6 @@ decl_module! {
             let sell_tx_fee = Self::amm_sell_tx_fees().mul_floor(price);
             let sell_price = price.saturating_sub(sell_tx_fee);
 
-            // TODO: redirect tx fees revenue to council
             Self::ensure_can_transfer_joy(&amm_treasury_account, sell_price)?;
 
             // == MUTATION SAFE ==
@@ -976,7 +975,7 @@ decl_module! {
             // burn tx_fee * price
             let _ = burn_from_usable::<T>(&amm_treasury_account, sell_tx_fee);
 
-            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, price));
+            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
 
             Ok(())
         }

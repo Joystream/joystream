@@ -281,27 +281,24 @@ fn user_joy_balance_correctly_decreased_during_amm_buy() {
 fn amm_buy_ok_with_event_deposit() {
     let token_id = token!(1);
     let (user_member_id, user_account_id) = member!(2);
-    let price = amm_function_values(DEFAULT_AMM_BUY_AMOUNT, Zero::zero(), AmmOperation::Buy);
-    build_default_test_externalities_with_balances(vec![(
-        user_account_id,
-        amm_function_buy_values_with_tx_fees(DEFAULT_AMM_BUY_AMOUNT, Zero::zero()) + ed(),
-    )])
-    .execute_with(|| {
-        IssueTokenFixture::default().execute_call().unwrap();
-        ActivateAmmFixture::default().execute_call().unwrap();
+    let buy_price = amm_function_buy_values_with_tx_fees(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
+    build_default_test_externalities_with_balances(vec![(user_account_id, buy_price + ed())])
+        .execute_with(|| {
+            IssueTokenFixture::default().execute_call().unwrap();
+            ActivateAmmFixture::default().execute_call().unwrap();
 
-        AmmBuyFixture::default()
-            .with_amount(DEFAULT_AMM_BUY_AMOUNT)
-            .execute_call()
-            .unwrap();
+            AmmBuyFixture::default()
+                .with_amount(DEFAULT_AMM_BUY_AMOUNT)
+                .execute_call()
+                .unwrap();
 
-        last_event_eq!(RawEvent::TokensBoughtOnAmm(
-            token_id,
-            user_member_id,
-            DEFAULT_AMM_BUY_AMOUNT,
-            price,
-        ));
-    })
+            last_event_eq!(RawEvent::TokensBoughtOnAmm(
+                token_id,
+                user_member_id,
+                DEFAULT_AMM_BUY_AMOUNT,
+                buy_price,
+            ));
+        })
 }
 
 // --------------- ACTIVATION ----------------------------------
@@ -859,11 +856,8 @@ fn amm_sell_ok_with_event_deposited() {
             .amm_curve
             .unwrap()
             .provided_supply;
-        let price = amm_function_values(
-            DEFAULT_AMM_SELL_AMOUNT,
-            amm_provided_supply,
-            AmmOperation::Sell,
-        );
+        let sell_price =
+            amm_function_sell_values_with_tx_fees(DEFAULT_AMM_SELL_AMOUNT, amm_provided_supply);
 
         AmmSellFixture::default()
             .with_amount(DEFAULT_AMM_SELL_AMOUNT)
@@ -876,7 +870,7 @@ fn amm_sell_ok_with_event_deposited() {
             token_id,
             user_member_id,
             DEFAULT_AMM_SELL_AMOUNT,
-            price,
+            sell_price,
         ));
     })
 }
