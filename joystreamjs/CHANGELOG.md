@@ -1,3 +1,7 @@
+### 1.7.0
+
+- Update dependency on metadata protobuf to v2.13.0
+
 ### 1.6.0
 
 - rework `util/readBytesFromFile` to support use in browser [#4584](https://github.com/Joystream/joystream/pull/4584)

@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"

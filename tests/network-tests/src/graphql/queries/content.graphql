@@ -166,6 +166,7 @@ fragment VideoFields on Video {
   duration
   isPublic
   isExplicit
+  isShort
   hasMarketing
   ytVideoId
   entryApp {
