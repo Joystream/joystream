@@ -176,7 +176,9 @@ async function getCachedDataObjectsObligations(qnApi: QueryNodeApi, bagId: strin
 }
 
 async function getQueryNodeStatus(api: ApiPromise, qnApi: QueryNodeApi): Promise<StatusResponse['queryNodeStatus']> {
-  const squidStatus = await qnApi.getQueryNodeState()
+  const memoizedGetPackageVersion = _.memoize(qnApi.getPackageVersion.bind(qnApi))
+  const squidVersion = await memoizedGetPackageVersion()
+  const squidStatus = await qnApi.getState()
 
   if (squidStatus === null) {
     logger.error("Couldn't fetch the state from connected storage-squid")
@@ -186,5 +188,6 @@ async function getQueryNodeStatus(api: ApiPromise, qnApi: QueryNodeApi): Promise
     url: qnApi.endpoint,
     chainHead: (await api.derive.chain.bestNumber()).toNumber() || 0,
     blocksProcessed: squidStatus?.height || 0,
+    packageVersion: squidVersion,
   }
 }

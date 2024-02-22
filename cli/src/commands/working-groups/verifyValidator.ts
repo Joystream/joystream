@@ -29,7 +29,7 @@ export default class VerifyValidatorCommand extends WorkingGroupsCommandBase {
 
   async run(): Promise<void> {
     const worker = await this.getRequiredWorkerContext()
-    if (!worker || this.group === WorkingGroups.Membership) {
+    if (!worker || this.group !== WorkingGroups.Membership) {
       return this.error('Only membership workers can perform this command')
     }
 

@@ -15,6 +15,9 @@ import {
   GetDataObjectsDeletedEventsQueryVariables,
   GetDataObjectsQuery,
   GetDataObjectsQueryVariables,
+  GetSquidVersion,
+  GetSquidVersionQuery,
+  GetSquidVersionQueryVariables,
   GetStorageBagDetails,
   GetStorageBagDetailsQuery,
   GetStorageBagDetailsQueryVariables,
@@ -313,7 +316,16 @@ export class QueryNodeApi {
     return result
   }
 
-  public async getQueryNodeState(): Promise<SquidStatusFieldsFragment | null> {
+  public async getPackageVersion(): Promise<string> {
+    const squidVersion = await this.uniqueEntityQuery<GetSquidVersionQuery, GetSquidVersionQueryVariables>(
+      GetSquidVersion,
+      {},
+      'squidVersion'
+    )
+    return squidVersion?.version || ''
+  }
+
+  public async getState(): Promise<SquidStatusFieldsFragment | null> {
     const squidStatus = await this.uniqueEntityQuery<SquidStatusQuery, SquidStatusQueryVariables>(
       SquidStatus,
       {},

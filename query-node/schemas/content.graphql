@@ -202,6 +202,9 @@ type Video @entity {
 
   "Video ID coming from YPP"
   ytVideoId: String
+
+  "Whether the video is a short format, vertical video (e.g. Youtube Shorts, TikTok, Instagram Reels)"
+  isShort: Boolean
 }
 
 type VideoMediaMetadata @entity {

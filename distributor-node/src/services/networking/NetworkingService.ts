@@ -23,6 +23,7 @@ import { parseAxiosError } from '../parsers/errors'
 import { PendingDownload, PendingDownloadStatusType } from './PendingDownload'
 import Mime from 'mime/lite'
 import { RuntimeApi } from './runtime/api'
+import _ from 'lodash'
 
 // Concurrency limits
 export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT = 10
@@ -445,7 +446,9 @@ export class NetworkingService {
   }
 
   async getQueryNodeStatus(): Promise<StatusResponse['queryNodeStatus']> {
-    const squidStatus = await this.queryNodeApi.getQueryNodeState()
+    const memoizedGetPackageVersion = _.memoize(this.queryNodeApi.getPackageVersion.bind(this.queryNodeApi))
+    const squidVersion = await memoizedGetPackageVersion()
+    const squidStatus = await this.queryNodeApi.getState()
 
     if (squidStatus === null) {
       this.logger.error("Couldn't fetch the state from connected storage-squid")
@@ -455,6 +458,7 @@ export class NetworkingService {
       url: this.config.endpoints.storageSquid,
       chainHead: (await this.runtimeApi.derive.chain.bestNumber()).toNumber() || 0,
       blocksProcessed: squidStatus?.height || 0,
+      packageVersion: squidVersion,
     }
   }
 }
