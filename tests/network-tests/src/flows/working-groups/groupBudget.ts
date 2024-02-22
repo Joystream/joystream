@@ -32,7 +32,7 @@ export default async function groupBudget({ api, query, lock }: FlowProps): Prom
         return {
           locked,
           // for even numbers give 10 blocks vesting
-          perBlock: i % 2 == 0 ? locked.divn(10) : locked,
+          perBlock: i % 2 === 0 ? locked.divn(10) : locked,
         }
       })
 

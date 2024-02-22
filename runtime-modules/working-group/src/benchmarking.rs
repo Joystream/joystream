@@ -2,6 +2,7 @@
 use super::*;
 use core::convert::TryInto;
 use frame_benchmarking::v1::{account, benchmarks_instance, Zero};
+use frame_support::traits::Currency;
 use frame_support::traits::OnInitialize;
 use frame_system::EventRecord;
 use frame_system::Pallet as System;
@@ -781,18 +782,23 @@ benchmarks_instance! {
     }
 
     spend_from_budget {
+        // use core::ops::Div;
         let (lead_id, _) = insert_a_worker::<T, I>(
             OpeningType::Leader,
             0,
             None
         );
 
-        let current_budget = BalanceOf::<T>::max_value();
-        WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
-    }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), current_budget, None)
+        let amount_vesting = VestingBalanceOf::<T>::from(10_000_000u32);
+        let budget = BalanceOf::<T>::from(1_000_000_000u32);
+        let block_no = 100u32;
+        let current_block = <T as frame_system::Config>::BlockNumber::from(1u32);
+        let vested = VestingInfoOf::<T>::new(amount_vesting, amount_vesting / block_no.into(), current_block);
+        WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), budget).unwrap();
+    }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), vested, None)
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), Zero::zero(), "Budget not updated");
-        assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, current_budget, None).into());
+        assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, vested, None).into());
     }
 
     fund_working_group_budget {
