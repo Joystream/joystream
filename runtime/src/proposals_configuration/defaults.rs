@@ -363,8 +363,8 @@ pub(crate) fn decrease_council_budget() -> ProposalParameters<BlockNumber, Balan
     ProposalParameters {
         voting_period: days!(3),
         grace_period: 0,
-        approval_quorum_percentage: TWO_OUT_OF_THREE,
-        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        approval_quorum_percentage: ALL,
+        approval_threshold_percentage: ALL,
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
         required_stake: Some(dollars!(50)),
