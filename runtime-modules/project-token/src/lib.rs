@@ -37,7 +37,7 @@ use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
     traits::{AccountIdConversion, CheckedAdd},
-    PerThing, Permill,
+    Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
@@ -856,7 +856,8 @@ decl_module! {
             let amm_treasury_account = Self::amm_treasury_account(token_id);
             let price = curve.eval::<T>(amount, AmmOperation::Buy)?.into();
             let bloat_bond = Self::bloat_bond();
-            let buy_price = Self::amm_buy_tx_fees().mul_floor(price).checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
+            let buy_tx_fee = Self::amm_buy_tx_fees().mul_floor(price);
+            let buy_price = buy_tx_fee.checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
 
             let joys_required = if !user_account_data_exists {
                 buy_price.saturating_add(bloat_bond)
@@ -893,8 +894,11 @@ decl_module! {
                 token_data.increase_amm_bought_amount_by(amount);
             });
 
-            // TODO: redirect tx fees revenue to council
+            // transfer tx_fee * price + price
             Self::transfer_joy(&sender, &amm_treasury_account, buy_price)?;
+
+            // burn tx_fee * price
+            let _ = burn_from_usable::<T>(&amm_treasury_account, buy_tx_fee);
 
             Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, buy_price));
 
@@ -949,9 +953,9 @@ decl_module! {
                 ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
             }
 
-            let sell_price = Self::amm_sell_tx_fees().left_from_one().mul_floor(price);
+            let sell_tx_fee = Self::amm_sell_tx_fees().mul_floor(price);
+            let sell_price = price.saturating_sub(sell_tx_fee);
 
-            // TODO: redirect tx fees revenue to council
             Self::ensure_can_transfer_joy(&amm_treasury_account, sell_price)?;
 
             // == MUTATION SAFE ==
@@ -965,7 +969,11 @@ decl_module! {
                 token_data.decrease_amm_bought_amount_by(amount);
             });
 
+            // transfer the price - tx_fee * price
             Self::transfer_joy(&amm_treasury_account, &sender, sell_price)?;
+
+            // burn tx_fee * price
+            let _ = burn_from_usable::<T>(&amm_treasury_account, sell_tx_fee);
 
             Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
 

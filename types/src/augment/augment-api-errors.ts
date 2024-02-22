@@ -2330,6 +2330,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoActiveSale: AugmentedError<ApiType>;
       /**
+       * Attempting to sell more than amm provided supply
+       **/
+      NotEnoughTokenMintedByAmmForThisSale: AugmentedError<ApiType>;
+      /**
        * Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
        **/
       NotEnoughTokensOnSale: AugmentedError<ApiType>;

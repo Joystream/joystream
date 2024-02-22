@@ -1,5 +1,6 @@
 use core::ops::Div;
 
+use sp_arithmetic::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedMul, CheckedNeg, CheckedSub};
 use sp_runtime::{
     traits::{One, Saturating},
     FixedPointNumber, FixedU128, PerThing, Permill, Perquintill,
@@ -87,11 +88,76 @@ pub fn one_plus_interest_pow_fixed(interest: Permill, exp: FixedU128) -> FixedU1
     base_pow_int.mul(base_pow_frac)
 }
 
+// computes integral of integral at + b dt from x to y = a (y^2/2 - x^2/2) + b (y - x)
+pub fn amm_eval_inner<
+    Number: CheckedAdd + CheckedSub + CheckedMul + CheckedNeg + AtLeast32BitUnsigned + Copy,
+>(
+    x: Number,
+    y: Number,
+    a: Number,
+    b: Number,
+) -> Option<Number> {
+    if x == y {
+        return Some(Number::zero());
+    }
+    let lower_bound = y.min(x);
+    let upper_bound = y.max(x);
+    let upper_bound_sq = upper_bound.checked_mul(&upper_bound);
+    let lower_bound_sq = lower_bound.checked_mul(&lower_bound);
+    let first_term_coeff = a.div(2u32.into());
+
+    // squared diff between two Option<Number>: upper_bound_sq - lower_bound_sq
+    let diff_sq = upper_bound_sq.and_then(|upper_| lower_bound_sq.map(|lower_| upper_.sub(lower_)));
+    let diff = upper_bound.sub(lower_bound);
+    let first_term = diff_sq.and_then(|diff_sq| diff_sq.checked_mul(&first_term_coeff));
+    let second_term = diff.checked_mul(&b);
+
+    first_term
+        .and_then(|first_term_| {
+            second_term.map(|second_term_| first_term_.checked_add(&second_term_))
+        })
+        .flatten()
+}
+
 #[cfg(test)]
 mod numerical_tests {
+    use parameterized::parameterized;
     use sp_runtime::traits::Zero;
 
     use super::*;
+
+    #[parameterized(
+        input = {
+            (5u128, 10u128, 2u128, 4u128), // x < y
+            (10u128, 5u128, 2u128, 4u128), // x > y
+            (10u128, 10u128, 2u128, 4u128), // x = y
+            (u128::MAX - 1, u128::MAX , 2u128, 4u128), // overflow
+            (u128::MAX, u128::MAX , 2u128, 4u128), // x = y = u128::MAX
+            (10u128, 10u128, 0u128, 0u128), // a = b = 0
+            (10u128, 5u128, u128::MAX, u128::MAX), // overflow
+            (10u128, 10u128, u128::MAX, u128::MAX), // zero
+            (10u128, 5u128, 5u128, 2u128), // a = odd 
+        },
+        expected = {
+            Some(95),
+            Some(95),
+            Some(0),
+            None,
+            Some(0),
+            Some(0),
+            None,
+            Some(0),
+            Some(160)
+
+        }
+    )]
+    fn amm_eval_inner_base_test(input: (u128, u128, u128, u128), expected: Option<u128>) {
+        let (x, y, a, b) = input;
+
+        let result = amm_eval_inner(x, y, a, b);
+
+        assert_eq!(result, expected);
+    }
 
     #[test]
     fn log_approximation_is_accurate_up_to_14_dec_places() {
