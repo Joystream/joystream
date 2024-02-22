@@ -7,12 +7,12 @@ import {
 import {
   ChannelCreationInputParameters,
   ChannelUpdateInputParameters,
-  VideoInputParameters,
-  VideoCategoryInputParameters,
+  ContentModerationActionNullEnum,
   JsonSchema,
   ModerationPermissionsByLevelInputParameters,
   PropertySchema,
-  ContentModerationActionNullEnum,
+  VideoCategoryInputParameters,
+  VideoInputParameters,
 } from '../Types'
 
 export const VideoCategoryInputSchema: JsonSchema<VideoCategoryInputParameters> = {
@@ -118,6 +118,7 @@ export const VideoInputSchema: JsonSchema<VideoInputParameters> = {
     hasMarketing: { type: 'boolean' },
     isExplicit: { type: 'boolean' },
     isPublic: { type: 'boolean' },
+    isShort: { type: 'boolean' },
     language: { type: 'string' },
     license: {
       type: 'object',

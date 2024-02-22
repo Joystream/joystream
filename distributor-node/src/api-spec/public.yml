@@ -198,6 +198,7 @@ components:
             - 'url'
             - 'chainHead'
             - 'blocksProcessed'
+            - 'packageVersion'
           properties:
             url:
               type: string
@@ -207,6 +208,8 @@ components:
             blocksProcessed:
               type: integer
               minimum: 0
+            packageVersion:
+              type: string
     BucketsResponse:
       oneOf:
         - type: object

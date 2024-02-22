@@ -3,6 +3,13 @@
 
 ## Table of Contents
 
+- [proto/App.proto](#proto/App.proto)
+    - [AppAction](#.AppAction)
+    - [AppActionMetadata](#.AppActionMetadata)
+  
+    - [AppAction.ActionType](#.AppAction.ActionType)
+    - [AppAction.CreatorType](#.AppAction.CreatorType)
+  
 - [proto/Bounty.proto](#proto/Bounty.proto)
     - [BountyMetadata](#.BountyMetadata)
     - [BountyWorkData](#.BountyWorkData)
@@ -34,9 +41,11 @@
     - [MembershipMetadata.ExternalResource.ResourceType](#.MembershipMetadata.ExternalResource.ResourceType)
   
 - [proto/Metaprotocol.proto](#proto/Metaprotocol.proto)
+    - [AppMetadata](#.AppMetadata)
     - [BanOrUnbanMemberFromChannel](#.BanOrUnbanMemberFromChannel)
     - [ChannelModeratorRemarked](#.ChannelModeratorRemarked)
     - [ChannelOwnerRemarked](#.ChannelOwnerRemarked)
+    - [CreateApp](#.CreateApp)
     - [CreateComment](#.CreateComment)
     - [CreateVideoCategory](#.CreateVideoCategory)
     - [DeleteComment](#.DeleteComment)
@@ -47,6 +56,7 @@
     - [PinOrUnpinComment](#.PinOrUnpinComment)
     - [ReactComment](#.ReactComment)
     - [ReactVideo](#.ReactVideo)
+    - [UpdateApp](#.UpdateApp)
     - [VideoReactionsPreference](#.VideoReactionsPreference)
   
     - [BanOrUnbanMemberFromChannel.Option](#.BanOrUnbanMemberFromChannel.Option)
@@ -74,6 +84,13 @@
   
     - [GeographicalArea.Continent](#.GeographicalArea.Continent)
   
+- [proto/Token.proto](#proto/Token.proto)
+    - [Benefit](#.Benefit)
+    - [CreatorTokenIssuerRemarked](#.CreatorTokenIssuerRemarked)
+    - [SaleMetadata](#.SaleMetadata)
+    - [TokenMetadata](#.TokenMetadata)
+    - [UpdateTokenMetadata](#.UpdateTokenMetadata)
+  
 - [proto/Video.proto](#proto/Video.proto)
     - [ContentMetadata](#.ContentMetadata)
     - [License](#.License)
@@ -85,17 +102,94 @@
 - [proto/WorkingGroups.proto](#proto/WorkingGroups.proto)
     - [AddUpcomingOpening](#.AddUpcomingOpening)
     - [ApplicationMetadata](#.ApplicationMetadata)
+    - [ModeratePost](#.ModeratePost)
     - [OpeningMetadata](#.OpeningMetadata)
     - [OpeningMetadata.ApplicationFormQuestion](#.OpeningMetadata.ApplicationFormQuestion)
+    - [RemarkMetadataAction](#.RemarkMetadataAction)
     - [RemoveUpcomingOpening](#.RemoveUpcomingOpening)
     - [SetGroupMetadata](#.SetGroupMetadata)
     - [UpcomingOpeningMetadata](#.UpcomingOpeningMetadata)
+    - [VerifyValidator](#.VerifyValidator)
     - [WorkingGroupMetadata](#.WorkingGroupMetadata)
     - [WorkingGroupMetadataAction](#.WorkingGroupMetadataAction)
   
     - [OpeningMetadata.ApplicationFormQuestion.InputType](#.OpeningMetadata.ApplicationFormQuestion.InputType)
   
 - [Scalar Value Types](#scalar-value-types)
+
+
+
+<a name="proto/App.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/App.proto
+
+
+
+<a name=".AppAction"></a>
+
+### AppAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) | required | ID of application |
+| metadata | [bytes](#bytes) | optional | Metadata |
+| raw_action | [bytes](#bytes) | optional | Raw metadata of wrapped action |
+| signature | [bytes](#bytes) | optional | Signature over app commitment |
+
+
+
+
+
+
+<a name=".AppActionMetadata"></a>
+
+### AppActionMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| video_id | [string](#string) | optional | YouTube video ID |
+
+
+
+
+
+ 
+
+
+<a name=".AppAction.ActionType"></a>
+
+### AppAction.ActionType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CREATE_VIDEO | 0 |  |
+| CREATE_CHANNEL | 1 |  |
+
+
+
+<a name=".AppAction.CreatorType"></a>
+
+### AppAction.CreatorType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANNEL | 0 |  |
+| MEMBER | 1 |  |
+| CURATOR_GROUP | 2 |  |
+
+
+ 
+
+ 
+
+ 
 
 
 
@@ -460,6 +554,8 @@ w.r.t the start of the payload would be improbable since the header size won&#39
 | IRC | 8 |  |
 | WECHAT | 9 |  |
 | WHATSAPP | 10 |  |
+| LINKEDIN | 11 |  |
+| GITHUB | 12 |  |
 
 
  
@@ -474,6 +570,31 @@ w.r.t the start of the payload would be improbable since the header size won&#39
 <p align="right"><a href="#top">Top</a></p>
 
 ## proto/Metaprotocol.proto
+
+
+
+<a name=".AppMetadata"></a>
+
+### AppMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| website_url | [string](#string) | optional | Url where user can read more about the project or company for this app |
+| use_uri | [string](#string) | optional | Url to the app |
+| small_icon | [string](#string) | optional |  |
+| medium_icon | [string](#string) | optional |  |
+| big_icon | [string](#string) | optional |  |
+| one_liner | [string](#string) | optional | Tagline for the app |
+| description | [string](#string) | optional |  |
+| terms_of_service | [string](#string) | optional |  |
+| auth_key | [string](#string) | optional |  |
+| platforms | [string](#string) | repeated | List of platforms on which the app will be available, e.g. [mobile, web, native] |
+| category | [string](#string) | optional | E.g messaging, adult |
+
+
+
 
 
 
@@ -520,6 +641,22 @@ w.r.t the start of the payload would be improbable since the header size won&#39
 | ban_or_unban_member_from_channel | [BanOrUnbanMemberFromChannel](#BanOrUnbanMemberFromChannel) | optional |  |
 | video_reactions_preference | [VideoReactionsPreference](#VideoReactionsPreference) | optional |  |
 | moderate_comment | [ModerateComment](#ModerateComment) | optional |  |
+
+
+
+
+
+
+<a name=".CreateApp"></a>
+
+### CreateApp
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | required |  |
+| app_metadata | [AppMetadata](#AppMetadata) | optional |  |
 
 
 
@@ -600,8 +737,7 @@ edit comment by author
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | rationale | [string](#string) | optional | Reason why payment is being made |
-| video_id | [uint64](#uint64) | optional |  |
-| channel_id | [uint64](#uint64) | optional |  |
+| video_id | [uint64](#uint64) | optional | Other possible contexts, e.g. playlist etc. |
 
 
 
@@ -622,7 +758,9 @@ edit comment by author
 | edit_comment | [EditComment](#EditComment) | optional |  |
 | delete_comment | [DeleteComment](#DeleteComment) | optional |  |
 | create_video_category | [CreateVideoCategory](#CreateVideoCategory) | optional |  |
-| make_channel_payment | [MakeChannelPayment](#MakeChannelPayment) | optional |  |
+| create_app | [CreateApp](#CreateApp) | optional |  |
+| update_app | [UpdateApp](#UpdateApp) | optional |  |
+| make_channel_payment | [MakeChannelPayment](#MakeChannelPayment) | optional | DeleteApp delete_app = 9; |
 
 
 
@@ -688,6 +826,22 @@ reacting, unreacting, and changing reaction to video
 | ----- | ---- | ----- | ----------- |
 | video_id | [uint64](#uint64) | required | ID of the video to react |
 | reaction | [ReactVideo.Reaction](#ReactVideo.Reaction) | required | Selected reaction |
+
+
+
+
+
+
+<a name=".UpdateApp"></a>
+
+### UpdateApp
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| app_id | [string](#string) | required |  |
+| app_metadata | [AppMetadata](#AppMetadata) | optional |  |
 
 
 
@@ -1023,6 +1177,108 @@ Reacting again with the same message option will cancel the previous reaction
 
 
 
+<a name="proto/Token.proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## proto/Token.proto
+
+
+
+<a name=".Benefit"></a>
+
+### Benefit
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) | optional |  |
+| description | [string](#string) | optional |  |
+| emoji | [string](#string) | optional |  |
+| display_order | [uint32](#uint32) | optional |  |
+
+
+
+
+
+
+<a name=".CreatorTokenIssuerRemarked"></a>
+
+### CreatorTokenIssuerRemarked
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| update_token_metadata | [UpdateTokenMetadata](#UpdateTokenMetadata) | optional |  |
+
+
+
+
+
+
+<a name=".SaleMetadata"></a>
+
+### SaleMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| terms_and_conditions | [string](#string) | optional |  |
+
+
+
+
+
+
+<a name=".TokenMetadata"></a>
+
+### TokenMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) | optional | Title |
+| symbol | [string](#string) | optional | Symbol |
+| description | [string](#string) | optional | token description |
+| avatar_object | [uint32](#uint32) | optional | avatar for token - index into external [assets array](#.Assets) |
+| avatar_uri | [string](#string) | optional | Url to member&#39;s avatar |
+| benefits | [Benefit](#Benefit) | repeated | benefits for tokne |
+| whitelist_application_note | [string](#string) | optional | note for applicant |
+| whitelist_application_apply_link | [string](#string) | optional | link to application process |
+| trailer_video_id | [uint64](#uint64) | optional | runtime id for video trailer |
+
+
+
+
+
+
+<a name=".UpdateTokenMetadata"></a>
+
+### UpdateTokenMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| new_metadata | [TokenMetadata](#TokenMetadata) | optional |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="proto/Video.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1140,6 +1396,7 @@ Publication status before joystream
 | subtitles | [SubtitleMetadata](#SubtitleMetadata) | repeated | Video subtitles |
 | enable_comments | [bool](#bool) | optional | Enable/Disable the comment section |
 | clear_subtitles | [bool](#bool) | optional | Remove all subtitles; since protobuf doesn&#39;t distinguish b/w empty array and null field, simply removing all subtitles by overriding list with an empty array wont work |
+| is_short | [bool](#bool) | optional | Is video a short format, vertical video (e.g. Youtube Shorts, TikTok, Instagram Reels) |
 
 
 
@@ -1192,6 +1449,22 @@ Publication status before joystream
 
 
 
+<a name=".ModeratePost"></a>
+
+### ModeratePost
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| post_id | [uint64](#uint64) | required |  |
+| rationale | [string](#string) | required |  |
+
+
+
+
+
+
 <a name=".OpeningMetadata"></a>
 
 ### OpeningMetadata
@@ -1223,6 +1496,22 @@ Publication status before joystream
 | ----- | ---- | ----- | ----------- |
 | question | [string](#string) | optional | The question itself (ie. &#34;What is your name?&#34;&#34;) |
 | type | [OpeningMetadata.ApplicationFormQuestion.InputType](#OpeningMetadata.ApplicationFormQuestion.InputType) | optional | Suggested type of the UI answer input |
+
+
+
+
+
+
+<a name=".RemarkMetadataAction"></a>
+
+### RemarkMetadataAction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| moderate_post | [ModeratePost](#ModeratePost) | optional |  |
+| verify_validator | [VerifyValidator](#VerifyValidator) | optional |  |
 
 
 
@@ -1271,6 +1560,22 @@ Publication status before joystream
 | reward_per_block | [uint64](#uint64) | optional | Expected reward per block |
 | min_application_stake | [uint64](#uint64) | optional | Expected min. application stake |
 | metadata | [OpeningMetadata](#OpeningMetadata) | optional | Opening metadata |
+
+
+
+
+
+
+<a name=".VerifyValidator"></a>
+
+### VerifyValidator
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member_id | [uint64](#uint64) | required |  |
+| is_verified | [bool](#bool) | required |  |
 
 
 

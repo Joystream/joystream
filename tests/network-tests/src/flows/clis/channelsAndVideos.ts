@@ -145,6 +145,7 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
     description: 'This is a test video',
     isPublic: true,
     isExplicit: false,
+    isShort: false,
     hasMarketing: false,
     language: 'en',
     license: {
@@ -169,6 +170,7 @@ export default async function createAndUpdateChannel({ api, query, env }: FlowPr
       assert.equal(video.description, videoInput.description)
       assert.equal(video.isPublic, videoInput.isPublic)
       assert.equal(video.isExplicit, videoInput.isExplicit)
+      assert.equal(video.isShort, videoInput.isShort)
       assert.equal(video.hasMarketing, videoInput.hasMarketing)
       assert.equal(video.language?.iso, videoInput.language)
       assert.equal(video.mediaMetadata?.encoding?.codecName, expectedDetectedMediaType.codecName)

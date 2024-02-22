@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/1.2.0 darwin-x64 node-v14.16.1
+@joystream/cli/1.4.0 darwin-arm64 node-v18.6.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -197,7 +197,7 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli working-groups:updateRewardAccount [ADDRESS]`](#joystream-cli-working-groupsupdaterewardaccount-address)
 - [`joystream-cli working-groups:updateRoleAccount [ADDRESS]`](#joystream-cli-working-groupsupdateroleaccount-address)
 - [`joystream-cli working-groups:updateWorkerReward WORKERID NEWREWARD`](#joystream-cli-working-groupsupdateworkerreward-workerid-newreward)
-- [`joystream-cli working-groups:verifyValidator --group=membership MEMBERID`](#joystream-cli-working-groupsverifyvalidator---groupmembership-memberid)
+- [`joystream-cli working-groups:verifyValidator MEMBERID`](#joystream-cli-working-groupsverifyvalidator-memberid)
 
 ## `joystream-cli account:create`
 
@@ -2127,10 +2127,11 @@ OPTIONS
   ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
   ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
   d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
-  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
-  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
-  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
-  etadataAction|ModeratePost|RemarkMetadataAction)
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Creato
+  rTokenIssuerRemarked|UpdateTokenMetadata|TokenMetadata|Benefit|SaleMetadata|PublishedBeforeJoystream|License|MediaType
+  |SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMetadata|ApplicationMetadata|WorkingGro
+  upMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupMetadataAction|ModeratePost|RemarkMet
+  adataAction|VerifyValidator)
       Type of the message
 ```
 
@@ -2156,10 +2157,11 @@ OPTIONS
   ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
   ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
   d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
-  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
-  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
-  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
-  etadataAction|ModeratePost|RemarkMetadataAction)
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Creato
+  rTokenIssuerRemarked|UpdateTokenMetadata|TokenMetadata|Benefit|SaleMetadata|PublishedBeforeJoystream|License|MediaType
+  |SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMetadata|ApplicationMetadata|WorkingGro
+  upMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupMetadataAction|ModeratePost|RemarkMet
+  adataAction|VerifyValidator)
       Type of the message
 ```
 
@@ -2179,10 +2181,11 @@ OPTIONS
   ment|DeleteComment|PinOrUnpinComment|ModerateComment|BanOrUnbanMemberFromChannel|VideoReactionsPreference|CreateVideoC
   ategory|MakeChannelPayment|AppMetadata|CreateApp|UpdateApp|MemberRemarked|ChannelModeratorRemarked|ChannelOwnerRemarke
   d|PersonMetadata|ProposalsDiscussionPostMetadata|SeriesMetadata|SeasonMetadata|GeoCoordiantes|NodeLocationMetadata|Sto
-  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Publis
-  hedBeforeJoystream|License|MediaType|SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMet
-  adata|ApplicationMetadata|WorkingGroupMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupM
-  etadataAction|ModeratePost|RemarkMetadataAction)
+  rageBucketOperatorMetadata|DistributionBucketOperatorMetadata|GeographicalArea|DistributionBucketFamilyMetadata|Creato
+  rTokenIssuerRemarked|UpdateTokenMetadata|TokenMetadata|Benefit|SaleMetadata|PublishedBeforeJoystream|License|MediaType
+  |SubtitleMetadata|VideoMetadata|ContentMetadata|OpeningMetadata|UpcomingOpeningMetadata|ApplicationMetadata|WorkingGro
+  upMetadata|SetGroupMetadata|AddUpcomingOpening|RemoveUpcomingOpening|WorkingGroupMetadataAction|ModeratePost|RemarkMet
+  adataAction|VerifyValidator)
       Type of the message
 ```
 
@@ -2723,21 +2726,22 @@ OPTIONS
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
 
-## `joystream-cli working-groups:verifyValidator --group=membership MEMBERID`
+## `joystream-cli working-groups:verifyValidator MEMBERID`
 
 Verify or un-verify the membership profile bound to a validator account. Available to membership workers only.
 
 ```
 USAGE
-  $ joystream-cli working-groups:verifyValidator --group=membership MEMBERID
+  $ joystream-cli working-groups:verifyValidator MEMBERID
 
 ARGUMENTS
-  MEMBERID   ID of the membership bound to the validator account.
+  MEMBERID  ID of the membership bound to the validator account.
 
 OPTIONS
-  -g, --group=membership
+  -g, --group=(storageProviders|curators|forum|membership|app|builders|humanResources|marketing|distributors)
       The working group context in which the command should be executed
-      membership is the only valid value for this command.
+      Available values are: storageProviders, curators, forum, membership, app, builders, humanResources, marketing,
+      distributors.
 
   --unverify
       Whether the profile should be un-verified.
