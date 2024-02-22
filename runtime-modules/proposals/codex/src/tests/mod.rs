@@ -1,11 +1,11 @@
 mod mock;
 
 use content::NftLimitPeriod;
+use frame_support::assert_noop;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::{assert_noop, assert_ok};
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::Hash;
 use sp_std::convert::TryInto;

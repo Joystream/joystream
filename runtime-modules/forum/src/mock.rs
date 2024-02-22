@@ -18,7 +18,7 @@ use staking_handler::{LockComparator, StakingHandler};
 use frame_support::{parameter_types, storage_root, StateVersion};
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, Hash, IdentityLookup},
+    traits::{BlakeTwo256, Convert, Hash, IdentityLookup},
     DispatchError,
 };
 use sp_std::convert::{TryFrom, TryInto};
@@ -34,6 +34,8 @@ parameter_types! {
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
+type Balance = u64;
+type VestingBalance = u64;
 
 frame_support::construct_runtime!(
     pub enum Runtime where
@@ -44,6 +46,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         Balances: balances,
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
         Timestamp: pallet_timestamp,
         TestForumModule: forum::{Pallet, Call, Storage, Event<T>, Config<T>},
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
@@ -108,20 +111,51 @@ parameter_types! {
     pub const LeaderOpeningStake: u32 = 20;
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Runtime as frame_system::Config>::BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: <Runtime as frame_system::Config>::BlockNumber) -> Balance {
+        block as u64
+    }
+}
+pub struct VestingBalanceToBalance();
+impl Convert<Balance, VestingBalance> for VestingBalanceToBalance {
+    fn convert(balance: Balance) -> VestingBalance {
+        balance as u64
+    }
+}
+
+parameter_types! {
+    // WG modules ids : 8 characters starting with m_ and ending with wg
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Runtime {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
 // The forum working group instance alias.
 pub type ForumWorkingGroupInstance = working_group::Instance1;
 
 impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingAccountValidator = membership::Module<Runtime>;
     type StakingHandler = staking_handler::StakingManager<Self, ForumGroupLockId>;
+    type StakingAccountValidator = membership::Module<Runtime>;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type ModuleId = ForumModuleId;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl LockComparator<<Runtime as balances::Config>::Balance> for Runtime {
