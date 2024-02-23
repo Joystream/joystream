@@ -789,15 +789,15 @@ benchmarks_instance! {
             None
         );
 
-        let amount_vesting = VestingBalanceOf::<T>::from(10_000_000u32);
-        let budget = BalanceOf::<T>::from(1_000_000_000u32);
+        let amount_vesting = VestingBalanceOf::<T>::from(10_000u32);
+        let budget = BalanceOf::<T>::from(100_000u32);
         let block_no = 100u32;
         let current_block = <T as frame_system::Config>::BlockNumber::from(1u32);
-        let vested = VestingInfoOf::<T>::new(amount_vesting, amount_vesting / block_no.into(), current_block);
+        let vested = VestingInfoOf::<T>::new(amount_vesting, amount_vesting, current_block);
         WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), budget).unwrap();
     }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), vested, None)
     verify {
-        assert_eq!(WorkingGroup::<T, I>::budget(), Zero::zero(), "Budget not updated");
+        assert_eq!(WorkingGroup::<T, I>::budget(), BalanceOf::<T>::from(90_000u32), "Budget not updated");
         assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, vested, None).into());
     }
 
