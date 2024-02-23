@@ -548,7 +548,7 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       createWorkingGroupLeadOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
-       * Decrease Cuncil budget parameters
+       * Decrease Council budget parameters
        **/
       decreaseCouncilBudgetProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
