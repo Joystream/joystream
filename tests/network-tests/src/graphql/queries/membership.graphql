@@ -10,6 +10,7 @@ fragment MemberMetadataFields on MemberMetadata {
     type
     value
   }
+  isVerifiedValidator
 }
 
 fragment MembershipFields on Membership {

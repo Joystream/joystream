@@ -1,5 +1,7 @@
 import FileType from 'file-type'
 import readChunk from 'read-chunk'
+import fs from 'fs'
+const fsPromises = fs.promises
 
 /**
  * Represents information about the file.
@@ -14,10 +16,21 @@ export type FileInfo = {
    * Possible file extension.
    */
   ext: string
+
+  /**
+   * File size
+   */
+  size: number
 }
 
 // Number in bytes to read. Minimum number for file info detection.
 const MINIMUM_FILE_CHUNK = 4100
+
+// Default file info if nothing could be detected.
+const DEFAULT_FILE_INFO = {
+  mimeType: 'application/octet-stream',
+  ext: 'bin',
+}
 
 /**
  * Returns MIME-type and file extension by file content.
@@ -30,21 +43,15 @@ const MINIMUM_FILE_CHUNK = 4100
  * @returns promise with file information.
  */
 export async function getFileInfo(fullPath: string): Promise<FileInfo> {
-  // Default file info if nothing could be detected.
-  const DEFAULT_FILE_INFO = {
-    mimeType: 'application/octet-stream',
-    ext: 'bin',
-  }
-
-  const buffer = readChunk.sync(fullPath, 0, MINIMUM_FILE_CHUNK)
+  const buffer = await readChunk(fullPath, 0, MINIMUM_FILE_CHUNK)
   const fileType = await FileType.fromBuffer(buffer)
+  const { size } = await fsPromises.stat(fullPath)
 
-  if (fileType === undefined) {
-    return DEFAULT_FILE_INFO
+  const info = {
+    mimeType: fileType ? fileType.mime.toString() : DEFAULT_FILE_INFO.mimeType,
+    ext: fileType ? fileType.ext.toString() : DEFAULT_FILE_INFO.ext,
+    size,
   }
 
-  return {
-    mimeType: fileType.mime.toString(),
-    ext: fileType.ext.toString(),
-  }
+  return info
 }

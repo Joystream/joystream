@@ -128,6 +128,12 @@ export interface StatusResponse {
     'downloadsInProgress': number;
     /**
      * 
+     * @type {string}
+     * @memberof StatusResponse
+     */
+    'nodeEnv': string;
+    /**
+     * 
      * @type {StatusResponseQueryNodeStatus}
      * @memberof StatusResponse
      */
@@ -157,6 +163,12 @@ export interface StatusResponseQueryNodeStatus {
      * @memberof StatusResponseQueryNodeStatus
      */
     'blocksProcessed': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'packageVersion': string;
 }
 
 /**

@@ -19,7 +19,7 @@ services:
     volumes:
       - es-data:/usr/share/elasticsearch/data
     ports:
-      - 127.0.0.1:9200:9200
+      - 9200:9200
     networks:
       - joystream_default
 

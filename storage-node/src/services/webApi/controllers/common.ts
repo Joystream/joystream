@@ -1,10 +1,11 @@
-import * as express from 'express'
-import { ExtrinsicFailedError } from '../../runtime/api'
-import { BagIdValidationError } from '../../helpers/bagTypes'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { ErrorResponse } from '../types'
+import * as express from 'express'
 import { QueryNodeApi } from '../../../services/queryNode/api'
+import { BagIdValidationError } from '../../helpers/bagTypes'
+import { ExtrinsicFailedError } from '../../runtime/api'
+import { AcceptPendingObjectsService } from '../../sync/acceptPendingObjects'
+import { ErrorResponse } from '../types'
 
 /**
  * Dedicated error for the web api requests.
@@ -42,7 +43,7 @@ export function sendResponseWithError(
   err: Error,
   errorType: string
 ): void {
-  const message = isNofileError(err) ? `File not found.` : err.toString()
+  const message = isNoFileError(err) ? `File not found.` : err.toString()
 
   const response: ErrorResponse = { type: errorType, message }
 
@@ -57,7 +58,7 @@ export function sendResponseWithError(
  * @param err - error
  * @returns true when error code contains 'ENOENT'.
  */
-function isNofileError(err: Error): boolean {
+function isNoFileError(err: Error): boolean {
   return err.toString().includes('ENOENT')
 }
 
@@ -68,7 +69,7 @@ function isNofileError(err: Error): boolean {
  * @returns HTTP status code
  */
 export function getHttpStatusCodeByError(err: Error): number {
-  if (isNofileError(err)) {
+  if (isNoFileError(err)) {
     return 404
   }
 
@@ -108,11 +109,6 @@ export type AppConfig = {
   bucketKeyPairs: Map<string, KeyringPair>
 
   /**
-   * KeyringPair instances of the role key, used for upload authentication
-   */
-  operatorRoleKey: KeyringPair | undefined
-
-  /**
    * Storage provider ID (worker ID)
    */
   workerId: number
@@ -127,17 +123,22 @@ export type AppConfig = {
   tempFileUploadingDir: string
 
   /**
+   * Temporary directory for data objects in pending acceptance state
+   */
+  pendingDataObjectsDir: string
+
+  /**
+   * Service to periodically check for pending data objects, and send `accept_pending_data_objects` batch TXs
+   */
+  acceptPendingObjectsService: AcceptPendingObjectsService
+
+  /**
    *  Environment configuration
    */
   process: {
     version: string
     userAgent: string
   }
-
-  /**
-   * Enables uploading auth-schema validation
-   */
-  enableUploadingAuth: boolean
 
   /**
    * Max file size for uploading limit.
@@ -153,4 +154,52 @@ export type AppConfig = {
    * List of buckets that node should accept uploads into.
    */
   uploadBuckets: string[]
+
+  /**
+   * Configuration options for Synchronization service
+   */
+  sync: {
+    /**
+     * Flag indicating whether Sync service is enabled or not
+     */
+    enabled: boolean
+
+    /**
+     * Sync interval (in minutes)
+     */
+    interval: number
+  }
+
+  /**
+   * Configuration options for Cleanup service
+   */
+  cleanup: {
+    /**
+     * Flag indicating whether Cleanup service is enabled or not
+     */
+    enabled: boolean
+
+    /**
+     * Cleanup interval (in minutes)
+     */
+    interval: number
+
+    /**
+     * The maximum allowed threshold by which the QN processor can lag behind
+     * the chainHead (current block) for pruning the deleted assets
+     */
+    maxQnLaggingThresholdInBlocks: number
+
+    /**
+     * The minimum replication threshold required to perform pruning of outdated
+     * assets i.e. the min number of (peer) storage operators that should hold
+     * the assets before the outdated asset could be deleted from this storage node
+     */
+    minReplicationThresholdForPruning: number
+  }
+
+  /**
+   * Random unique host id used sent in http request headers to identify the host
+   */
+  x_host_id: string
 }

@@ -9,4 +9,5 @@ tar -czf joystream.tar.gz \
     runtime \
     runtime-modules \
     joystream-node.Dockerfile \
-    bin
+    bin \
+    joy-mainnet.json

@@ -5,39 +5,42 @@ import fs from 'fs'
 export type ReadFileContext = 'PATH' | 'URL'
 
 /**
+ * Read sequence of bytes from arbitrary source. Both `start` and `end` are inclusive
+ * @param start starting indexj
+ * @param end ending index of the range
+ * @returns byte sequence
+ */
+export type ReadBytes = (start: number, end: number) => Promise<Uint8Array>
+
+/**
  * Read sequence of bytes from the file or remote host
  * provided path. Both `start` and `end` are inclusive
  * @param context path to the file
  * @param pathOrUrl
- * @param start starting index of the range
- * @param end ending index of the range
- * @returns byte sequence
+ * @returns ReadBytes
  */
-export async function readBytesFromFile(
-  context: ReadFileContext,
-  pathOrUrl: string,
-  start: number,
-  end: number
-): Promise<Uint8Array> {
-  try {
-    if (context === 'PATH') {
-      return new Promise((resolve) => {
-        const a = fs.createReadStream(pathOrUrl, { start, end }).on('data', (data) => {
-          resolve(data as Buffer)
-          a.close()
+export function readBytesFromFile(context: ReadFileContext, pathOrUrl: string): ReadBytes {
+  return async (start, end) => {
+    try {
+      if (context === 'PATH') {
+        return new Promise((resolve) => {
+          const a = fs.createReadStream(pathOrUrl, { start, end }).on('data', (data) => {
+            resolve(data as Buffer)
+            a.close()
+          })
         })
-      })
-    }
+      }
 
-    const response = await axios.get<Buffer>(pathOrUrl, {
-      responseType: 'arraybuffer',
-      headers: {
-        range: `bytes=${start}-${end}`,
-      },
-    })
-    return new Uint8Array(response.data)
-  } catch (error) {
-    throw new Error(`Failed to read input stream`)
+      const response = await axios.get<Buffer>(pathOrUrl, {
+        responseType: 'arraybuffer',
+        headers: {
+          range: `bytes=${start}-${end}`,
+        },
+      })
+      return new Uint8Array(response.data)
+    } catch (error) {
+      throw new Error(`Failed to read input stream`)
+    }
   }
 }
 

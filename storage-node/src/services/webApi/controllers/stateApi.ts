@@ -1,12 +1,14 @@
-import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
+import { ApiPromise } from '@polkadot/api'
 import * as express from 'express'
-import _ from 'lodash'
-import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
-import { sendResponseWithError, AppConfig } from './common'
 import fastFolderSize from 'fast-folder-size'
-import { promisify } from 'util'
 import fs from 'fs'
+import _ from 'lodash'
 import NodeCache from 'node-cache'
+import { promisify } from 'util'
+import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
+import logger from '../../logger'
+import { QueryNodeApi } from '../../queryNode/api'
+import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
 import {
   DataObjectResponse,
   DataStatsResponse,
@@ -14,8 +16,7 @@ import {
   StatusResponse,
   VersionResponse,
 } from '../types'
-import { QueryNodeApi } from '../../queryNode/api'
-import logger from '../../logger'
+import { AppConfig, sendResponseWithError } from './common'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
@@ -57,36 +58,44 @@ export async function getLocalDataStats(
   try {
     const uploadsDir = res.locals.uploadsDir
     const tempFileDir = res.locals.tempFileUploadingDir
+    const pendingObjectsDir = res.locals.pendingDataObjectsDir
     const fastFolderSizeAsync = promisify(fastFolderSize)
 
-    const tempFolderExists = fs.existsSync(tempFileDir)
-    const statsPromise = fsPromises.readdir(uploadsDir)
+    const statsPromise = fsPromises.readdir(uploadsDir, { withFileTypes: true })
     const sizePromise = fastFolderSizeAsync(uploadsDir)
 
     const [stats, totalSize] = await Promise.all([statsPromise, sizePromise])
 
-    let objectNumber = stats.length
+    const objectNumber = stats.filter((entry) => entry.isFile).length
     let tempDownloads = 0
     let tempDirSize = 0
-    if (tempFolderExists) {
-      if (objectNumber > 0) {
-        objectNumber--
-      }
+    let pendingObjects = 0
+    let pendingDirSize = 0
 
-      const tempDirStatsPromise = fsPromises.readdir(tempFileDir)
-      const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
+    const tempDirStatsPromise = fsPromises.readdir(tempFileDir, { withFileTypes: true })
+    const tempDirSizePromise = fastFolderSizeAsync(tempFileDir)
+    const pendingDirStatsPromise = fsPromises.readdir(pendingObjectsDir, { withFileTypes: true })
+    const pendingDirSizePromise = fastFolderSizeAsync(pendingObjectsDir)
 
-      const [tempDirStats, tempSize] = await Promise.all([tempDirStatsPromise, tempDirSizePromise])
+    const [tempDirStats, tempSize, pendingDirStats, pendingSize] = await Promise.all([
+      tempDirStatsPromise,
+      tempDirSizePromise,
+      pendingDirStatsPromise,
+      pendingDirSizePromise,
+    ])
 
-      tempDirSize = tempSize ?? 0
-      tempDownloads = tempDirStats.length
-    }
+    tempDirSize = tempSize ?? 0
+    tempDownloads = tempDirStats.filter((entry) => entry.isFile).length
+    pendingDirSize = pendingSize ?? 0
+    pendingObjects = pendingDirStats.filter((entry) => entry.isFile).length
 
     res.status(200).json({
       objectNumber,
       totalSize: totalSize ?? 0,
       tempDownloads,
       tempDirSize,
+      pendingObjects,
+      pendingDirSize,
     })
   } catch (err) {
     sendResponseWithError(res, next, err, 'local_data_stats')
@@ -135,12 +144,17 @@ export async function getVersion(
  * A public endpoint: returns the server status.
  */
 export async function getStatus(req: express.Request, res: express.Response<StatusResponse, AppConfig>): Promise<void> {
-  const { qnApi, process } = res.locals
+  const { qnApi, api, process: proc, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
 
   // Copy from an object, because the actual object could contain more data.
   res.status(200).json({
-    version: process.version,
-    queryNodeStatus: await getQueryNodeStatus(qnApi),
+    version: proc.version,
+    uploadBuckets,
+    downloadBuckets,
+    sync,
+    cleanup,
+    queryNodeStatus: await getQueryNodeStatus(api, qnApi),
+    nodeEnv: process.env.NODE_ENV,
   })
 }
 
@@ -161,16 +175,19 @@ async function getCachedDataObjectsObligations(qnApi: QueryNodeApi, bagId: strin
   return dataCache.get(entryName) ?? []
 }
 
-async function getQueryNodeStatus(qnApi: QueryNodeApi): Promise<StatusResponse['queryNodeStatus']> {
-  const qnState = await qnApi.getQueryNodeState()
+async function getQueryNodeStatus(api: ApiPromise, qnApi: QueryNodeApi): Promise<StatusResponse['queryNodeStatus']> {
+  const memoizedGetPackageVersion = _.memoize(qnApi.getPackageVersion.bind(qnApi))
+  const squidVersion = await memoizedGetPackageVersion()
+  const squidStatus = await qnApi.getState()
 
-  if (qnState === null) {
-    logger.error("Couldn't fetch the state from connected query-node")
+  if (squidStatus === null) {
+    logger.error("Couldn't fetch the state from connected storage-squid")
   }
 
   return {
     url: qnApi.endpoint,
-    chainHead: qnState?.chainHead || 0,
-    blocksProcessed: qnState?.lastCompleteBlock || 0,
+    chainHead: (await api.derive.chain.bestNumber()).toNumber() || 0,
+    blocksProcessed: squidStatus?.height || 0,
+    packageVersion: squidVersion,
   }
 }

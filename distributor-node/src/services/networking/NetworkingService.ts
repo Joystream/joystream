@@ -1,5 +1,5 @@
 import { ReadonlyConfig } from '../../types/config'
-import { QueryNodeApi } from './query-node/api'
+import { QueryFetchPolicy, QueryNodeApi } from './query-node/api'
 import { Logger } from 'winston'
 import { LoggingService } from '../logging'
 import { StorageNodeApi } from './storage-node/api'
@@ -22,6 +22,8 @@ import https from 'https'
 import { parseAxiosError } from '../parsers/errors'
 import { PendingDownload, PendingDownloadStatusType } from './PendingDownload'
 import Mime from 'mime/lite'
+import { RuntimeApi } from './runtime/api'
+import _ from 'lodash'
 
 // Concurrency limits
 export const MAX_CONCURRENT_AVAILABILITY_CHECKS_PER_OBJECT = 10
@@ -30,6 +32,7 @@ export const MAX_CONCURRENT_RESPONSE_TIME_CHECKS = 10
 export class NetworkingService {
   private config: ReadonlyConfig
   private queryNodeApi: QueryNodeApi
+  private runtimeApi!: RuntimeApi
   private logging: LoggingService
   private stateCache: StateCacheService
   private logger: Logger
@@ -50,7 +53,7 @@ export class NetworkingService {
     this.logging = logging
     this.stateCache = stateCache
     this.logger = logging.createLogger('NetworkingManager')
-    this.queryNodeApi = new QueryNodeApi(config.endpoints.queryNode, this.logging)
+    this.queryNodeApi = new QueryNodeApi(config, this.logging)
     void this.checkActiveStorageNodeEndpoints()
     // Queues
     this.testLatencyQueue = queue({ concurrency: MAX_CONCURRENT_RESPONSE_TIME_CHECKS, autostart: true }).on(
@@ -65,6 +68,12 @@ export class NetworkingService {
     this.downloadQueue.on('error', (err) => {
       this.logger.error('Data object download failed', { err })
     })
+
+    this.initRuntimeApi().catch((err) => this.logger.error('Runtime API initialization failed:', { err }))
+  }
+
+  private async initRuntimeApi() {
+    this.runtimeApi = await RuntimeApi.create(this.logging, this.config.endpoints.joystreamNodeWs)
   }
 
   private validateNodeEndpoint(endpoint: string): void {
@@ -97,12 +106,12 @@ export class NetworkingService {
 
   private prepareStorageNodeEndpoints(details: DataObjectDetailsFragment) {
     const endpointsData = details.storageBag.storageBuckets
-      .filter((bucket) => bucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
-      .map((bucket) => {
-        const rootEndpoint = bucket.operatorMetadata?.nodeEndpoint
+      .filter(({ storageBucket }) => storageBucket.operatorStatus.__typename === 'StorageBucketOperatorStatusActive')
+      .map(({ storageBucket }) => {
+        const rootEndpoint = storageBucket.operatorMetadata?.nodeEndpoint
         const apiEndpoint = rootEndpoint ? this.getApiEndpoint(rootEndpoint) : ''
         return {
-          bucketId: bucket.id,
+          bucketId: storageBucket.id,
           endpoint: apiEndpoint,
         }
       })
@@ -119,8 +128,8 @@ export class NetworkingService {
   private getDataObjectActiveDistributorsSet(objectDetails: DataObjectDetailsFragment): Set<number> {
     const activeDistributorsSet = new Set<number>()
     const { distributionBuckets } = objectDetails.storageBag
-    for (const bucket of distributionBuckets) {
-      for (const operator of bucket.operators) {
+    for (const { distributionBucket } of distributionBuckets) {
+      for (const operator of distributionBucket.operators) {
         if (operator.status === DistributionBucketOperatorStatus.Active) {
           activeDistributorsSet.add(operator.workerId)
         }
@@ -137,8 +146,8 @@ export class NetworkingService {
     return parsed
   }
 
-  public async dataObjectInfo(objectId: string): Promise<DataObjectInfo> {
-    const details = await this.queryNodeApi.getDataObjectDetails(objectId)
+  public async dataObjectInfo(objectId: string, fetchPolicy: QueryFetchPolicy): Promise<DataObjectInfo> {
+    const details = await this.queryNodeApi.getDataObjectDetails(objectId, fetchPolicy)
     let exists = false
     let isSupported = false
     let isAccepted = false
@@ -151,14 +160,16 @@ export class NetworkingService {
         isSupported = typeof this.config.workerId === 'number' ? distributors.has(this.config.workerId) : false
       } else {
         const supportedBucketIds = this.config.buckets.map((id) => id.toString())
-        isSupported = details.storageBag.distributionBuckets.some((b) => supportedBucketIds.includes(b.id))
+        isSupported = details.storageBag.distributionBuckets.some((b) =>
+          supportedBucketIds.includes(b.distributionBucket.id)
+        )
       }
       data = {
         objectId,
         accessPoints: this.parseDataObjectAccessPoints(details),
         contentHash: details.ipfsHash,
         size: parseInt(details.size),
-        fallbackMimeType: this.parseUserProvidedMimeType(details.type.subtitle?.mimeType),
+        fallbackMimeType: this.parseUserProvidedMimeType(details.type?.subtitle?.mimeType),
       }
     }
 
@@ -370,23 +381,19 @@ export class NetworkingService {
   }
 
   async fetchSupportedDataObjects(): Promise<Map<string, DataObjectData>> {
-    const data = this.config.buckets
+    const objects = this.config.buckets
       ? await this.queryNodeApi.getDistributionBucketsWithObjectsByIds(this.config.buckets.map((id) => id.toString()))
       : typeof this.config.workerId === 'number'
       ? await this.queryNodeApi.getDistributionBucketsWithObjectsByWorkerId(this.config.workerId)
       : []
     const objectsData = new Map<string, DataObjectData>()
-    data.forEach((bucket) => {
-      bucket.bags.forEach((bag) => {
-        bag.objects.forEach((object) => {
-          const { ipfsHash, id, size, type } = object
-          objectsData.set(id, {
-            contentHash: ipfsHash,
-            objectId: id,
-            size: parseInt(size),
-            fallbackMimeType: this.parseUserProvidedMimeType(type.subtitle?.mimeType),
-          })
-        })
+    objects.forEach((object) => {
+      const { ipfsHash, id, size, type } = object
+      objectsData.set(id, {
+        contentHash: ipfsHash,
+        objectId: id,
+        size: parseInt(size),
+        fallbackMimeType: this.parseUserProvidedMimeType(type?.subtitle?.mimeType),
       })
     })
 
@@ -439,16 +446,19 @@ export class NetworkingService {
   }
 
   async getQueryNodeStatus(): Promise<StatusResponse['queryNodeStatus']> {
-    const qnState = await this.queryNodeApi.getQueryNodeState()
+    const memoizedGetPackageVersion = _.memoize(this.queryNodeApi.getPackageVersion.bind(this.queryNodeApi))
+    const squidVersion = await memoizedGetPackageVersion()
+    const squidStatus = await this.queryNodeApi.getState()
 
-    if (qnState === null) {
-      this.logger.error("Couldn't fetch the state from connected query-node")
+    if (squidStatus === null) {
+      this.logger.error("Couldn't fetch the state from connected storage-squid")
     }
 
     return {
-      url: this.config.endpoints.queryNode,
-      chainHead: qnState?.chainHead || 0,
-      blocksProcessed: qnState?.lastCompleteBlock || 0,
+      url: this.config.endpoints.storageSquid,
+      chainHead: (await this.runtimeApi.derive.chain.bestNumber()).toNumber() || 0,
+      blocksProcessed: squidStatus?.height || 0,
+      packageVersion: squidVersion,
     }
   }
 }

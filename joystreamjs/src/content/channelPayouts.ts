@@ -12,7 +12,7 @@ import { MerkleTree } from 'merkletreejs'
 import { Reader, Writer } from 'protobufjs'
 import { ChannelPayoutProof } from '../../typings/ChannelPayoutsPayload.schema'
 import { ChannelPayoutsVector } from '../../typings/ChannelPayoutsVector.schema'
-import { asValidatedMetadata, readBytesFromFile, ReadFileContext } from '../utils'
+import { asValidatedMetadata, ReadBytes, readBytesFromFile, ReadFileContext } from '../utils'
 import { Buffer } from 'buffer'
 
 export const hashFunc = blake2AsU8a
@@ -35,7 +35,7 @@ export async function channelPayoutProof(
   pathOrUrl: string,
   channelId: number
 ): Promise<ChannelPayoutsMetadata.Body.ChannelPayoutProof> {
-  const serializedHeader = await serializedPayloadHeader(context, pathOrUrl)
+  const serializedHeader = await serializedPayloadHeader(readBytesFromFile(context, pathOrUrl))
   const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
 
   const channelPayoutProofOffset = header.channelPayoutByteOffsets.find((o) => o.channelId === channelId)
@@ -43,7 +43,10 @@ export async function channelPayoutProof(
     throw new Error(`No payout Proof exists for channel id ${channelId}`)
   }
 
-  return channelPayoutProofAtByteOffset(context, pathOrUrl, Number(channelPayoutProofOffset.byteOffset))
+  return channelPayoutProofAtByteOffset(
+    readBytesFromFile(context, pathOrUrl),
+    Number(channelPayoutProofOffset.byteOffset)
+  )
 }
 
 /**
@@ -104,19 +107,14 @@ function lengthOfVarintEncodedMessageSize(protobufMessageLength: number): number
  * so we arbitrary read `n` bytes from the payload based on the assumption that the size of the header CAN BE
  * encoded in `n` bytes. For reference, if serialized message is over 4 TB then its size information can be
  * encoded in just 6 bytes
- * @param context "PATH" | "URL"
- * @param pathOrUrl path to protobuf serialized payload file
+ * @param read getter which returns the requested sequence of bytes
  * @param messageOffset byte offset of message in serialized payload
  * @returns length of serialized message in number of bytes
  */
-async function lengthOfProtobufMessage(
-  context: ReadFileContext,
-  pathOrUrl: string,
-  messageOffset: number
-): Promise<number> {
+async function lengthOfProtobufMessage(read: ReadBytes, messageOffset: number): Promise<number> {
   // TODO: improve the implementation by reading size info byte by byte
   // TODO: and checking most significant bit (msb) of each byte.
-  const arbitraryBytes = await readBytesFromFile(context, pathOrUrl, messageOffset, messageOffset + 10)
+  const arbitraryBytes = await read(messageOffset, messageOffset + 10)
   const lengthOfMessage = Reader.create(arbitraryBytes).uint32()
   return lengthOfMessage
 }
@@ -143,17 +141,14 @@ function lengthOfHeader(numberOfChannels: number): number {
 
 /**
  * Get serialized payload header from a local file.
- * @param context "PATH" | "URL"
- * @param pathOrUrl path to protobuf serialized payload file
+ * @param read getter which returns the requested sequence of bytes
  * @return bytes of payload header
  **/
-export async function serializedPayloadHeader(context: ReadFileContext, pathOrUrl: string): Promise<Uint8Array> {
+export async function serializedPayloadHeader(read: ReadBytes): Promise<Uint8Array> {
   // skip the first byte which is the Tag(key) of `Header` message
-  const lengthOfSerializedHeader = await lengthOfProtobufMessage(context, pathOrUrl, 1)
+  const lengthOfSerializedHeader = await lengthOfProtobufMessage(read, 1)
   const lengthOfVarintEncodedHeaderSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedHeader)
-  const serializedHeader = await readBytesFromFile(
-    context,
-    pathOrUrl,
+  const serializedHeader = await read(
     1 + lengthOfVarintEncodedHeaderSize,
     lengthOfVarintEncodedHeaderSize + lengthOfSerializedHeader
   )
@@ -163,21 +158,17 @@ export async function serializedPayloadHeader(context: ReadFileContext, pathOrUr
 
 /**
  * Get channel payout Proof from local serialized payload file.
- * @param context "PATH" | "URL"
- * @param pathOrUrl path to protobuf serialized payload file
+ * @param read getter which returns the requested sequence of bytes
  * @param byteOffset byte offset of channel payout Proof in serialized payload
  * @return channel payout Proof
  **/
 export async function channelPayoutProofAtByteOffset(
-  context: ReadFileContext,
-  pathOrUrl: string,
+  read: ReadBytes,
   byteOffset: number
 ): Promise<ChannelPayoutsMetadata.Body.ChannelPayoutProof> {
-  const lengthOfSerializedProof = await lengthOfProtobufMessage(context, pathOrUrl, byteOffset)
+  const lengthOfSerializedProof = await lengthOfProtobufMessage(read, byteOffset)
   const lengthOfVarintEncodedProofSize = lengthOfVarintEncodedMessageSize(lengthOfSerializedProof)
-  const serializedPayoutProof = await readBytesFromFile(
-    context,
-    pathOrUrl,
+  const serializedPayoutProof = await read(
     byteOffset + lengthOfVarintEncodedProofSize,
     byteOffset + lengthOfSerializedProof + 1
   )
@@ -187,18 +178,17 @@ export async function channelPayoutProofAtByteOffset(
 
 /**
  * Generate merkle root from the serialized payload
- * @param context "PATH" | "URL"
- * @param pathOrUrl path to protobuf serialized payload file
+ * @param read getter which returns the requested sequence of bytes
  * @returns merkle root of the cashout vector
  */
-export async function generateCommitmentFromPayloadFile(context: ReadFileContext, pathOrUrl: string): Promise<string> {
-  const serializedHeader = await serializedPayloadHeader(context, pathOrUrl)
+export async function generateCommitmentFromPayloadFile(read: ReadBytes): Promise<string> {
+  const serializedHeader = await serializedPayloadHeader(read)
   const header = ChannelPayoutsMetadata.Header.decode(serializedHeader)
 
   // Any payout Proof can be used to generate the merkle root,
   // here first Proof from channel payouts payload is used
-  const ProofByteOffset = header.channelPayoutByteOffsets.shift()!.byteOffset.toNumber()
-  const proof = await channelPayoutProofAtByteOffset(context, pathOrUrl, ProofByteOffset)
+  const ProofByteOffset = Number(header.channelPayoutByteOffsets.shift()?.byteOffset)
+  const proof = await channelPayoutProofAtByteOffset(read, ProofByteOffset)
   return verifyChannelPayoutProof(proof)
 }
 

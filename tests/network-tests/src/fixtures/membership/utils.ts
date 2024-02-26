@@ -28,7 +28,10 @@ export function generateParamsFromAccountId(accountId: string, isFoundingMember 
   const about = `about${affix}`
   const avatarUri = `https://example.com/${affix}.jpg`
   const externalResources = [
-    { type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK, value: `https://${affix}.com` },
+    {
+      type: MembershipMetadata.ExternalResource.ResourceType.HYPERLINK,
+      value: `https://${affix}.com`,
+    },
   ]
   const metadataBytes = Utils.metadataToBytes(MembershipMetadata, {
     name,

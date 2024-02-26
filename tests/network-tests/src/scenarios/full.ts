@@ -40,6 +40,7 @@ import invitingMembers from '../flows/membership/invitingMembers'
 import { createAppActions } from '../flows/content/createAppActions'
 import { createApp } from '../flows/content/createApp'
 import { updateApp } from '../flows/content/updateApp'
+import updateValidatorVerificationStatus from '../flows/membership/updateValidatorVerifications'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job, env }) => {
@@ -80,9 +81,7 @@ scenario('Full', async ({ job, env }) => {
   const channelPayoutsProposalJob = job('channel payouts proposal', channelPayouts).requires(proposalsJob)
 
   // Working groups
-  const hireLeads = job('lead opening', leadOpening(process.env.IGNORE_HIRED_LEADS === 'true')).after(
-    channelPayoutsProposalJob
-  )
+  const hireLeads = job('lead opening', leadOpening(true)).after(channelPayoutsProposalJob)
   job('openings and applications', openingsAndApplications).requires(hireLeads)
   job('upcoming openings', upcomingOpenings).requires(hireLeads)
   job('group status', groupStatus).requires(hireLeads)
@@ -91,6 +90,7 @@ scenario('Full', async ({ job, env }) => {
 
   // Memberships (depending on hired leads)
   job('updating member verification status', updatingVerificationStatus).after(hireLeads)
+  job('updating validator verification status', updateValidatorVerificationStatus).after(hireLeads)
 
   // Forum:
   job('forum categories', categories).requires(hireLeads)

@@ -1,15 +1,20 @@
-import { getStorageObligationsFromRuntime, DataObligations } from './storageObligations'
+import { getDataObjectIDs, isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
-import { getDataObjectIDs } from '../../services/caching/localDataObjects'
-import { SyncTask, DownloadFileTask, PrepareDownloadFileTask } from './tasks'
-import { WorkingStack, TaskProcessorSpawner, TaskSink } from './workingProcess'
+import { QueryNodeApi } from '../queryNode/api'
+import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
+import { DownloadFileTask } from './tasks'
+import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
 import _ from 'lodash'
-import { ApiPromise } from '@polkadot/api'
 
 /**
  * Temporary directory name for data uploading.
  */
 export const TempDirName = 'temp'
+
+/**
+ * Temporary Directory name for data objects not yet accepted (pending) in runtime.
+ */
+export const PendingDirName = 'pending'
 
 /**
  * Runs the data synchronization workflow. It compares the current node's
@@ -19,56 +24,51 @@ export const TempDirName = 'temp'
  *
  * @param api - (optional) runtime API promise
  * @param workerId - current storage provider ID
+ * @param buckets - Selected storage buckets
  * @param asyncWorkersNumber - maximum parallel downloads number
  * @param asyncWorkersTimeout - downloading asset timeout
- * @param queryNodeUrl - Query Node endpoint URL
+ * @param qnApi - Query Node API
  * @param uploadDirectory - local directory to get file names from
- * @param operatorUrl - (optional) defines the data source URL. If not set
+ * @param tempDirectory - local directory for temporary data uploading
+ * @param selectedOperatorUrl - (optional) defines the data source URL. If not set
  * the source URL is resolved for each data object separately using the Query
  * Node information about the storage providers.
  */
 export async function performSync(
-  api: ApiPromise | undefined,
-  workerId: number,
   buckets: string[],
   asyncWorkersNumber: number,
   asyncWorkersTimeout: number,
-  queryNodeUrl: string,
+  qnApi: QueryNodeApi,
   uploadDirectory: string,
   tempDirectory: string,
-  operatorUrl?: string
+  hostId: string,
+  selectedOperatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
-  const [model, files] = await Promise.all([
-    getStorageObligationsFromRuntime(queryNodeUrl, buckets),
-    getDataObjectIDs(),
-  ])
+  const model = await getStorageObligationsFromRuntime(qnApi, buckets)
+  const storedObjectIds = getDataObjectIDs()
 
-  const requiredIds = model.dataObjects.map((obj) => obj.id)
+  const assignedObjects = model.dataObjects
+  const assignedObjectIds = assignedObjects.map((obj) => obj.id)
 
-  const added = _.difference(requiredIds, files)
-  const deleted = _.difference(files, requiredIds)
+  const added = assignedObjects.filter((obj) => !isDataObjectIdInCache(obj.id))
+  const removed = _.difference(storedObjectIds, assignedObjectIds)
 
   logger.debug(`Sync - new objects: ${added.length}`)
-  logger.debug(`Sync - obsolete objects: ${deleted.length}`)
+  logger.debug(`Sync - obsolete objects: ${removed.length}`)
 
   const workingStack = new WorkingStack()
 
-  let addedTasks: SyncTask[]
-  if (operatorUrl === undefined) {
-    addedTasks = await getPrepareDownloadTasks(
-      api,
-      model,
-      workerId,
-      added,
-      uploadDirectory,
-      tempDirectory,
-      workingStack,
-      asyncWorkersTimeout
-    )
-  } else {
-    addedTasks = await getDownloadTasks(operatorUrl, added, uploadDirectory, tempDirectory, asyncWorkersTimeout)
-  }
+  const addedTasks = await getDownloadTasks(
+    model,
+    buckets,
+    added,
+    uploadDirectory,
+    tempDirectory,
+    asyncWorkersTimeout,
+    hostId,
+    selectedOperatorUrl
+  )
 
   logger.debug(`Sync - started processing...`)
 
@@ -81,36 +81,48 @@ export async function performSync(
 }
 
 /**
- * Creates the download preparation tasks.
+ * Creates the download tasks.
  *
- * @param api - Runtime API promise
  * @param dataObligations - defines the current data obligations for the node
+ * @param ownBuckets - list of bucket ids operated this node
  * @param addedIds - data object IDs to download
  * @param uploadDirectory - local directory for data uploading
  * @param tempDirectory - local directory for temporary data uploading
  * @param taskSink - a destination for the newly created tasks
  * @param asyncWorkersTimeout - downloading asset timeout
+ * @param hostId - Random host UUID assigned to each node during bootstrap
+ * @param selectedOperatorUrl - operator URL selected for syncing objects
  */
-async function getPrepareDownloadTasks(
-  api: ApiPromise | undefined,
+async function getDownloadTasks(
   dataObligations: DataObligations,
-  currentWorkerId: number,
-  addedIds: string[],
+  ownBuckets: string[],
+  added: DataObligations['dataObjects'],
   uploadDirectory: string,
   tempDirectory: string,
-  taskSink: TaskSink,
-  asyncWorkersTimeout: number
-): Promise<PrepareDownloadFileTask[]> {
+  asyncWorkersTimeout: number,
+  hostId: string,
+  selectedOperatorUrl?: string
+): Promise<DownloadFileTask[]> {
   const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
     bagIdByDataObjectId.set(entry.id, entry.bagId)
   }
 
+  const ownOperatorUrls: string[] = []
+  for (const entry of dataObligations.storageBuckets) {
+    if (ownBuckets.includes(entry.id)) {
+      ownOperatorUrls.push(entry.operatorUrl)
+    }
+  }
+
   const bucketOperatorUrlById = new Map()
   for (const entry of dataObligations.storageBuckets) {
-    // Skip all buckets of the current WorkerId (this storage provider)
-    if (entry.workerId !== currentWorkerId) {
-      bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+    if (!ownBuckets.includes(entry.id)) {
+      if (ownOperatorUrls.includes(entry.operatorUrl)) {
+        logger.warn(`(sync) Skipping remote bucket ${entry.id} - ${entry.operatorUrl}`)
+      } else {
+        bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
+      }
     }
   }
 
@@ -130,51 +142,26 @@ async function getPrepareDownloadTasks(
     bagOperatorsUrlsById.set(entry.id, operatorUrls)
   }
 
-  const tasks = addedIds.map((id) => {
+  const tasks = added.map((dataObject) => {
     let operatorUrls: string[] = [] // can be empty after look up
     let bagId = null
-    if (bagIdByDataObjectId.has(id)) {
-      bagId = bagIdByDataObjectId.get(id)
+    if (bagIdByDataObjectId.has(dataObject.id)) {
+      bagId = bagIdByDataObjectId.get(dataObject.id)
       if (bagOperatorsUrlsById.has(bagId)) {
         operatorUrls = bagOperatorsUrlsById.get(bagId)
       }
     }
 
-    return new PrepareDownloadFileTask(
-      operatorUrls,
-      bagId,
-      id,
+    return new DownloadFileTask(
+      selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
+      dataObject.id,
+      dataObject.ipfsHash,
       uploadDirectory,
       tempDirectory,
-      taskSink,
       asyncWorkersTimeout,
-      api
+      hostId
     )
   })
 
   return tasks
-}
-
-/**
- * Creates the download file tasks.
- *
- * @param operatorUrl - defines the data source URL.
- * @param addedIds - data object IDs to download
- * @param uploadDirectory - local directory for data uploading
- * @param tempDirectory - local directory for temporary data uploading
- * @param downloadTimeout - asset downloading timeout (in minutes)
- */
-async function getDownloadTasks(
-  operatorUrl: string,
-  addedIds: string[],
-  uploadDirectory: string,
-  tempDirectory: string,
-  downloadTimeout: number
-): Promise<DownloadFileTask[]> {
-  const addedTasks = addedIds.map(
-    (fileName) =>
-      new DownloadFileTask(operatorUrl, fileName, undefined, uploadDirectory, tempDirectory, downloadTimeout)
-  )
-
-  return addedTasks
 }

@@ -1,47 +1,44 @@
-import {
-  ApolloClient,
-  NormalizedCacheObject,
-  HttpLink,
-  defaultDataIdFromObject,
-  InMemoryCache,
-  DocumentNode,
-  split,
-  from,
-} from '@apollo/client'
+import { ApolloClient, DocumentNode, HttpLink, InMemoryCache, NormalizedCacheObject, from } from '@apollo/client'
 import { onError } from '@apollo/client/link/error'
 import fetch from 'cross-fetch'
+import stringify from 'fast-safe-stringify'
+import logger from '../logger'
 import {
-  GetBagConnection,
-  GetBagConnectionQuery,
-  GetBagConnectionQueryVariables,
+  DataObjectByBagIdsDetailsFragment,
+  DataObjectDetailsFragment,
+  GetDataObjects,
+  GetDataObjectsByBagIds,
+  GetDataObjectsByBagIdsQuery,
+  GetDataObjectsByBagIdsQueryVariables,
+  GetDataObjectsDeletedEvents,
+  GetDataObjectsDeletedEventsQuery,
+  GetDataObjectsDeletedEventsQueryVariables,
+  GetDataObjectsQuery,
+  GetDataObjectsQueryVariables,
+  GetSquidVersion,
+  GetSquidVersionQuery,
+  GetSquidVersionQueryVariables,
+  GetStorageBagDetails,
+  GetStorageBagDetailsQuery,
+  GetStorageBagDetailsQueryVariables,
   GetStorageBucketDetails,
   GetStorageBucketDetailsQuery,
-  GetStorageBucketDetailsByWorkerIdQuery,
-  GetStorageBucketDetailsByWorkerIdQueryVariables,
   GetStorageBucketDetailsQueryVariables,
-  StorageBucketDetailsFragment,
+  GetStorageBuckets,
+  GetStorageBucketsByWorkerId,
+  GetStorageBucketsByWorkerIdQuery,
+  GetStorageBucketsByWorkerIdQueryVariables,
+  GetStorageBucketsQuery,
+  GetStorageBucketsQueryVariables,
+  SquidStatus,
+  SquidStatusFieldsFragment,
+  SquidStatusQuery,
+  SquidStatusQueryVariables,
   StorageBagDetailsFragment,
-  DataObjectDetailsFragment,
-  GetDataObjectConnectionQuery,
-  GetDataObjectConnectionQueryVariables,
-  GetDataObjectConnection,
+  StorageBucketDetailsFragment,
   StorageBucketIdsFragment,
-  GetStorageBucketsConnection,
-  GetStorageBucketsConnectionQuery,
-  GetStorageBucketsConnectionQueryVariables,
-  GetStorageBucketDetailsByWorkerId,
-  QueryNodeStateFieldsFragment,
-  QueryNodeStateSubscription,
-  QueryNodeStateSubscriptionVariables,
-  QueryNodeState,
-  QueryNodeStateFields,
 } from './generated/queries'
 import { Maybe, StorageBagWhereInput } from './generated/schema'
-import { WebSocketLink } from '@apollo/client/link/ws'
-import { getMainDefinition } from '@apollo/client/utilities'
-import ws from 'ws'
-import logger from '../logger'
-import stringify from 'fast-safe-stringify'
 
 /**
  * Defines query paging limits.
@@ -74,34 +71,10 @@ export class QueryNodeApi {
       const message = networkError?.message || 'Graphql syntax errors found'
       logger.error(`Error when trying to execute a query: ${message}. ${stringify(error)}`)
     })
-    const queryLink = from([errorLink, new HttpLink({ uri: endpoint, fetch })])
-    const wsLink = new WebSocketLink({
-      uri: endpoint,
-      options: {
-        reconnect: true,
-      },
-      webSocketImpl: ws,
-    })
-    const splitLink = split(
-      ({ query }) => {
-        const definition = getMainDefinition(query)
-        return definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
-      },
-      wsLink,
-      queryLink
-    )
 
     this.apolloClient = new ApolloClient({
-      link: splitLink,
-      cache: new InMemoryCache({
-        dataIdFromObject: (object) => {
-          // setup cache object id for ProcessorState entity type
-          if (object.__typename === 'ProcessorState') {
-            return object.__typename
-          }
-          return defaultDataIdFromObject(object)
-        },
-      }),
+      link: from([errorLink, new HttpLink({ uri: endpoint, fetch })]),
+      cache: new InMemoryCache(),
       defaultOptions: { query: { fetchPolicy: 'no-cache', errorPolicy: 'all' } },
     })
   }
@@ -193,39 +166,17 @@ export class QueryNodeApi {
   protected async multipleEntitiesQuery<
     QueryT extends { [k: string]: unknown[] },
     VariablesT extends Record<string, unknown>
-  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT] | null> {
+  >(query: DocumentNode, variables: VariablesT, resultKey: keyof QueryT): Promise<QueryT[keyof QueryT]> {
     const result = await this.apolloClient.query<QueryT, VariablesT>({
       query,
       variables,
     })
 
     if (result?.data === null) {
-      return null
+      return [] as unknown as QueryT[keyof QueryT]
     }
 
     return result.data[resultKey]
-  }
-
-  /**
-   * Get entity from subscription
-   *
-   * @param query - actual query
-   * @param variables - query parameters
-   * @param resultKey - helps result parsing
-   */
-  protected async uniqueEntitySubscription<
-    SubscriptionT extends { [k: string]: Maybe<Record<string, unknown>> | undefined },
-    VariablesT extends Record<string, unknown>
-  >(
-    query: DocumentNode,
-    variables: VariablesT,
-    resultKey: keyof SubscriptionT
-  ): Promise<SubscriptionT[keyof SubscriptionT] | null> {
-    return new Promise((resolve) => {
-      this.apolloClient.subscribe<SubscriptionT, VariablesT>({ query, variables }).subscribe(({ data }) => {
-        resolve(data ? data[resultKey] : null)
-      })
-    })
   }
 
   /**
@@ -233,12 +184,11 @@ export class QueryNodeApi {
    *
    * @param workerId - worker ID
    */
-  public async getStorageBucketIdsByWorkerId(workerId: string): Promise<Array<StorageBucketIdsFragment>> {
-    const result = await this.multipleEntitiesWithPagination<
-      StorageBucketIdsFragment,
-      GetStorageBucketDetailsByWorkerIdQuery,
-      GetStorageBucketDetailsByWorkerIdQueryVariables
-    >(GetStorageBucketDetailsByWorkerId, { workerId, limit: MAX_RESULTS_PER_QUERY }, 'storageBucketsConnection')
+  public async getStorageBucketIdsByWorkerId(workerId: number): Promise<Array<StorageBucketIdsFragment>> {
+    const result = await this.multipleEntitiesQuery<
+      GetStorageBucketsByWorkerIdQuery,
+      GetStorageBucketsByWorkerIdQueryVariables
+    >(GetStorageBucketsByWorkerId, { workerId }, 'storageBuckets')
 
     if (!result) {
       return []
@@ -254,15 +204,11 @@ export class QueryNodeApi {
    * @param offset - starting record of the page
    * @param limit - page size
    */
-  public async getStorageBucketDetails(
-    ids: string[],
-    offset: number,
-    limit: number
-  ): Promise<Array<StorageBucketDetailsFragment>> {
+  public async getStorageBucketDetails(ids: string[]): Promise<Array<StorageBucketDetailsFragment>> {
     const result = await this.multipleEntitiesQuery<
       GetStorageBucketDetailsQuery,
       GetStorageBucketDetailsQueryVariables
-    >(GetStorageBucketDetails, { offset, limit, ids }, 'storageBuckets')
+    >(GetStorageBucketDetails, { ids }, 'storageBuckets')
 
     if (result === null) {
       return []
@@ -277,11 +223,11 @@ export class QueryNodeApi {
    * @param bucketIds - query filter: bucket IDs
    */
   public async getStorageBagsDetails(bucketIds: string[]): Promise<Array<StorageBagDetailsFragment>> {
-    const result = await this.multipleEntitiesWithPagination<
-      StorageBagDetailsFragment,
-      GetBagConnectionQuery,
-      GetBagConnectionQueryVariables
-    >(GetBagConnection, { limit: MAX_RESULTS_PER_QUERY, bucketIds }, 'storageBagsConnection')
+    const result = await this.multipleEntitiesQuery<GetStorageBagDetailsQuery, GetStorageBagDetailsQueryVariables>(
+      GetStorageBagDetails,
+      { bucketIds },
+      'storageBags'
+    )
 
     if (!result) {
       return []
@@ -294,21 +240,44 @@ export class QueryNodeApi {
    * Returns data objects info by pages for the given bags.
    *
    * @param bagIds - query filter: bag IDs
-   * @param offset - starting record of the page
    */
-  public async getDataObjectDetails(bagIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
+  public async getDataObjectsByBagIds(bagIds: string[]): Promise<Array<DataObjectByBagIdsDetailsFragment>> {
     const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    const fullResult: DataObjectDetailsFragment[] = []
+    let fullResult: DataObjectByBagIdsDetailsFragment[] = []
     while (allBagIds.length) {
       const bagIdsBatch = allBagIds.splice(0, 1000)
       const input: StorageBagWhereInput = { id_in: bagIdsBatch }
-      fullResult.push(
-        ...(await this.multipleEntitiesWithPagination<
-          DataObjectDetailsFragment,
-          GetDataObjectConnectionQuery,
-          GetDataObjectConnectionQueryVariables
-        >(GetDataObjectConnection, { limit: MAX_RESULTS_PER_QUERY, bagIds: input }, 'storageDataObjectsConnection'))
-      )
+      fullResult = [
+        ...fullResult,
+        ...(await this.multipleEntitiesQuery<GetDataObjectsByBagIdsQuery, GetDataObjectsByBagIdsQueryVariables>(
+          GetDataObjectsByBagIds,
+          { bagIds: input },
+          'storageDataObjects'
+        )),
+      ]
+    }
+
+    return fullResult
+  }
+
+  /**
+   * Returns data objects info by pages for the given dataObject IDs.
+   *
+   * @param dataObjectIds - query filter: dataObject IDs
+   */
+  public async getDataObjectDetails(dataObjectIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
+    const allDataObjectIds = [...dataObjectIds] // Copy to avoid modifying the original array
+    let fullResult: DataObjectDetailsFragment[] = []
+    while (allDataObjectIds.length) {
+      const dataObjectIdsBatch = allDataObjectIds.splice(0, 1000)
+      fullResult = [
+        ...fullResult,
+        ...(await this.multipleEntitiesQuery<GetDataObjectsQuery, GetDataObjectsQueryVariables>(
+          GetDataObjects,
+          { dataObjectIds: dataObjectIdsBatch },
+          'storageDataObjects'
+        )),
+      ]
     }
 
     return fullResult
@@ -319,11 +288,11 @@ export class QueryNodeApi {
    *
    */
   public async getStorageBucketIds(): Promise<Array<StorageBucketIdsFragment>> {
-    const result = await this.multipleEntitiesWithPagination<
-      StorageBucketIdsFragment,
-      GetStorageBucketsConnectionQuery,
-      GetStorageBucketsConnectionQueryVariables
-    >(GetStorageBucketsConnection, { limit: MAX_RESULTS_PER_QUERY }, 'storageBucketsConnection')
+    const result = await this.multipleEntitiesQuery<GetStorageBucketsQuery, GetStorageBucketsQueryVariables>(
+      GetStorageBuckets,
+      {},
+      'storageBuckets'
+    )
 
     if (!result) {
       return []
@@ -332,26 +301,36 @@ export class QueryNodeApi {
     return result
   }
 
-  public async getQueryNodeState(): Promise<QueryNodeStateFieldsFragment | null> {
-    // fetch cached state
-    const cachedState = this.apolloClient.readFragment<
-      QueryNodeStateSubscription['stateSubscription'],
-      QueryNodeStateSubscriptionVariables
-    >({
-      id: 'ProcessorState',
-      fragment: QueryNodeStateFields,
-    })
+  public async getDataObjectDeletedEvents(
+    dataObjectIds: string[]
+  ): Promise<Array<GetDataObjectsDeletedEventsQuery['events'][number]>> {
+    const result = await this.multipleEntitiesQuery<
+      GetDataObjectsDeletedEventsQuery,
+      GetDataObjectsDeletedEventsQueryVariables
+    >(GetDataObjectsDeletedEvents, { dataObjectIds }, 'events')
 
-    // If we have the state in cache, return it
-    if (cachedState) {
-      return cachedState
+    if (!result) {
+      return []
     }
 
-    // Otherwise setup the subscription (which will periodically update the cache) and return for the first result
-    return this.uniqueEntitySubscription<QueryNodeStateSubscription, QueryNodeStateSubscriptionVariables>(
-      QueryNodeState,
+    return result
+  }
+
+  public async getPackageVersion(): Promise<string> {
+    const squidVersion = await this.uniqueEntityQuery<GetSquidVersionQuery, GetSquidVersionQueryVariables>(
+      GetSquidVersion,
       {},
-      'stateSubscription'
+      'squidVersion'
     )
+    return squidVersion?.version || ''
+  }
+
+  public async getState(): Promise<SquidStatusFieldsFragment | null> {
+    const squidStatus = await this.uniqueEntityQuery<SquidStatusQuery, SquidStatusQueryVariables>(
+      SquidStatus,
+      {},
+      'squidStatus'
+    )
+    return squidStatus
   }
 }

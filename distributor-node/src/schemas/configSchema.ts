@@ -27,8 +27,8 @@ export const configSchema: JSONSchema4 = objectSchema({
     endpoints: objectSchema({
       description: 'Specifies external endpoints that the distributor node will connect to',
       properties: {
-        queryNode: {
-          description: 'Query node graphql server uri (for example: http://localhost:8081/graphql)',
+        storageSquid: {
+          description: 'Storage-Squid graphql server uri (for example: http://localhost:4352/graphql)',
           type: 'string',
           format: 'uri',
         },
@@ -38,7 +38,7 @@ export const configSchema: JSONSchema4 = objectSchema({
           format: 'uri',
         },
       },
-      required: ['queryNode', 'joystreamNodeWs'],
+      required: ['storageSquid', 'joystreamNodeWs'],
     }),
     directories: objectSchema({
       description: "Specifies paths where node's data will be stored",
@@ -105,9 +105,10 @@ export const configSchema: JSONSchema4 = objectSchema({
               type: 'string',
               format: 'uri',
             },
-            index: {
+            indexPrefix: {
               description:
-                'Elasticsearch index to push the logs to. If not provided, will fallback to "distributor-node"',
+                // eslint-disable-next-line no-template-curly-in-string
+                'Elasticsearch data stream prefix to push the logs to. `-${config.id}` will be automatically appended. If not provided, will fallback to "logs-argus"',
               type: 'string',
             },
             auth: objectSchema({
@@ -161,6 +162,12 @@ export const configSchema: JSONSchema4 = objectSchema({
         dataObjectSourceByObjectIdTTL: {
           description:
             'TTL (in seconds) for dataObjectSourceByObjectId cache used when proxying objects of size greater than maxCachedItemSize to the right storage node.',
+          default: 60,
+          type: 'integer',
+          minimum: 1,
+        },
+        queryNodeCacheTTL: {
+          description: ` TTL (in seconds) for the Apollo's InMemoryCache, to cache the data fetched from the query node.`,
           default: 60,
           type: 'integer',
           minimum: 1,

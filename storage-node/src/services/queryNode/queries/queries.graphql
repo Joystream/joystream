@@ -1,45 +1,18 @@
-# TODO: remove after issue fix: https://github.com/Joystream/joystream/issues/2811
 fragment StorageBucketIds on StorageBucket {
   id
 }
 
-query getStorageBucketsConnection($limit: Int, $cursor: String) {
-  storageBucketsConnection(
-    first: $limit
-    after: $cursor
-    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }
-  ) {
-    edges {
-      cursor
-      node {
-        ...StorageBucketIds
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+query getStorageBuckets {
+  storageBuckets(where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }) {
+    ...StorageBucketIds
   }
 }
 
-query getStorageBucketDetailsByWorkerId($workerId: ID, $limit: Int, $cursor: String) {
-  storageBucketsConnection(
-    first: $limit
-    after: $cursor
-    where: { operatorStatus_json: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
+query getStorageBucketsByWorkerId($workerId: Int!) {
+  storageBuckets(
+    where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
   ) {
-    edges {
-      cursor
-      node {
-        ...StorageBucketIds
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+    ...StorageBucketIds
   }
 }
 
@@ -59,8 +32,8 @@ fragment StorageBucketDetails on StorageBucket {
   }
 }
 
-query getStorageBucketDetails($ids: [ID!], $offset: Int, $limit: Int) {
-  storageBuckets(where: { id_in: $ids }, offset: $offset, limit: $limit) {
+query getStorageBucketDetails($ids: [String!]) {
+  storageBuckets(where: { id_in: $ids }) {
     ...StorageBucketDetails
   }
 }
@@ -68,60 +41,73 @@ query getStorageBucketDetails($ids: [ID!], $offset: Int, $limit: Int) {
 fragment StorageBagDetails on StorageBag {
   id
   storageBuckets {
-    id
+    storageBucket {
+      id
+    }
   }
 }
 
-query getStorageBagDetails($bucketIds: [ID!], $offset: Int, $limit: Int) {
-  storageBags(offset: $offset, limit: $limit, where: { storageBuckets_some: { id_in: $bucketIds } }) {
+query getStorageBagDetails($bucketIds: [String!]) {
+  storageBags(where: { storageBuckets_some: { storageBucket: { id_in: $bucketIds } } }) {
     ...StorageBagDetails
   }
 }
 
-query getBagConnection($bucketIds: [ID!], $limit: Int, $cursor: String) {
-  storageBagsConnection(first: $limit, after: $cursor, where: { storageBuckets_some: { id_in: $bucketIds } }) {
-    edges {
-      cursor
-      node {
-        ...StorageBagDetails
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+fragment DataObjectByBagIdsDetails on StorageDataObject {
+  id
+  ipfsHash
+  storageBag {
+    id
+  }
+}
+
+query getDataObjectsByBagIds($bagIds: StorageBagWhereInput) {
+  storageDataObjects(where: { storageBag: $bagIds, isAccepted_eq: true }) {
+    ...DataObjectByBagIdsDetails
   }
 }
 
 fragment DataObjectDetails on StorageDataObject {
   id
-  storageBagId
-}
-
-query getDataObjectConnection($bagIds: StorageBagWhereInput, $limit: Int, $cursor: String) {
-  storageDataObjectsConnection(first: $limit, after: $cursor, where: { storageBag: $bagIds, isAccepted_eq: true }) {
-    edges {
-      cursor
-      node {
-        ...DataObjectDetails
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-    totalCount
+  isAccepted
+  ipfsHash
+  storageBag {
+    ...StorageBagDetails
   }
 }
 
-fragment QueryNodeStateFields on ProcessorState {
-  chainHead
-  lastCompleteBlock
+query getDataObjects($dataObjectIds: [String!]) {
+  storageDataObjects(where: { id_in: $dataObjectIds }) {
+    ...DataObjectDetails
+  }
 }
 
-subscription queryNodeState {
-  stateSubscription {
-    ...QueryNodeStateFields
+query getDataObjectsDeletedEvents($dataObjectIds: [String!]) {
+  events(where: { data: { isTypeOf_eq: "DataObjectDeletedEventData", dataObjectId_in: $dataObjectIds } }) {
+    data {
+      ... on DataObjectDeletedEventData {
+        dataObjectId
+      }
+    }
+  }
+}
+
+fragment SquidVersionFields on SquidVersion {
+  version
+}
+
+query getSquidVersion {
+  squidVersion {
+    ...SquidVersionFields
+  }
+}
+
+fragment SquidStatusFields on SquidStatus {
+  height
+}
+
+query squidStatus {
+  squidStatus {
+    ...SquidStatusFields
   }
 }

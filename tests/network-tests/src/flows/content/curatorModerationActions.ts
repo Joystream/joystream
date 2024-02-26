@@ -25,6 +25,7 @@ import {
   DeleteChannelAsModeratorFixture,
   DeleteChannelAsModeratorParams,
 } from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
+import sleep from 'sleep-promise'
 
 export default async function curatorModerationActions({ api, query, env }: FlowProps): Promise<void> {
   const debug = extendDebug('flow:curator-moderation-actions')
@@ -107,6 +108,9 @@ export default async function curatorModerationActions({ api, query, env }: Flow
 
   const addCuratorToGroupFixture = new AddCuratorToCuratorGroupFixture(api, query, addCuratorToGroupParams)
   await new FixtureRunner(addCuratorToGroupFixture).run()
+
+  // Allow time for processor to process videos created
+  await sleep(10 * 1000)
 
   // test curator moderation actions
 

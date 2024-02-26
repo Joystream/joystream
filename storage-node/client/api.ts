@@ -51,6 +51,18 @@ export interface DataStatsResponse {
      * @memberof DataStatsResponse
      */
     'tempDownloads'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    'pendingDirSize'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof DataStatsResponse
+     */
+    'pendingObjects'?: number;
 }
 /**
  * 
@@ -98,10 +110,71 @@ export interface StatusResponse {
     'version': string;
     /**
      * 
+     * @type {string}
+     * @memberof StatusResponse
+     */
+    'nodeEnv'?: string;
+    /**
+     * 
      * @type {StatusResponseQueryNodeStatus}
      * @memberof StatusResponse
      */
     'queryNodeStatus': StatusResponseQueryNodeStatus;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof StatusResponse
+     */
+    'uploadBuckets': Array<string>;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof StatusResponse
+     */
+    'downloadBuckets': Array<string>;
+    /**
+     * 
+     * @type {StatusResponseSync}
+     * @memberof StatusResponse
+     */
+    'sync': StatusResponseSync;
+    /**
+     * 
+     * @type {StatusResponseCleanup}
+     * @memberof StatusResponse
+     */
+    'cleanup': StatusResponseCleanup;
+}
+/**
+ * 
+ * @export
+ * @interface StatusResponseCleanup
+ */
+export interface StatusResponseCleanup {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof StatusResponseCleanup
+     */
+    'enabled': boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseCleanup
+     */
+    'interval': number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseCleanup
+     */
+    'maxQnLaggingThresholdInBlocks'?: number;
+    /**
+     * 
+     * @type {number}
+     * @memberof StatusResponseCleanup
+     */
+    'minReplicationThresholdForPruning'?: number;
 }
 /**
  * 
@@ -127,62 +200,31 @@ export interface StatusResponseQueryNodeStatus {
      * @memberof StatusResponseQueryNodeStatus
      */
     'blocksProcessed': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'packageVersion': string;
 }
 /**
  * 
  * @export
- * @interface TokenRequest
+ * @interface StatusResponseSync
  */
-export interface TokenRequest {
+export interface StatusResponseSync {
     /**
      * 
-     * @type {TokenRequestData}
-     * @memberof TokenRequest
+     * @type {boolean}
+     * @memberof StatusResponseSync
      */
-    'data': TokenRequestData;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequest
-     */
-    'signature': string;
-}
-/**
- * 
- * @export
- * @interface TokenRequestData
- */
-export interface TokenRequestData {
+    'enabled': boolean;
     /**
      * 
      * @type {number}
-     * @memberof TokenRequestData
+     * @memberof StatusResponseSync
      */
-    'memberId': number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequestData
-     */
-    'accountId': string;
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'dataObjectId': number;
-    /**
-     * 
-     * @type {number}
-     * @memberof TokenRequestData
-     */
-    'storageBucketId': number;
-    /**
-     * 
-     * @type {string}
-     * @memberof TokenRequestData
-     */
-    'bagId': string;
+    'interval': number;
 }
 /**
  * 

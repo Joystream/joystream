@@ -1,16 +1,12 @@
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api'
 import { NodeSDK } from '@opentelemetry/sdk-node'
-import { config } from 'dotenv'
-import path from 'path'
+import 'dotenv/config'
 import { DefaultInstrumentation, DistributorNodeInstrumentation, StorageNodeInstrumentation } from './instrumentations'
 
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO)
 
-async function addInstrumentation() {
-  // Load env variables
-  config({ path: path.join(__dirname, '../.env') })
-
+function addInstrumentation() {
   const applicationName = process.env.OTEL_APPLICATION
 
   let instrumentation: NodeSDK
@@ -50,5 +46,4 @@ async function addInstrumentation() {
   })
 }
 
-// eslint-disable-next-line @typescript-eslint/no-floating-promises
 addInstrumentation()

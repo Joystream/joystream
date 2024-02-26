@@ -3,11 +3,7 @@ import path from 'path'
 import cors from 'cors'
 import { Express, NextFunction } from 'express-serve-static-core'
 import * as OpenApiValidator from 'express-openapi-validator'
-import { HttpError, OpenAPIV3, ValidateSecurityOpts } from 'express-openapi-validator/dist/framework/types'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiPromise } from '@polkadot/api'
-import { verifyTokenSignature, parseUploadToken } from '../helpers/auth'
-import { checkRemoveNonce } from '../caching/tokenNonceKeeper'
+import { HttpError, OpenAPIV3 } from 'express-openapi-validator/dist/framework/types'
 import { AppConfig, sendResponseWithError, WebApiError } from './controllers/common'
 import { verifyBagAssignment, verifyBucketId } from './controllers/filesApi'
 import {
@@ -18,8 +14,10 @@ import {
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
-import { UploadFileQueryParams, UploadToken } from './types'
 import { diskStorage } from '../multer-storage/disk'
+import { getDataObjectIdFromCache } from '../caching/localDataObjects'
+import asyncHandler from 'express-async-handler'
+import { RouteMetadata } from 'express-openapi-validator/dist/framework/openapi.spec.loader'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -44,6 +42,14 @@ export async function createApp(config: AppConfig): Promise<Express> {
       next()
     },
 
+    // Avoid node connecting to itself
+    (req: express.Request, res: express.Response, next: NextFunction) => {
+      if (res.locals.x_host_id === req.headers['X-COLOSSUS-HOST-ID']) {
+        sendResponseWithError(res, next, new Error('LoopbackRequestDetected'), 'general-request')
+      } else {
+        next()
+      }
+    },
     // Catch aborted requests event early, before we get a chance to handle
     // it in multer middleware. This is an edge case which happens when only
     // a small amount of data is transferred, before multer starts parsing.
@@ -69,11 +75,12 @@ export async function createApp(config: AppConfig): Promise<Express> {
     OpenApiValidator.middleware({
       apiSpec: spec,
       validateApiSpec: true,
-      validateResponses: true,
+      validateResponses: process.env.NODE_ENV !== 'production',
       validateRequests: true,
       operationHandlers: {
         basePath: path.join(__dirname, './controllers'),
-        resolver: OpenApiValidator.resolvers.modulePathResolver,
+        resolver: (basePath: string, route: RouteMetadata, apiDoc: OpenAPIV3.Document) =>
+          asyncHandler(OpenApiValidator.resolvers.modulePathResolver(basePath, route, apiDoc)),
       },
       fileUploader: {
         storage: diskStorage({
@@ -87,8 +94,6 @@ export async function createApp(config: AppConfig): Promise<Express> {
           fileSize: config.maxFileSize,
         },
       },
-      // authentication is disabled. Should be tested before en-enabling
-      validateSecurity: setupUploadingValidation(config.enableUploadingAuth, config.api, config.operatorRoleKey),
     })
   ) // Required signature.
 
@@ -116,107 +121,9 @@ export async function createApp(config: AppConfig): Promise<Express> {
         message: err.message,
       })
     }
-
-    next()
   })
 
   return app
-}
-
-/**
- * Setup uploading validation. It disables the validation or returns the
- * 'validation security' configuration.
- *
- * @param enableUploadingAuth - enables uploading auth-schema validation
- * @param api - runtime API promise
- * @param account - KeyringPair instance
- *
- * @returns false (disabled validation) or validation options.
- */
-function setupUploadingValidation(
-  enableUploadingAuth: boolean,
-  api: ApiPromise,
-  account: KeyringPair | undefined
-): boolean | ValidateSecurityOpts {
-  if (enableUploadingAuth) {
-    const opts = {
-      handlers: {
-        UploadAuth: validateUpload(api, account),
-      },
-    }
-
-    return opts
-  }
-
-  return false
-}
-
-// Defines a signature for a upload validation function.
-type ValidateUploadFunction = (
-  req: express.Request,
-  scopes: string[],
-  schema: OpenAPIV3.SecuritySchemeObject
-) => boolean | Promise<boolean>
-
-/**
- * Creates upload validation function with captured parameters from the request.
- *
- * @param api - runtime API promise
- * @param account - KeyringPair instance
- * @returns ValidateUploadFunction.
- */
-function validateUpload(api: ApiPromise, account: KeyringPair | undefined): ValidateUploadFunction {
-  // We don't use these variables yet.
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  return (req: express.Request, scopes: string[], schema: OpenAPIV3.SecuritySchemeObject) => {
-    const tokenString = req.headers['x-api-key'] as string
-    const token = parseUploadToken(tokenString)
-
-    const sourceTokenRequest: UploadFileQueryParams = {
-      dataObjectId: req.query.dataObjectId?.toString() || '',
-      storageBucketId: req.query.storageBucketId?.toString() || '',
-      bagId: req.query.bagId?.toString() || '',
-    }
-
-    if (account) {
-      verifyUploadTokenData(account.address, token, sourceTokenRequest)
-    }
-
-    return true
-  }
-}
-
-/**
- * Verifies upload request token. Throws exceptions on errors.
- *
- * @param accountAddress - account address (public key)
- * @param token - token object
- * @param request - data from the request to validate token
- */
-function verifyUploadTokenData(accountAddress: string, token: UploadToken, request: UploadFileQueryParams): void {
-  if (!verifyTokenSignature(token, accountAddress)) {
-    throw new Error('Invalid signature')
-  }
-
-  if (token.data.dataObjectId.toString() !== request.dataObjectId) {
-    throw new Error('Unexpected dataObjectId')
-  }
-
-  if (token.data.storageBucketId.toString() !== request.storageBucketId) {
-    throw new Error('Unexpected storageBucketId')
-  }
-
-  if (token.data.bagId !== request.bagId) {
-    throw new Error('Unexpected bagId')
-  }
-
-  if (token.data.validUntil < Date.now()) {
-    throw new Error('Token expired')
-  }
-
-  if (!checkRemoveNonce(token.data.nonce)) {
-    throw new Error('Nonce not found')
-  }
 }
 
 async function validateUploadFileParams(req: express.Request, res: express.Response<unknown, AppConfig>) {
@@ -242,7 +149,13 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
     throw new WebApiError(`Data object ${dataObjectId} doesn't exist in storage bag ${parsedBagId}`, 400)
   }
 
-  if (dataObject.accepted.valueOf()) {
-    throw new WebApiError(`Data object ${dataObjectId} has already been accepted by storage node`, 400)
+  const isObjectPending = await res.locals.acceptPendingObjectsService.pendingObjectExists(dataObjectId.toString())
+  if (isObjectPending) {
+    throw new WebApiError(`Data object ${dataObjectId} already exists (pending)`, 400)
+  }
+
+  const isInStorage = getDataObjectIdFromCache(dataObjectId.toString())
+  if (isInStorage) {
+    throw new WebApiError(`Data object ${dataObjectId} already exists (in storage)`, 400)
   }
 }

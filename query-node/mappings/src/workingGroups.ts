@@ -11,7 +11,6 @@ import {
   ISetGroupMetadata,
   IWorkingGroupMetadata,
   IWorkingGroupMetadataAction,
-  LeadRemarked,
   OpeningMetadata,
   RemarkMetadataAction,
   WorkingGroupMetadataAction,
@@ -35,9 +34,11 @@ import {
   BudgetFundedEvent,
   BudgetSetEvent,
   BudgetSpendingEvent,
+  ForumPost,
   InvalidActionMetadata,
   LeaderSetEvent,
   LeaderUnsetEvent,
+  MemberMetadata,
   Membership,
   NewMissedRewardLevelReachedEvent,
   OpeningAddedEvent,
@@ -103,13 +104,15 @@ import {
 } from '../generated/types'
 import {
   INT32MAX,
+  RelationsArr,
   WorkingGroupModuleName,
   bytesToString,
   deserializeMetadata,
   genericEventFields,
-  getWorker,
-  getWorkingGroupByName,
-  getWorkingGroupLead,
+  getById,
+  getByIdOrFail,
+  getOneByOrFail,
+  getWorkerOrFail,
   inconsistentState,
   invalidMetadata,
   toNumber,
@@ -118,54 +121,45 @@ import { moderatePost } from './forum'
 import { processSetNodeOperationalStatusMessage } from './storage'
 
 // Reusable functions
-async function getWorkingGroup(
+async function getWorkingGroupLeadOrFail(store: DatabaseManager, groupName: WorkingGroupModuleName): Promise<Worker> {
+  return getOneByOrFail(store, Worker, { groupId: groupName, isLead: true, isActive: true })
+}
+
+async function getWorkingGroupOrFail(
   store: DatabaseManager,
   event: SubstrateEvent,
-  relations: string[] = []
+  relations: RelationsArr<WorkingGroup> = []
 ): Promise<WorkingGroup> {
-  const [groupName] = event.name.split('.')
+  const [name] = event.name.split('.')
 
-  return getWorkingGroupByName(store, groupName as WorkingGroupModuleName, relations)
+  return getOneByOrFail(store, WorkingGroup, { name }, relations)
 }
 
-async function getOpening(
+async function getOpeningOrFail(
   store: DatabaseManager,
-  openingstoreId: string,
+  openingStoreId: string,
   relations: string[] = []
 ): Promise<WorkingGroupOpening> {
-  const opening = await store.get(WorkingGroupOpening, { where: { id: openingstoreId }, relations })
-  if (!opening) {
-    return inconsistentState(`Opening not found by id ${openingstoreId}`)
-  }
-
-  return opening
+  return getByIdOrFail(store, WorkingGroupOpening, openingStoreId, relations as RelationsArr<WorkingGroupOpening>)
 }
 
-async function getApplication(store: DatabaseManager, applicationstoreId: string): Promise<WorkingGroupApplication> {
-  const application = await store.get(WorkingGroupApplication, { where: { id: applicationstoreId } })
-  if (!application) {
-    return inconsistentState(`Application not found by id`, applicationstoreId)
-  }
-
-  return application
+async function getApplicationOrFail(
+  store: DatabaseManager,
+  applicationStoreId: string
+): Promise<WorkingGroupApplication> {
+  return getByIdOrFail(store, WorkingGroupApplication, applicationStoreId)
 }
 
 async function getApplicationFormQuestions(
   store: DatabaseManager,
   openingstoreId: string
 ): Promise<ApplicationFormQuestion[]> {
-  const openingWithQuestions = await getOpening(store, openingstoreId, [
+  const openingWithQuestions = await getOpeningOrFail(store, openingstoreId, [
     'metadata',
     'metadata.applicationFormQuestions',
   ])
 
-  if (!openingWithQuestions) {
-    return inconsistentState('Opening not found by id', openingstoreId)
-  }
-  if (!openingWithQuestions.metadata.applicationFormQuestions) {
-    return inconsistentState('Application form questions not found for opening', openingstoreId)
-  }
-  return openingWithQuestions.metadata.applicationFormQuestions
+  return openingWithQuestions.metadata.applicationFormQuestions || []
 }
 
 const InputTypeToApplicationFormQuestionType = {
@@ -267,7 +261,7 @@ async function handleAddUpcomingOpeningAction(
   action: DecodedMetadataObject<IAddUpcomingOpening>
 ): Promise<UpcomingOpeningAdded | InvalidActionMetadata> {
   const upcomingOpeningMeta = action.metadata || {}
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
   const eventTime = new Date(event.blockTimestamp)
   const openingMeta = await await createWorkingGroupOpeningMetadata(
     store,
@@ -320,7 +314,7 @@ async function handleSetWorkingGroupMetadataAction(
   action: ISetGroupMetadata
 ): Promise<WorkingGroupMetadataSet> {
   const { newMetadata } = action
-  const group = await getWorkingGroup(store, event, ['metadata'])
+  const group = await getWorkingGroupOrFail(store, event, ['metadata'])
   const oldMetadata = group.metadata
   const setNewOptionalString = (field: keyof IWorkingGroupMetadata) =>
     typeof newMetadata?.[field] === 'string' ? newMetadata[field] || undefined : oldMetadata?.[field]
@@ -365,8 +359,8 @@ async function handleWorkingGroupMetadataAction(
 
 async function handleTerminatedWorker({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optPenalty, optRationale] = new WorkingGroup_TerminatedWorkerEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event, ['leader'])
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, [
+  const group = await getWorkingGroupOrFail(store, event, ['leader'])
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId, [
     'application',
     'workinggroupleader',
   ])
@@ -404,13 +398,14 @@ async function handleTerminatedWorker({ store, event }: EventContext & StoreCont
 }
 
 export async function findLeaderSetEventByTxHash(store: DatabaseManager, txHash?: string): Promise<LeaderSetEvent> {
-  const leaderSetEvent = await store.get(LeaderSetEvent, { where: { inExtrinsic: txHash } })
-
-  if (!leaderSetEvent) {
-    return inconsistentState(`LeaderSet event not found by tx hash`, txHash)
-  }
-
-  return leaderSetEvent
+  return getOneByOrFail(
+    store,
+    LeaderSetEvent,
+    { inExtrinsic: txHash },
+    undefined,
+    undefined,
+    `LeaderSet event not found by tx hash: ${txHash}`
+  )
 }
 
 // expects `worker.application` to be available
@@ -421,11 +416,52 @@ function isWorkerActive(worker: Worker): boolean {
   )
 }
 
+async function applyWorkingGroupsRemark(
+  { store, event }: EventContext & StoreContext,
+  metadataByte: Bytes,
+  getActor: (group: WorkingGroupModuleName) => Promise<Worker>
+): Promise<void> {
+  const group = await getWorkingGroupOrFail(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getActor(group.name)
+
+    const post = await getById(store, ForumPost, postId)
+    if (!post) {
+      return invalidMetadata(`Forum post not found by id: ${postId}`)
+    }
+    const eventType = actor.isLead ? 'leadRemark' : 'workerRemark'
+    await moderatePost(store, event, eventType, post, actor, rationale)
+  } else if (metadata?.verifyValidator) {
+    if (group.name !== 'membershipWorkingGroup') {
+      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
+    }
+    const { memberId, isVerified } = metadata.verifyValidator
+
+    const member = await getById(store, Membership, memberId, ['metadata'])
+    if (!member || !member.metadata) {
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
+    }
+    member.metadata.isVerifiedValidator = isVerified
+    await store.save<MemberMetadata>(member.metadata)
+    await store.save<Membership>(member)
+  } else if (metadata?.setNodeOperationalStatus) {
+    await processSetNodeOperationalStatusMessage(store, event, group, metadata.setNodeOperationalStatus)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
+}
+
 // Mapping functions
 export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   const [openingRuntimeId, metadataBytes, openingType, stakePolicy, optRewardPerBlock] =
     new WorkingGroup_OpeningAddedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
   const eventTime = new Date(event.blockTimestamp)
 
   const opening = new WorkingGroupOpening({
@@ -467,7 +503,7 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
     applicationRuntimeId,
   ] = new WorkingGroup_AppliedOnOpeningEvent_V1001(event).params
 
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
   const openingstoreId = `${group.name}-${openingId.toString()}`
 
   const application = new WorkingGroupApplication({
@@ -497,7 +533,7 @@ export async function workingGroups_AppliedOnOpening({ store, event }: EventCont
 }
 
 export async function workingGroups_LeaderSet({ store, event }: EventContext & StoreContext): Promise<void> {
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
 
   const leaderSetEvent = new LeaderSetEvent({
     ...genericEventFields(event),
@@ -512,8 +548,8 @@ export async function workingGroups_OpeningFilled({ store, event }: EventContext
     event
   ).params
 
-  const group = await getWorkingGroup(store, event)
-  const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, [
+  const group = await getWorkingGroupOrFail(store, event)
+  const opening = await getOpeningOrFail(store, `${group.name}-${openingRuntimeId.toString()}`, [
     'applications',
     'applications.applicant',
   ])
@@ -620,8 +656,8 @@ async function removeIsLeadFromGroup(store: DatabaseManager, groupId: string) {
 export async function workingGroups_OpeningCanceled({ store, event }: EventContext & StoreContext): Promise<void> {
   const [openingRuntimeId] = new WorkingGroup_OpeningCanceledEvent_V1001(event).params
 
-  const group = await getWorkingGroup(store, event)
-  const opening = await getOpening(store, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
+  const group = await getWorkingGroupOrFail(store, event)
+  const opening = await getOpeningOrFail(store, `${group.name}-${openingRuntimeId.toString()}`, ['applications'])
 
   // Create and save event
   const openingCanceledEvent = new OpeningCanceledEvent({
@@ -656,8 +692,8 @@ export async function workingGroups_OpeningCanceled({ store, event }: EventConte
 export async function workingGroups_ApplicationWithdrawn({ store, event }: EventContext & StoreContext): Promise<void> {
   const [applicationRuntimeId] = new WorkingGroup_ApplicationWithdrawnEvent_V1001(event).params
 
-  const group = await getWorkingGroup(store, event)
-  const application = await getApplication(store, `${group.name}-${applicationRuntimeId.toString()}`)
+  const group = await getWorkingGroupOrFail(store, event)
+  const application = await getApplicationOrFail(store, `${group.name}-${applicationRuntimeId.toString()}`)
 
   // Create and save event
   const applicationWithdrawnEvent = new ApplicationWithdrawnEvent({
@@ -678,7 +714,7 @@ export async function workingGroups_ApplicationWithdrawn({ store, event }: Event
 
 export async function workingGroups_StatusTextChanged({ store, event }: EventContext & StoreContext): Promise<void> {
   const [, optBytes] = new WorkingGroup_StatusTextChangedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
 
   // Since result cannot be empty at this point, but we already need to have an existing StatusTextChangedEvent
   // in order to be able to create UpcomingOpening.createdInEvent relation, we use a temporary "mock" result
@@ -715,42 +751,16 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
-export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataBytes] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-
-  const metadata = deserializeMetadata(LeadRemarked, metadataBytes)
-  if (metadata?.moderatePost) {
-    if (group.name !== 'forumWorkingGroup') {
-      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
-    }
-    const { postId, rationale } = metadata.moderatePost
-    const actor = await getWorkingGroupLead(store, group.name)
-
-    await moderatePost(store, event, 'leadRemark', postId, actor, rationale)
-  } else if (metadata?.setNodeOperationalStatus) {
-    await processSetNodeOperationalStatusMessage(store, event, group, metadata.setNodeOperationalStatus)
-  } else {
-    return invalidMetadata('Unrecognized remarked action')
-  }
+export async function workingGroups_LeadRemarked(context: EventContext & StoreContext): Promise<void> {
+  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(context.event).params
+  const getWorker = (group: WorkingGroupModuleName) => getWorkingGroupLeadOrFail(context.store, group)
+  await applyWorkingGroupsRemark(context, metadataByte, getWorker)
 }
 
-export async function workingGroups_WorkerRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, metadataByte] = new WorkingGroup_WorkerRemarkedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-
-  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
-  if (metadata?.moderatePost) {
-    if (group.name !== 'forumWorkingGroup') {
-      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
-    }
-    const { postId, rationale } = metadata.moderatePost
-    const actor = await getWorker(store, group.name, workerId)
-
-    await moderatePost(store, event, 'workerRemark', postId, actor, rationale)
-  } else {
-    return invalidMetadata('Unrecognized remarked action')
-  }
+export async function workingGroups_WorkerRemarked(context: EventContext & StoreContext): Promise<void> {
+  const [workerId, metadataByte] = new WorkingGroup_WorkerRemarkedEvent_V1001(context.event).params
+  const getWorker = (group: WorkingGroupModuleName) => getWorkerOrFail(context.store, group, workerId)
+  await applyWorkingGroupsRemark(context, metadataByte, getWorker)
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated({
@@ -758,8 +768,8 @@ export async function workingGroups_WorkerRoleAccountUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, accountId] = new WorkingGroup_WorkerRoleAccountUpdatedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const workerRoleAccountUpdatedEvent = new WorkerRoleAccountUpdatedEvent({
     ...genericEventFields(event),
@@ -780,8 +790,8 @@ export async function workingGroups_WorkerRewardAccountUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, accountId] = new WorkingGroup_WorkerRewardAccountUpdatedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const workerRewardAccountUpdatedEvent = new WorkerRewardAccountUpdatedEvent({
     ...genericEventFields(event),
@@ -799,8 +809,8 @@ export async function workingGroups_WorkerRewardAccountUpdated({
 
 export async function workingGroups_StakeIncreased({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, increaseAmount] = new WorkingGroup_StakeIncreasedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const stakeIncreasedEvent = new StakeIncreasedEvent({
     ...genericEventFields(event),
@@ -818,8 +828,8 @@ export async function workingGroups_StakeIncreased({ store, event }: EventContex
 
 export async function workingGroups_RewardPaid({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, rewardAccountId, amount, rewardPaymentType] = new WorkingGroup_RewardPaidEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const rewardPaidEvent = new RewardPaidEvent({
     ...genericEventFields(event),
@@ -843,8 +853,8 @@ export async function workingGroups_NewMissedRewardLevelReached({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, newMissedRewardAmountOpt] = new WorkingGroup_NewMissedRewardLevelReachedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const newMissedRewardLevelReachedEvent = new NewMissedRewardLevelReachedEvent({
     ...genericEventFields(event),
@@ -863,8 +873,8 @@ export async function workingGroups_NewMissedRewardLevelReached({
 
 export async function workingGroups_WorkerExited({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId] = new WorkingGroup_WorkerExitedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId, ['application'])
 
   const workerExitedEvent = new WorkerExitedEvent({
     ...genericEventFields(event),
@@ -888,7 +898,7 @@ export async function workingGroups_WorkerExited({ store, event }: EventContext 
 }
 
 export async function workingGroups_LeaderUnset({ store, event }: EventContext & StoreContext): Promise<void> {
-  const group = await getWorkingGroup(store, event, ['leader'])
+  const group = await getWorkingGroupOrFail(store, event, ['leader'])
 
   const leaderUnsetEvent = new LeaderUnsetEvent({
     ...genericEventFields(event),
@@ -915,8 +925,8 @@ export async function workingGroups_WorkerRewardAmountUpdated({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, newRewardPerBlockOpt] = new WorkingGroup_WorkerRewardAmountUpdatedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const workerRewardAmountUpdatedEvent = new WorkerRewardAmountUpdatedEvent({
     ...genericEventFields(event),
@@ -935,8 +945,8 @@ export async function workingGroups_WorkerRewardAmountUpdated({
 export async function workingGroups_StakeSlashed({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, slashedAmount, requestedAmount, optRationale] = new WorkingGroup_StakeSlashedEvent_V1001(event)
     .params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const workerStakeSlashedEvent = new StakeSlashedEvent({
     ...genericEventFields(event),
@@ -956,8 +966,8 @@ export async function workingGroups_StakeSlashed({ store, event }: EventContext 
 
 export async function workingGroups_StakeDecreased({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, amount] = new WorkingGroup_StakeDecreasedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId)
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId)
 
   const workerStakeDecreasedEvent = new StakeDecreasedEvent({
     ...genericEventFields(event),
@@ -975,8 +985,8 @@ export async function workingGroups_StakeDecreased({ store, event }: EventContex
 
 export async function workingGroups_WorkerStartedLeaving({ store, event }: EventContext & StoreContext): Promise<void> {
   const [workerId, optRationale] = new WorkingGroup_WorkerStartedLeavingEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
-  const worker = await getWorker(store, group.name as WorkingGroupModuleName, workerId, ['application'])
+  const group = await getWorkingGroupOrFail(store, event)
+  const worker = await getWorkerOrFail(store, group.name as WorkingGroupModuleName, workerId, ['application'])
 
   const workerStartedLeavingEvent = new WorkerStartedLeavingEvent({
     ...genericEventFields(event),
@@ -997,7 +1007,7 @@ export async function workingGroups_WorkerStartedLeaving({ store, event }: Event
 
 export async function workingGroups_BudgetSet({ store, event }: EventContext & StoreContext): Promise<void> {
   const [newBudget] = new StorageWorkingGroup_BudgetSetEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
 
   const budgetSetEvent = new BudgetSetEvent({
     ...genericEventFields(event),
@@ -1014,7 +1024,7 @@ export async function workingGroups_BudgetSet({ store, event }: EventContext & S
 
 export async function workingGroups_BudgetSpending({ store, event }: EventContext & StoreContext): Promise<void> {
   const [reciever, amount, optRationale] = new WorkingGroup_BudgetSpendingEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
 
   const budgetSpendingEvent = new BudgetSpendingEvent({
     ...genericEventFields(event),
@@ -1036,7 +1046,7 @@ export async function workingGroups_WorkingGroupBudgetFunded({
   event,
 }: EventContext & StoreContext): Promise<void> {
   const [memberId, amount, rationale] = new WorkingGroup_WorkingGroupBudgetFundedEvent_V1001(event).params
-  const group = await getWorkingGroup(store, event)
+  const group = await getWorkingGroupOrFail(store, event)
 
   const budgetFundedEvent = new BudgetFundedEvent({
     ...genericEventFields(event),

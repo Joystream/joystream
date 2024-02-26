@@ -47,8 +47,16 @@ export class WorkingStack implements TaskSink, TaskSource {
   }
 
   async add(tasks: SyncTask[]): Promise<void> {
-    if (tasks !== null) {
-      this.workingStack.push(...tasks)
+    // Avoid using:
+    //     this.workingStack.push(...tasks)
+    // When tasks array is very large, javasctipy call stack size might
+    // be exceeded and push() will throw an exception.
+    // This is pretty code:
+    //      tasks.map((task) => this.workingStack.push(task))
+    // ..but slow for large array.
+    const len = tasks.length
+    for (let i = 0; i < len; i++) {
+      this.workingStack.push(tasks[i])
     }
   }
 }
@@ -81,7 +89,12 @@ export class TaskProcessor {
 
       if (task !== null) {
         logger.debug(task.description())
-        await task.execute()
+        try {
+          await task.execute()
+        } catch (err) {
+          // Catch the task failure to avoid the current process worker failing
+          logger.warn(`task failed: ${err.message}`)
+        }
       } else {
         if (this.exitOnCompletion) {
           return
@@ -118,6 +131,6 @@ export class TaskProcessorSpawner {
       processes.push(processor.process())
     }
 
-    await Promise.all(processes)
+    await Promise.allSettled(processes)
   }
 }

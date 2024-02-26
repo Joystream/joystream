@@ -22,6 +22,7 @@ import {
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
   StorageNodeOperationalStatusSetEvent,
+  Worker,
   WorkingGroup,
 } from 'query-node/dist/model'
 import {
@@ -57,11 +58,11 @@ import {
   Storage_VoucherChangedEvent_V1001 as VoucherChangedEvent_V1001,
 } from '../../generated/types'
 import {
+  RelationsArr,
   deterministicEntityId,
   genericEventFields,
   getById,
-  getWorker,
-  inconsistentState,
+  getByIdOrFail,
   invalidMetadata,
 } from '../common'
 import { unsetAssetRelations, videoRelationsForCounters } from '../content/utils'
@@ -80,12 +81,10 @@ import {
   distributionOperatorId,
   getBag,
   getDataObjectsInBag,
-  getDistributionBucketFamilyWithMetadata,
   getDistributionBucketOperatorWithMetadata,
   getDynamicBag,
   getDynamicBagId,
   getDynamicBagOwner,
-  getStorageBucketWithOperatorMetadata,
 } from './utils'
 
 // STORAGE BUCKETS
@@ -114,7 +113,11 @@ export async function storage_StorageBucketCreated({ event, store }: EventContex
 
 export async function storage_StorageOperatorMetadataSet({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId, , metadataBytes] = new StorageOperatorMetadataSetEvent_V1001(event).params
-  const storageBucket = await getStorageBucketWithOperatorMetadata(store, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString(), [
+    'operatorMetadata',
+    'operatorMetadata.nodeLocation',
+    'operatorMetadata.nodeLocation.coordinates',
+  ] as RelationsArr<StorageBucket>)
   storageBucket.operatorMetadata = await processStorageOperatorMetadata(
     event,
     store,
@@ -127,7 +130,7 @@ export async function storage_StorageOperatorMetadataSet({ event, store }: Event
 export async function storage_StorageBucketStatusUpdated({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId, acceptingNewBags] = new StorageBucketStatusUpdatedEvent_V1001(event).params
 
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   storageBucket.acceptingNewBags = acceptingNewBags.isTrue
   await store.save<StorageBucket>(storageBucket)
 }
@@ -137,7 +140,7 @@ export async function storage_StorageBucketInvitationAccepted({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, workerId, transactorAccountId] = new StorageBucketInvitationAcceptedEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusActive()
   operatorStatus.workerId = workerId.toNumber()
   operatorStatus.transactorAccountId = transactorAccountId.toString()
@@ -150,7 +153,7 @@ export async function storage_StorageBucketInvitationCancelled({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new StorageBucketInvitationCancelledEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusMissing()
   storageBucket.operatorStatus = operatorStatus
   await store.save<StorageBucket>(storageBucket)
@@ -161,7 +164,7 @@ export async function storage_StorageBucketOperatorInvited({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, workerId] = new StorageBucketOperatorInvitedEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusInvited()
   operatorStatus.workerId = workerId.toNumber()
   storageBucket.operatorStatus = operatorStatus
@@ -173,7 +176,7 @@ export async function storage_StorageBucketOperatorRemoved({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new StorageBucketInvitationCancelledEvent_V1001(event).params
-  const storageBucket = await getById(store, StorageBucket, bucketId.toString())
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   const operatorStatus = new StorageBucketOperatorStatusMissing()
   storageBucket.operatorStatus = operatorStatus
   await store.save<StorageBucket>(storageBucket)
@@ -196,7 +199,7 @@ export async function storage_StorageBucketsUpdatedForBag({
 
 export async function storage_VoucherChanged({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId, voucher] = new VoucherChangedEvent_V1001(event).params
-  const bucket = await getById(store, StorageBucket, bucketId.toString())
+  const bucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
 
   bucket.dataObjectCountLimit = voucher.objectsLimit
   bucket.dataObjectsSizeLimit = voucher.sizeLimit
@@ -211,7 +214,7 @@ export async function storage_StorageBucketVoucherLimitsSet({
   store,
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, sizeLimit, countLimit] = new StorageBucketVoucherLimitsSetEvent_V1001(event).params
-  const bucket = await getById(store, StorageBucket, bucketId.toString())
+  const bucket = await getByIdOrFail(store, StorageBucket, bucketId.toString())
   bucket.dataObjectsSizeLimit = sizeLimit
   bucket.dataObjectCountLimit = countLimit
 
@@ -220,14 +223,11 @@ export async function storage_StorageBucketVoucherLimitsSet({
 
 export async function storage_StorageBucketDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new StorageBucketDeletedEvent_V1001(event).params
-  // TODO: Cascade remove on db level (would require changes in Hydra / comitting autogenerated files)
-  const storageBucket = await store.get(StorageBucket, {
-    where: { id: bucketId.toString() },
-    relations: ['bags', 'bags.storageBuckets'],
-  })
-  if (!storageBucket) {
-    inconsistentState(`Storage bucket by id ${bucketId.toString()} not found!`)
-  }
+  const storageBucket = await getByIdOrFail(store, StorageBucket, bucketId.toString(), [
+    'bags',
+    'bags.storageBuckets',
+  ] as RelationsArr<StorageBucket>)
+
   // Remove relations
   await Promise.all(
     (storageBucket.bags || []).map((bag) => {
@@ -247,6 +247,7 @@ export async function storage_DynamicBagCreated({ event, store }: EventContext &
   const storageBag = new StorageBag({
     id: getDynamicBagId(bagId),
     owner: getDynamicBagOwner(bagId),
+    objectsSize: new BN(0),
     storageBuckets: Array.from(storageBuckets).map((id) => new StorageBucket({ id: id.toString() })),
     distributionBuckets: Array.from(distributionBuckets).map(
       (id) => new DistributionBucket({ id: distributionBucketId(id) })
@@ -378,6 +379,7 @@ export async function storage_PendingDataObjectsAccepted({ event, store }: Event
 export async function storage_DataObjectsMoved({ event, store }: EventContext & StoreContext): Promise<void> {
   const [srcBagId, destBagId, dataObjectIds] = new DataObjectsMovedEvent_V1001(event).params
   const dataObjects = await getDataObjectsInBag(store, srcBagId, dataObjectIds)
+  const srcBag = await getBag(store, srcBagId)
   const destBag = await getBag(store, destBagId)
   await Promise.all(
     dataObjects.map(async (dataObject) => {
@@ -385,6 +387,13 @@ export async function storage_DataObjectsMoved({ event, store }: EventContext & 
       await store.save<StorageDataObject>(dataObject)
     })
   )
+
+  // Update source & destination bags size
+  const movedDataObjectsSize = dataObjects.reduce((acc, dataObject) => acc.add(dataObject.size), new BN(0))
+  srcBag.objectsSize = srcBag.objectsSize.sub(movedDataObjectsSize)
+  destBag.objectsSize = destBag.objectsSize.add(movedDataObjectsSize)
+  await store.save<StorageBag>(srcBag)
+  await store.save<StorageBag>(destBag)
 }
 
 export async function storage_DataObjectsDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
@@ -414,7 +423,10 @@ export async function storage_DistributionBucketFamilyMetadataSet({
 }: EventContext & StoreContext): Promise<void> {
   const [familyId, metadataBytes] = new DistributionBucketFamilyMetadataSetEvent_V1001(event).params
 
-  const family = await getDistributionBucketFamilyWithMetadata(store, familyId.toString())
+  const family = await getByIdOrFail(store, DistributionBucketFamily, familyId.toString(), [
+    'metadata',
+    'metadata.areas',
+  ] as RelationsArr<DistributionBucketFamily>)
   family.metadata = await processDistributionBucketFamilyMetadata(event, store, family.metadata, metadataBytes)
 
   await store.save<DistributionBucketFamily>(family)
@@ -454,7 +466,7 @@ export async function storage_DistributionBucketStatusUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, acceptingNewBags] = new DistributionBucketStatusUpdatedEvent_V1001(event).params
 
-  const bucket = await getById(store, DistributionBucket, distributionBucketId(bucketId))
+  const bucket = await getByIdOrFail(store, DistributionBucket, distributionBucketId(bucketId))
   bucket.acceptingNewBags = acceptingNewBags.valueOf()
 
   await store.save<DistributionBucket>(bucket)
@@ -463,13 +475,11 @@ export async function storage_DistributionBucketStatusUpdated({
 export async function storage_DistributionBucketDeleted({ event, store }: EventContext & StoreContext): Promise<void> {
   const [bucketId] = new DistributionBucketDeletedEvent_V1001(event).params
   // TODO: Cascade remove on db level (would require changes in Hydra / comitting autogenerated files)
-  const distributionBucket = await store.get(DistributionBucket, {
-    where: { id: distributionBucketId(bucketId) },
-    relations: ['bags', 'bags.distributionBuckets'],
-  })
-  if (!distributionBucket) {
-    inconsistentState(`Distribution bucket by id ${distributionBucketId(bucketId)} not found!`)
-  }
+  const distributionBucket = await getByIdOrFail(store, DistributionBucket, distributionBucketId(bucketId), [
+    'bags',
+    'bags.distributionBuckets',
+  ] as RelationsArr<DistributionBucket>)
+
   // Remove relations
   await Promise.all(
     (distributionBucket.bags || []).map((bag) => {
@@ -518,7 +528,7 @@ export async function storage_DistributionBucketModeUpdated({
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, distributing] = new DistributionBucketModeUpdatedEvent_V1001(event).params
 
-  const bucket = await getById(store, DistributionBucket, distributionBucketId(bucketId))
+  const bucket = await getByIdOrFail(store, DistributionBucket, distributionBucketId(bucketId))
   bucket.distributing = distributing.valueOf()
 
   await store.save<DistributionBucket>(bucket)
@@ -547,7 +557,11 @@ export async function storage_DistributionBucketInvitationCancelled({
 }: EventContext & StoreContext): Promise<void> {
   const [bucketId, workerId] = new DistributionBucketInvitationCancelledEvent_V1001(event).params
 
-  const invitedOperator = await getById(store, DistributionBucketOperator, distributionOperatorId(bucketId, workerId))
+  const invitedOperator = await getByIdOrFail(
+    store,
+    DistributionBucketOperator,
+    distributionOperatorId(bucketId, workerId)
+  )
 
   await store.remove<DistributionBucketOperator>(invitedOperator)
 }
@@ -558,7 +572,11 @@ export async function storage_DistributionBucketInvitationAccepted({
 }: EventContext & StoreContext): Promise<void> {
   const [workerId, bucketId] = new DistributionBucketInvitationAcceptedEvent_V1001(event).params
 
-  const invitedOperator = await getById(store, DistributionBucketOperator, distributionOperatorId(bucketId, workerId))
+  const invitedOperator = await getByIdOrFail(
+    store,
+    DistributionBucketOperator,
+    distributionOperatorId(bucketId, workerId)
+  )
   invitedOperator.status = DistributionBucketOperatorStatus.ACTIVE
 
   await store.save<DistributionBucketOperator>(invitedOperator)
@@ -613,7 +631,7 @@ export async function processSetNodeOperationalStatusMessage(
   const workerId = Number(meta.workerId)
   const bucketId = String(meta.bucketId)
 
-  if ((await getWorker(store, workingGroup.name, workerId)) === undefined) {
+  if ((await getById(store, Worker, `${workingGroup.name}-${workerId}`)) === undefined) {
     return invalidMetadata(`The worker ${workerId} does not exist in the ${workingGroup.name} working group`)
   }
 

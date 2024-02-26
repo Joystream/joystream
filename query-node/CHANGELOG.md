@@ -1,6 +1,43 @@
-### 1.3.0
+### 1.10.0
 
 - Updates mappings to process `NodeOperationalStatusMetadata` protobuf message. This metaprotocol message enables both storage/distribution workers & leads to set the operational status of the nodes.
+
+### 1.9.0
+
+- Add `isShort` field to `Video` entity. and updated mappings to process/set this filed
+
+### 1.8.2
+
+- Fix validator profile verification - [#5061](https://github.com/Joystream/joystream/pull/5061)
+
+### 1.8.0
+
+- Add support for validator profile verification - [#4976](https://github.com/Joystream/joystream/pull/4976)
+
+### 1.7.0
+
+- Refactor of mappings for more better handling of error cases. [#4856](https://github.com/Joystream/joystream/pull/4856)
+- Bug fix [#4855](https://github.com/Joystream/joystream/issues/4855)
+- Add support for UpdateGlobalNftLimit proposal.
+
+### 1.6.0
+
+- Store membership handles both as utf-8 string and raw bytes - [#4950](https://github.com/Joystream/joystream/pull/4950)
+
+### 1.5.0
+
+- Add add linked-in to membership external resource [#4927](https://github.com/Joystream/joystream/pull/4927)
+- Schema updated, processor needs to be re-synced.
+
+### 1.4.0
+
+- Adds `StorageBag.objectsSize` field to `StorageBag` entity schema. This enables to query the total size of all objects in a storage bag. [#4818](https://github.com/Joystream/joystream/pull/4818)
+- Add Validator profile [#4849](https://github.com/Joystream/joystream/pull/4849),[#4868](https://github.com/Joystream/joystream/pull/4868)
+- Schema updated, processor needs to be resynced.
+
+### 1.3.0
+
+- Fix external resources mapping of membership metadata to ignore unrecognized type. [#4838](https://github.com/Joystream/joystream/pull/4838)
 
 ### 1.2.2
 
