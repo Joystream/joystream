@@ -1,7 +1,3 @@
-### 1.10.0
-
-- Updates mappings to process `NodeOperationalStatusMetadata` protobuf message. This metaprotocol message enables both storage/distribution workers & leads to set the operational status of the nodes.
-
 ### 1.9.0
 
 - Add `isShort` field to `Video` entity. and updated mappings to process/set this filed

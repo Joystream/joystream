@@ -118,7 +118,6 @@ import {
   toNumber,
 } from './common'
 import { moderatePost } from './forum'
-import { processSetNodeOperationalStatusMessage } from './storage'
 
 // Reusable functions
 async function getWorkingGroupLeadOrFail(store: DatabaseManager, groupName: WorkingGroupModuleName): Promise<Worker> {
@@ -450,8 +449,6 @@ async function applyWorkingGroupsRemark(
     member.metadata.isVerifiedValidator = isVerified
     await store.save<MemberMetadata>(member.metadata)
     await store.save<Membership>(member)
-  } else if (metadata?.setNodeOperationalStatus) {
-    await processSetNodeOperationalStatusMessage(store, event, group, metadata.setNodeOperationalStatus)
   } else {
     return invalidMetadata('Unrecognized remarked action')
   }

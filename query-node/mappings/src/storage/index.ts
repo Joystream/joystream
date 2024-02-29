@@ -1,9 +1,7 @@
 /*
 eslint-disable @typescript-eslint/naming-convention
 */
-import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
-import { ISetNodeOperationalStatus } from '@joystream/metadata-protobuf'
-import { isSet } from '@joystream/metadata-protobuf/utils'
+import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-common'
 import BN from 'bn.js'
 import {
   DistributionBucket,
@@ -11,19 +9,14 @@ import {
   DistributionBucketOperator,
   DistributionBucketOperatorMetadata,
   DistributionBucketOperatorStatus,
-  DistributionNodeOperationalStatusSetEvent,
   GeoCoordinates,
   NodeLocationMetadata,
   StorageBag,
   StorageBucket,
-  StorageBucketOperatorMetadata,
   StorageBucketOperatorStatusActive,
   StorageBucketOperatorStatusInvited,
   StorageBucketOperatorStatusMissing,
   StorageDataObject,
-  StorageNodeOperationalStatusSetEvent,
-  Worker,
-  WorkingGroup,
 } from 'query-node/dist/model'
 import {
   Storage_DataObjectsDeletedEvent_V1001 as DataObjectsDeletedEvent_V1001,
@@ -57,20 +50,12 @@ import {
   Storage_StorageOperatorMetadataSetEvent_V1001 as StorageOperatorMetadataSetEvent_V1001,
   Storage_VoucherChangedEvent_V1001 as VoucherChangedEvent_V1001,
 } from '../../generated/types'
-import {
-  RelationsArr,
-  deterministicEntityId,
-  genericEventFields,
-  getById,
-  getByIdOrFail,
-  invalidMetadata,
-} from '../common'
+import { RelationsArr, getById, getByIdOrFail } from '../common'
 import { unsetAssetRelations, videoRelationsForCounters } from '../content/utils'
 import { getAllManagers } from '../derivedPropertiesManager/applications'
 import {
   processDistributionBucketFamilyMetadata,
   processDistributionOperatorMetadata,
-  processNodeOperationalStatusMetadata,
   processStorageOperatorMetadata,
 } from './metadata'
 import {
@@ -615,91 +600,5 @@ async function removeDistributionBucketOperator(store: DatabaseManager, operator
         await store.remove<GeoCoordinates>(operator.metadata.nodeLocation.coordinates)
       }
     }
-  }
-}
-
-export async function processSetNodeOperationalStatusMessage(
-  store: DatabaseManager,
-  event: SubstrateEvent,
-  workingGroup: WorkingGroup,
-  meta: ISetNodeOperationalStatus
-): Promise<void> {
-  if (workingGroup.name !== 'distributionWorkingGroup' && workingGroup.name !== 'storageWorkingGroup') {
-    return invalidMetadata(`The ${workingGroup.name} is incompatible with the remarked setNodeOperationalStatus`)
-  }
-
-  const workerId = Number(meta.workerId)
-  const bucketId = String(meta.bucketId)
-
-  if ((await getById(store, Worker, `${workingGroup.name}-${workerId}`)) === undefined) {
-    return invalidMetadata(`The worker ${workerId} does not exist in the ${workingGroup.name} working group`)
-  }
-
-  // Update the operational status of Storage node
-  if (workingGroup.name === 'storageWorkingGroup') {
-    const storageBucket = await store.get(StorageBucket, { where: { id: bucketId }, relations: ['operatorMetadata'] })
-    if (!storageBucket) {
-      return invalidMetadata(`The storage bucket ${bucketId} does not exist`)
-    } else if (storageBucket.operatorStatus.isTypeOf !== 'StorageBucketOperatorStatusActive') {
-      return invalidMetadata(`The storage bucket ${bucketId} is not active`)
-    }
-
-    // create metadata entity if it does not exist already
-    const metadataEntity =
-      storageBucket.operatorMetadata || new StorageBucketOperatorMetadata({ id: deterministicEntityId(event) })
-
-    if (isSet(meta.operationalStatus)) {
-      metadataEntity.nodeOperationalStatus = processNodeOperationalStatusMetadata(
-        'lead',
-        metadataEntity.nodeOperationalStatus,
-        meta.operationalStatus
-      )
-    }
-    await store.save<StorageBucketOperatorMetadata>(metadataEntity)
-
-    // event processing
-
-    const operationalStatusSetEvent = new StorageNodeOperationalStatusSetEvent({
-      ...genericEventFields(event),
-      storageBucket,
-      operationalStatus: metadataEntity.nodeOperationalStatus,
-    })
-
-    await store.save<StorageNodeOperationalStatusSetEvent>(operationalStatusSetEvent)
-  }
-
-  // Update the operational status of Distribution node
-  if (workingGroup.name === 'distributionWorkingGroup') {
-    const distributionOperatorId = `${bucketId}-${workerId}`
-    const operator = await store.get(DistributionBucketOperator, {
-      where: { id: distributionOperatorId },
-      relations: ['metadata'],
-    })
-    if (!operator) {
-      return invalidMetadata(`The distribution bucket operator ${distributionOperatorId} does not exist`)
-    }
-
-    // create metadata entity if it does not exist already
-    const metadataEntity =
-      operator.metadata || new DistributionBucketOperatorMetadata({ id: deterministicEntityId(event) })
-
-    if (isSet(meta.operationalStatus)) {
-      metadataEntity.nodeOperationalStatus = processNodeOperationalStatusMetadata(
-        'lead',
-        metadataEntity.nodeOperationalStatus,
-        meta.operationalStatus
-      )
-    }
-    await store.save<DistributionBucketOperatorMetadata>(metadataEntity)
-
-    // event processing
-
-    const operationalStatusSetEvent = new DistributionNodeOperationalStatusSetEvent({
-      ...genericEventFields(event),
-      bucketOperator: operator,
-      operationalStatus: metadataEntity.nodeOperationalStatus,
-    })
-
-    await store.save<DistributionNodeOperationalStatusSetEvent>(operationalStatusSetEvent)
   }
 }
