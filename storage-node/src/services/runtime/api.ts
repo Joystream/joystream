@@ -202,13 +202,12 @@ export async function sendAndFollowNamedTx<T>(
   logger.debug(`Sending ${tx.method.section}.${tx.method.method} extrinsic...`)
 
   const result = await sendExtrinsic(api, account, tx)
-  let eventResult: T | void
-  if (eventParser) {
-    eventResult = eventParser(result)
-  }
-  logger.debug(`Extrinsic successful!`)
 
-  return eventResult
+  if (eventParser) {
+    return eventParser(result)
+  }
+
+  logger.debug(`Extrinsic successful!`)
 }
 
 /**
