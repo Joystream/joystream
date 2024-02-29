@@ -187,7 +187,7 @@ export class QueryNodeApi {
    *
    * @param workerId - worker ID
    */
-  public async getStorageBucketIdsByWorkerId(workerId: number): Promise<Array<StorageBucketIdsFragment>> {
+  public async getStorageBucketIdsByWorkerId(workerId: bigint): Promise<Array<StorageBucketIdsFragment>> {
     const result = await this.multipleEntitiesQuery<
       GetStorageBucketsByWorkerIdQuery,
       GetStorageBucketsByWorkerIdQueryVariables

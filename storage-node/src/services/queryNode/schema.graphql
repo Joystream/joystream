@@ -347,7 +347,7 @@ type DistributionBucketOperator {
   distributionBucket: DistributionBucket!
 
   """ID of the distribution group worker"""
-  workerId: Int!
+  workerId: BigInt!
 
   """Current operator status"""
   status: DistributionBucketOperatorStatus!
@@ -583,14 +583,14 @@ input DistributionBucketOperatorWhereInput {
   distributionBucket_isNull: Boolean
   distributionBucket: DistributionBucketWhereInput
   workerId_isNull: Boolean
-  workerId_eq: Int
-  workerId_not_eq: Int
-  workerId_gt: Int
-  workerId_gte: Int
-  workerId_lt: Int
-  workerId_lte: Int
-  workerId_in: [Int!]
-  workerId_not_in: [Int!]
+  workerId_eq: BigInt
+  workerId_not_eq: BigInt
+  workerId_gt: BigInt
+  workerId_gte: BigInt
+  workerId_lt: BigInt
+  workerId_lte: BigInt
+  workerId_in: [BigInt!]
+  workerId_not_in: [BigInt!]
   status_isNull: Boolean
   status_eq: DistributionBucketOperatorStatus
   status_not_eq: DistributionBucketOperatorStatus
@@ -1676,12 +1676,12 @@ input StorageBucketOperatorMetadataWhereInput {
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
 
 type StorageBucketOperatorStatusActive {
-  workerId: Int!
+  workerId: BigInt!
   transactorAccountId: String!
 }
 
 type StorageBucketOperatorStatusInvited {
-  workerId: Int!
+  workerId: BigInt!
 }
 
 type StorageBucketOperatorStatusMissing {
@@ -1699,14 +1699,14 @@ input StorageBucketOperatorStatusWhereInput {
   phantom_in: [Int!]
   phantom_not_in: [Int!]
   workerId_isNull: Boolean
-  workerId_eq: Int
-  workerId_not_eq: Int
-  workerId_gt: Int
-  workerId_gte: Int
-  workerId_lt: Int
-  workerId_lte: Int
-  workerId_in: [Int!]
-  workerId_not_in: [Int!]
+  workerId_eq: BigInt
+  workerId_not_eq: BigInt
+  workerId_gt: BigInt
+  workerId_gte: BigInt
+  workerId_lt: BigInt
+  workerId_lte: BigInt
+  workerId_in: [BigInt!]
+  workerId_not_in: [BigInt!]
   transactorAccountId_isNull: Boolean
   transactorAccountId_eq: String
   transactorAccountId_not_eq: String
@@ -2152,6 +2152,9 @@ input WhereIdInput {
 type Worker {
   """Worker id ({workingGroupName}-{workerId})"""
   id: String!
+
+  """WorkerId in specific working group module"""
+  runtimeId: BigInt!
 }
 
 type WorkerEdge {
@@ -2164,6 +2167,10 @@ enum WorkerOrderByInput {
   id_DESC
   id_ASC_NULLS_FIRST
   id_DESC_NULLS_LAST
+  runtimeId_ASC
+  runtimeId_DESC
+  runtimeId_ASC_NULLS_FIRST
+  runtimeId_DESC_NULLS_LAST
 }
 
 type WorkersConnection {
@@ -2190,6 +2197,15 @@ input WorkerWhereInput {
   id_not_startsWith: String
   id_endsWith: String
   id_not_endsWith: String
+  runtimeId_isNull: Boolean
+  runtimeId_eq: BigInt
+  runtimeId_not_eq: BigInt
+  runtimeId_gt: BigInt
+  runtimeId_gte: BigInt
+  runtimeId_lt: BigInt
+  runtimeId_lte: BigInt
+  runtimeId_in: [BigInt!]
+  runtimeId_not_in: [BigInt!]
   AND: [WorkerWhereInput!]
   OR: [WorkerWhereInput!]
 }

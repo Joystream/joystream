@@ -93,7 +93,7 @@ query getDistributionBucketsWithBagsByIds($ids: [String!]) {
   }
 }
 
-query getDistributionBucketsWithBagsByWorkerId($workerId: Int!) {
+query getDistributionBucketsWithBagsByWorkerId($workerId: BigInt!) {
   distributionBuckets(where: { operators_some: { workerId_eq: $workerId, status_eq: ACTIVE } }) {
     ...DistributionBucketWithBags
   }

@@ -18,7 +18,7 @@ query getStorageBuckets {
   }
 }
 
-query getStorageBucketsByWorkerId($workerId: Int!) {
+query getStorageBucketsByWorkerId($workerId: BigInt!) {
   storageBuckets(
     where: {
       operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId }
