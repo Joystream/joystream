@@ -78,13 +78,15 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
       const params = validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(input).toString()))
       metadata = {
         ...params,
-        operationalStatus: {
-          ...params.operationalStatus,
-          status:
-            params.operationalStatus?.status === 'Normal'
-              ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
-              : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-        },
+        operationalStatus: params.operationalStatus
+          ? {
+              ...params.operationalStatus,
+              status:
+                params.operationalStatus?.status === 'Normal'
+                  ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
+                  : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
+            }
+          : {},
       }
     } else {
       metadata = { endpoint, operationalStatus }

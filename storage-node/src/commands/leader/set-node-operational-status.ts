@@ -23,7 +23,7 @@ export default class LeadSetNodeOperationalStatus extends LeaderCommandBase {
     }),
     workerId: flags.integer({
       char: 'w',
-      description: 'ID of the operator (distribution group worker)',
+      description: 'ID of the operator (storage group worker)',
       required: true,
     }),
     operationalStatus: flags.enum<NodeOperationalStatus>({

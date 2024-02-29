@@ -7,7 +7,6 @@ import {
 import { flags } from '@oclif/command'
 import fs from 'fs'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import logger from '../../services/logger'
 import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../services/metadata/schemas'
 import { ValidationService } from '../../services/metadata/validationService'
 import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
@@ -91,13 +90,15 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       const input = validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(jsonFile).toString()))
       metadata = {
         ...input,
-        operationalStatus: {
-          ...input.operationalStatus,
-          status:
-            input.operationalStatus?.status === 'Normal'
-              ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
-              : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-        },
+        operationalStatus: input.operationalStatus
+          ? {
+              ...input.operationalStatus,
+              status:
+                input.operationalStatus?.status === 'Normal'
+                  ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
+                  : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
+            }
+          : {},
       }
     } else {
       metadata = { endpoint, operationalStatus }
@@ -105,7 +106,6 @@ export default class OperatorSetMetadata extends ApiCommandBase {
 
     const encodedMetadata = '0x' + Buffer.from(StorageBucketOperatorMetadata.encode(metadata).finish()).toString('hex')
 
-    logger.info('Se tting the storage node operational status...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }
