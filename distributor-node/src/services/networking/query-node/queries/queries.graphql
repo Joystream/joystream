@@ -107,7 +107,17 @@ fragment StorageBucketOperatorFields on StorageBucket {
 }
 
 query getActiveStorageBucketOperatorsData {
-  storageBuckets(where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }) {
+  storageBuckets(
+    where: {
+      operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
+      operatorMetadata: {
+        OR: [
+          { nodeOperationalStatus_isNull: true }
+          { nodeOperationalStatus: { isTypeOf_eq: "NodeOperationalStatusNormal" } }
+        ]
+      }
+    }
+  ) {
     ...StorageBucketOperatorFields
   }
 }
