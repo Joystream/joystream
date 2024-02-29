@@ -277,6 +277,7 @@ components:
         - downloadBuckets
         - sync
         - cleanup
+        - bucketsOperationalStatuses
       properties:
         version:
           type: string
@@ -308,6 +309,21 @@ components:
           type: array
           items:
             type: string
+        bucketsOperationalStatuses:
+          type: array
+          items:
+            type: object
+            required:
+              - 'bucketId'
+              - 'status'
+              - 'isForced'
+            properties:
+              bucketId:
+                type: string
+              status:
+                type: string
+              isForced:
+                type: boolean
         sync:
           type: object
           required:

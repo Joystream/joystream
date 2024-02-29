@@ -28,6 +28,9 @@ import {
   GetStorageBucketsByWorkerId,
   GetStorageBucketsByWorkerIdQuery,
   GetStorageBucketsByWorkerIdQueryVariables,
+  GetStorageBucketsOperationalStatus,
+  GetStorageBucketsOperationalStatusQuery,
+  GetStorageBucketsOperationalStatusQueryVariables,
   GetStorageBucketsQuery,
   GetStorageBucketsQueryVariables,
   SquidStatus,
@@ -293,6 +296,25 @@ export class QueryNodeApi {
       {},
       'storageBuckets'
     )
+
+    if (!result) {
+      return []
+    }
+
+    return result
+  }
+
+  /**
+   * Returns storage bucket IDs.
+   *
+   */
+  public async getStorageBucketsOperationalStatus(
+    bucketIds: string[]
+  ): Promise<Array<GetStorageBucketsOperationalStatusQuery['storageBuckets'][number]>> {
+    const result = await this.multipleEntitiesQuery<
+      GetStorageBucketsOperationalStatusQuery,
+      GetStorageBucketsOperationalStatusQueryVariables
+    >(GetStorageBucketsOperationalStatus, { ids: bucketIds }, 'storageBuckets')
 
     if (!result) {
       return []

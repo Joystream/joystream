@@ -147,6 +147,18 @@ export async function getStatus(req: express.Request, res: express.Response<Stat
   const { qnApi, api, process: proc, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
 
   // Copy from an object, because the actual object could contain more data.
+  const buckets = [...new Set([...uploadBuckets, ...downloadBuckets])]
+  const bucketsOperationalStatuses = (await qnApi.getStorageBucketsOperationalStatus(buckets)).map(
+    ({ id, operatorMetadata }) => ({
+      bucketId: id,
+      status: operatorMetadata?.nodeOperationalStatus?.__typename || 'NodeOperationalStatusNormal',
+      isForced:
+        operatorMetadata?.nodeOperationalStatus?.__typename === 'NodeOperationalStatusNormal'
+          ? false
+          : operatorMetadata?.nodeOperationalStatus?.forced || false,
+    })
+  )
+
   res.status(200).json({
     version: proc.version,
     uploadBuckets,
@@ -154,6 +166,7 @@ export async function getStatus(req: express.Request, res: express.Response<Stat
     sync,
     cleanup,
     queryNodeStatus: await getQueryNodeStatus(api, qnApi),
+    bucketsOperationalStatuses,
     nodeEnv: process.env.NODE_ENV,
   })
 }
