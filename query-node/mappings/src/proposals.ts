@@ -361,7 +361,9 @@ export async function proposalsCodex_ProposalCreated({
 }: EventContext & StoreContext): Promise<void> {
   const specVersion = block.runtimeVersion.specVersion
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    parseInt(specVersion.toString()) >= 2002 ? new ProposalCreatedEvent_V2002(event).params : new ProposalCreatedEvent_V1001(event).params
+    parseInt(specVersion.toString()) >= 2002
+      ? new ProposalCreatedEvent_V2002(event).params
+      : new ProposalCreatedEvent_V1001(event).params
 
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)

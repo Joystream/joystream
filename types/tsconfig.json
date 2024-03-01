@@ -15,8 +15,8 @@
     "types": ["node"],
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
-    "ignoreDeprecations": "5.0",
+    "ignoreDeprecations": "5.0"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "**/*.spec.ts", "**/*.d.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts", "**/*.d.ts"]
 }

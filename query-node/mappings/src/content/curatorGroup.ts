@@ -73,7 +73,9 @@ export async function content_CuratorAdded({ store, event, block }: EventContext
   const { specVersion } = block.runtimeVersion
 
   const [curatorGroupId, curatorId, permissions] =
-    parseInt(specVersion.toString()) < 2002 ? new CuratorAddedEvent_V1001(event).params : new CuratorAddedEvent_V2002(event).params
+    parseInt(specVersion.toString()) < 2002
+      ? new CuratorAddedEvent_V1001(event).params
+      : new CuratorAddedEvent_V2002(event).params
 
   // load curator group
   const curatorGroup = await getByIdOrFail(store, CuratorGroup, curatorGroupId.toString(), ['curators'])

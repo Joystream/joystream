@@ -612,7 +612,9 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   const { event, store, block } = ctx
   const { specVersion } = block.runtimeVersion
   const [memberId, metadataBytes, payment] =
-    parseInt(specVersion.toString()) >= 2001 ? new MemberRemarkedEvent_V2001(event).params : new MemberRemarkedEvent_V1001(event).params
+    parseInt(specVersion.toString()) >= 2001
+      ? new MemberRemarkedEvent_V2001(event).params
+      : new MemberRemarkedEvent_V1001(event).params
 
   const member = await getMembershipById(store, memberId)
   const metadata = deserializeMetadata(MemberRemarked, metadataBytes)

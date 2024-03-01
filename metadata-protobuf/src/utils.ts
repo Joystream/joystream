@@ -7,7 +7,7 @@ export function isSet<T>(v: T | null | undefined): v is T {
   return v !== null && v !== undefined
 }
 
-export function isEmptyObject<T extends {}>(object: T): boolean {
+export function isEmptyObject<T extends Record<string, unknown>>(object: T): boolean {
   return Object.keys(object).length === 0
 }
 

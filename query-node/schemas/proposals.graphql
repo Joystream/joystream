@@ -333,9 +333,13 @@ type UpdateChannelPayoutsProposalDetails @variant {
 }
 
 type UpdatePalletFrozenStatusProposalDetails @variant {
-  """New frozen status for pallet"""
+  """
+  New frozen status for pallet
+  """
   frozen: Boolean!
-  """The pallet to update frozen status on"""
+  """
+  The pallet to update frozen status on
+  """
   pallet: String!
 }
 
