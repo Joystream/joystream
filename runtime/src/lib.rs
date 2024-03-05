@@ -522,7 +522,6 @@ pallet_staking_reward_curve::build! {
     );
 }
 
-// TODO (reward-curve-proposal): remove this
 pub struct NoInflationIfNoEras;
 impl EraPayout<Balance> for NoInflationIfNoEras {
     fn era_payout(
@@ -537,12 +536,13 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
             // PoA mode: no inflation.
             (0, 0)
         } else {
-            // TODO (reward-curve-proposal): get curve directly from council
-            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
-                total_staked,
-                total_issuance,
-                era_duration_millis,
-            )
+            let era_payout_unscaled = <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<
+                Balance,
+            >>::era_payout(
+                total_staked, total_issuance, era_duration_millis
+            );
+            let damping_factor = Council::era_payout_damping_factor();
+            damping_factor.mul_floor(era_payout_unscaled)
         }
     }
 }
