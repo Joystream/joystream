@@ -5,12 +5,12 @@ use common::FreezablePallet;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sp_runtime::Perbill;
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use common::FundingRequestParameters;
+use sp_runtime::Percent;
 
 use content::NftLimitPeriod;
 use working_group::StakePolicy;
@@ -125,7 +125,7 @@ pub enum ProposalDetails<
     SetPalletFozenStatus(bool, FreezablePallet),
 
     /// `SetEraPayoutDampingFactor` proposal
-    SetEraPayoutDampingFactor(Perbill),
+    SetEraPayoutDampingFactor(Percent),
 }
 
 impl<

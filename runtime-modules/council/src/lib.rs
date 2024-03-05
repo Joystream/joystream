@@ -79,7 +79,7 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
-use sp_runtime::Perbill;
+use sp_runtime::Percent;
 use sp_std::convert::TryInto;
 use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
@@ -371,7 +371,7 @@ decl_storage! { generate_storage_info
 
         /// Era payou damping factor: a parameter in [0,1] that can be used to reduce the era
         /// payout without changing the reward curve directly
-        pub EraPayoutDampingFactor get(fn era_payout_damping_factor) config(): Perbill;
+        pub EraPayoutDampingFactor get(fn era_payout_damping_factor) config(): Percent;
     }
 }
 
@@ -450,7 +450,7 @@ decl_event! {
         CandidateRemarked(MemberId, Vec<u8>),
 
         /// Era payou damping factor set
-        EraPayoutDampingFactorSet(Perbill),
+        EraPayoutDampingFactorSet(Percent),
     }
 }
 
@@ -869,7 +869,7 @@ decl_module! {
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
         #[weight = 10_000_000] // TODO: adjust
-        pub fn set_era_payout_damping_factor(origin, new_parameter: Perbill) -> Result<(), Error<T>> {
+        pub fn set_era_payout_damping_factor(origin, new_parameter: Percent) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_era_payout_damping_factor(origin)?;
 
@@ -1688,7 +1688,7 @@ impl<T: Config> Mutations<T> {
         NextRewardPayments::<T>::put(next_reward_block);
     }
 
-    fn set_era_payout_damping_factor(new_parameter: Perbill) {
+    fn set_era_payout_damping_factor(new_parameter: Percent) {
         EraPayoutDampingFactor::put(new_parameter);
     }
 }
