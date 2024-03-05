@@ -5,6 +5,7 @@ use common::FreezablePallet;
 use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_runtime::Perbill;
 use sp_std::vec::Vec;
 
 use common::working_group::WorkingGroup;
@@ -122,6 +123,9 @@ pub enum ProposalDetails<
 
     /// `SetPalletFozenStatus` proposal
     SetPalletFozenStatus(bool, FreezablePallet),
+
+    /// `SetEraPayoutDampingFactor` proposal
+    SetEraPayoutDampingFactor(Perbill),
 }
 
 impl<
