@@ -333,9 +333,9 @@ type UpdateChannelPayoutsProposalDetails @variant {
 }
 
 type UpdatePalletFrozenStatusProposalDetails @variant {
-  """New frozen status for pallet"""
+  "New frozen status for pallet"
   frozen: Boolean!
-  """The pallet to update frozen status on"""
+  "The pallet to update frozen status on"
   pallet: String!
 }
 
@@ -345,6 +345,11 @@ type UpdateGlobalNftLimitProposalDetails @variant {
 
   "New weekly NFT limit set in the proposal (if any)"
   newWeeklyNftLimit: Int
+}
+
+type DecreaseCouncilBudgetProposalDetails @variant {
+  "Proposed amount of token to burn"
+  amount: BigInt!
 }
 
 union ProposalDetails =
