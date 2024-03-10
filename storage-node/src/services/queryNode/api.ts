@@ -138,7 +138,7 @@ export class QueryNodeApi {
     while (hasNextPage) {
       const paginationVariables = { limit: itemsPerPage, cursor: lastCursor }
       const queryVariables = { ...variables, ...paginationVariables }
-      logger.debug(`Query - ${resultKey}`)
+      logger.debug(`Query - ${String(resultKey)}`)
       const result = await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
         query,
         variables: queryVariables,

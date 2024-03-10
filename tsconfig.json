@@ -1,5 +1,8 @@
 {
-    "compilerOptions": {},
+    "compilerOptions": {
+        // generated graphql-server uses "keyofStringsOnly:true" which will be deprecated in 5.0
+        "ignoreDeprecations": "5.0",
+    },
     "include": [
         "src"
     ],

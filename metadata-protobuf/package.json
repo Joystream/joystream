@@ -1,6 +1,6 @@
 {
   "name": "@joystream/metadata-protobuf",
-  "version": "2.13.0",
+  "version": "2.15.0",
   "description": "Joystream Metadata Protobuf Library",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -67,6 +67,6 @@
     "mocha": "^8.2.1",
     "prettier": "2.0.2",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3"
+    "typescript": "^5.0.2"
   }
 }
