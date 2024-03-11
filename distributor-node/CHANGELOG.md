@@ -1,3 +1,7 @@
+### 2.0.0
+
+- Replaced `Query-Node` API with `Storage-Squid` Graphql API. This is a breaking change and requires the `endpoints.queryNode` configuration option to be replaced with `endpoints.storageSquid`.
+
 ## 1.5.1
 
 - Added parsing of Axios errors on logger level so that we never log the whole Axios client instance (which is a circular object and causes the node to crash)
