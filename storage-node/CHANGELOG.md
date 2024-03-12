@@ -1,3 +1,7 @@
+### 4.1.0
+
+- Nara release.
+
 ### 4.0.1
 
 - Set the `server.requestTimeout` option in `http.Server` instance to 0 to disable the timeout. This was default behaviour pre Node.js `18.x`
