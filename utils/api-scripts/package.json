@@ -16,10 +16,10 @@
     "@joystream/types": "^4.0.0",
     "@mongodb-js/zstd": "^1.1.0",
     "@polkadot/api": "10.1.4",
-    "@polkadot/keyring": "11.1.1",
+    "@polkadot/keyring": "^12.2.1",
     "@polkadot/types": "10.1.4",
-    "@polkadot/util": "11.1.1",
-    "@polkadot/util-crypto": "11.1.1",
+    "@polkadot/util": "^12.2.1",
+    "@polkadot/util-crypto": "^12.2.1",
     "@types/bn.js": "^5.1.0",
     "bfj": "^8.0.0",
     "bn.js": "^5.2.1"
