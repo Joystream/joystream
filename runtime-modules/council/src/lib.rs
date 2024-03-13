@@ -80,7 +80,7 @@ use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
 
 // declared modules
@@ -210,7 +210,7 @@ impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
 
 pub type Balance<T> = <T as balances::Config>::Balance;
 pub type VotePowerOf<T> = <<T as Config>::Referendum as ReferendumManager<
-    <T as frame_system::Config>::Origin,
+    <T as frame_system::Config>::RuntimeOrigin,
     <T as frame_system::Config>::AccountId,
     <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Config>::Hash,
@@ -245,10 +245,15 @@ pub trait Config:
     frame_system::Config + common::membership::MembershipTypes + balances::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Referendum used for council elections.
-    type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::MemberId, Self::Hash>;
+    type Referendum: ReferendumManager<
+        Self::RuntimeOrigin,
+        Self::AccountId,
+        Self::MemberId,
+        Self::Hash,
+    >;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -299,7 +304,7 @@ pub trait Config:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         common::MemberId<Self>,
         Self::AccountId,
     >;
@@ -522,10 +527,16 @@ impl<T: Config> From<BadOrigin> for Error<T> {
     }
 }
 
+impl<T: Config> From<sp_runtime::DispatchError> for Error<T> {
+    fn from(err: sp_runtime::DispatchError) -> Self {
+        err.into()
+    }
+}
+
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1614,7 +1625,7 @@ impl<T: Config> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
     fn ensure_user_membership(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
@@ -1630,7 +1641,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in announcing candidacy.
     fn can_announce_candidacy(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
         staking_account_id: &T::AccountId,
         stake: &Balance<T>,
@@ -1683,7 +1694,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in releasing old candidacy stake.
     fn can_release_candidacy_stake(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         // ensure user's membership
@@ -1703,7 +1714,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in withdrawing already announced candidacy.
     fn can_withdraw_candidacy(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<(CouncilStageAnnouncing<T::BlockNumber>, CandidateOf<T>), Error<T>> {
         // ensure user's membership
@@ -1729,7 +1740,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in setting new note for the candidacy.
     fn can_set_candidacy_note(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<(), Error<T>> {
         // ensure user's membership
@@ -1751,28 +1762,28 @@ impl<T: Config> EnsureChecks<T> {
     }
 
     // Ensures there is no problem in setting the budget balance.
-    fn can_set_budget(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_set_budget(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
     }
 
     // Ensures there is no problem in planning next budget refill.
-    fn can_plan_budget_refill(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_plan_budget_refill(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
     }
 
     // Ensures there is no problem in setting the budget increment.
-    fn can_set_budget_increment(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_set_budget_increment(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
     }
 
     // Ensures there is no problem in setting the councilor reward.
-    fn can_set_councilor_reward(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_set_councilor_reward(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
@@ -1780,9 +1791,9 @@ impl<T: Config> EnsureChecks<T> {
 }
 
 impl<T: Config + common::membership::MembershipTypes>
-    CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T>
+    CouncilOriginValidator<T::RuntimeOrigin, T::MemberId, T::AccountId> for Module<T>
 {
-    fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
+    fn ensure_member_consulate(origin: T::RuntimeOrigin, member_id: T::MemberId) -> DispatchResult {
         EnsureChecks::<T>::ensure_user_membership(origin, &member_id)?;
 
         let is_councilor = Self::council_members()
@@ -1816,6 +1827,13 @@ impl<T: Config + balances::Config> common::council::CouncilBudgetManager<T::Acco
 
         Self::decrease_budget(amount);
 
+        Ok(())
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
         Ok(())
     }
 }

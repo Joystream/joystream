@@ -78,7 +78,7 @@
 //! pub trait Config: engine::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
 //!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
@@ -161,17 +161,19 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 use codec::{Decode, MaxEncodedLen};
-use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
+use frame_support::dispatch::{
+    DispatchError, DispatchResult, GetDispatchInfo, UnfilteredDispatchable,
+};
 use frame_support::storage::{bounded_vec::BoundedVec, IterableStorageMap};
 use frame_support::traits::{Get, LockIdentifier};
-use frame_support::weights::{GetDispatchInfo, Weight};
+use frame_support::weights::Weight;
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use frame_system::{ensure_root, RawOrigin};
-use sp_arithmetic::traits::{SaturatedConversion, Saturating, Zero};
+use sp_arithmetic::traits::{SaturatedConversion, Zero};
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::council::CouncilOriginValidator;
 use common::membership::MemberOriginValidator;
@@ -189,18 +191,18 @@ pub trait Config:
     + balances::Config
 {
     /// Engine event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates proposer id and origin combination
     type ProposerOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
 
     /// Validates voter id and origin combination
     type CouncilOriginValidator: CouncilOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
@@ -239,7 +241,7 @@ pub trait Config:
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
     type DispatchableCallCode: Parameter
-        + UnfilteredDispatchable<Origin = Self::Origin>
+        + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
         + GetDispatchInfo
         + Default;
 
@@ -414,7 +416,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// 'Proposal engine' substrate module
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -817,7 +819,8 @@ impl<T: Config> Module<T> {
                 None
             })
             .for_each(|(proposal_id, proposal)| {
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
+                #[allow(deprecated)]
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(proposal_id, None);
                 <Proposals<T>>::insert(proposal_id, proposal.clone());
 
                 // fire the proposal status update event
@@ -880,14 +883,14 @@ impl<T: Config> Module<T> {
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
-        let mut execution_code_weight = 0;
+        let mut execution_code_weight = Weight::from_all(0);
 
         let execution_status = match proposal_code_result {
             Ok(proposal_code) => {
                 execution_code_weight = proposal_code.get_dispatch_info().weight;
 
                 if let Err(dispatch_error) =
-                    proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
+                    proposal_code.dispatch_bypass_filter(T::RuntimeOrigin::from(RawOrigin::Root))
                 {
                     ExecutionStatus::failed_execution(Self::parse_dispatch_error(
                         dispatch_error.error,
@@ -926,7 +929,7 @@ impl<T: Config> Module<T> {
             proposal_decision.clone(),
         ));
 
-        let mut executed_weight = 0;
+        let mut executed_weight = Weight::from_all(0);
 
         // deal with stakes if necessary
         if proposal_decision
@@ -1027,7 +1030,8 @@ impl<T: Config> Module<T> {
     fn remove_proposal_data(proposal_id: &T::ProposalId) -> DispatchResult {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
-        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id, None);
+        #[allow(deprecated)]
+        <VoteExistsByProposalByVoter<T>>::remove_prefix(proposal_id, None);
         let _ = Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);
@@ -1042,7 +1046,7 @@ impl<T: Config> Module<T> {
         let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
         let now = Self::current_block();
 
-        let mut executed_weight = 0;
+        let mut executed_weight = Weight::from_all(0);
 
         for (proposal_id, proposal) in proposals {
             match proposal.status {
@@ -1073,5 +1077,12 @@ impl<T: Config> Module<T> {
         }
 
         executed_weight
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

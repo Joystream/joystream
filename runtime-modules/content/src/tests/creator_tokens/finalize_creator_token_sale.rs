@@ -3,6 +3,8 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use common::BudgetManager;
+use frame_support::{assert_noop, assert_ok};
+use frame_system::RawOrigin;
 
 fn purchase_tokens_on_sale(amount: u64) {
     let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
@@ -11,7 +13,7 @@ fn purchase_tokens_on_sale(amount: u64) {
         existential_deposit + DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE * amount,
     );
     project_token::Module::<Test>::purchase_tokens_on_sale(
-        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
         project_token::Module::<Test>::next_token_id() - 1,
         SECOND_MEMBER_ID,
         amount,
@@ -211,5 +213,58 @@ fn successful_finalize_curator_channel_creator_token_sale_by_lead() {
                 DEFAULT_CREATOR_TOKEN_ISSUANCE * DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE
             )
         );
+    })
+}
+
+#[test]
+fn purchase_tokens_on_sale_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
+
+        let amount = DEFAULT_CREATOR_TOKEN_ISSUANCE - 1;
+        let existential_deposit: u64 = <Test as balances::Config>::ExistentialDeposit::get().into();
+        increase_account_balance_helper(
+            SECOND_MEMBER_ACCOUNT_ID,
+            existential_deposit + DEFAULT_CREATOR_TOKEN_SALE_UNIT_PRICE * amount,
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            project_token::Module::<Test>::purchase_tokens_on_sale(
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                project_token::Module::<Test>::next_token_id() - 1,
+                SECOND_MEMBER_ID,
+                amount,
+            ),
+            project_token::Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(project_token::Module::<Test>::purchase_tokens_on_sale(
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            project_token::Module::<Test>::next_token_id() - 1,
+            SECOND_MEMBER_ID,
+            amount,
+        ));
+    })
+}
+
+#[test]
+fn finalize_member_channel_creator_token_sale_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
+        purchase_tokens_on_sale(DEFAULT_CREATOR_TOKEN_ISSUANCE - 1);
+        run_to_block(1 + DEFAULT_CREATOR_TOKEN_SALE_DURATION);
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        FinalizeCreatorTokenSaleFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        FinalizeCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
     })
 }

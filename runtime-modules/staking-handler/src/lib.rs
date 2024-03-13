@@ -127,7 +127,7 @@ impl<
         account_id: &<T as frame_system::Config>::AccountId,
         amount: Option<<T as pallet_balances::Config>::Balance>,
     ) -> <T as pallet_balances::Config>::Balance {
-        let locks = pallet_balances::Pallet::<T>::locks(&account_id);
+        let locks = pallet_balances::Pallet::<T>::locks(account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 
@@ -180,7 +180,7 @@ impl<
     }
 
     fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
-        let locks = <pallet_balances::Pallet<T>>::locks(&account_id);
+        let locks = <pallet_balances::Pallet<T>>::locks(account_id);
         let lock_ids: Vec<LockIdentifier> =
             locks.iter().map(|balance_lock| balance_lock.id).collect();
 
@@ -201,7 +201,7 @@ impl<
     fn current_stake(
         account_id: &<T as frame_system::Config>::AccountId,
     ) -> <T as pallet_balances::Config>::Balance {
-        let locks = <pallet_balances::Pallet<T>>::locks(&account_id);
+        let locks = <pallet_balances::Pallet<T>>::locks(account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
 

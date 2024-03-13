@@ -26,7 +26,7 @@ pub mod pallet_babe;
 pub mod pallet_bags_list;
 pub mod pallet_balances;
 pub mod pallet_election_provider_multi_phase;
-pub mod pallet_election_provider_support_benchmarking;
+// pub mod pallet_election_provider_support_benchmarking;
 pub mod pallet_grandpa;
 pub mod pallet_im_online;
 pub mod pallet_multisig;

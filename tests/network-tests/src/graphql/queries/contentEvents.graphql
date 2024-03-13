@@ -183,40 +183,6 @@ query getVideoReactionsPreferenceEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
-fragment VideoDeletedByModeratorEventFields on VideoDeletedByModeratorEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  videoId
-  rationale
-}
-
-query getVideoDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
-  videoDeletedByModeratorEvents(where: { id_in: $eventIds }) {
-    ...VideoDeletedByModeratorEventFields
-  }
-}
-
-fragment ChannelDeletedByModeratorEventFields on ChannelDeletedByModeratorEvent {
-  id
-  createdAt
-  inBlock
-  network
-  inExtrinsic
-  indexInBlock
-  channelId
-  rationale
-}
-
-query getChannelDeletedByModeratorEventsByEventIds($eventIds: [ID!]) {
-  channelDeletedByModeratorEvents(where: { id_in: $eventIds }) {
-    ...ChannelDeletedByModeratorEventFields
-  }
-}
-
 fragment ChannelAssetsDeletedByModeratorEventFields on ChannelAssetsDeletedByModeratorEvent {
   id
   createdAt

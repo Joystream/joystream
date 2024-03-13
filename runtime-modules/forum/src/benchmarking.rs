@@ -2,7 +2,7 @@
 use super::*;
 use balances::Pallet as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Pallet as System;
@@ -55,9 +55,9 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
@@ -134,7 +134,7 @@ where
     let (caller_id, member_id) = member_funded_account::<T>(id as u32);
 
     let (opening_id, application_id) = add_and_apply_opening::<T>(
-        &T::Origin::from(RawOrigin::Root),
+        &T::RuntimeOrigin::from(RawOrigin::Root),
         &caller_id,
         &member_id,
         &OpeningType::Leader,
@@ -159,7 +159,7 @@ where
 }
 
 fn add_and_apply_opening<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
@@ -173,7 +173,7 @@ fn add_and_apply_opening<T: Config + working_group::Config<ForumWorkingGroupInst
 }
 
 fn add_opening_helper<T: Config + working_group::Config<ForumWorkingGroupInstance>>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     ForumGroup::<T>::add_opening(
@@ -550,7 +550,7 @@ benchmarks! {
             archived: new_archival_status,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: if i == 1 { 1 } else { 0 },
+            num_direct_moderators: u32::from(i == 1),
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -634,7 +634,7 @@ benchmarks! {
             archived: false,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: if i == 1 { 1 } else { 0 },
+            num_direct_moderators: u32::from(i == 1),
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -718,7 +718,7 @@ benchmarks! {
             archived: false,
             num_direct_subcategories: 0,
             num_direct_threads: 0,
-            num_direct_moderators: if i == 1 { 1 } else { 0 },
+            num_direct_moderators: u32::from(i == 1),
             parent_category_id,
             sticky_thread_ids: BoundedBTreeSet::default(),
         };
@@ -1115,7 +1115,7 @@ benchmarks! {
 
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
+            caller_id.clone(), lead_id.saturated_into(), category_id,
             text.clone(), text
         );
 
@@ -1177,7 +1177,7 @@ benchmarks! {
 
         let text = vec![1u8].repeat((MAX_KILOBYTES_METADATA * 1000) as usize);
         let thread_id = create_new_thread::<T>(
-            caller_id.clone(), (lead_id as u64).saturated_into(), category_id,
+            caller_id.clone(), lead_id.saturated_into(), category_id,
             text.clone(), text
         );
 

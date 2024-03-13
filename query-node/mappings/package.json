@@ -1,6 +1,6 @@
 {
   "name": "query-node-mappings",
-  "version": "1.9.0",
+  "version": "2.2.0",
   "description": "Mappings for hydra-processor",
   "main": "lib/src/index.js",
   "license": "MIT",
@@ -17,16 +17,16 @@
   },
   "dependencies": {
     "@apollo/client": "^3.2.5",
-    "@joystream/hydra-common": "5.0.0-alpha.4",
-    "@joystream/hydra-db-utils": "5.0.0-alpha.4",
+    "@joystream/hydra-common": "5.0.0-alpha.8",
+    "@joystream/hydra-db-utils": "5.0.0-alpha.8",
     "@joystream/js": "^1.8.0",
     "@joystream/warthog": "^2.41.9",
-    "@polkadot/types": "8.9.1"
+    "@polkadot/types": "10.1.4"
   },
   "devDependencies": {
     "eslint-plugin-local-rules": "2.0.0",
     "prettier": "^2.2.1",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3"
+    "typescript": "^5.0.2"
   }
 }

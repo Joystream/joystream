@@ -9,6 +9,7 @@ use crate::types::Joy;
 use crate::types::MerkleProofOf;
 use crate::{member, merkle_proof, merkle_root};
 use frame_support::assert_ok;
+use frame_system::RawOrigin;
 use sp_arithmetic::Permill;
 use sp_runtime::DispatchError;
 
@@ -702,7 +703,7 @@ fn succesful_sale_purchase_existing_account_permissioned_token() {
             <Test as crate::Config>::JoyExistentialDeposit::get() + bloat_bond,
         );
         assert_ok!(Token::join_whitelist(
-            Origin::signed(member!(2).1),
+            RuntimeOrigin::signed(member!(2).1),
             member!(2).0,
             Token::next_token_id() - 1,
             proof
@@ -978,5 +979,33 @@ fn succesful_finalize_token_sale() {
         PurchaseTokensOnSaleFixture::default().call_and_assert(Ok(()));
         increase_block_number_by(DEFAULT_SALE_DURATION);
         FinalizeTokenSaleFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn token_issue_fails_on_frozen_pallet() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        IssueTokenFixture::default().call_and_assert(Err(Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn token_sale_init_fails_on_frozen_pallet() {
+    let config = GenesisConfigBuilder::new_empty().build();
+
+    build_test_externalities(config).execute_with(|| {
+        IssueTokenFixture::default().call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        InitTokenSaleFixture::default().call_and_assert(Err(Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        InitTokenSaleFixture::default().call_and_assert(Ok(()));
     })
 }

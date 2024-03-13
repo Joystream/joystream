@@ -1,7 +1,6 @@
 use node_runtime::{
-    constants::{currency, MINUTES},
-    days, dollars, hours, ChannelStateBloatBondValue, ContentConfig, ExpectedBlockTime,
-    VideoStateBloatBondValue,
+    constants::currency, days, dollars, hours, minutes, ChannelStateBloatBondValue, ContentConfig,
+    ExpectedBlockTime, VideoStateBloatBondValue,
 };
 use sp_runtime::Perbill;
 
@@ -43,7 +42,7 @@ pub fn testing_config() -> ContentConfig {
         max_cashout_allowed: dollars!(100_000),
         min_cashout_allowed: dollars!(10),
         channel_cashouts_enabled: true,
-        min_auction_duration: MINUTES,
+        min_auction_duration: minutes!(1),
         max_auction_duration: days!(30),
         min_auction_extension_period: 0,
         max_auction_extension_period: days!(30),

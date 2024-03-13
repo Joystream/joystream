@@ -32,16 +32,15 @@ use frame_support::{
     traits::{Currency, ExistenceRequirement, Get},
     PalletId,
 };
-use frame_system::ensure_signed;
+use frame_system::{ensure_root, ensure_signed};
 use scale_info::TypeInfo;
 use sp_arithmetic::traits::{AtLeast32BitUnsigned, One, Saturating, Zero};
 use sp_runtime::{
-    traits::{AccountIdConversion, Convert, UniqueSaturatedInto},
+    traits::{AccountIdConversion, CheckedAdd},
     Permill,
 };
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::convert::TryInto;
-use sp_std::iter::Sum;
 use sp_std::vec;
 use sp_std::vec::Vec;
 use storage::UploadParameters;
@@ -75,20 +74,11 @@ pub trait Config:
     frame_system::Config + balances::Config + storage::Config + membership::Config
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// the Balance type used
-    type Balance: AtLeast32BitUnsigned
-        + FullCodec
-        + Copy
-        + Default
-        + Debug
-        + Saturating
-        + Sum
-        + From<u64>
-        + UniqueSaturatedInto<u64>
-        + Into<JoyBalanceOf<Self>>
-        + TypeInfo
+    type Balance: types::TokenBalanceTrait
+        + Into<<Self as balances::Config>::Balance>
         + MaxEncodedLen;
 
     /// The token identifier used
@@ -99,9 +89,6 @@ pub trait Config:
         + Debug
         + TypeInfo
         + MaxEncodedLen;
-
-    /// Block number to balance converter used for interest calculation
-    type BlockNumberToBalance: Convert<Self::BlockNumber, <Self as Config>::Balance>;
 
     /// The storage type used
     type DataObjectStorage: storage::DataObjectStorage<Self>;
@@ -123,13 +110,16 @@ pub trait Config:
 
     /// Member origin validator
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberIdOf<Self>,
         Self::AccountId,
     >;
 
     /// Membership info provider
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
+
+    /// Max outputs number for a transfer
+    type MaxOutputs: Get<u32>;
 }
 
 decl_storage! { generate_storage_info
@@ -148,11 +138,6 @@ decl_storage! { generate_storage_info
         /// Token Id nonce
         pub NextTokenId get(fn next_token_id) config(): T::TokenId;
 
-        /// Set for the tokens symbols
-        pub SymbolsUsed get(fn symbol_used) config():
-        map
-            hasher(blake2_128_concat) T::Hash => ();
-
         /// Bloat Bond value used during account creation
         pub BloatBond get(fn bloat_bond) config(): JoyBalanceOf<T>;
 
@@ -161,11 +146,30 @@ decl_storage! { generate_storage_info
 
         /// Minimum revenue split duration constraint
         pub MinRevenueSplitDuration get(fn min_revenue_split_duration) config(): T::BlockNumber;
+
         /// Minimum revenue split time to start constraint
         pub MinRevenueSplitTimeToStart get(fn min_revenue_split_time_to_start) config(): T::BlockNumber;
 
         /// Platform fee (percentage) charged on top of each sale purchase (in JOY) and burned
         pub SalePlatformFee get(fn sale_platform_fee) config(): Permill;
+
+        /// Percentage threshold for deactivating the amm functionality
+        pub AmmDeactivationThreshold get(fn amm_deactivation_threshold) config(): Permill = Permill::zero();
+
+        /// AMM buy transaction fee percentage
+        pub AmmBuyTxFees get(fn amm_buy_tx_fees) config(): Permill = Permill::from_perthousand(3_u32);
+
+        /// AMM sell transaction fee percentage
+        pub AmmSellTxFees get(fn amm_sell_tx_fees) config(): Permill = Permill::from_perthousand(3_u32);
+
+        /// Max patronage rate allowed
+        pub MaxYearlyPatronageRate get(fn max_yearly_patronage_rate) config(): YearlyRate = YearlyRate(Permill::from_percent(15));
+
+        /// Minimum slope parameters allowed for AMM curve
+        pub MinAmmSlopeParameter get(fn min_amm_slope_parameter) config(): TokenBalanceOf<T> = TokenBalanceOf::<T>::from(1_000_000_u32);
+
+        /// Current frozen state.
+        pub PalletFrozen get(fn pallet_frozen) : bool;
     }
 
     add_extra_genesis {
@@ -190,7 +194,7 @@ decl_storage! { generate_storage_info
             // - https://github.com/Joystream/joystream/issues/3497
             // - https://github.com/Joystream/joystream/issues/3510
 
-            let module_account_id = crate::Module::<T>::module_treasury_account();
+            let module_account_id = Module::<T>::module_treasury_account();
             let deposit = T::JoyExistentialDeposit::get();
 
             let _ = Joy::<T>::deposit_creating(&module_account_id, deposit);
@@ -201,7 +205,7 @@ decl_storage! { generate_storage_info
 decl_module! {
     pub struct Module<T: Config> for enum Call
     where
-        origin: T::Origin
+        origin: T::RuntimeOrigin
     {
 
         /// Default deposit_event() handler
@@ -237,14 +241,16 @@ decl_module! {
         /// - DB:
         ///   - `O(T)` - from the the generated weights
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::transfer(outputs.0.len() as u32, to_kb(metadata.len() as u32))]
+        #[weight = WeightInfoToken::<T>::transfer(outputs.len() as u32, to_kb(metadata.len() as u32))]
         pub fn transfer(
             origin,
             src_member_id: T::MemberId,
             token_id: T::TokenId,
-            outputs: TransfersOf<T>,
+            outputs: TransferOutputsOf<T>,
             metadata: Vec<u8>
         ) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 src_member_id
@@ -298,6 +304,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoToken::<T>::burn()]
         pub fn burn(origin, token_id: T::TokenId, member_id: T::MemberId, amount: TokenBalanceOf<T>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             // Ensure burn amount is non-zero
             ensure!(
                 !amount.is_zero(),
@@ -366,6 +374,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoToken::<T>::dust_account()]
         pub fn dust_account(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = ensure_signed(origin)?;
             let token_info = Self::ensure_token_exists(token_id)?;
             let account_to_remove_info = Self::ensure_account_data_exists(token_id, &member_id)?;
@@ -380,7 +390,7 @@ decl_module! {
             )?;
 
             // == MUTATION SAFE ==
-            AccountInfoByTokenAndMember::<T>::remove(token_id, &member_id);
+            AccountInfoByTokenAndMember::<T>::remove(token_id, member_id);
 
             TokenInfoById::<T>::mutate(token_id, |token_info| {
                 token_info.decrement_accounts_number();
@@ -417,6 +427,8 @@ decl_module! {
             proof.0.len() as u32
         )]
         pub fn join_whitelist(origin, member_id: T::MemberId, token_id: T::TokenId, proof: MerkleProofOf<T>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -424,7 +436,7 @@ decl_module! {
             let token_info = Self::ensure_token_exists(token_id)?;
 
             ensure!(
-                !AccountInfoByTokenAndMember::<T>::contains_key(token_id, &member_id),
+                !AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id),
                 Error::<T>::AccountAlreadyExists,
             );
 
@@ -525,6 +537,8 @@ decl_module! {
             member_id: T::MemberId,
             amount: TokenBalanceOf<T>,
         ) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             // Ensure non-zero amount
             ensure!(!amount.is_zero(), Error::<T>::SalePurchaseAmountIsZero);
 
@@ -586,7 +600,7 @@ decl_module! {
             let vesting_cleanup_key = if vesting_schedule.is_some() {
                     // Ensure vesting schedule can added if doesn't already exist
                     // (MaxVestingSchedulesPerAccountPerToken not exceeded)
-                    let acc_data = AccountInfoByTokenAndMember::<T>::get(token_id, &member_id);
+                    let acc_data = AccountInfoByTokenAndMember::<T>::get(token_id, member_id);
                     acc_data.ensure_can_add_or_update_vesting_schedule::<T>(
                         current_block,
                         VestingSource::Sale(sale_id)
@@ -606,7 +620,7 @@ decl_module! {
             }
 
             if account_data.is_some() {
-                AccountInfoByTokenAndMember::<T>::try_mutate(token_id, &member_id, |acc_data| {
+                AccountInfoByTokenAndMember::<T>::try_mutate(token_id, member_id, |acc_data| {
                     acc_data.process_sale_purchase::<T>(
                         sale_id,
                         amount,
@@ -684,6 +698,8 @@ decl_module! {
             member_id: T::MemberId,
             amount: TokenBalanceOf<T>,
         ) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             let sender = T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -735,7 +751,7 @@ decl_module! {
                 token_info.revenue_split.account_for_dividend(dividend_amount);
             });
 
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_info| {
                 account_info.stake(split_id, amount);
             });
 
@@ -771,6 +787,8 @@ decl_module! {
         /// # </weight>
         #[weight = WeightInfoToken::<T>::exit_revenue_split()]
         pub fn exit_revenue_split(origin, token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
             T::MemberOriginValidator::ensure_member_controller_account_origin(
                 origin,
                 member_id
@@ -796,12 +814,191 @@ decl_module! {
 
             // == MUTATION SAFE ==
 
-            AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_info| {
                 account_info.unstake();
             });
 
             Self::deposit_event(RawEvent::RevenueSplitLeft(token_id, member_id, staking_info.amount));
             Ok(())
+        }
+
+        /// Mint desired `token_id` amount into user account via JOY exchnage
+        /// Preconditions
+        /// - origin, member_id pair must be a valid authentication pair
+        /// - token_id must exist
+        /// - user usable JOY balance must be enough for buying (+ existential deposit)
+        /// - slippage tolerance constraints respected if provided
+        /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        ///
+        /// Postconditions
+        /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
+        /// - respective JOY amount transferred from user balance to amm treasury account
+        /// - event deposited
+        #[weight = WeightInfoToken::<T>::buy_on_amm_with_existing_account()]
+        fn buy_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
+            if amount.is_zero() {
+                return Ok(()); // noop
+            }
+
+            let sender = ensure_signed(origin.clone())?;
+
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
+
+            let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
+            let amm_treasury_account = Self::amm_treasury_account(token_id);
+            let price = curve.eval::<T>(amount, AmmOperation::Buy)?.into();
+            let bloat_bond = Self::bloat_bond();
+            let buy_tx_fee = Self::amm_buy_tx_fees().mul_floor(price);
+            let buy_price = buy_tx_fee.checked_add(&price).ok_or(Error::<T>::ArithmeticError)?;
+
+            let joys_required = if !user_account_data_exists {
+                buy_price.saturating_add(bloat_bond)
+            } else {
+                buy_price
+            };
+
+            Self::ensure_can_transfer_joy(&sender, joys_required)?;
+
+            // slippage tolerance check
+            if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
+                ensure!(price.saturating_sub(desired_price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+            }
+
+            // == MUTATION SAFE ==
+
+            if !user_account_data_exists {
+                let new_account_info = AccountDataOf::<T>::new_with_amount_and_bond(
+                            amount,
+                            // No restrictions on repayable bloat bond,
+                            // since only usable balance is allowed
+                            RepayableBloatBond::new(bloat_bond, None)
+                    );
+                Self::do_insert_new_account_for_token(token_id, &member_id, new_account_info);
+                Self::transfer_joy(&sender, &amm_treasury_account, bloat_bond)?;
+            } else {
+                AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                    account_data.increase_amount_by(amount);
+                });
+            }
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.increase_supply_by(amount);
+                token_data.increase_amm_bought_amount_by(amount);
+            });
+
+            // transfer tx_fee * price + price
+            Self::transfer_joy(&sender, &amm_treasury_account, buy_price)?;
+
+            // burn tx_fee * price
+            let _ = burn_from_usable::<T>(&amm_treasury_account, buy_tx_fee);
+
+            Self::deposit_event(RawEvent::TokensBoughtOnAmm(token_id, member_id, amount, buy_price));
+
+            Ok(())
+        }
+
+        /// Burn desired `token_id` amount from user account and get JOY from treasury account
+        /// Preconditions
+        /// - origin, member_id pair must be a valid authentication pair
+        /// - token_id must exist
+        /// - token_id, member_id must be valid account coordinates
+        /// - user usable CRT balance must be at least `amount`
+        /// - slippage tolerance constraints respected if provided
+        /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        /// - amm treasury account must have sufficient JOYs for the operation
+        ///
+        /// Postconditions
+        /// - `amount` burned from user account
+        /// - total supply decreased by amount
+        /// - respective JOY amount transferred from amm treasury account to user account
+        /// - event deposited
+        #[weight = WeightInfoToken::<T>::sell_on_amm()]
+        fn sell_on_amm(origin, token_id: T::TokenId, member_id: T::MemberId, amount: <T as Config>::Balance, slippage_tolerance: Option<(Permill, JoyBalanceOf<T>)>) -> DispatchResult {
+            Self::ensure_unfrozen_state()?;
+
+            if amount.is_zero() {
+               return Ok(()); // noop
+            }
+
+            let sender = ensure_signed(origin.clone())?;
+
+            T::MemberOriginValidator::ensure_member_controller_account_origin(
+                origin,
+                member_id
+            )?;
+
+            let token_data = Self::ensure_token_exists(token_id)?;
+            let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
+            let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
+
+            ensure!(
+                user_acc_data.transferrable::<T>(Self::current_block()) >= amount,
+                Error::<T>::InsufficientTokenBalance,
+            );
+
+            let amm_treasury_account = Self::amm_treasury_account(token_id);
+
+            let price = curve.eval::<T>(amount, AmmOperation::Sell)?.into();
+
+            // slippage tolerance ccurve.eval::<T>heck
+            if let Some((slippage_tolerance, desired_price)) = slippage_tolerance {
+                ensure!(desired_price.saturating_sub(price) <= slippage_tolerance.mul_floor(desired_price), Error::<T>::SlippageToleranceExceeded);
+            }
+
+            let sell_tx_fee = Self::amm_sell_tx_fees().mul_floor(price);
+            let sell_price = price.saturating_sub(sell_tx_fee);
+
+            Self::ensure_can_transfer_joy(&amm_treasury_account, sell_price)?;
+
+            // == MUTATION SAFE ==
+
+            AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_data| {
+                account_data.decrease_amount_by(amount);
+            });
+
+            TokenInfoById::<T>::mutate(token_id, |token_data| {
+                token_data.decrease_supply_by(amount);
+                token_data.decrease_amm_bought_amount_by(amount);
+            });
+
+            // transfer the price - tx_fee * price
+            Self::transfer_joy(&amm_treasury_account, &sender, sell_price)?;
+
+            // burn tx_fee * price
+            let _ = burn_from_usable::<T>(&amm_treasury_account, sell_tx_fee);
+
+            Self::deposit_event(RawEvent::TokensSoldOnAmm(token_id, member_id, amount, sell_price));
+
+            Ok(())
+        }
+
+        /// Allows to freeze or unfreeze this pallet. Requires root origin.
+        ///
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::set_frozen_status()]
+        pub fn set_frozen_status(origin, freeze: bool) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            PalletFrozen::put(freeze);
+            Self::deposit_event(RawEvent::FrozenStatusUpdated(freeze));
         }
     }
 }
@@ -816,7 +1013,8 @@ impl<T: Config>
         T::BlockNumber,
         TokenSaleParamsOf<T>,
         UploadContextOf<T>,
-        TransfersWithVestingOf<T>,
+        TransferWithVestingOutputsOf<T>,
+        AmmParamsOf<T>,
     > for Module<T>
 {
     /// Establish whether there's an unfinalized revenue split
@@ -837,12 +1035,23 @@ impl<T: Config>
         true
     }
 
+    /// Establish whether AMM is active
+    /// Postconditions: true if token @ token_id exists && has active AMM, false otherwise
+    fn is_amm_active(token_id: T::TokenId) -> bool {
+        if let Ok(token_info) = Self::ensure_token_exists(token_id) {
+            return OfferingStateOf::<T>::ensure_amm_of::<T>(&token_info).is_ok();
+        }
+        false
+    }
+
     /// Change to permissionless
     /// Preconditions:
     /// - token by `token_id` must exist
     /// Postconditions
     /// - transfer policy of `token_id` changed to permissionless
     fn change_to_permissionless(token_id: T::TokenId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         Self::ensure_token_exists(token_id).map(|_| ())?;
 
         // == MUTATION SAFE ==
@@ -858,22 +1067,22 @@ impl<T: Config>
     /// Reduce patronage rate by amount
     /// Preconditions:
     /// - token by `token_id` must exists
-    /// - `decrement` must be less or equal than current patronage rate for `token_id`
+    /// - `target_rate` must be less or equal than current patronage rate for `token_id`
     ///
     /// Postconditions:
-    /// - patronage rate for `token_id` reduced by `decrement`
+    /// - patronage rate for `token_id` reduced to `target_rate`
     /// - no-op if `target_rate` is equal to the current patronage rate
     fn reduce_patronage_rate_to(token_id: T::TokenId, target_rate: YearlyRate) -> DispatchResult {
-        let token_info = Self::ensure_token_exists(token_id)?;
-        let target_rate_per_block =
-            BlockRate::from_yearly_rate(target_rate, T::BlocksPerYear::get());
+        Self::ensure_unfrozen_state()?;
 
-        if token_info.patronage_info.rate == target_rate_per_block {
+        let token_info = Self::ensure_token_exists(token_id)?;
+
+        if token_info.patronage_info.rate == target_rate {
             return Ok(());
         }
 
         ensure!(
-            token_info.patronage_info.rate > target_rate_per_block,
+            token_info.patronage_info.rate > target_rate,
             Error::<T>::TargetPatronageRateIsHigherThanCurrentRate,
         );
 
@@ -881,15 +1090,10 @@ impl<T: Config>
 
         let now = Self::current_block();
         TokenInfoById::<T>::mutate(token_id, |token_info| {
-            token_info.set_new_patronage_rate_at_block(target_rate_per_block, now);
+            token_info.set_new_patronage_rate_at_block::<T::BlocksPerYear>(target_rate, now);
         });
 
-        let new_yearly_rate =
-            target_rate_per_block.to_yearly_rate_representation(T::BlocksPerYear::get());
-        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(
-            token_id,
-            new_yearly_rate,
-        ));
+        Self::deposit_event(RawEvent::PatronageRateDecreasedTo(token_id, target_rate));
 
         Ok(())
     }
@@ -906,13 +1110,15 @@ impl<T: Config>
     /// - outstanding patronage credit subsequently set to 0
     /// no-op if outstanding credit is zero
     fn claim_patronage_credit(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.ensure_can_modify_supply::<T>()?;
 
         Self::ensure_account_data_exists(token_id, &member_id).map(|_| ())?;
 
         let now = Self::current_block();
-        let unclaimed_patronage = token_info.unclaimed_patronage_at_block(now);
+        let unclaimed_patronage = token_info.unclaimed_patronage_at_block::<T::BlocksPerYear>(now);
 
         if unclaimed_patronage.is_zero() {
             return Ok(());
@@ -920,7 +1126,7 @@ impl<T: Config>
 
         // == MUTATION SAFE ==
 
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |account_info| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |account_info| {
             account_info.increase_amount_by(unclaimed_patronage)
         });
 
@@ -941,14 +1147,12 @@ impl<T: Config>
     /// Issue token with specified characteristics
     ///
     /// Preconditions:
-    /// - `symbol` specified in the parameters must NOT exists in `SymbolsUsed`
     /// - `issuer_account` usable balance in JOYs >=
     ///   `initial_allocation.len() * bloat_bond + JoyExistentialDeposit`
     ///
     /// Postconditions:
     /// - token with specified characteristics is added to storage state
     /// - `NextTokenId` increased by 1
-    /// - symbol is added to `SymbolsUsed`
     /// - total bloat bond in JOY is transferred from `issuer_account` to treasury account
     /// - new token accounts are initialized based on `initial_allocation`
     fn issue_token(
@@ -956,6 +1160,8 @@ impl<T: Config>
         issuance_parameters: TokenIssuanceParametersOf<T>,
         upload_context: UploadContextOf<T>,
     ) -> Result<T::TokenId, DispatchError> {
+        Self::ensure_unfrozen_state()?;
+
         let token_id = Self::next_token_id();
         let bloat_bond = Self::bloat_bond();
         Self::validate_issuance_parameters(&issuance_parameters)?;
@@ -978,7 +1184,6 @@ impl<T: Config>
         );
 
         // == MUTATION SAFE ==
-        SymbolsUsed::<T>::insert(&token_data.symbol, ());
         TokenInfoById::<T>::insert(token_id, token_data);
         NextTokenId::<T>::put(token_id.saturating_add(T::TokenId::one()));
 
@@ -1025,12 +1230,19 @@ impl<T: Config>
         token_id: T::TokenId,
         src_member_id: T::MemberId,
         bloat_bond_payer: T::AccountId,
-        outputs: TransfersWithVestingOf<T>,
+        outputs: TransferWithVestingOutputsOf<T>,
         metadata: Vec<u8>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         // Currency transfer preconditions
-        let validated_transfers =
-            Self::ensure_can_transfer(token_id, &bloat_bond_payer, &src_member_id, outputs, true)?;
+        let validated_transfers = Self::ensure_can_transfer(
+            token_id,
+            &bloat_bond_payer,
+            &src_member_id,
+            outputs.into(),
+            true,
+        )?;
 
         // == MUTATION SAFE ==
 
@@ -1073,6 +1285,8 @@ impl<T: Config>
         auto_finalize: bool,
         sale_params: TokenSaleParamsOf<T>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let current_block = Self::current_block();
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale_id = token_data.next_sale_id;
@@ -1095,7 +1309,7 @@ impl<T: Config>
 
         // Decrease source account's tokens number by sale_params.upper_bound_quantity
         // (unsold tokens can be later recovered with `finalize_token_sale`)
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &member_id, |ad| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, member_id, |ad| {
             ad.decrease_amount_by(sale_params.upper_bound_quantity);
         });
 
@@ -1130,6 +1344,8 @@ impl<T: Config>
         new_start_block: Option<T::BlockNumber>,
         new_duration: Option<T::BlockNumber>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_data = Self::ensure_token_exists(token_id)?;
         let sale = OfferingStateOf::<T>::ensure_upcoming_sale_of::<T>(&token_data)?;
         let sale_id = token_data
@@ -1180,14 +1396,15 @@ impl<T: Config>
     ///
     /// Postconditions:
     /// - token data @ `token_Id` removed from storage
-    /// - `symbol` for `token_id` removed
     fn deissue_token(token_id: T::TokenId) -> DispatchResult {
-        let token_info = Self::ensure_token_exists(token_id)?;
+        Self::ensure_unfrozen_state()?;
+
+        let _ = Self::ensure_token_exists(token_id)?;
         Self::ensure_can_deissue_token(token_id)?;
 
         // == MUTATION SAFE ==
 
-        Self::do_deissue_token(token_info.symbol, token_id);
+        Self::do_deissue_token(token_id);
 
         Self::deposit_event(RawEvent::TokenDeissued(token_id));
 
@@ -1217,6 +1434,8 @@ impl<T: Config>
         revenue_source_account: T::AccountId,
         revenue_amount: JoyBalanceOf<T>,
     ) -> Result<JoyBalanceOf<T>, DispatchError> {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.revenue_split.ensure_inactive::<T>()?;
 
@@ -1283,6 +1502,8 @@ impl<T: Config>
     /// - `token.revenue_split.leftovers()` of JOYs transferred to `account_id`
     /// - `token.revenue_split` status set to Inactive
     fn finalize_revenue_split(token_id: T::TokenId, account_id: T::AccountId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
 
         let split_info = token_info.revenue_split.ensure_active::<T>()?;
@@ -1326,6 +1547,8 @@ impl<T: Config>
     ///   `token_data.last_sale.quantity_left`
     /// - `token_data.sale` is set to None
     fn finalize_token_sale(token_id: T::TokenId) -> Result<JoyBalanceOf<T>, DispatchError> {
+        Self::ensure_unfrozen_state()?;
+
         let token_info = Self::ensure_token_exists(token_id)?;
         OfferingStateOf::<T>::ensure_idle_of::<T>(&token_info)?;
         let sale = token_info.sale.ok_or(Error::<T>::NoTokensToRecover)?;
@@ -1335,7 +1558,7 @@ impl<T: Config>
             .ok_or(Error::<T>::ArithmeticError)?;
 
         // == MUTATION SAFE ==
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &sale.tokens_source, |ad| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, sale.tokens_source, |ad| {
             ad.increase_amount_by(sale.quantity_left);
         });
         TokenInfoById::<T>::mutate(token_id, |token_info| {
@@ -1350,6 +1573,91 @@ impl<T: Config>
         ));
 
         Ok(sale.funds_collected)
+    }
+
+    /// Activate Amm functionality for the token
+    /// Preconditions
+    /// - token_id must exist
+    /// - offering state for `token_id` must be `Idle`
+    ///
+    /// Postconditions
+    /// - token `amm_curve` activated with specified parameters
+    /// - amm treasuryaccount created with existential deposit (if necessary)
+    /// - event deposited
+    fn activate_amm(
+        token_id: T::TokenId,
+        member_id: T::MemberId,
+        params: AmmParamsOf<T>,
+    ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
+        let token_data = Self::ensure_token_exists(token_id)?;
+
+        ensure!(
+            OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(),
+            Error::<T>::TokenIssuanceNotInIdleState
+        );
+
+        ensure!(
+            params.slope >= Self::min_amm_slope_parameter(),
+            Error::<T>::CurveSlopeParametersTooLow
+        );
+        let curve = AmmCurveOf::<T>::from_params::<T>(params);
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.amm_curve = Some(curve.clone())
+        });
+
+        // deposit existential deposit if the account is newly created
+        // the account is not meant to have reserved balance so usable is ok, also we don't care about locks so even free_balance should be correct
+        let amm_treasury_account = Self::amm_treasury_account(token_id);
+        if Joy::<T>::usable_balance(&amm_treasury_account).is_zero() {
+            let _ =
+                Joy::<T>::deposit_creating(&amm_treasury_account, T::JoyExistentialDeposit::get());
+        }
+
+        Self::deposit_event(RawEvent::AmmActivated(token_id, member_id, curve));
+
+        Ok(())
+    }
+
+    /// Deactivate the amm functionality
+    /// Preconditions
+    /// - (origin, member_id) must be a valid authentication pair
+    /// - token_id must be a valid
+    /// - token must be in `Amm` state
+    ///
+    /// Postconditions
+    /// - Amm Curve set to None
+    /// - state set to idle
+    /// - event deposited
+    fn deactivate_amm(token_id: T::TokenId, member_id: T::MemberId) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
+        let token_data = Self::ensure_token_exists(token_id)?;
+        Self::ensure_amm_can_be_deactivated(&token_data)?;
+
+        // == MUTATION SAFE ==
+
+        TokenInfoById::<T>::mutate(token_id, |token_data| {
+            token_data.amm_curve = None;
+        });
+
+        // burn amount exceeding existential deposit
+        let amm_treasury_account = Self::amm_treasury_account(token_id);
+        let amount_to_burn = Joy::<T>::usable_balance(&amm_treasury_account)
+            .saturating_sub(T::JoyExistentialDeposit::get());
+        let _ = burn_from_usable::<T>(&amm_treasury_account, amount_to_burn);
+
+        Self::deposit_event(RawEvent::AmmDeactivated(
+            token_id,
+            member_id,
+            amount_to_burn,
+        ));
+
+        Ok(())
     }
 }
 
@@ -1377,8 +1685,7 @@ impl<T: Config> Module<T> {
     }
 
     /// Perform token de-issuing: unfallible
-    pub(crate) fn do_deissue_token(symbol: T::Hash, token_id: T::TokenId) {
-        SymbolsUsed::<T>::remove(symbol);
+    pub(crate) fn do_deissue_token(token_id: T::TokenId) {
         TokenInfoById::<T>::remove(token_id);
         // TODO: add extra state removal as implementation progresses
     }
@@ -1388,7 +1695,7 @@ impl<T: Config> Module<T> {
         token_id: T::TokenId,
         bloat_bond_payer: &T::AccountId,
         src_member_id: &T::MemberId,
-        transfers: TransfersWithVestingOf<T>,
+        transfers: TransfersOf<T>,
         is_issuer: bool,
     ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
         // ensure token validity
@@ -1422,6 +1729,8 @@ impl<T: Config> Module<T> {
         src_member_id: &T::MemberId,
         validated_transfers: &ValidatedTransfersOf<T>,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let current_block = Self::current_block();
 
         let validated_transfers_with_bloat_bonds =
@@ -1444,7 +1753,7 @@ impl<T: Config> Module<T> {
                 ValidatedWithBloatBond::Existing(dst_member_id) => {
                     AccountInfoByTokenAndMember::<T>::try_mutate(
                         token_id,
-                        &dst_member_id,
+                        dst_member_id,
                         |account_data| {
                             if let Some(vs) = vesting_schedule {
                                 account_data.add_or_update_vesting_schedule::<T>(
@@ -1482,7 +1791,7 @@ impl<T: Config> Module<T> {
             }
         }
 
-        AccountInfoByTokenAndMember::<T>::mutate(token_id, &src_member_id, |account_data| {
+        AccountInfoByTokenAndMember::<T>::mutate(token_id, src_member_id, |account_data| {
             account_data.decrease_amount_by(validated_transfers.total_amount());
         });
 
@@ -1566,11 +1875,6 @@ impl<T: Config> Module<T> {
     pub(crate) fn validate_issuance_parameters(
         params: &TokenIssuanceParametersOf<T>,
     ) -> DispatchResult {
-        ensure!(
-            !SymbolsUsed::<T>::contains_key(&params.symbol),
-            Error::<T>::TokenSymbolAlreadyInUse,
-        );
-
         for (member_id, _) in params.initial_allocation.iter() {
             ensure!(
                 T::MembershipInfoProvider::controller_account_id(*member_id).is_ok(),
@@ -1620,6 +1924,11 @@ impl<T: Config> Module<T> {
     /// Returns the account for the current module used for both bloat bond & revenue split
     pub fn module_treasury_account() -> T::AccountId {
         <T as Config>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
+    }
+
+    /// Returns the account for the AMM treasury
+    pub fn amm_treasury_account(token_id: T::TokenId) -> T::AccountId {
+        <T as Config>::ModuleId::get().into_sub_account_truncating(("AMM", token_id))
     }
 
     pub(crate) fn validate_destination(
@@ -1681,7 +1990,7 @@ impl<T: Config> Module<T> {
 
     pub(crate) fn validate_transfers(
         token_id: T::TokenId,
-        transfers: TransfersWithVestingOf<T>,
+        transfers: TransfersOf<T>,
         transfer_policy: &TransferPolicyOf<T>,
         is_issuer: bool,
     ) -> Result<ValidatedTransfersOf<T>, DispatchError> {
@@ -1742,6 +2051,8 @@ impl<T: Config> Module<T> {
         targets: &BTreeMap<T::MemberId, TokenAllocationOf<T>>,
         bloat_bond_payer: &T::AccountId,
     ) -> DispatchResult {
+        Self::ensure_unfrozen_state()?;
+
         let current_block = Self::current_block();
         let targets_with_bloat_bonds =
             Self::pay_initial_allocation_bloat_bonds(bloat_bond_payer, targets)?;
@@ -1851,7 +2162,7 @@ impl<T: Config> Module<T> {
                     )),
                     Validated::NonExisting(member_id) => {
                         let repayable_bloat_bond = match locked_balance_used
-                            <= bloat_bond.saturating_mul((bloat_bond_index as u32).into())
+                            <= bloat_bond.saturating_mul((bloat_bond_index).into())
                         {
                             true => RepayableBloatBond::new(bloat_bond, None),
                             false => RepayableBloatBond::new(bloat_bond, Some(from.clone())),
@@ -1869,5 +2180,31 @@ impl<T: Config> Module<T> {
             )
             .collect::<Result<BTreeMap<_, _>, DispatchError>>()?;
         Ok(Transfers(transfers_set))
+    }
+
+    pub(crate) fn ensure_amm_can_be_deactivated(token: &TokenDataOf<T>) -> DispatchResult {
+        let AmmCurve {
+            provided_supply, ..
+        } = OfferingStateOf::<T>::ensure_amm_of::<T>(token)?;
+        let threshold = Self::amm_deactivation_threshold();
+        let pct_of_issuance_minted = Permill::from_rational(provided_supply, token.total_supply);
+        ensure!(
+            pct_of_issuance_minted <= threshold,
+            Error::<T>::OutstandingAmmProvidedSupplyTooLarge,
+        );
+        Ok(())
+    }
+
+    fn ensure_unfrozen_state() -> DispatchResult {
+        ensure!(!Self::pallet_frozen(), Error::<T>::PalletFrozen);
+
+        Ok(())
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

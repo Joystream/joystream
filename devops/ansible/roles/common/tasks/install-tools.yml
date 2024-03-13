@@ -31,6 +31,8 @@
       - cmake
       - dpkg
       - lsb-release
+      - protobuf-compiler
+      - libprotobuf-dev
     state: latest
 
 # ref: https://docs.docker.com/engine/install/ubuntu/#uninstall-old-versions

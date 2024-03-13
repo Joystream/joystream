@@ -1,47 +1,29 @@
-// This file is part of Substrate.
-
-// Copyright (C) 2022 Parity Technologies (UK) Ltd.
-// SPDX-License-Identifier: Apache-2.0
-
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 //! THIS FILE WAS AUTO-GENERATED USING THE SUBSTRATE BENCHMARK CLI VERSION 4.0.0-dev
-//! DATE: 2022-10-20 (Y/M/D)
+//! DATE: 2023-11-06 (Y/M/D)
+//! HOSTNAME: `ip-172-31-43-193`, CPU: `Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz`
 //!
 //! DATABASE: `RocksDb`, RUNTIME: `Development`
 //! BLOCK-NUM: `BlockId::Number(0)`
 //! SKIP-WRITE: `false`, SKIP-READ: `false`, WARMUPS: `100`
-//! STATE-VERSION: `V1`, STATE-CACHE-SIZE: `0`
-//! WEIGHT-PATH: `./../runtime/src/weights/`
+//! STATE-VERSION: `V1`, STATE-CACHE-SIZE: ``
+//! WEIGHT-PATH: `./scripts/../runtime/src/weights/`
 //! METRIC: `Average`, WEIGHT-MUL: `1.0`, WEIGHT-ADD: `0`
 
 // Executed Command:
-//   ./../target/release/joystream-node
+//   ./scripts/../target/release/joystream-node
 //   benchmark
 //   storage
-//   --base-path=/mnt/disks/local-ssd/
-//   --chain=dev
+//   --chain=prod-test
 //   --warmups=100
-//   --weight-path=./../runtime/src/weights/
+//   --weight-path=./scripts/../runtime/src/weights/
 //   --state-version
 //   1
 
 /// Storage DB weights for the `Development` runtime and `RocksDb`.
 pub mod constants {
-    use frame_support::{
-        parameter_types,
-        weights::{constants, RuntimeDbWeight},
-    };
+    use frame_support::weights::constants;
+    use sp_core::parameter_types;
+    use sp_weights::RuntimeDbWeight;
 
     parameter_types! {
         /// By default, Substrate uses `RocksDB`, so this will be the weight used throughout
@@ -51,38 +33,38 @@ pub mod constants {
             /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 3_780, 590_000
-            ///   Average:  8_997
-            ///   Median:   5_490
-            ///   Std-Dev:  43436.83
+            ///   Min, Max: 1_696, 336_369
+            ///   Average:  4_968
+            ///   Median:   2_991
+            ///   Std-Dev:  25574.72
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 8_780
-            ///   95th: 7_570
-            ///   75th: 6_340
-            read: 8_997 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 5_278
+            ///   95th: 4_072
+            ///   75th: 3_355
+            read: 4_968 * constants::WEIGHT_REF_TIME_PER_NANOS,
 
             /// Time to write one storage item.
             /// Calculated by multiplying the *Average* of all values with `1.0` and adding `0`.
             ///
             /// Stats nanoseconds:
-            ///   Min, Max: 11_740, 5_390_690
-            ///   Average:  54_966
-            ///   Median:   24_860
-            ///   Std-Dev:  398861.54
+            ///   Min, Max: 9_954, 7_566_780
+            ///   Average:  64_373
+            ///   Median:   19_318
+            ///   Std-Dev:  578848.27
             ///
             /// Percentiles nanoseconds:
-            ///   99th: 46_410
-            ///   95th: 36_880
-            ///   75th: 29_580
-            write: 54_966 * constants::WEIGHT_PER_NANOS,
+            ///   99th: 57_547
+            ///   95th: 28_325
+            ///   75th: 22_513
+            write: 64_373 * constants::WEIGHT_REF_TIME_PER_NANOS,
         };
     }
 
     #[cfg(test)]
     mod test_db_weights {
         use super::constants::RocksDbWeight as W;
-        use frame_support::weights::constants;
+        use sp_weights::constants;
 
         /// Checks that all weights exist and have sane values.
         // NOTE: If this test fails but you are sure that the generated values are fine,
@@ -91,20 +73,20 @@ pub mod constants {
         fn bound() {
             // At least 1 µs.
             assert!(
-                W::get().reads(1) >= constants::WEIGHT_PER_MICROS,
+                W::get().reads(1).ref_time() >= constants::WEIGHT_REF_TIME_PER_MICROS,
                 "Read weight should be at least 1 µs."
             );
             assert!(
-                W::get().writes(1) >= constants::WEIGHT_PER_MICROS,
+                W::get().writes(1).ref_time() >= constants::WEIGHT_REF_TIME_PER_MICROS,
                 "Write weight should be at least 1 µs."
             );
             // At most 1 ms.
             assert!(
-                W::get().reads(1) <= constants::WEIGHT_PER_MILLIS,
+                W::get().reads(1).ref_time() <= constants::WEIGHT_REF_TIME_PER_MILLIS,
                 "Read weight should be at most 1 ms."
             );
             assert!(
-                W::get().writes(1) <= constants::WEIGHT_PER_MILLIS,
+                W::get().writes(1).ref_time() <= constants::WEIGHT_REF_TIME_PER_MILLIS,
                 "Write weight should be at most 1 ms."
             );
         }

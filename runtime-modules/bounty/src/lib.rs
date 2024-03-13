@@ -121,7 +121,7 @@ use sp_runtime::{Perbill, SaturatedConversion};
 use sp_std::clone::Clone;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::convert::{TryFrom, TryInto};
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
 
 /// Main pallet-bounty trait.
@@ -129,7 +129,7 @@ pub trait Config:
     frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// Events
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// The bounty's module id, used for deriving its sovereign account ID.
     type ModuleId: Get<PalletId>;
@@ -141,7 +141,7 @@ pub trait Config:
     /// providers controller id for a member.
     type Membership: StakingAccountValidator<Self>
         + MembershipInfoProvider<Self>
-        + MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+        + MemberOriginValidator<Self::RuntimeOrigin, MemberId<Self>, Self::AccountId>;
 
     /// Weight information for extrinsics in this pallet.
     type WeightInfo: WeightInfo;
@@ -912,7 +912,7 @@ decl_error! {
 
 decl_module! {
     /// Bounty pallet Substrate Module
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -1675,7 +1675,7 @@ decl_module! {
         ) {
             let _ = BountyActorManager::<T>::ensure_bounty_actor_manager(origin, contributor.clone())?;
             ensure!(
-                BountyContributions::<T>::contains_key(&bounty_id, &contributor),
+                BountyContributions::<T>::contains_key(bounty_id, &contributor),
                 Error::<T>::InvalidContributorActorSpecified,
                 );
 
@@ -1813,7 +1813,7 @@ impl<T: Config> Module<T> {
 
         bounty_funder_manager.transfer_funds_from_bounty_account(*bounty_id, withdrawal_amount);
 
-        <BountyContributions<T>>::remove(&bounty_id, &funder);
+        <BountyContributions<T>>::remove(bounty_id, &funder);
 
         Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
             *bounty_id,
@@ -1834,7 +1834,7 @@ impl<T: Config> Module<T> {
             .transfer_funds_from_bounty_account(*bounty_id, funding.funder_state_bloat_bond_amount);
 
         //Remove contribution from
-        <BountyContributions<T>>::remove(&bounty_id, &funder);
+        <BountyContributions<T>>::remove(bounty_id, &funder);
 
         Self::deposit_event(RawEvent::FunderStateBloatBondWithdrawn(
             *bounty_id,
@@ -1930,7 +1930,7 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_switch_oracle_actors(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         current_oracle: BountyActor<MemberId<T>>,
         new_oracle: BountyActor<MemberId<T>>,
     ) -> Result<BountyActor<MemberId<T>>, DispatchError> {
@@ -2036,11 +2036,11 @@ impl<T: Config> Module<T> {
         funder: &BountyActor<MemberId<T>>,
     ) -> Result<Contribution<T>, DispatchError> {
         ensure!(
-            <BountyContributions<T>>::contains_key(&bounty_id, &funder),
+            <BountyContributions<T>>::contains_key(bounty_id, funder),
             Error::<T>::NoBountyContributionFound,
         );
 
-        let funding = <BountyContributions<T>>::get(&bounty_id, &funder);
+        let funding = <BountyContributions<T>>::get(bounty_id, funder);
 
         Ok(funding)
     }
@@ -2146,10 +2146,10 @@ impl<T: Config> Module<T> {
 
         //Check if is the first time a funder is contributiong
         //returns Contribution
-        match <BountyContributions<T>>::contains_key(&bounty_id, &funder) {
+        match <BountyContributions<T>>::contains_key(bounty_id, funder) {
             //Adds funds to an existing amount, is_first_contribution will be set to false
             true => (
-                Self::contribution_by_bounty_by_actor(bounty_id, &funder),
+                Self::contribution_by_bounty_by_actor(bounty_id, funder),
                 adjusted_amount,
                 adjusted_amount,
             ),
@@ -2380,5 +2380,12 @@ impl<T: Config> Module<T> {
         WeightInfoBounty::<T>::submit_oracle_judgment_by_council(j, k, w, r).max(
             WeightInfoBounty::<T>::submit_oracle_judgment_by_member(j, k, w, r),
         )
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

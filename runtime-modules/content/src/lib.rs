@@ -27,6 +27,7 @@ mod tests;
 mod benchmarks;
 
 mod errors;
+pub mod migrations;
 mod nft;
 mod permissions;
 mod types;
@@ -35,8 +36,8 @@ pub mod weights;
 use core::marker::PhantomData;
 use project_token::traits::PalletToken;
 use project_token::types::{
-    JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf, TransfersWithVestingOf,
-    UploadContextOf, YearlyRate,
+    AmmParamsOf, JoyBalanceOf, TokenIssuanceParametersOf, TokenSaleParamsOf,
+    TransferWithVestingOutputsOf, UploadContextOf, YearlyRate,
 };
 use sp_std::vec;
 pub use weights::WeightInfo;
@@ -71,7 +72,7 @@ use frame_support::{
     decl_event, decl_module, decl_storage,
     dispatch::{DispatchError, DispatchResult},
     ensure,
-    traits::{Currency, ExistenceRequirement, Get},
+    traits::{Currency, ExistenceRequirement, Get, StorageVersion},
     PalletId, Parameter,
 };
 
@@ -90,6 +91,14 @@ use sp_std::{borrow::ToOwned, collections::btree_set::BTreeSet, vec::Vec};
 
 type WeightInfoContent<T> = <T as Config>::WeightInfo;
 
+/// The log target of this pallet.
+pub const LOG_TARGET: &str = "runtime::content";
+
+// Nara release. enum variants removed:
+// - ContentModerationAction::DeleteVideo
+// - ContentModerationAction::DeleteChannel
+const CURRENT_STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
 /// Module configuration trait for Content Directory Module
 pub trait Config:
     frame_system::Config
@@ -104,7 +113,7 @@ pub trait Config:
     type WeightInfo: WeightInfo;
 
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Type of identifier for Videos
     type VideoId: NumericIdentifier;
@@ -184,7 +193,8 @@ pub trait Config:
         Self::BlockNumber,
         TokenSaleParamsOf<Self>,
         UploadContextOf<Self>,
-        TransfersWithVestingOf<Self>,
+        TransferWithVestingOutputsOf<Self>,
+        AmmParamsOf<Self>,
     >;
 
     /// Minimum cashout allowed limit
@@ -294,7 +304,6 @@ decl_storage! { generate_storage_info
         /// NFT limits enabled or not
         /// Can be updated in flight by the Council
         pub NftLimitsEnabled get(fn nft_limits_enabled) config(): bool;
-
     }
     add_extra_genesis {
         build(|_| {
@@ -310,7 +319,7 @@ decl_storage! { generate_storage_info
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -333,15 +342,15 @@ decl_module! {
 
         /// Exports const - default global weekly NFT limit.
         const DefaultGlobalWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultGlobalWeeklyNftLimit::get();
 
         /// Exports const - default channel daily NFT limit.
         const DefaultChannelDailyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultChannelDailyNftLimit::get();
 
         /// Exports const - default channel weekly NFT limit.
         const DefaultChannelWeeklyNftLimit: LimitPerPeriod<T::BlockNumber> =
-            T::DefaultGlobalDailyNftLimit::get();
+            T::DefaultChannelWeeklyNftLimit::get();
 
         /// Export const - min cashout allowed limits
         const MinimumCashoutAllowedLimit: BalanceOf<T> = T::MinimumCashoutAllowedLimit::get();
@@ -970,48 +979,6 @@ decl_module! {
             Self::deposit_event(RawEvent::ChannelAssetsDeletedByModerator(actor, channel_id, assets_to_remove, rationale));
         }
 
-        // extrinsics for channel deletion as moderator
-        #[weight = Module::<T>::delete_channel_as_moderator_weight(channel_bag_witness, num_objects_to_delete, rationale)]
-        pub fn delete_channel_as_moderator(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            channel_id: T::ChannelId,
-            channel_bag_witness: ChannelBagWitness,
-            num_objects_to_delete: u64,
-            rationale: Vec<u8>,
-        ) -> DispatchResult {
-
-            let sender = ensure_signed(origin)?;
-
-            // check that channel exists
-            let channel = Self::ensure_channel_exists(&channel_id)?;
-
-            // verify channel bag witness
-            Self::verify_channel_bag_witness(channel_id, &channel_bag_witness)?;
-
-            // Permissions check
-            let actions_to_perform = vec![ContentModerationAction::DeleteChannel];
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
-
-            // check that channel videos are 0
-            ensure!(channel.num_videos == 0, Error::<T>::ChannelContainsVideos);
-
-            // ensure channel bag exists and num_objects_to_delete is valid
-            Self::ensure_channel_bag_can_be_dropped(channel_id, num_objects_to_delete)?;
-
-            // try to remove the channel, slash the bloat bond
-            Self::try_to_perform_channel_deletion(&sender, channel_id, channel, true)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // deposit event
-            Self::deposit_event(RawEvent::ChannelDeletedByModerator(actor, channel_id, rationale));
-
-            Ok(())
-        }
-
         /// Extrinsic for setting channel visibility status (hidden/visible) by moderator
         ///
         /// <weight>
@@ -1303,7 +1270,7 @@ decl_module! {
                 ChannelById::<T>::mutate(channel_id, |channel| {
                     Self::increment_nft_counters(channel);
                 });
-                VideoById::<T>::mutate(&video_id, |video| video.nft_status = nft_status);
+                VideoById::<T>::mutate(video_id, |video| video.nft_status = nft_status);
             }
 
             Self::deposit_event(RawEvent::VideoUpdated(actor, video_id, params, new_data_objects_ids));
@@ -1432,55 +1399,6 @@ decl_module! {
 
             // emit the event
             Self::deposit_event(RawEvent::VideoAssetsDeletedByModerator(actor, video_id, assets_to_remove, is_nft, rationale));
-        }
-
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (A + B + C)` where:
-        /// - `A` is the value of `num_objects_to_delete`
-        /// - `B` is the value of `storage_buckets_num_witness`
-        /// - `C` is the size of `rationale` in kilobytes
-        /// - DB:
-        ///    - `O(A + B)` - from the the generated weights
-        /// # </weight>
-        #[weight = Module::<T>::delete_video_as_moderator_weight(num_objects_to_delete, storage_buckets_num_witness, rationale)]
-        pub fn delete_video_as_moderator(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            video_id: T::VideoId,
-            storage_buckets_num_witness: Option<u32>,
-            num_objects_to_delete: u64,
-            rationale: Vec<u8>,
-        ) {
-            let sender = ensure_signed(origin)?;
-
-            // check that video exists
-            let video = Self::ensure_video_exists(&video_id)?;
-
-            // get information regarding channel
-            let channel_id = video.in_channel;
-            let channel = Self::get_channel_from_video(&video);
-
-            // Permissions check
-            let actions_to_perform = vec![ContentModerationAction::DeleteVideo];
-            ensure_actor_authorized_to_perform_moderation_actions::<T>(&sender, &actor, &actions_to_perform, channel.privilege_level)?;
-
-            // ensure video can be removed
-            Self::ensure_video_can_be_removed(&video)?;
-
-            // ensure provided num_objects_to_delete is valid
-            Self::ensure_valid_video_num_objects_to_delete(&video, num_objects_to_delete)?;
-
-
-            // Try removing the video, slash the bloat bond
-            Self::try_to_perform_video_deletion(&sender, channel_id, video_id, &video, true, storage_buckets_num_witness)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            Self::deposit_event(RawEvent::VideoDeletedByModerator(actor, video_id, rationale));
         }
 
         /// Extrinsic for video visibility status (hidden/visible) setting by moderator
@@ -1747,54 +1665,6 @@ decl_module! {
             Self::deposit_event(
                 RawEvent::VideoStateBloatBondValueUpdated(
                     new_video_state_bloat_bond));
-        }
-
-        /// Claim and withdraw reward in JOY from channel account
-        ///
-        /// <weight>
-        ///
-        /// ## Weight
-        /// `O (H)` where:
-        /// - `H` is the lenght of the provided merkle `proof`
-        /// - DB:
-        ///    - O(1)
-        /// # </weight>
-        #[weight =
-            WeightInfoContent::<T>::claim_and_withdraw_member_channel_reward(proof.len() as u32)
-                .max(WeightInfoContent::<T>::claim_and_withdraw_curator_channel_reward(
-                    proof.len() as u32
-                ))]
-        pub fn claim_and_withdraw_channel_reward(
-            origin,
-            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-            proof: Vec<ProofElement<T>>,
-            item: PullPayment<T>
-        ) -> DispatchResult {
-            let (channel, reward_account, amount) =
-                Self::ensure_can_claim_channel_reward(&origin, &actor, &item, &proof)?;
-
-            // Ensure withdrawals are not paused
-            channel.ensure_feature_not_paused::<T>(PausableChannelFeature::ChannelFundsTransfer)?;
-
-            ensure_actor_authorized_to_withdraw_from_channel::<T>(origin, &actor, &channel)?;
-
-            let destination = Self::channel_funds_destination(&channel)?;
-
-            //
-            // == MUTATION_SAFE ==
-            //
-            Self::execute_channel_reward_claim(item.channel_id, &reward_account, amount);
-            // This call should (and is assumed to) never fail:
-            Self::execute_channel_balance_withdrawal(&reward_account, &destination, amount)?;
-
-            Self::deposit_event(RawEvent::ChannelRewardClaimedAndWithdrawn(
-                actor,
-                item.channel_id,
-                amount,
-                destination,
-            ));
-
-            Ok(())
         }
 
         /// Issue NFT
@@ -2539,7 +2409,7 @@ decl_module! {
             Self::withdraw_bid_payment(&participant_account_id, old_bid.amount)?;
 
             // remove
-            OpenAuctionBidByVideoAndMember::<T>::remove(&video_id, &participant_id);
+            OpenAuctionBidByVideoAndMember::<T>::remove(video_id, participant_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::AuctionBidCanceled(participant_id, video_id));
@@ -3076,6 +2946,11 @@ decl_module! {
                     T::ProjectToken::is_sale_unscheduled(token_id),
                     Error::<T>::ChannelTransfersBlockedDuringTokenSales,
                 );
+
+                ensure!(
+                    !T::ProjectToken::is_amm_active(token_id),
+                    Error::<T>::ChannelTransfersBlockedDuringActiveAmm
+                );
             }
 
             //
@@ -3083,7 +2958,7 @@ decl_module! {
             //
 
             ChannelById::<T>::mutate(
-                &channel_id,
+                channel_id,
                 |channel| channel.transfer_status = ChannelTransferStatus::PendingTransfer(pending_transfer.clone())
             );
 
@@ -3118,7 +2993,7 @@ decl_module! {
 
             if channel.transfer_status.is_pending() {
                 ChannelById::<T>::mutate(
-                    &channel_id,
+                    channel_id,
                     |channel| {
                         channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                     });
@@ -3170,7 +3045,7 @@ decl_module! {
                 Self::pay_for_channel_swap(&channel.owner, &new_owner, commitment_params.price)?;
             }
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.transfer_status = ChannelTransferStatus::NoActiveTransfer;
                 channel.owner = new_owner;
                 channel.collaborators = new_collaborators;
@@ -3295,7 +3170,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = Some(token_id);
             });
 
@@ -3420,14 +3295,14 @@ decl_module! {
         ///    - `O(A)` - from the the generated weights
         /// # </weight>
         #[weight = WeightInfoContent::<T>::creator_token_issuer_transfer(
-            outputs.0.len() as u32,
+            outputs.len() as u32,
             to_kb(metadata.len() as u32)
         )]
         pub fn creator_token_issuer_transfer(
             origin,
             actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             channel_id: T::ChannelId,
-            outputs: TransfersWithVestingOf<T>,
+            outputs: TransferWithVestingOutputsOf<T>,
             metadata: Vec<u8>
         ) {
             let channel = Self::ensure_channel_exists(&channel_id)?;
@@ -3753,10 +3628,105 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            ChannelById::<T>::mutate(&channel_id, |channel| {
+            ChannelById::<T>::mutate(channel_id, |channel| {
                 channel.creator_token_id = None;
             });
         }
+
+        /// Activate Amm functionality for token
+        #[weight = WeightInfoContent::<T>::activate_amm()]
+        pub fn activate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            params: AmmParamsOf<T>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            channel.ensure_has_no_active_transfer::<T>()?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_activate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::activate_amm(
+                token_id,
+                member_id,
+                params,
+            )?;
+
+        }
+
+        /// Deactivate Amm functionality for token
+        #[weight = WeightInfoContent::<T>::deactivate_amm()]
+        pub fn deactivate_amm(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            ensure_actor_authorized_to_deactivate_amm::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // Retrieve member_id based on actor
+            let member_id = get_member_id_of_actor::<T>(&actor)?;
+
+            // Call to ProjectToken
+            T::ProjectToken::deactivate_amm(
+                token_id,
+                member_id,
+            )?;
+
+        }
+
+        /// Allow crt issuer to update metadata for an existing token
+        #[weight = WeightInfoContent::<T>::creator_token_issuer_remark(to_kb(remark.len() as u32))]
+        pub fn creator_token_issuer_remark(
+            origin,
+            actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+            channel_id: T::ChannelId,
+            remark: Vec<u8>,
+        ) {
+            let channel = Self::ensure_channel_exists(&channel_id)?;
+
+            // Ensure token was issued
+            let token_id = channel.ensure_creator_token_issued::<T>()?;
+
+            // Permissions check
+            let _ = ensure_actor_authorized_to_issue_creator_token::<T>(
+                origin,
+                &actor,
+                &channel
+            )?;
+
+            // == MUTATION SAFE ==
+
+            Self::deposit_event(RawEvent::CreatorTokenIssuerRemarked(
+                channel_id,
+                token_id,
+                remark,
+            ));
+        }
+
+        type StorageVersion = CURRENT_STORAGE_VERSION;
     }
 }
 
@@ -4321,7 +4291,7 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_can_claim_channel_reward(
-        origin: &T::Origin,
+        origin: &T::RuntimeOrigin,
         actor: &ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         item: &PullPayment<T>,
         proof: &[ProofElement<T>],
@@ -4385,7 +4355,7 @@ impl<T: Config> Module<T> {
         amount: BalanceOf<T>,
     ) {
         T::CouncilBudgetManager::withdraw(reward_account, amount);
-        ChannelById::<T>::mutate(&channel_id, |channel| {
+        ChannelById::<T>::mutate(channel_id, |channel| {
             channel.cumulative_reward_claimed =
                 channel.cumulative_reward_claimed.saturating_add(amount)
         });
@@ -4552,10 +4522,10 @@ impl<T: Config> Module<T> {
         let a = (*num_objects_to_delete) as u32;
 
         //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
+        let b = channel_bag_witness.storage_buckets_num;
 
         //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
+        let c = channel_bag_witness.distribution_buckets_num;
 
         WeightInfoContent::<T>::delete_channel(a, b, c)
     }
@@ -4721,26 +4691,6 @@ impl<T: Config> Module<T> {
         WeightInfoContent::<T>::delete_channel_assets_as_moderator(a, b, c)
     }
 
-    // Calculates weight for delete_channel_as_moderator extrinsic.
-    fn delete_channel_as_moderator_weight(
-        channel_bag_witness: &ChannelBagWitness,
-        num_objects_to_delete: &u64,
-        rationale: &Vec<u8>,
-    ) -> Weight {
-        //num_objects_to_delete
-        let a = (*num_objects_to_delete) as u32;
-
-        //channel_bag_witness storage_buckets_num
-        let b = (*channel_bag_witness).storage_buckets_num;
-
-        //channel_bag_witness distribution_buckets_num
-        let c = (*channel_bag_witness).distribution_buckets_num;
-
-        //rationale
-        let d = to_kb((*rationale).len() as u32);
-        WeightInfoContent::<T>::delete_channel_as_moderator(a, b, c, d)
-    }
-
     // Calculates weight for set_channel_visibility_as_moderator extrinsic.
     fn set_channel_visibility_as_moderator_weight(rationale: &Vec<u8>) -> Weight {
         let a = to_kb((*rationale).len() as u32);
@@ -4771,31 +4721,6 @@ impl<T: Config> Module<T> {
         let c = to_kb((*rationale).len() as u32);
 
         WeightInfoContent::<T>::delete_video_assets_as_moderator(a, b, c)
-    }
-
-    // Calculates weight for delete_video_as_moderator extrinsic.
-    fn delete_video_as_moderator_weight(
-        num_objects_to_delete: &u64,
-        storage_buckets_num_witness: &Option<u32>,
-        rationale: &Vec<u8>,
-    ) -> Weight {
-        if (*num_objects_to_delete) > 0 {
-            //assets_to_remove
-            let a = (*num_objects_to_delete) as u32;
-
-            //storage_buckets_num_witness storage_buckets_num
-            let b = storage_buckets_num_witness.map_or(0, |v| v);
-
-            //rationale
-            let c = to_kb((*rationale).len() as u32);
-
-            WeightInfoContent::<T>::delete_video_as_moderator_with_assets(a, b, c)
-        } else {
-            //rationale
-            let a = to_kb((*rationale).len() as u32);
-
-            WeightInfoContent::<T>::delete_video_as_moderator_without_assets(a)
-        }
     }
 
     // Calculates weight for accept_channel_transfer extrinsic.
@@ -4865,7 +4790,6 @@ decl_event!(
         VideoStateBloatBondValueUpdated(Balance),
         ChannelAssetsRemoved(ContentActor, ChannelId, BTreeSet<DataObjectId>, Channel),
         ChannelDeleted(ContentActor, ChannelId),
-        ChannelDeletedByModerator(ContentActor, ChannelId, Vec<u8> /* rationale */),
         ChannelVisibilitySetByModerator(
             ContentActor,
             ChannelId,
@@ -4903,7 +4827,6 @@ decl_event!(
             BTreeSet<DataObjectId>,
         ),
         VideoDeleted(ContentActor, VideoId),
-        VideoDeletedByModerator(ContentActor, VideoId, Vec<u8> /* rationale */),
         VideoVisibilitySetByModerator(ContentActor, VideoId, bool, Vec<u8> /* rationale */),
         VideoAssetsDeletedByModerator(
             ContentActor,
@@ -4954,7 +4877,16 @@ decl_event!(
         GlobalNftLimitUpdated(NftLimitPeriod, u64),
         ChannelNftLimitUpdated(ContentActor, NftLimitPeriod, ChannelId, u64),
         ToggledNftLimits(bool),
+
         // Creator tokens
         CreatorTokenIssued(ContentActor, ChannelId, TokenId),
+        CreatorTokenIssuerRemarked(ChannelId, TokenId, Vec<u8>),
     }
 );
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
+    }
+}

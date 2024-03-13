@@ -14,8 +14,8 @@ use frame_support::traits::{
     ConstU16, ConstU32, Currency, LockIdentifier, OnFinalize, OnInitialize,
 };
 use frame_support::{
-    parameter_types, storage::weak_bounded_vec::WeakBoundedVec, traits::EnsureOneOf, StorageMap,
-    StorageValue,
+    parameter_types, storage::weak_bounded_vec::WeakBoundedVec, traits::EitherOfDiverse,
+    StorageMap, StorageValue,
 };
 use frame_system::{ensure_signed, EnsureRoot, EnsureSigned, RawOrigin};
 use rand::Rng;
@@ -72,12 +72,13 @@ impl LockComparator<u64> for Runtime {
 }
 
 impl Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -151,7 +152,7 @@ parameter_types! {
 }
 
 impl membership::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();
@@ -188,13 +189,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Config>::Origin,
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -246,7 +249,7 @@ parameter_types! {
 impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -298,8 +301,8 @@ impl frame_system::Config for Runtime {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -307,7 +310,7 @@ impl frame_system::Config for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = BlockHashCount; // ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -338,7 +341,7 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
         .build_storage::<Runtime>()
         .unwrap();
 
-    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+    let mut result = Into::<sp_io::TestExternalities>::into(t);
 
     // Make sure we are not in block 0 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
@@ -372,9 +375,9 @@ impl<T: Config<I>, I: Instance> InstanceMockUtils<T, I>
 where
     T::BlockNumber: From<u64> + Into<u64>,
 {
-    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
+    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::RuntimeOrigin {
         match origin {
-            OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
+            OriginType::Signed(account_id) => T::RuntimeOrigin::from(RawOrigin::Signed(account_id)),
             OriginType::Root => RawOrigin::Root.into(),
             OriginType::None => RawOrigin::None.into(),
             //_ => panic!("not implemented"),
@@ -454,7 +457,7 @@ where
 
         (
             <Module<T, I> as ReferendumManager<
-                <T as frame_system::Config>::Origin,
+                <T as frame_system::Config>::RuntimeOrigin,
                 <T as frame_system::Config>::AccountId,
                 <T as common::membership::MembershipTypes>::MemberId,
                 <T as frame_system::Config>::Hash,
@@ -523,7 +526,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime> as ReferendumManager<
-                <Runtime as frame_system::Config>::Origin,
+                <Runtime as frame_system::Config>::RuntimeOrigin,
                 <Runtime as frame_system::Config>::AccountId,
                 <Runtime as common::membership::MembershipTypes>::MemberId,
                 <Runtime as frame_system::Config>::Hash,
@@ -543,7 +546,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         let extra_winning_target_count = winning_target_count - 1;
 
         <Module<Runtime> as ReferendumManager<
-            <Runtime as frame_system::Config>::Origin,
+            <Runtime as frame_system::Config>::RuntimeOrigin,
             <Runtime as frame_system::Config>::AccountId,
             <Runtime as common::membership::MembershipTypes>::MemberId,
             <Runtime as frame_system::Config>::Hash,
@@ -580,7 +583,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::from(RawEvent::ReferendumStarted(
+            RuntimeEvent::from(RawEvent::ReferendumStarted(
                 winning_target_count,
                 voting_ends_at
             ))
@@ -608,7 +611,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::RevealingStageStarted(revealing_ends_at))
+            RuntimeEvent::Referendum(RawEvent::RevealingStageStarted(revealing_ends_at))
         );
     }
 
@@ -644,7 +647,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::ReferendumFinished(expected_winners,))
+            RuntimeEvent::Referendum(RawEvent::ReferendumFinished(expected_winners,))
         );
     }
 
@@ -697,7 +700,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::VoteCast(account_id, commitment, stake))
+            RuntimeEvent::Referendum(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
@@ -728,7 +731,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
+            RuntimeEvent::Referendum(RawEvent::VoteRevealed(account_id, vote_option_index, salt))
         );
     }
 
@@ -755,7 +758,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::StakeReleased(account_id))
+            RuntimeEvent::Referendum(RawEvent::StakeReleased(account_id))
         );
     }
 
@@ -776,7 +779,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
         // check if the account was added to AccountsOptedOut
         let account_id = ensure_signed(mock_origin).unwrap();
         assert!(AccountsOptedOut::<Runtime, DefaultInstance>::contains_key(
-            &account_id
+            account_id
         ));
 
         // check event was emitted
@@ -785,7 +788,7 @@ impl InstanceMocks<Runtime, DefaultInstance> {
                 .last()
                 .unwrap()
                 .event,
-            Event::Referendum(RawEvent::AccountOptedOutOfVoting(account_id))
+            RuntimeEvent::Referendum(RawEvent::AccountOptedOutOfVoting(account_id))
         );
     }
 }

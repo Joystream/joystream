@@ -71,7 +71,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 pub use errors::Error;
 pub use types::*;
@@ -92,7 +92,7 @@ pub trait Config<I: Instance = DefaultInstance>:
     frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// _Administration_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self, I>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Defines max workers number in the group.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -109,7 +109,11 @@ pub trait Config<I: Instance = DefaultInstance>:
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination.
-    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::RuntimeOrigin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
@@ -338,7 +342,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// _Working group_ substrate module.
-    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::RuntimeOrigin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -1627,11 +1631,11 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
     for Module<T, I>
 {
-    fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
+    fn ensure_worker_origin(origin: T::RuntimeOrigin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 
-    fn ensure_leader_origin(origin: T::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: T::RuntimeOrigin) -> DispatchResult {
         checks::ensure_origin_is_active_leader::<T, I>(origin)
     }
 
@@ -1690,6 +1694,13 @@ impl<T: Config<I>, I: Instance>
 
         Self::decrease_budget(amount);
 
+        Ok(())
+    }
+}
+
+impl<T: Config<I>, I: Instance> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T, I> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
         Ok(())
     }
 }

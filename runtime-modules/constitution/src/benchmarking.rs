@@ -1,15 +1,15 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 use crate::{Call, Config, ConstitutionInfo, Event, Module as Pallet};
-use frame_benchmarking::benchmarks;
+use frame_benchmarking::v1::benchmarks;
 use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
 use sp_runtime::traits::Hash;
 use sp_std::vec;
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);

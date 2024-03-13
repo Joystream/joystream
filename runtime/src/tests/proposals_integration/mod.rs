@@ -7,8 +7,11 @@ mod working_group_proposals;
 use crate::tests::{
     account_from_member_id, create_new_members, max_proposal_stake, run_to_block, setup_new_council,
 };
-use crate::{currency, MembershipWorkingGroupInstance, ProposalCancellationFee, Runtime};
+use crate::{
+    currency, MembershipWorkingGroupInstance, ProjectToken, ProposalCancellationFee, Runtime,
+};
 use codec::Encode;
+use common::FreezablePallet;
 use content::NftLimitPeriod;
 use proposals_codex::{GeneralProposalParameters, ProposalDetails};
 use proposals_engine::{
@@ -19,7 +22,7 @@ use working_group::{StakeParameters, StakePolicy};
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::Currency;
-use frame_support::{StorageMap, StorageValue};
+use frame_support::{assert_ok, StorageMap, StorageValue};
 use frame_system::RawOrigin;
 use sp_runtime::AccountId32;
 use sp_std::collections::btree_set::BTreeSet;
@@ -317,7 +320,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         cancel_proposal_fixture.cancel_and_assert(Ok(()));
 
-        let cancellation_fee = ProposalCancellationFee::get() as u128;
+        let cancellation_fee = ProposalCancellationFee::get();
 
         // Since the account_id is the staking account it neccesarily has locked funds
         // for being a candidate for a staking account.
@@ -478,7 +481,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         StakePolicy {
             stake_amount:
                 <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(
-                ) as u128,
+                ),
             leaving_unstaking_period: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinUnstakingPeriodLimit::get()
         },
         None,
@@ -492,8 +495,7 @@ fn set_membership_leader(lead_account_id: AccountId32, lead_id: u64) {
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8],
         stake_parameters: StakeParameters {
-            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get() as
-                u128,
+            stake: <Runtime as working_group::Config<MembershipWorkingGroupInstance>>::MinimumApplicationStake::get(),
             staking_account_id: lead_account_id.clone(),
         },
     };
@@ -539,7 +541,7 @@ where
         assert_eq!((self.successful_call)(), Ok(()));
 
         // Approve Proposal
-        let council_size = <Runtime as council::Config>::CouncilSize::get() as u32;
+        let council_size = <Runtime as council::Config>::CouncilSize::get();
         let mut vote_generator = VoteGenerator::new(self.proposal_id);
         for _i in 0..council_size {
             vote_generator.vote_and_assert_ok(VoteKind::Approve);
@@ -573,7 +575,7 @@ fn text_proposal_execution_succeeds() {
                 ProposalDetails::Signal(b"signal".to_vec()),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
     });
@@ -612,7 +614,7 @@ fn funding_request_proposal_execution_succeeds() {
                 }]),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         let starting_balance = Balances::usable_balance(target_account_id.clone());
 
@@ -654,7 +656,7 @@ fn veto_proposal_proposal_execution_succeeds() {
                 ProposalDetails::AmendConstitution(vec![0u8]),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -679,7 +681,7 @@ fn veto_proposal_proposal_execution_succeeds() {
                 ProposalDetails::VetoProposal(proposal_id),
             )
         })
-        .with_member_id(member_id as u64)
+        .with_member_id(member_id)
         .with_expected_proposal_id(2)
         .with_setup_enviroment(false);
 
@@ -720,11 +722,7 @@ fn set_validator_count_proposal_execution_succeeds() {
             staking_account_id.into(),
             10_000 * currency::DOLLARS,
         );
-        set_staking_account(
-            account_id.clone(),
-            staking_account_id.into(),
-            member_id as u64,
-        );
+        set_staking_account(account_id.clone(), staking_account_id.into(), member_id);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
@@ -779,7 +777,7 @@ fn amend_constitution_proposal_execution_succeeds() {
                 ProposalDetails::AmendConstitution(b"Constitution text".to_vec()),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -816,7 +814,7 @@ fn set_membership_price_proposal_execution_succeeds() {
                 ProposalDetails::SetMembershipPrice(membership_price),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -853,7 +851,7 @@ fn set_initial_invitation_balance_proposal_succeeds() {
                 ProposalDetails::SetInitialInvitationBalance(initial_invitation_balance),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -894,7 +892,7 @@ fn set_initial_invitation_count_proposal_succeeds() {
                 ProposalDetails::SetInitialInvitationCount(new_default_invite_count),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -935,7 +933,7 @@ fn set_membership_leader_invitation_quota_proposal_succeeds() {
                 ProposalDetails::SetMembershipLeadInvitationQuota(new_invite_count),
             )
         })
-        .with_member_id(member_id as u64)
+        .with_member_id(member_id)
         .with_set_member_lead(true)
         .with_lead_id(lead_id);
 
@@ -974,7 +972,7 @@ fn set_referral_cut_proposal_succeeds() {
                 ProposalDetails::SetReferralCut(referral_cut),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -1014,7 +1012,7 @@ fn set_budget_increment_proposal_succeds() {
                 ProposalDetails::SetCouncilBudgetIncrement(budget_increment),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -1056,7 +1054,7 @@ fn set_councilor_reward_proposal_succeds() {
                 ProposalDetails::SetCouncilorReward(councilor_reward),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -1078,7 +1076,7 @@ fn proposal_reactivation_succeeds() {
         let account_id = account_from_member_id(member_id);
 
         setup_new_council(1);
-        let council_size = <Runtime as council::Config>::CouncilSize::get() as u32;
+        let council_size = <Runtime as council::Config>::CouncilSize::get();
 
         let starting_block = System::block_number();
         // create proposal
@@ -1160,7 +1158,7 @@ fn update_global_nft_limit_proposal_succeeds() {
                 ProposalDetails::UpdateGlobalNftLimit(period, new_limit),
             )
         })
-        .with_member_id(member_id as u64);
+        .with_member_id(member_id);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
@@ -1172,5 +1170,79 @@ fn update_global_nft_limit_proposal_succeeds() {
             content::GlobalDailyNftLimit::<Runtime>::get().limit,
             new_limit
         );
+    });
+}
+
+#[test]
+fn freeze_pallet_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetPalletFozenStatus(true, FreezablePallet::ProjectToken),
+            )
+        })
+        .with_member_id(member_id);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(ProjectToken::pallet_frozen(), true);
+    });
+}
+
+#[test]
+fn unfreeze_pallet_proposal_succeeds() {
+    initial_test_ext().execute_with(|| {
+        // start at block 1
+        run_to_block(1);
+        let freeze_result = ProjectToken::set_frozen_status(RawOrigin::Root.into(), true);
+        assert_ok!(freeze_result);
+
+        let member_id = create_new_members(1)[0];
+        let account_id = account_from_member_id(member_id);
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            let general_proposal_parameters = GeneralProposalParameters::<Runtime> {
+                member_id,
+                title: b"title".to_vec(),
+                description: b"body".to_vec(),
+                staking_account_id: Some(account_id.clone()),
+                exact_execution_block: None,
+            };
+
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(account_id.clone()).into(),
+                general_proposal_parameters,
+                ProposalDetails::SetPalletFozenStatus(false, FreezablePallet::ProjectToken),
+            )
+        })
+        .with_member_id(member_id);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+
+        let params =
+            <Runtime as proposals_codex::Config>::SetPalletFozenStatusProposalParameters::get();
+        run_to_block(System::block_number() + params.grace_period + 1);
+
+        assert_eq!(ProjectToken::pallet_frozen(), false);
     });
 }

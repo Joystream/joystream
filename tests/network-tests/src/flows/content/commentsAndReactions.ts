@@ -3,28 +3,27 @@ import BN from 'bn.js'
 import Long from 'long'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
+import { FlowProps } from '../../Flow'
 import {
+  BanOrUnbanMemberParams,
+  BanOrUnbanMembersFixture,
   CreateChannelsAndVideosFixture,
   CreateCommentParams,
   CreateCommentsFixture,
   CreateContentStructureFixture,
   CreateMembersFixture,
+  DeleteChannelWithVideosFixture,
   DeleteCommentParams,
   DeleteCommentsFixture,
-  ReactCommentParams,
-  ReactToCommentsFixture,
-  ReactToVideosFixture,
-  ReactVideoParams,
   EditCommentParams,
   EditCommentsFixture,
   ModerateCommentParams,
   ModerateCommentsFixture,
-  DeleteChannelWithVideosFixture,
-  BanOrUnbanMemberParams,
-  BanOrUnbanMembersFixture,
+  ReactCommentParams,
+  ReactToCommentsFixture,
+  ReactToVideosFixture,
+  ReactVideoParams,
 } from '../../fixtures/content'
-import { DeleteChannelAsModeratorFixture } from '../../fixtures/content/curatorModeration/DeleteChannelAsModerator'
-import { FlowProps } from '../../Flow'
 import { createJoystreamCli } from '../utils'
 
 export default async function commentsAndReactions({ api, query }: FlowProps): Promise<void> {
@@ -287,12 +286,6 @@ export default async function commentsAndReactions({ api, query }: FlowProps): P
   // Delete videos & channels (to ensure all referencing relations are properly removed without causing QN processor crash)
   const deleteChannelWithVideosFixture = new DeleteChannelWithVideosFixture(api, query, joystreamCli, [channelIds[0]])
   await new FixtureRunner(deleteChannelWithVideosFixture).run()
-
-  // Delete channel as moderator (to ensure all referencing relations are properly removed without causing QN processor crash)
-  const deleteChannelAsModeratorFixture = new DeleteChannelAsModeratorFixture(api, query, [
-    { channelId: channelIds[1], rationale: 'Test', numOfObjectsToDelete: 2 },
-  ])
-  await new FixtureRunner(deleteChannelAsModeratorFixture).runWithQueryNodeChecks()
 
   debug('Done')
 }

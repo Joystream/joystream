@@ -83,7 +83,7 @@ use sp_runtime::{
     SaturatedConversion,
 };
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::costs::{burn_from_usable, has_sufficient_balance_for_payment};
 use common::membership::{MemberOriginValidator, MembershipInfoProvider};
@@ -106,7 +106,7 @@ pub trait Config:
     + common::membership::MembershipTypes
 {
     /// Membership module event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Defines the default membership fee.
     type DefaultMembershipPrice: Get<BalanceOf<Self>>;
@@ -430,7 +430,7 @@ decl_event! {
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -567,11 +567,11 @@ decl_module! {
 
             if let Some(new_handle_hash) = new_handle_hash {
                 // remove old handle hash
-                <MemberIdByHandleHash<T>>::remove(&membership.handle_hash);
+                <MemberIdByHandleHash<T>>::remove(membership.handle_hash);
 
                 <MemberIdByHandleHash<T>>::insert(new_handle_hash, member_id);
 
-                <MembershipById<T>>::insert(&member_id, Membership::<T> {
+                <MembershipById<T>>::insert(member_id, Membership::<T> {
                     handle_hash: new_handle_hash,
                     ..membership
                 });
@@ -649,7 +649,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(target_member_id, Membership::<T> {
                 verified: is_verified,
                 ..membership
             });
@@ -717,13 +717,13 @@ decl_module! {
             //
 
             // Decrease source member invite number.
-            <MembershipById<T>>::insert(&source_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(source_member_id, Membership::<T> {
                 invites: source_membership.invites.saturating_sub(number_of_invites),
                 ..source_membership
             });
 
             // Increase target member invite number.
-            <MembershipById<T>>::insert(&target_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(target_member_id, Membership::<T> {
                 invites: target_membership.invites.saturating_add(number_of_invites),
                 ..target_membership
             });
@@ -794,7 +794,7 @@ decl_module! {
             );
 
             // Save the updated profile.
-            <MembershipById<T>>::insert(&params.inviting_member_id, Membership::<T> {
+            <MembershipById<T>>::insert(params.inviting_member_id, Membership::<T> {
                 invites: membership.invites.saturating_sub(1),
                 ..membership
             });
@@ -1375,7 +1375,7 @@ impl<T: Config> Module<T> {
 
     // Ensure origin corresponds to the controller account of the member.
     fn ensure_member_controller_account_origin_signed(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         member_id: &T::MemberId,
     ) -> Result<Membership<T>, Error<T>> {
         // Ensure transaction is signed.
@@ -1453,9 +1453,9 @@ impl<T: Config> common::StakingAccountValidator<T> for Module<T> {
     }
 }
 
-impl<T: Config> MemberOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T> {
+impl<T: Config> MemberOriginValidator<T::RuntimeOrigin, T::MemberId, T::AccountId> for Module<T> {
     fn ensure_member_controller_account_origin(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         actor_id: T::MemberId,
     ) -> Result<T::AccountId, DispatchError> {
         let signer_account_id = ensure_signed(origin).map_err(|_| Error::<T>::UnsignedOrigin)?;
@@ -1477,5 +1477,12 @@ impl<T: Config> MembershipInfoProvider<T> for Module<T> {
         let membership = Self::ensure_membership(member_id)?;
 
         Ok(membership.controller_account)
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

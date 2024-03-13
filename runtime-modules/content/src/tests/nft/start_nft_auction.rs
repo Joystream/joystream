@@ -21,7 +21,7 @@ fn start_open_auction() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -31,7 +31,7 @@ fn start_open_auction() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params.clone(),
@@ -73,7 +73,7 @@ fn start_nft_auction_video_does_not_exist() {
 
         // Make an attempt to start nft auction which corresponding video does not exist yet
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -100,7 +100,7 @@ fn start_nft_auction_not_issued() {
 
         // Make an attempt to start nft auction for nft which is not issued yet
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -125,7 +125,7 @@ fn start_nft_auction_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -135,7 +135,7 @@ fn start_nft_auction_auth_failed() {
 
         // Make an attempt to start nft auction with wrong credentials
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -160,7 +160,7 @@ fn start_nft_auction_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -170,7 +170,7 @@ fn start_nft_auction_not_authorized() {
 
         // Make an attempt to start nft auction if actor is not authorized
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(UNAUTHORIZED_MEMBER_ID),
             video_id,
             auction_params,
@@ -195,7 +195,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -203,7 +203,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
 
         // Offer nft
         assert_ok!(Content::offer_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             SECOND_MEMBER_ID,
@@ -214,7 +214,7 @@ fn start_nft_auction_transactional_status_is_not_idle() {
 
         // Make an attempt to start nft auction if nft transaction status is not idle
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -239,7 +239,7 @@ fn start_nft_auction_invalid_params() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -255,7 +255,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -277,7 +277,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -300,7 +300,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -323,7 +323,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -348,7 +348,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -373,7 +373,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -398,7 +398,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -423,7 +423,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -447,7 +447,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -469,7 +469,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -496,7 +496,7 @@ fn start_nft_auction_invalid_params() {
         };
 
         let start_nft_auction_result = Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -525,7 +525,7 @@ fn start_eng_auction_fails_with_invalid_forward_starting() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -542,7 +542,7 @@ fn start_eng_auction_fails_with_invalid_forward_starting() {
         };
 
         let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -565,7 +565,7 @@ fn start_eng_auction_fails_with_invalid_forward_starting() {
         };
 
         let start_nft_auction_result = Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params,
@@ -591,7 +591,7 @@ fn start_open_auction_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::start_open_auction(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 OpenAuctionParams::<Test>::default(),
@@ -613,7 +613,7 @@ fn start_english_auction_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::start_english_auction(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 EnglishAuctionParams::<Test>::default(),
@@ -631,7 +631,7 @@ fn start_open_auction_fails_with_non_existing_member_in_whitelist() {
         IssueNftFixture::default().call_and_assert(Ok(()));
         assert_noop!(
             Content::start_open_auction(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 OpenAuctionParams::<Test> {
@@ -656,7 +656,7 @@ fn start_english_auction_fails_with_non_existing_member_in_whitelist() {
 
         assert_noop!(
             Content::start_english_auction(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 EnglishAuctionParams::<Test> {

@@ -46,23 +46,23 @@ pub use weights::WeightInfo;
 use common::to_kb;
 use common::{working_group::WorkingGroup, BalanceKind};
 use council::Module as Council;
-use frame_support::dispatch::DispatchResultWithPostInfo;
+use frame_support::dispatch::{DispatchClass, DispatchResultWithPostInfo};
 use frame_support::traits::Get;
 use frame_support::traits::{Currency, Imbalance};
-use frame_support::weights::{DispatchClass, Weight};
+use frame_support::weights::Weight;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, print};
 use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Saturating;
 use sp_runtime::SaturatedConversion;
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 type BalanceOf<T> = <T as balances::Config>::Balance;
 type Balances<T> = balances::Pallet<T>;
 
 pub trait Config: frame_system::Config + balances::Config + council::Config {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Gets the budget of the given WorkingGroup
     fn get_working_group_budget(working_group: WorkingGroup) -> BalanceOf<Self>;
@@ -127,7 +127,7 @@ decl_storage! { generate_storage_info
 }
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         fn deposit_event() = default;
 
         /// Predefined errors
@@ -262,5 +262,12 @@ impl<T: Config> Module<T> {
                 WeightInfoUtilities::<T>::update_working_group_budget_negative()
             }
         }
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

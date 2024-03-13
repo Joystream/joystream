@@ -6,7 +6,6 @@
     deny(clippy::panic_in_result_fn),
     deny(clippy::unwrap_used),
     deny(clippy::expect_used),
-    deny(clippy::indexing_slicing),
     deny(clippy::integer_arithmetic),
     deny(clippy::match_on_vec_items),
     deny(clippy::unreachable)
@@ -20,6 +19,7 @@ pub mod locks;
 pub mod membership;
 pub mod merkle_tree;
 pub mod no_panic;
+pub mod numerical;
 pub mod storage;
 pub mod working_group;
 
@@ -67,6 +67,13 @@ pub trait StorageOwnership {
         + MaybeSerialize
         + Ord
         + PartialEq;
+}
+
+/// Defines which pallets can be frozen for the `SetPalletFozenStatus` proposal
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Debug, Eq, TypeInfo)]
+pub enum FreezablePallet {
+    ProjectToken,
 }
 
 /// Defines time in both block number and substrate time abstraction.

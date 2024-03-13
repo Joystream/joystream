@@ -47,6 +47,13 @@ jobs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
       runtime: ${{ steps.compute_shasum.outputs.shasum }}
     steps:
+      - name: Make some space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
@@ -104,7 +111,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx
+          key: ${{ runner.os }}-buildx-tests
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Build
@@ -179,7 +186,11 @@ jobs:
     name: Runtime Upgrade from production runtime
     needs: build_images
     runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
+    # Disabling until we find a workaround
+    # as it is no longer practical to start the node
+    # while importing huge state from production network in genesis block.
+    # if: github.ref != 'refs/heads/master'
+    if: false
     steps:
       # Checkout master branch
       - name: check out master repo

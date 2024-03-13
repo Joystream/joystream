@@ -165,7 +165,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
 use sp_std::iter;
 use sp_std::marker::PhantomData;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
@@ -328,7 +328,7 @@ pub trait DataObjectStorage<T: Config> {
 /// Storage trait.
 pub trait Config: frame_system::Config + balances::Config + common::MembershipTypes {
     /// Storage event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Content id representation.
     type ContentId: Parameter + Member + Codec + Default + Copy + MaybeSerialize + Ord + PartialEq;
@@ -1705,7 +1705,7 @@ decl_error! {
 
 decl_module! {
     /// _Storage_ substrate module.
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -2627,8 +2627,8 @@ decl_module! {
             //
 
             <DistributionBucketByFamilyIdById<T>>::remove(
-                &bucket_id.distribution_bucket_family_id,
-                &bucket_id.distribution_bucket_index
+                bucket_id.distribution_bucket_family_id,
+                bucket_id.distribution_bucket_index
             );
 
             Self::deposit_event(
@@ -3179,7 +3179,7 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
         //
 
         for object_id in objects.iter() {
-            DataObjectsById::<T>::swap(&src_bag_id, &object_id, &dest_bag_id, &object_id);
+            DataObjectsById::<T>::swap(&src_bag_id, object_id, &dest_bag_id, object_id);
         }
 
         // Change source bag.
@@ -3319,7 +3319,7 @@ impl<T: Config> DataObjectStorage<T> for Module<T> {
     }
 
     fn get_data_objects_id(bag_id: &BagId<T>) -> BTreeSet<T::DataObjectId> {
-        DataObjectsById::<T>::iter_prefix(&bag_id)
+        DataObjectsById::<T>::iter_prefix(bag_id)
             .map(|x| x.0)
             .collect()
     }
@@ -3530,7 +3530,7 @@ impl<T: Config> Module<T> {
 
         for bucket_id in remove_buckets.iter() {
             ensure!(
-                <StorageBucketById<T>>::contains_key(&bucket_id),
+                <StorageBucketById<T>>::contains_key(bucket_id),
                 Error::<T>::StorageBucketDoesntExist
             );
 
@@ -3672,7 +3672,7 @@ impl<T: Config> Module<T> {
         voucher_operation: OperationType,
     ) {
         // Change bag object and size counters.
-        Bags::<T>::mutate(&bag_id, |bag| match voucher_operation {
+        Bags::<T>::mutate(bag_id, |bag| match voucher_operation {
             OperationType::Increase => {
                 bag.objects_total_size = bag
                     .objects_total_size
@@ -3842,19 +3842,19 @@ impl<T: Config> Module<T> {
     pub(crate) fn static_bag(static_bag_id: &StaticBagId) -> Bag<T> {
         let bag_id: BagId<T> = static_bag_id.clone().into();
 
-        Self::bag(&bag_id)
+        Self::bag(bag_id)
     }
 
     // Check the dynamic bag existence. Static bags always exist.
     fn ensure_bag_exists(bag_id: &BagId<T>) -> Result<Bag<T>, DispatchError> {
         if let BagId::<T>::Dynamic(_) = &bag_id {
             ensure!(
-                <Bags<T>>::contains_key(&bag_id),
+                <Bags<T>>::contains_key(bag_id),
                 Error::<T>::DynamicBagDoesntExist
             );
         }
 
-        Ok(Self::bag(&bag_id))
+        Ok(Self::bag(bag_id))
     }
 
     // Check the storage bucket binding for a bag.
@@ -4298,15 +4298,15 @@ impl<T: Config> Module<T> {
 
         // Execute storage bucket updates
         for (id, updated_bucket) in updated_storage_buckets {
-            StorageBucketById::<T>::insert(&id, updated_bucket.clone());
+            StorageBucketById::<T>::insert(id, updated_bucket.clone());
             Self::deposit_event(RawEvent::VoucherChanged(id, updated_bucket.voucher.clone()));
         }
 
         // Execute distribution bucket updates
         for (id, updated_bucket) in updated_distribution_buckets {
             DistributionBucketByFamilyIdById::<T>::insert(
-                &id.distribution_bucket_family_id,
-                &id.distribution_bucket_index,
+                id.distribution_bucket_family_id,
+                id.distribution_bucket_index,
                 updated_bucket,
             );
         }
@@ -4375,7 +4375,7 @@ impl<T: Config> Module<T> {
 
         // Execute storage bucket updates
         for (id, updated_bucket) in updated_storage_buckets {
-            StorageBucketById::<T>::insert(&id, updated_bucket.clone());
+            StorageBucketById::<T>::insert(id, updated_bucket.clone());
             Self::deposit_event(RawEvent::VoucherChanged(id, updated_bucket.voucher.clone()));
         }
 
@@ -4421,7 +4421,7 @@ impl<T: Config> Module<T> {
     fn try_performing_bag_removal(account_id: &T::AccountId, bag_id: BagId<T>) -> DispatchResult {
         let bag = Self::ensure_bag_exists(&bag_id)?;
         let (remove_objs, remove_objs_size) = Self::validate_objects_to_remove(&bag_id, None)?;
-        let remove_objs_num = bag.objects_number as u64;
+        let remove_objs_num = bag.objects_number;
 
         // Get updated storage buckets: vouchers and bag counters
         let updated_storage_buckets = Self::get_updated_storage_buckets_bag_removal(
@@ -4439,15 +4439,15 @@ impl<T: Config> Module<T> {
 
         // Execute storage bucket updates
         for (id, updated_bucket) in updated_storage_buckets {
-            StorageBucketById::<T>::insert(&id, updated_bucket.clone());
+            StorageBucketById::<T>::insert(id, updated_bucket.clone());
             Self::deposit_event(RawEvent::VoucherChanged(id, updated_bucket.voucher.clone()));
         }
 
         // Execute distribution bucket updates
         for (id, updated_bucket) in updated_distribution_buckets {
             DistributionBucketByFamilyIdById::<T>::insert(
-                &id.distribution_bucket_family_id,
-                &id.distribution_bucket_index,
+                id.distribution_bucket_family_id,
+                id.distribution_bucket_index,
                 updated_bucket,
             );
         }
@@ -4541,7 +4541,7 @@ impl<T: Config> Module<T> {
                 .collect::<Result<_, DispatchError>>()?;
             Ok((objects, total_size))
         } else {
-            let objects = DataObjectsById::<T>::iter_prefix(&bag_id)
+            let objects = DataObjectsById::<T>::iter_prefix(bag_id)
                 .map(|(id, obj)| {
                     total_size = total_size.saturating_add(obj.size);
                     (id, obj)
@@ -4657,5 +4657,12 @@ impl<T: Config> Module<T> {
 
     fn pay_storage_fee(source: &T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
         pay_fee::<T>(source, None, amount).map(|_| ())
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

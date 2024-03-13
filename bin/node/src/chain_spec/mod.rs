@@ -47,7 +47,7 @@ pub use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
-    Perbill,
+    FixedU128, Perbill,
 };
 
 pub use node_runtime::constants::JOY_ADDRESS_PREFIX;
@@ -311,7 +311,6 @@ pub fn testnet_genesis(
             stakers,
             min_nominator_bond: GENESIS_MIN_NOMINATOR_BOND,
             min_validator_bond: GENESIS_MIN_VALIDATOR_BOND,
-            history_depth: 120,
             max_validator_count: Some(400),
             max_nominator_count: Some(20_000),
             ..Default::default()
@@ -325,7 +324,9 @@ pub fn testnet_genesis(
         grandpa: GrandpaConfig {
             authorities: vec![],
         },
-        transaction_payment: TransactionPaymentConfig {},
+        transaction_payment: TransactionPaymentConfig {
+            multiplier: FixedU128::from(1),
+        },
         vesting: VestingConfig {
             vesting: vesting_accounts,
         },
@@ -498,6 +499,7 @@ pub(crate) mod tests {
                 task_manager,
                 client,
                 network,
+                sync,
                 transaction_pool,
                 ..
             } = new_full_base(config, false, |_, _| ())?;
@@ -505,6 +507,7 @@ pub(crate) mod tests {
                 task_manager,
                 client,
                 network,
+                sync,
                 transaction_pool,
             ))
         });
