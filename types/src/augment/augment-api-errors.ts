@@ -1060,10 +1060,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NotCouncilor: AugmentedError<ApiType>;
       /**
-       * Cannot reduce the budget by the given amount.
-       **/
-      ReductionAmountTooLarge: AugmentedError<ApiType>;
-      /**
        * The same account is recieving funds from the same request twice
        **/
       RepeatedFundRequestAccount: AugmentedError<ApiType>;
