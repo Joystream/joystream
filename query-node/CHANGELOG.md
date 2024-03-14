@@ -1,3 +1,7 @@
+### 2.2.1
+
+- Bump deps @polkadot/api v10.7.1
+
 ### 2.1.0
 
 - Bump polkadot-js/api version bump, use newer hydra-typegen version
