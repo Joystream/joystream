@@ -8,7 +8,7 @@
   "license": "MIT",
   "bugs": "https://github.com/Joystream/joystream/issues",
   "devDependencies": {
-    "typescript": "^4.4.3"
+    "typescript": "^5.0.2"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.4.1",

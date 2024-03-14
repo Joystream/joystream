@@ -1,3 +1,8 @@
+### 2.1.0
+
+- Bump polkadot-js/api version bump, use newer hydra-typegen version
+- Fixes in mappings, when checking runtime version to pick correct event type
+
 ### 2.0.0
 
 - Add support for Nara release - CRTs, freeze pallet proposal, new chain metadata spec

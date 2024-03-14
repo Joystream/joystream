@@ -10,7 +10,7 @@
   "dependencies": {
     "@apollo/client": "^3.2.5",
     "@elastic/ecs-winston-format": "^1.1.0",
-    "@joystream/metadata-protobuf": "^2.8.0",
+    "@joystream/metadata-protobuf": "^2.15.0",
     "@joystream/opentelemetry": "1.0.0",
     "@joystream/storage-node-client": "^4.0.0",
     "@joystream/types": "^4.0.0",
@@ -82,7 +82,7 @@
     "nyc": "^14",
     "openapi-typescript": "^4.0.2",
     "ts-node": "^10.9.1",
-    "typescript": "^3.3",
+    "typescript": "^5.0.2",
     "widdershins": "^4.0.1"
   },
   "engines": {

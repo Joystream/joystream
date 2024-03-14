@@ -1,15 +1,22 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/storage';
+
+import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from '@polkadot/api-base/types';
 import type { Bytes, Null, Option, U8aFixed, Vec, WrapperOpaque, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
 import type { AccountId32, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
 import type { FrameSupportDispatchPerDispatchClassWeight, FrameSystemAccountInfo, FrameSystemEventRecord, FrameSystemLastRuntimeUpgradeInfo, FrameSystemPhase, JoystreamNodeRuntimeSessionKeys, PalletBagsListListBag, PalletBagsListListNode, PalletBalancesAccountData, PalletBalancesBalanceLock, PalletBalancesReserveData, PalletBountyBountyActor, PalletBountyBountyRecord, PalletBountyContribution, PalletBountyEntryRecord, PalletConstitutionConstitutionInfo, PalletContentChannelRecord, PalletContentLimitPerPeriod, PalletContentNftCounter, PalletContentNftTypesOpenAuctionBidRecord, PalletContentPermissionsCuratorGroupCuratorGroupRecord, PalletContentVideoRecord, PalletCouncilCandidate, PalletCouncilCouncilMember, PalletCouncilCouncilStageUpdate, PalletElectionProviderMultiPhasePhase, PalletElectionProviderMultiPhaseReadySolution, PalletElectionProviderMultiPhaseRoundSnapshot, PalletElectionProviderMultiPhaseSignedSignedSubmission, PalletElectionProviderMultiPhaseSolutionOrSnapshotSize, PalletForumCategory, PalletForumPost, PalletForumThread, PalletGrandpaStoredPendingChange, PalletGrandpaStoredState, PalletImOnlineBoundedOpaqueNetworkState, PalletImOnlineSr25519AppSr25519Public, PalletMembershipMembershipObject, PalletMembershipStakingAccountMemberBinding, PalletMultisigMultisig, PalletProjectTokenAccountData, PalletProjectTokenTokenData, PalletProposalsDiscussionDiscussionPost, PalletProposalsDiscussionDiscussionThread, PalletProposalsEngineProposal, PalletProposalsEngineVoteKind, PalletReferendumCastVote, PalletReferendumReferendumStage, PalletStakingActiveEraInfo, PalletStakingEraRewardPoints, PalletStakingExposure, PalletStakingForcing, PalletStakingNominations, PalletStakingRewardDestination, PalletStakingSlashingSlashingSpans, PalletStakingSlashingSpanRecord, PalletStakingStakingLedger, PalletStakingUnappliedSlash, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageBagRecord, PalletStorageDataObject, PalletStorageDistributionBucketFamilyRecord, PalletStorageDistributionBucketRecord, PalletStorageDynamicBagCreationPolicy, PalletStorageDynamicBagType, PalletStorageStorageBucketRecord, PalletTransactionPaymentReleases, PalletVestingReleases, PalletVestingVestingInfo, PalletWorkingGroupGroupWorker, PalletWorkingGroupJobApplication, PalletWorkingGroupOpening, SpAuthorityDiscoveryAppPublic, SpConsensusBabeAppPublic, SpConsensusBabeBabeEpochConfiguration, SpConsensusBabeDigestsNextConfigDescriptor, SpConsensusBabeDigestsPreDigest, SpCoreCryptoKeyTypeId, SpNposElectionsElectionScore, SpRuntimeDigest, SpStakingOffenceOffenceDetails } from '@polkadot/types/lookup';
 import type { Observable } from '@polkadot/types/types';
 
+export type __AugmentedQuery<ApiType extends ApiTypes> = AugmentedQuery<ApiType, () => unknown>;
+export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorageEntry<ApiType>;
+
 declare module '@polkadot/api-base/types/storage' {
-  export interface AugmentedQueries<ApiType extends ApiTypes> {
+  interface AugmentedQueries<ApiType extends ApiTypes> {
     appWorkingGroup: {
       /**
        * Count of active workers.
