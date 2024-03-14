@@ -167,7 +167,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 })
             }
             ProposalDetails::UpdateTokenPalletGovernanceParameters(parameters) => {
-                Call::ProjectToken(project_token::Call::update_governance_parameters { parameters })
+                RuntimeCall::ProjectToken(project_token::Call::update_governance_parameters {
+                    parameters,
+                })
             }
             ProposalDetails::SetPalletFozenStatus(freeze, pallet) => match pallet {
                 FreezablePallet::ProjectToken => {

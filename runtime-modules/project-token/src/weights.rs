@@ -299,10 +299,6 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(8_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
-
-    fn update_governance_parameters() -> Weight {
-		Weight::from_parts(0, 0)
-    }
 }
 
 // Default implementation for tests

@@ -190,7 +190,7 @@ decl_event! {
         /// Pallet Frozen status toggled
         /// Params:
         /// - new frozen status (true | false)
-        FrozenStatusUpdated(bool)
+        FrozenStatusUpdated(bool),
 
         /// Governance parameters updated
         /// Params:

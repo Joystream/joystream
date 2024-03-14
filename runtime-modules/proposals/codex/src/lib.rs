@@ -278,6 +278,8 @@ pub trait Config:
 
     /// `Freeze Pallet` proposal parameters
     type SetPalletFozenStatusProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 
     /// `Update pallet project token` proposal parameters
     type UpdateTokenPalletGovernanceParameters: Get<

@@ -1693,3 +1693,10 @@ pub type AmmCurveOf<T> = AmmCurve<TokenBalanceOf<T>>;
 
 /// Alias for the amm params
 pub type AmmParamsOf<T> = AmmParams<TokenBalanceOf<T>>;
+
+/// Alias for the governance parameters
+pub type GovernanceParametersOf<T> = GovernanceParameters<
+    TokenBalanceOf<T>,
+    <T as frame_system::Config>::BlockNumber,
+    JoyBalanceOf<T>,
+>;
