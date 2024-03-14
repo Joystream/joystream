@@ -19,6 +19,11 @@ import { createKeyMulti, encodeAddress, sortAddresses } from '@polkadot/util-cry
 import ExitCodes from '../ExitCodes'
 import fs from 'fs'
 
+export type Weight = {
+  refTime: number | string
+  proofSize: number | string
+}
+
 export default abstract class AdvancedTransactionsCommandBase extends AccountsCommandBase {
   async getApproveAsMultiInputFromFile(filePath: string): Promise<MultiSigApproveAsMulti> {
     return getInputJson<MultiSigApproveAsMulti>(filePath)
@@ -58,7 +63,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     threshold: number | undefined,
     others: string | undefined,
     callHash: string,
-    maxWeight: number
+    maxWeight: Weight
   ): Promise<MultiSigApproveAsMulti> {
     let argsInput: MultiSigApproveAsMulti
     let otherSignatories: string[] = []
@@ -104,7 +109,7 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     timepointIndex: number | undefined,
     others: string | undefined,
     callHash: string,
-    maxWeight: number
+    maxWeight: Weight
   ): Promise<MultiSigApproveAsMulti> {
     let argsInput: MultiSigApproveAsMulti
     let otherSignatories: string[] = []
@@ -154,14 +159,14 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     timepointIndex: number | undefined,
     others: string | undefined,
     call: string,
-    maxWeight: number
+    maxWeight: Weight
   ): Promise<MultisigAsMulti> {
     if (input) {
       const args = await this.getAsMultiInputFromFile(input)
       const otherSignatories = args.otherSignatories as string[]
       const otherSignatoriesSorted = sortAddresses(otherSignatories, JOYSTREAM_ADDRESS_PREFIX)
       args.otherSignatories = otherSignatoriesSorted
-      const maxWeightChanged = maxWeight !== (args.maxWeight as number)
+      const maxWeightChanged = maxWeight !== args.maxWeight
       if (maxWeightChanged) {
         this.warn(`"maxWeight" changed from ${args.maxWeight} to ${maxWeight}.`)
       }
@@ -266,10 +271,16 @@ export default abstract class AdvancedTransactionsCommandBase extends AccountsCo
     return unsigned
   }
 
-  async getWeight(call: Call): Promise<number> {
+  async getWeight(call: Call): Promise<Weight> {
     const callData = this.getOriginalApi().tx(call)
-    const paymentWeight = await this.getOriginalApi().rpc.payment.queryInfo(callData.toHex())
-    return paymentWeight.weight.toNumber()
+    const dispatchInfo = await this.getOriginalApi().call.transactionPaymentApi.queryInfo(
+      callData.toHex(),
+      callData.length
+    )
+    return {
+      refTime: dispatchInfo.weight.refTime.toNumber(),
+      proofSize: dispatchInfo.weight.proofSize.toNumber(),
+    }
   }
 
   createTransactionReadyForSigning(

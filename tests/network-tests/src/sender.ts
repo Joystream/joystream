@@ -124,7 +124,7 @@ export class Sender {
       const nodeNonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
       const cachedNonce = nonceCacheByAccount.get(senderKeyPair.address)
       const nonce = BN.max(nodeNonce, new BN(cachedNonce || 0))
-      const signedTx = tx.sign(senderKeyPair, { nonce, tip })
+      const signedTx = await tx.signAsync(senderKeyPair, { nonce, tip })
       sentTx = signedTx.toHuman()
       const { method, section } = signedTx.method
       try {
