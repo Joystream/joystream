@@ -1,3 +1,7 @@
+### 4.1.1
+
+- Bump deps @polkadot/api v10.7.1
+
 ### 4.1.0
 
 - Nara release.
