@@ -8,6 +8,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Balances, LockId, RuntimeEvent, System, Test, TestWorkingGroup};
+use crate::tests::mock::BlockNumberToBalance;
 use crate::types::StakeParameters;
 use crate::{
     Application, ApplyOnOpeningParameters, BalanceOf, Config, DefaultInstance, Opening,
@@ -1161,47 +1162,47 @@ impl SetStatusTextFixture {
     }
 }
 
-pub struct SpendFromBudgetFixture {
+pub struct VestedSpendFromBudgetFixture {
     origin: RawOrigin<u64>,
     account_id: u64,
     vesting_schedule: VestingInfoOf<Test>,
     rationale: Option<Vec<u8>>,
 }
 
-impl Default for SpendFromBudgetFixture {
+impl Default for VestedSpendFromBudgetFixture {
     fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
             account_id: 1,
-            vesting_schedule: VestingInfoOf::<Test>::new(100, 10, 0),
+            vesting_schedule: VestingInfoOf::<Test>::new(
+                0,
+                0,
+                <frame_system::Pallet<Test>>::block_number(),
+            ),
             rationale: None,
         }
     }
 }
 
-impl SpendFromBudgetFixture {
-    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
-        Self { origin, ..self }
-    }
-
+impl VestedSpendFromBudgetFixture {
     pub fn with_account_id(self, account_id: u64) -> Self {
         Self { account_id, ..self }
     }
 
-    pub fn with_vesting_schedule(self, total_amount: u64, per_block: u64) -> Self {
-        let vesting_schedule = VestingInfoOf::<Test>::new(total_amount, per_block, 0);
+    pub fn with_vesting_schedule(self, amount: u64, per_block: u64) -> Self {
+        let vesting_schedule = VestingInfoOf::<Test>::new(
+            amount,
+            per_block,
+            <frame_system::Pallet<Test>>::block_number(),
+        );
         Self {
             vesting_schedule,
             ..self
         }
     }
 
-    pub fn with_amount(self, amount: u64) -> Self {
-        self.with_vesting_schedule(amount, amount)
-    }
-
     pub fn call(&self) -> DispatchResult {
-        TestWorkingGroup::spend_from_budget(
+        TestWorkingGroup::vested_spend_from_budget(
             self.origin.clone().into(),
             self.account_id,
             self.vesting_schedule,
@@ -1218,8 +1219,72 @@ impl SpendFromBudgetFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         let new_budget = TestWorkingGroup::budget();
-        let new_balance = Balances::usable_balance(&self.account_id);
+        let new_balance = self
+            .vesting_schedule
+            .locked_at::<BlockNumberToBalance>(<frame_system::Pallet<Test>>::block_number());
         let amount = self.vesting_schedule.locked();
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, old_budget - amount);
+            assert_eq!(new_balance, new_balance);
+        } else {
+            assert_eq!(old_budget, new_budget);
+            assert_eq!(old_balance, new_balance);
+        }
+    }
+}
+
+pub struct SpendFromBudgetFixture {
+    origin: RawOrigin<u64>,
+    account_id: u64,
+    amount: u64,
+    rationale: Option<Vec<u8>>,
+}
+
+impl Default for SpendFromBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            account_id: 1,
+            amount: 0u64,
+            rationale: None,
+        }
+    }
+}
+
+impl SpendFromBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingGroup::spend_from_budget(
+            self.origin.clone().into(),
+            self.account_id,
+            self.amount,
+            self.rationale.clone(),
+        )
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingGroup::budget();
+        let old_balance = Balances::usable_balance(&self.account_id);
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingGroup::budget();
+        let new_balance = Balances::usable_balance(&self.account_id);
+        let amount = self.amount;
 
         if actual_result.is_ok() {
             assert_eq!(new_budget, old_budget - amount);

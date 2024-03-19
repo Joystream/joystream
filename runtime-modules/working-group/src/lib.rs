@@ -279,7 +279,14 @@ decl_event!(
         /// - Receiver Account Id.
         /// - Vesting scheduled
         /// - Rationale.
-        BudgetSpending(AccountId, VestingInfo, Option<Vec<u8>>),
+        VestedBudgetSpending(AccountId, VestingInfo, Option<Vec<u8>>),
+
+        /// Emits on budget from the working group being spent
+        /// Params:
+        /// - Receiver Account Id.
+        /// - Amount to spend
+        /// - Rationale.
+        BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
 
         /// Emits on paying the reward.
         /// Params:
@@ -1137,6 +1144,34 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash, status_text));
         }
+        #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
+        pub fn spend_from_budget(
+            origin,
+            account_id: T::AccountId,
+            amount: BalanceOf<T>,
+            rationale: Option<Vec<u8>>,
+        ) {
+            // Ensure group leader privilege.
+            checks::ensure_origin_is_active_leader::<T,I>(origin)?;
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
+
+            // Ensures that the budget is sufficient for the spending of specified amount
+            let (_, potential_missed_payment) = Self::calculate_possible_payment(amount);
+            ensure!(
+                potential_missed_payment == Zero::zero(),
+                Error::<T, I>::InsufficientBudgetForSpending
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::pay_from_budget(&account_id, amount);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
+        }
 
         /// Transfers specified amount to any account.
         /// Requires leader origin.
@@ -1149,23 +1184,23 @@ decl_module! {
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
-        pub fn spend_from_budget(
+        pub fn vested_spend_from_budget(
             origin,
             account_id: T::AccountId,
             vesting_schedule: VestingInfoOf<T>,
             rationale: Option<Vec<u8>>,
         ) {
+            let amount = T::VestingBalanceToBalance::convert(vesting_schedule.locked());
+
             // Ensure group leader privilege.
             checks::ensure_origin_is_active_leader::<T,I>(origin)?;
 
-            let amount = T::VestingBalanceToBalance::convert(vesting_schedule.locked());
-
-            ensure!(!amount.is_zero(), Error::<T, I>::CannotSpendZero);
+            ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
 
             // Ensures that the budget is sufficient for the spending of specified amount
             let (_, potential_missed_payment) = Self::calculate_possible_payment(amount);
             ensure!(
-                potential_missed_payment.is_zero(),
+                potential_missed_payment == Zero::zero(),
                 Error::<T, I>::InsufficientBudgetForSpending
             );
 
@@ -1173,36 +1208,15 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // that is the payment amount is equal to the locked amount
-            let immediate_payment = vesting_schedule.locked() == vesting_schedule.per_block();
-
-            if !immediate_payment {
-                // Get the treasury account for the balance and if it's empty deposit ExistentialDeposit
-                // we do this to avoid migrations when updating to Luxor
-                let treasury_account_id = T::ModuleId::get().into_sub_account_truncating(I::INDEX);
-                let treasury_amount = Balances::<T>::usable_balance(&treasury_account_id);
-                if treasury_amount < T::ExistentialDeposit::get() {
-                    let treasury_initial_deposit = T::ExistentialDeposit::get().saturating_sub(treasury_amount);
-                    let _ = <balances::Pallet<T>>::deposit_creating(&treasury_account_id, treasury_initial_deposit);
-                }
-
-                // first mint into the treasury account
-                Self::pay_from_budget(&treasury_account_id, amount);
-
-                // proceed with vested transfer into worker reward account
-                vesting::Pallet::<T>::vested_transfer(
-                    RawOrigin::Signed(treasury_account_id).into(),
-                    <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
-                    // TODO: fix this
-                    vesting_schedule,
-                )?;
-            } else {
-                // else mint directly into worker reward account
-                Self::pay_from_budget(&account_id, amount);
-            }
-
+            Self::pay_from_budget(&account_id, amount);
+            vesting::Pallet::<T>::force_vested_transfer(
+                RawOrigin::Root.into(),
+                <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
+                <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
+                vesting_schedule,
+            )?;
             // Trigger event
-            Self::deposit_event(RawEvent::BudgetSpending(account_id, vesting_schedule, rationale));
+            Self::deposit_event(RawEvent::VestedBudgetSpending(account_id, vesting_schedule, rationale));
         }
 
 

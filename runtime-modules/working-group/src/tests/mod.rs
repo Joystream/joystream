@@ -12,11 +12,12 @@ use crate::tests::fixtures::{
     get_current_lead_account_id, set_invitation_lock, CancelOpeningFixture,
     DecreaseWorkerStakeFixture, FundWorkingGroupBudgetFixture, IncreaseWorkerStakeFixture,
     SetBudgetFixture, SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
-    UpdateRewardAccountFixture, UpdateRewardAmountFixture, WithdrawApplicationFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, VestedSpendFromBudgetFixture,
+    WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
-    BlockNumberToBalance, ExistentialDeposit, Vesting, STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
+    BlockNumberToBalance, Vesting, STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
     STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER,
 };
 use crate::types::StakeParameters;
@@ -2344,25 +2345,22 @@ fn spend_from_budget_succeeded() {
             .with_amount(amount)
             .call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::BudgetSpending(
-            account_id,
-            VestingInfoOf::<Test>::new(amount, amount, Zero::zero()),
-            None,
-        ));
+        EventFixture::assert_last_crate_event(RawEvent::BudgetSpending(account_id, amount, None));
     });
 }
+
 #[test]
-fn spend_from_budget_succeeded_with_vesting_correctly_added() {
+fn vested_spend_from_budget_succeeded_with_vesting_correctly_added() {
     let get_vesting = |account_id: u64| -> VestingInfo<u64, u64> {
         let v = Vesting::vesting(&account_id).unwrap();
         v.last().copied().unwrap()
     };
     let account_id = 2;
     let amount = 100;
-    let mut block_number = 1;
     let vesting_period = 10;
     let per_block = amount / vesting_period;
-    let vested_amount = |block_number: u64| -> u64 { per_block * block_number };
+    let mut block_number = 1;
+    let vested_amount = |block_number: u64| -> u64 { per_block * (block_number - 1) };
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
@@ -2371,7 +2369,7 @@ fn spend_from_budget_succeeded_with_vesting_correctly_added() {
         let set_budget_fixture = SetBudgetFixture::default().with_budget(1000);
         assert_eq!(set_budget_fixture.call(), Ok(()));
 
-        assert_ok!(SpendFromBudgetFixture::default()
+        assert_ok!(VestedSpendFromBudgetFixture::default()
             .with_account_id(account_id)
             .with_vesting_schedule(amount, per_block)
             .call());
@@ -2383,7 +2381,7 @@ fn spend_from_budget_succeeded_with_vesting_correctly_added() {
         );
 
         // halfway through the vesting period amount vested should be exactly half
-        block_number += vesting_period / 2;
+        block_number += vesting_period / 2; // current block = 4
         run_to_block(block_number);
         assert_eq!(
             get_vesting(account_id).locked_at::<BlockNumberToBalance>(block_number),
@@ -2392,17 +2390,43 @@ fn spend_from_budget_succeeded_with_vesting_correctly_added() {
 
         // last block
         block_number += vesting_period / 2;
-        run_to_block(block_number);
+        run_to_block(block_number); // current block = 10
         assert!(get_vesting(account_id)
             .locked_at::<BlockNumberToBalance>(block_number)
             .is_zero());
 
         // past last block
         block_number += 1;
-        run_to_block(block_number);
+        run_to_block(block_number); // current block = 11
         assert!(get_vesting(account_id)
             .locked_at::<BlockNumberToBalance>(block_number)
             .is_zero());
+    });
+}
+
+#[test]
+fn vested_spend_from_budget_succeeded() {
+    let amount = 100u64;
+    let per_block = 10u64;
+    let account_id = 2;
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        run_to_block(1);
+
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(1000);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        VestedSpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_vesting_schedule(amount, per_block)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::VestedBudgetSpending(
+            account_id,
+            VestingInfoOf::<Test>::new(amount, per_block, 1),
+            None,
+        ));
     });
 }
 
@@ -2446,30 +2470,6 @@ fn spend_from_budget_fails_with_zero_amount() {
 }
 
 #[test]
-fn spend_from_budget_ok_with_existential_deposit_constraint() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 2;
-        let amount = 100;
-        HireLeadFixture::default().hire_lead();
-
-        run_to_block(1);
-
-        let set_budget_fixture = SetBudgetFixture::default().with_budget(1000);
-        assert_eq!(set_budget_fixture.call(), Ok(()));
-
-        assert_ok!(SpendFromBudgetFixture::default()
-            .with_account_id(account_id)
-            .with_vesting_schedule(amount, amount / 10)
-            .call());
-
-        assert!(
-            Balances::usable_balance(&TestWorkingGroup::module_treasury_account())
-                >= ExistentialDeposit::get()
-        );
-    })
-}
-
-#[test]
 fn spend_from_budget_fails_with_max_vesting_schedules_for_worker_reward_account() {
     let amount = 100u64;
     let dummy_account_id = 13u64;
@@ -2493,7 +2493,7 @@ fn spend_from_budget_fails_with_max_vesting_schedules_for_worker_reward_account(
         }
 
         assert_noop!(
-            TestWorkingGroup::spend_from_budget(
+            TestWorkingGroup::vested_spend_from_budget(
                 RawOrigin::Signed(1).into(),
                 worker_reward_account_id,
                 sched,
