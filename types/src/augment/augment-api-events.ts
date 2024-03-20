@@ -13,6 +13,8 @@ import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceSta
 
 export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>;
 
+export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>;
+
 declare module '@polkadot/api-base/types/events' {
   interface AugmentedEvents<ApiType extends ApiTypes> {
     appWorkingGroup: {
