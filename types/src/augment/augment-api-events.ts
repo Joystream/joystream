@@ -13,8 +13,6 @@ import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceSta
 
 export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>;
 
-export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>;
-
 declare module '@polkadot/api-base/types/events' {
   interface AugmentedEvents<ApiType extends ApiTypes> {
     appWorkingGroup: {
@@ -41,10 +39,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -147,6 +145,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -519,10 +525,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -625,6 +631,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -788,10 +802,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -894,6 +908,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1079,10 +1101,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -1185,6 +1207,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1337,10 +1367,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -1443,6 +1473,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1544,10 +1582,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -1650,6 +1688,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1725,10 +1771,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -1831,6 +1877,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1906,10 +1960,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -2012,6 +2066,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -2770,10 +2832,10 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Vesting scheduled
+       * - Amount to spend
        * - Rationale.
        **/
-      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
+      BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Emits on setting the group leader.
        * Params:
@@ -2876,6 +2938,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
