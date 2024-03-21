@@ -377,3 +377,4 @@ union ProposalDetails =
   | UpdateChannelPayoutsProposalDetails
   | UpdatePalletFrozenStatusProposalDetails
   | UpdateGlobalNftLimitProposalDetails
+  | DecreaseCouncilBudgetProposalDetails
