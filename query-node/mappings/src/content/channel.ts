@@ -61,7 +61,6 @@ import {
   convertChannelOwnerToMemberOrCuratorGroup,
   convertContentActor,
   getChannelOrFail,
-  mapAgentPermission,
   processAppActionMetadata,
   processChannelMetadata,
   u8aToBytes,
@@ -93,7 +92,6 @@ import {
 
 export async function content_ChannelCreated(ctx: EventContext & StoreContext): Promise<void> {
   const { store, event, block } = ctx
-  const { specVersion } = block.runtimeVersion
 
   // read event data
   const [channelId, { owner, dataObjects, channelStateBloatBond }, channelCreationParameters, rewardAccount] =
@@ -158,7 +156,7 @@ export async function content_ChannelCreated(ctx: EventContext & StoreContext): 
 }
 
 export async function content_ChannelUpdated(ctx: EventContext & StoreContext): Promise<void> {
-  const { store, event, block } = ctx
+  const { store, event } = ctx
 
   // read event data
   const [, channelId, channelUpdateParameters, newDataObjects] = new ChannelUpdatedEvent(event).params

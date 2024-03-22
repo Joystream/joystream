@@ -24,7 +24,8 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
   await new FixtureRunner(buyMembershipFixture).run()
   const [memberId] = buyMembershipFixture.getCreatedMembers()
 
-  // Create 10_000 channels
+  const existingChannelCount = await query.getChannelsCount()
+  // Create channels
   const storageBuckets = (await api.query.storage.storageBucketById.keys()).map((k) => k.args[0])
   const distributionBucketFamilies = (await api.query.storage.distributionBucketFamilyById.keys()).map((k) => k.args[0])
   const distributionBuckets = (
@@ -41,10 +42,16 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
   ).flat()
   const expectedChannelStateBloatBond = await api.getChannelStateBloatBond()
   const expectedDataObjectStateBloatBond = await api.getDataObjectStateBloatBond()
-  await api.treasuryTransferBalance(memberAddr, new BN(expectedChannelStateBloatBond).muln(10_000))
-  for (let i = 1; i <= 10; ++i) {
-    debug(`Creating channel batch no. ${i} (${i * 1000} / 10000)`)
-    const createChannelTxBatch = Array.from({ length: 1000 }, () =>
+  const numberOfBatches = 5
+  const channelsPerBatch = 1000
+  // Make sure the treasury has enough funds to cover the expected channel state bloat bond and some extra
+  await api.treasuryTransferBalance(
+    memberAddr,
+    new BN(expectedChannelStateBloatBond).muln(channelsPerBatch * numberOfBatches * 1.1)
+  )
+  for (let i = 1; i <= numberOfBatches; ++i) {
+    debug(`Creating channel batch no. ${i} (${i * channelsPerBatch} / ${channelsPerBatch * numberOfBatches})`)
+    const createChannelTxBatch = Array.from({ length: channelsPerBatch }, () =>
       api.tx.content.createChannel(
         createType('PalletContentChannelOwner', { Member: memberId }),
         createType('PalletContentChannelCreationParametersRecord', {
@@ -62,11 +69,10 @@ export async function storageSync({ api, query }: FlowProps): Promise<void> {
     await api.sendExtrinsicsAndGetResults(createChannelTxBatch, memberAddr)
   }
 
-  debug('Waiting until the query node processes 10_000 channels...')
-  // Make sure there are indeed 10_000 channels processed by the QN
+  debug('Waiting until the query node processes all new channels...')
   await query.tryQueryWithTimeout(
     () => query.getChannelsCount(),
-    (r) => assert.equal(r, 10_000),
+    (r) => assert.equal(r, existingChannelCount + numberOfBatches * channelsPerBatch),
     10_000,
     50 // 10s * 50 = 500s = 8.33 minutes timeout
   )

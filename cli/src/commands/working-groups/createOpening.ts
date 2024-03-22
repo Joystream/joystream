@@ -22,6 +22,7 @@ import Long from 'long'
 import moment from 'moment'
 import { UpcomingWorkingGroupOpeningDetailsFragment } from '../../graphql/generated/queries'
 import { DEFAULT_DATE_FORMAT } from '../../Consts'
+import { JSONSchema4 } from 'json-schema'
 
 export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase {
   static description = 'Create working group opening / upcoming opening (requires lead access)'
@@ -93,7 +94,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
     const api = this.getOriginalApi()
     const openingDefaults = rememberedInput
     const openingPrompt = new JsonSchemaPrompter<WorkingGroupOpeningInputParameters>(
-      WorkingGroupOpeningInputSchema(api),
+      WorkingGroupOpeningInputSchema(api) as JSONSchema4, // Update the type of the argument
       openingDefaults
     )
     const openingParamsJson = await openingPrompt.promptAll()

@@ -450,7 +450,9 @@ export async function members_InvitesTransferred({ store, event }: EventContext 
 export async function members_MemberInvited({ store, event, block }: EventContext & StoreContext): Promise<void> {
   const { specVersion } = block.runtimeVersion
   const [memberId, inviteMembershipParameters, maybeInvitedMemberBalance] =
-    specVersion === 1001 ? new MemberInvitedEvent_V1001(event).params : new MemberInvitedEvent_V2001(event).params
+    parseInt(specVersion.toString()) === 1001
+      ? new MemberInvitedEvent_V1001(event).params
+      : new MemberInvitedEvent_V2001(event).params
 
   const entryMethod = new MembershipEntryInvited()
   const invitedMember = await createNewMemberFromParams(store, memberId, entryMethod, inviteMembershipParameters, 0)
@@ -612,7 +614,9 @@ export async function members_MemberRemarked(ctx: EventContext & StoreContext): 
   const { event, store, block } = ctx
   const { specVersion } = block.runtimeVersion
   const [memberId, metadataBytes, payment] =
-    specVersion >= 2001 ? new MemberRemarkedEvent_V2001(event).params : new MemberRemarkedEvent_V1001(event).params
+    parseInt(specVersion.toString()) >= 2001
+      ? new MemberRemarkedEvent_V2001(event).params
+      : new MemberRemarkedEvent_V1001(event).params
 
   const member = await getMembershipById(store, memberId)
   const metadata = deserializeMetadata(MemberRemarked, metadataBytes)
