@@ -328,7 +328,7 @@ async function parseProposalDetails(
   // DecreaseCouncilBudgetProposalDetails
   else if (proposalDetails.isDecreaseCouncilBudget) {
     const details = new DecreaseCouncilBudgetProposalDetails()
-    details.amount = proposalDetails.asDecreaseCouncilBudget
+    details.amount = new BN(proposalDetails.asDecreaseCouncilBudget.toString())
     return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
