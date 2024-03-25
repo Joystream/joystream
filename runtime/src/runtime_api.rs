@@ -75,44 +75,10 @@ impl OnRuntimeUpgrade for CancelActiveAndPendingProposals {
     }
 }
 
-pub struct MigrateStakingPalletToV8;
-impl OnRuntimeUpgrade for MigrateStakingPalletToV8 {
-    fn on_runtime_upgrade() -> Weight {
-        pallet_staking::migrations::v8::migrate::<Runtime>()
-    }
-}
-
-pub struct StakingMigrationV11OldPallet;
-impl Get<&'static str> for StakingMigrationV11OldPallet {
-    fn get() -> &'static str {
-        "BagsList"
-    }
-}
-
 /// Migrations to run on runtime upgrade.
 /// Migrations will run before pallet on_runtime_upgrade hooks
 /// Always include 'CancelActiveAndPendingProposals' as first migration
-pub type Migrations = (
-    CancelActiveAndPendingProposals,
-    // == start Staking migrations (from Release v7 to Release v13)
-    MigrateStakingPalletToV8,
-    // list will not produce duplicates..
-    pallet_staking::migrations::v9::InjectValidatorsIntoVoterList<Runtime>,
-    // slash all pending slashes correctly
-    pallet_staking::migrations::v10::MigrateToV10<Runtime>,
-    // Rename BagsList to VoterList
-    pallet_staking::migrations::v11::MigrateToV11<Runtime, VoterList, StakingMigrationV11OldPallet>,
-    // Kill HistoryDepth storage
-    pallet_staking::migrations::v12::MigrateToV12<Runtime>,
-    // Migrate to new storage versioning
-    pallet_staking::migrations::v13::MigrateToV13<Runtime>,
-    // == end Staking Migrations
-    // unreserve balances from old stored calls in multisig pallet
-    pallet_multisig::migrations::v1::MigrateToV1<Runtime>,
-    pallet_election_provider_multi_phase::migrations::v1::MigrateToV1<Runtime>,
-    pallet_grandpa::migrations::CleanupSetIdSessionMap<Runtime>,
-    content::migrations::nara::MigrateToV1<Runtime>,
-);
+pub type Migrations = (CancelActiveAndPendingProposals,);
 
 /// Executive: handles dispatch to the various modules with Migrations.
 pub type Executive = frame_executive::Executive<
