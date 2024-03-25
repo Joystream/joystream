@@ -703,6 +703,20 @@ benchmarks! {
         );
     }
 
+    decrease_council_budget {
+        let reduction_amount: Balance<T> = 100u32.into();
+
+        Mutations::<T>::increase_budget(1000u32.into());
+
+    }: _ (RawOrigin::Root, reduction_amount)
+    verify {
+        assert_eq!(Council::<T>::budget(), 900u32.into(), "Budget not updated");
+        assert_last_event::<T>(
+            RawEvent::CouncilBudgetDecreased(reduction_amount).into()
+        );
+    }
+
+
     candidate_remark {
         let msg = b"test".to_vec();
         let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
@@ -860,6 +874,14 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(Council::<Runtime>::test_benchmark_fund_council_budget());
+        })
+    }
+
+    #[test]
+    fn test_decrease_council_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_decrease_council_budget());
         })
     }
 

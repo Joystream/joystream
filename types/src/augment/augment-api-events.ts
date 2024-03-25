@@ -712,6 +712,12 @@ declare module '@polkadot/api-base/types/events' {
        **/
       CandidateRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
+       * Councilor budget has been decreased
+       * Params:
+       * - Reduction amount
+       **/
+      CouncilBudgetDecreased: AugmentedEvent<ApiType, [u128]>;
+      /**
        * Fund the council budget.
        * Params:
        * - Member ID

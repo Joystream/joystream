@@ -587,6 +587,8 @@ declare module '@polkadot/types/lookup' {
     readonly asBudgetIncrementUpdated: u128;
     readonly isCouncilorRewardUpdated: boolean;
     readonly asCouncilorRewardUpdated: u128;
+    readonly isCouncilBudgetDecreased: boolean;
+    readonly asCouncilBudgetDecreased: u128;
     readonly isRequestFunded: boolean;
     readonly asRequestFunded: ITuple<[AccountId32, u128]>;
     readonly isCouncilBudgetFunded: boolean;
@@ -595,7 +597,7 @@ declare module '@polkadot/types/lookup' {
     readonly asCouncilorRemarked: ITuple<[u64, Bytes]>;
     readonly isCandidateRemarked: boolean;
     readonly asCandidateRemarked: ITuple<[u64, Bytes]>;
-    readonly type: 'AnnouncingPeriodStarted' | 'NotEnoughCandidates' | 'VotingPeriodStarted' | 'NewCandidate' | 'NewCouncilElected' | 'NewCouncilNotElected' | 'CandidacyStakeRelease' | 'CandidacyWithdraw' | 'CandidacyNoteSet' | 'RewardPayment' | 'BudgetBalanceSet' | 'BudgetRefill' | 'BudgetRefillPlanned' | 'BudgetIncrementUpdated' | 'CouncilorRewardUpdated' | 'RequestFunded' | 'CouncilBudgetFunded' | 'CouncilorRemarked' | 'CandidateRemarked';
+    readonly type: 'AnnouncingPeriodStarted' | 'NotEnoughCandidates' | 'VotingPeriodStarted' | 'NewCandidate' | 'NewCouncilElected' | 'NewCouncilNotElected' | 'CandidacyStakeRelease' | 'CandidacyWithdraw' | 'CandidacyNoteSet' | 'RewardPayment' | 'BudgetBalanceSet' | 'BudgetRefill' | 'BudgetRefillPlanned' | 'BudgetIncrementUpdated' | 'CouncilorRewardUpdated' | 'CouncilBudgetDecreased' | 'RequestFunded' | 'CouncilBudgetFunded' | 'CouncilorRemarked' | 'CandidateRemarked';
   }
 
   /** @name PalletReferendumRawEvent (70) */
@@ -1746,7 +1748,9 @@ declare module '@polkadot/types/lookup' {
     readonly asUpdateChannelPayouts: PalletContentUpdateChannelPayoutsParametersRecord;
     readonly isSetPalletFozenStatus: boolean;
     readonly asSetPalletFozenStatus: ITuple<[bool, PalletCommonFreezablePallet]>;
-    readonly type: 'Signal' | 'RuntimeUpgrade' | 'FundingRequest' | 'SetMaxValidatorCount' | 'CreateWorkingGroupLeadOpening' | 'FillWorkingGroupLeadOpening' | 'UpdateWorkingGroupBudget' | 'DecreaseWorkingGroupLeadStake' | 'SlashWorkingGroupLead' | 'SetWorkingGroupLeadReward' | 'TerminateWorkingGroupLead' | 'AmendConstitution' | 'CancelWorkingGroupLeadOpening' | 'SetMembershipPrice' | 'SetCouncilBudgetIncrement' | 'SetCouncilorReward' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'SetMembershipLeadInvitationQuota' | 'SetReferralCut' | 'VetoProposal' | 'UpdateGlobalNftLimit' | 'UpdateChannelPayouts' | 'SetPalletFozenStatus';
+    readonly isDecreaseCouncilBudget: boolean;
+    readonly asDecreaseCouncilBudget: u128;
+    readonly type: 'Signal' | 'RuntimeUpgrade' | 'FundingRequest' | 'SetMaxValidatorCount' | 'CreateWorkingGroupLeadOpening' | 'FillWorkingGroupLeadOpening' | 'UpdateWorkingGroupBudget' | 'DecreaseWorkingGroupLeadStake' | 'SlashWorkingGroupLead' | 'SetWorkingGroupLeadReward' | 'TerminateWorkingGroupLead' | 'AmendConstitution' | 'CancelWorkingGroupLeadOpening' | 'SetMembershipPrice' | 'SetCouncilBudgetIncrement' | 'SetCouncilorReward' | 'SetInitialInvitationBalance' | 'SetInitialInvitationCount' | 'SetMembershipLeadInvitationQuota' | 'SetReferralCut' | 'VetoProposal' | 'UpdateGlobalNftLimit' | 'UpdateChannelPayouts' | 'SetPalletFozenStatus' | 'DecreaseCouncilBudget';
   }
 
   /** @name PalletCommonFundingRequestParameters (214) */
@@ -3053,6 +3057,10 @@ declare module '@polkadot/types/lookup' {
     readonly asSetCouncilorReward: {
       readonly councilorReward: u128;
     } & Struct;
+    readonly isDecreaseCouncilBudget: boolean;
+    readonly asDecreaseCouncilBudget: {
+      readonly reductionAmount: u128;
+    } & Struct;
     readonly isFundingRequest: boolean;
     readonly asFundingRequest: {
       readonly fundingRequests: Vec<PalletCommonFundingRequestParameters>;
@@ -3073,7 +3081,7 @@ declare module '@polkadot/types/lookup' {
       readonly candidateId: u64;
       readonly msg: Bytes;
     } & Struct;
-    readonly type: 'AnnounceCandidacy' | 'ReleaseCandidacyStake' | 'WithdrawCandidacy' | 'SetCandidacyNote' | 'SetBudget' | 'PlanBudgetRefill' | 'SetBudgetIncrement' | 'SetCouncilorReward' | 'FundingRequest' | 'FundCouncilBudget' | 'CouncilorRemark' | 'CandidateRemark';
+    readonly type: 'AnnounceCandidacy' | 'ReleaseCandidacyStake' | 'WithdrawCandidacy' | 'SetCandidacyNote' | 'SetBudget' | 'PlanBudgetRefill' | 'SetBudgetIncrement' | 'SetCouncilorReward' | 'DecreaseCouncilBudget' | 'FundingRequest' | 'FundCouncilBudget' | 'CouncilorRemark' | 'CandidateRemark';
   }
 
   /** @name PalletReferendumCall (380) */
@@ -4717,7 +4725,8 @@ declare module '@polkadot/types/lookup' {
     readonly isZeroTokensFunding: boolean;
     readonly isCandidateDoesNotExist: boolean;
     readonly isInsufficientBalanceForTransfer: boolean;
-    readonly type: 'ArithmeticError' | 'BadOrigin' | 'CantCandidateNow' | 'CantReleaseStakeNow' | 'CandidacyStakeTooLow' | 'CantCandidateTwice' | 'ConflictingStake' | 'StakeStillNeeded' | 'NoStake' | 'InsufficientBalanceForStaking' | 'CantVoteForYourself' | 'MemberIdNotMatchAccount' | 'InvalidAccountToStakeReuse' | 'NotCandidatingNow' | 'CantWithdrawCandidacyNow' | 'NotCouncilor' | 'InsufficientFundsForFundingRequest' | 'ZeroBalanceFundRequest' | 'RepeatedFundRequestAccount' | 'EmptyFundingRequests' | 'InsufficientTokensForFunding' | 'ZeroTokensFunding' | 'CandidateDoesNotExist' | 'InsufficientBalanceForTransfer';
+    readonly isReductionAmountTooLarge: boolean;
+    readonly type: 'ArithmeticError' | 'BadOrigin' | 'CantCandidateNow' | 'CantReleaseStakeNow' | 'CandidacyStakeTooLow' | 'CantCandidateTwice' | 'ConflictingStake' | 'StakeStillNeeded' | 'NoStake' | 'InsufficientBalanceForStaking' | 'CantVoteForYourself' | 'MemberIdNotMatchAccount' | 'InvalidAccountToStakeReuse' | 'NotCandidatingNow' | 'CantWithdrawCandidacyNow' | 'NotCouncilor' | 'InsufficientFundsForFundingRequest' | 'ZeroBalanceFundRequest' | 'RepeatedFundRequestAccount' | 'EmptyFundingRequests' | 'InsufficientTokensForFunding' | 'ZeroTokensFunding' | 'CandidateDoesNotExist' | 'InsufficientBalanceForTransfer' | 'ReductionAmountTooLarge';
   }
 
   /** @name PalletReferendumReferendumStage (525) */
@@ -5586,7 +5595,8 @@ declare module '@polkadot/types/lookup' {
     readonly isInvalidLeadApplicationId: boolean;
     readonly isInvalidProposalId: boolean;
     readonly isArithmeticError: boolean;
-    readonly type: 'SignalProposalIsEmpty' | 'RuntimeProposalIsEmpty' | 'InvalidFundingRequestProposalBalance' | 'InvalidValidatorCount' | 'RequireRootOrigin' | 'InvalidCouncilElectionParameterCouncilSize' | 'InvalidCouncilElectionParameterCandidacyLimit' | 'InvalidCouncilElectionParameterMinVotingStake' | 'InvalidCouncilElectionParameterNewTermDuration' | 'InvalidCouncilElectionParameterMinCouncilStake' | 'InvalidCouncilElectionParameterRevealingPeriod' | 'InvalidCouncilElectionParameterVotingPeriod' | 'InvalidCouncilElectionParameterAnnouncingPeriod' | 'InvalidWorkingGroupBudgetCapacity' | 'InvalidSetLeadParameterCannotBeCouncilor' | 'SlashingStakeIsZero' | 'DecreasingStakeIsZero' | 'InsufficientFundsForBudgetUpdate' | 'InvalidFundingRequestProposalNumberOfAccount' | 'InvalidFundingRequestProposalRepeatedAccount' | 'InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout' | 'InvalidLeadWorkerId' | 'InvalidLeadOpeningId' | 'InvalidLeadApplicationId' | 'InvalidProposalId' | 'ArithmeticError';
+    readonly isReductionAmountZero: boolean;
+    readonly type: 'SignalProposalIsEmpty' | 'RuntimeProposalIsEmpty' | 'InvalidFundingRequestProposalBalance' | 'InvalidValidatorCount' | 'RequireRootOrigin' | 'InvalidCouncilElectionParameterCouncilSize' | 'InvalidCouncilElectionParameterCandidacyLimit' | 'InvalidCouncilElectionParameterMinVotingStake' | 'InvalidCouncilElectionParameterNewTermDuration' | 'InvalidCouncilElectionParameterMinCouncilStake' | 'InvalidCouncilElectionParameterRevealingPeriod' | 'InvalidCouncilElectionParameterVotingPeriod' | 'InvalidCouncilElectionParameterAnnouncingPeriod' | 'InvalidWorkingGroupBudgetCapacity' | 'InvalidSetLeadParameterCannotBeCouncilor' | 'SlashingStakeIsZero' | 'DecreasingStakeIsZero' | 'InsufficientFundsForBudgetUpdate' | 'InvalidFundingRequestProposalNumberOfAccount' | 'InvalidFundingRequestProposalRepeatedAccount' | 'InvalidChannelPayoutsProposalMinCashoutExceedsMaxCashout' | 'InvalidLeadWorkerId' | 'InvalidLeadOpeningId' | 'InvalidLeadApplicationId' | 'InvalidProposalId' | 'ArithmeticError' | 'ReductionAmountZero';
   }
 
   /** @name PalletWorkingGroupOpening (615) */
