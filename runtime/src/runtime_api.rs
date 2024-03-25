@@ -6,7 +6,7 @@ use pallet_transaction_payment::{FeeDetails, RuntimeDispatchInfo};
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, Get, NumberFor};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 
 use sp_std::vec::Vec;
@@ -15,7 +15,7 @@ use crate::{
     AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
     BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
     InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys, Signature,
-    Staking, System, TransactionPayment, VoterList, BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    Staking, System, TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
 
 #[cfg(feature = "try-runtime")]
