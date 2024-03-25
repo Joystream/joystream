@@ -1,3 +1,16 @@
+### 2.2.1
+
+- Bump deps @polkadot/api v10.7.1
+
+### 2.1.0
+
+- Bump polkadot-js/api version bump, use newer hydra-typegen version
+- Fixes in mappings, when checking runtime version to pick correct event type
+
+### 2.0.0
+
+- Add support for Nara release - CRTs, freeze pallet proposal, new chain metadata spec
+
 ### 1.9.0
 
 - Add `isShort` field to `Video` entity. and updated mappings to process/set this filed

@@ -3,6 +3,8 @@ use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
 use frame_support::assert_noop;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
 
 #[test]
 fn unsuccessful_init_creator_token_sale_non_existing_channel() {
@@ -131,7 +133,7 @@ fn init_token_sale_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::init_creator_token_sale(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 TokenSaleParamsOf::<Test> {
@@ -146,5 +148,20 @@ fn init_token_sale_fails_during_channel_transfer() {
             ),
             Error::<Test>::InvalidChannelTransferStatus,
         );
+    })
+}
+
+#[test]
+fn init_member_channel_creator_token_sale_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        InitCreatorTokenSaleFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        InitCreatorTokenSaleFixture::default().call_and_assert(Ok(()));
     })
 }

@@ -272,6 +272,7 @@ components:
       type: object
       required:
         - version
+        - uptime
         - queryNodeStatus
         - uploadBuckets
         - downloadBuckets
@@ -281,6 +282,8 @@ components:
       properties:
         version:
           type: string
+        uptime:
+          type: number
         nodeEnv:
           type: string
         queryNodeStatus:

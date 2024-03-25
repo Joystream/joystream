@@ -13,7 +13,7 @@ use crate::{
 
 use balances::Pallet as Balances;
 use common::{working_group::WorkingGroupAuthenticator, MembershipTypes};
-use frame_benchmarking::account;
+use frame_benchmarking::v1::account;
 use frame_support::{
     dispatch::DispatchError,
     storage::{StorageDoubleMap, StorageMap, StorageValue},
@@ -79,7 +79,6 @@ const MAX_KILOBYTES_METADATA: u32 = 100;
 
 // Creator tokens
 const MAX_CRT_INITIAL_ALLOCATION_MEMBERS: u32 = 1024;
-const MAX_CRT_ISSUER_TRANSFER_OUTPUTS: u32 = 1024;
 const DEFAULT_CRT_OWNER_ISSUANCE: u32 = 1_000_000_000;
 const DEFAULT_CRT_SALE_CAP_PER_MEMBER: u32 = 1_000_000;
 const DEFAULT_CRT_SALE_PRICE: u32 = 500_000_000;
@@ -87,7 +86,7 @@ const DEFAULT_CRT_SALE_UPPER_BOUND: u32 = DEFAULT_CRT_OWNER_ISSUANCE;
 const DEFAULT_CRT_REVENUE_SPLIT_RATE: Permill = Permill::from_percent(50);
 const DEFAULT_CRT_PATRONAGE_RATE: YearlyRate = YearlyRate(Permill::from_percent(10));
 
-const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
+const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 22] = [
     ChannelActionPermission::UpdateChannelMetadata,
     ChannelActionPermission::ManageNonVideoChannelAssets,
     ChannelActionPermission::ManageChannelCollaborators,
@@ -109,9 +108,10 @@ const CHANNEL_AGENT_PERMISSIONS: [ChannelActionPermission; 21] = [
     ChannelActionPermission::ReduceCreatorTokenPatronageRate,
     ChannelActionPermission::ManageRevenueSplits,
     ChannelActionPermission::DeissueCreatorToken,
+    ChannelActionPermission::AmmControl,
 ];
 
-const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
+const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 13] = [
     ContentModerationAction::HideVideo,
     ContentModerationAction::HideChannel,
     ContentModerationAction::ChangeChannelFeatureStatus(
@@ -125,8 +125,6 @@ const CONTENT_MODERATION_ACTIONS: [ContentModerationAction; 15] = [
     ContentModerationAction::ChangeChannelFeatureStatus(
         PausableChannelFeature::CreatorTokenIssuance,
     ),
-    ContentModerationAction::DeleteVideo,
-    ContentModerationAction::DeleteChannel,
     ContentModerationAction::DeleteVideoAssets(true),
     ContentModerationAction::DeleteVideoAssets(false),
     ContentModerationAction::DeleteNonVideoChannelAssets,
@@ -198,7 +196,7 @@ impl<T> RuntimeConfig for T where
 {
 }
 
-fn get_signed_account_id<T>(account_id: u64) -> T::Origin
+fn get_signed_account_id<T>(account_id: u64) -> T::RuntimeOrigin
 where
     T::AccountId: CreateAccountId,
     T: Config,
@@ -206,12 +204,12 @@ where
     RawOrigin::Signed(T::AccountId::create_account_id(account_id)).into()
 }
 
-fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::Event) {
+fn assert_last_event<T: Config>(expected_event: <T as frame_system::Config>::RuntimeEvent) {
     assert_past_event::<T>(expected_event, 0);
 }
 
 fn assert_past_event<T: Config>(
-    expected_event: <T as frame_system::Config>::Event,
+    expected_event: <T as frame_system::Config>::RuntimeEvent,
     index_from_last: u32,
 ) {
     let events = System::<T>::events();
@@ -220,26 +218,10 @@ fn assert_past_event<T: Config>(
     assert_eq!(event, &expected_event);
 }
 
-fn get_byte(num: u64, byte_number: u8) -> u8 {
-    ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
-}
-
 // Method to generate a distintic valid handle
 // for a membership. For each index.
 fn handle_from_id<T: membership::Config>(id: u64) -> Vec<u8> {
-    let min_handle_length = 1;
-
-    let mut handle = vec![];
-
-    for i in 0..16 {
-        handle.push(get_byte(id, i));
-    }
-
-    while handle.len() < (min_handle_length as usize) {
-        handle.push(0u8);
-    }
-
-    handle
+    id.to_be_bytes().to_vec()
 }
 
 fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
@@ -274,7 +256,7 @@ fn apply_on_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
 }
 
 fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     applicant_account_id: &T::AccountId,
     applicant_member_id: &T::MemberId,
     job_opening_type: &OpeningType,
@@ -288,7 +270,7 @@ fn add_and_apply_opening<T: Config + working_group::Config<I>, I: Instance>(
 }
 
 fn add_opening_helper<T: Config + working_group::Config<I>, I: Instance>(
-    add_opening_origin: &T::Origin,
+    add_opening_origin: &T::RuntimeOrigin,
     job_opening_type: &OpeningType,
 ) -> OpeningId {
     working_group::Module::<T, I>::add_opening(
@@ -327,7 +309,7 @@ where
     let worker_id = working_group::NextWorkerId::<T, I>::get();
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Signed(leader_acc.clone())),
+        &T::RuntimeOrigin::from(RawOrigin::Signed(leader_acc.clone())),
         &account_id,
         &member_id,
         &OpeningType::Regular,
@@ -367,7 +349,7 @@ where
     let account_id = change_member_account::<T>(member_id, acc_id);
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
-        &T::Origin::from(RawOrigin::Root),
+        &T::RuntimeOrigin::from(RawOrigin::Root),
         &account_id,
         &member_id,
         &OpeningType::Leader,
@@ -510,7 +492,7 @@ fn set_dyn_bag_creation_storage_bucket_numbers<T>(
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::update_number_of_storage_buckets_in_dynamic_bag_creation_policy(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         bag_type,
         storage_bucket_number,
     )
@@ -526,7 +508,7 @@ fn update_families_in_dynamic_bag_creation_policy<T>(
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::update_families_in_dynamic_bag_creation_policy(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         bag_type,
         families,
     )
@@ -542,7 +524,7 @@ fn set_storage_buckets_voucher_max_limits<T>(
 {
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::update_storage_buckets_voucher_max_limits(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         voucher_objects_size_limit,
         voucher_objs_number_limit,
     )
@@ -556,7 +538,7 @@ where
     // Set storage bucket in the dynamic bag creation policy to zero.
     let storage_wg_leader_signed = RawOrigin::Signed(lead_account_id);
     Storage::<T>::create_storage_bucket(
-        T::Origin::from(storage_wg_leader_signed),
+        T::RuntimeOrigin::from(storage_wg_leader_signed),
         None,
         accepting_bags,
         storage_bucket_objs_size_limit::<T>(),
@@ -581,7 +563,7 @@ where
                     .next_distribution_bucket_index;
 
             Storage::<T>::create_distribution_bucket(
-                T::Origin::from(storage_wg_leader_signed.clone()),
+                T::RuntimeOrigin::from(storage_wg_leader_signed.clone()),
                 distribution_bucket_family_id,
                 true,
             )
@@ -609,8 +591,10 @@ where
 
     let db_family_id = Storage::<T>::next_distribution_bucket_family_id();
 
-    Storage::<T>::create_distribution_bucket_family(T::Origin::from(distribution_wg_leader_signed))
-        .unwrap();
+    Storage::<T>::create_distribution_bucket_family(T::RuntimeOrigin::from(
+        distribution_wg_leader_signed,
+    ))
+    .unwrap();
 
     (
         db_family_id,
@@ -1233,10 +1217,8 @@ fn create_token_issuance_params<T: Config>(
     initial_allocation: BTreeMap<T::MemberId, TokenAllocationOf<T>>,
 ) -> TokenIssuanceParametersOf<T> {
     let transfer_policy_commit = <T as frame_system::Config>::Hashing::hash_of(b"commitment");
-    let token_symbol = <T as frame_system::Config>::Hashing::hash_of(b"CRT");
     TokenIssuanceParametersOf::<T> {
         initial_allocation,
-        symbol: token_symbol,
         transfer_policy: TransferPolicyParamsOf::<T>::Permissioned(WhitelistParamsOf::<T> {
             commitment: transfer_policy_commit,
             payload: Some(SingleDataObjectUploadParams {
@@ -1251,6 +1233,7 @@ fn create_token_issuance_params<T: Config>(
         }),
         patronage_rate: DEFAULT_CRT_PATRONAGE_RATE,
         revenue_split_rate: DEFAULT_CRT_REVENUE_SPLIT_RATE,
+        metadata: vec![],
     }
 }
 
@@ -1364,22 +1347,21 @@ fn worst_case_scenario_token_sale_params<T: Config>(
 
 fn worst_case_scenario_issuer_transfer_outputs<T: RuntimeConfig>(
     num: u32,
-) -> TransfersWithVestingOf<T>
+) -> TransferWithVestingOutputsOf<T>
 where
     T::AccountId: CreateAccountId,
 {
-    Transfers(
-        (0..num)
-            .map(|_| {
-                let (_, member_id) = member_funded_account::<T>();
-                let payment = PaymentWithVestingOf::<T> {
-                    amount: 100u32.into(),
-                    vesting_schedule: Some(default_vesting_schedule_params::<T>()),
-                };
-                (member_id, payment)
-            })
-            .collect(),
-    )
+    let _outputs = (0..num)
+        .map(|_| {
+            let (_, member_id) = member_funded_account::<T>();
+            let payment = PaymentWithVestingOf::<T> {
+                amount: 100u32.into(),
+                vesting_schedule: Some(default_vesting_schedule_params::<T>()),
+            };
+            (member_id, payment)
+        })
+        .collect::<Vec<_>>();
+    _outputs.try_into().unwrap()
 }
 
 pub fn run_to_block<T: Config>(target_block: T::BlockNumber) {
@@ -1654,7 +1636,7 @@ fn add_english_auction_bid<T: Config>(
     video_id: T::VideoId,
 ) -> BalanceOf<T> {
     let bid_amount = nft_buy_now_price::<T>() - Pallet::<T>::min_bid_step();
-    let origin: T::Origin = RawOrigin::Signed(sender).into();
+    let origin: T::RuntimeOrigin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_english_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     bid_amount
 }
@@ -1665,7 +1647,7 @@ fn add_open_auction_bid<T: Config>(
     video_id: T::VideoId,
 ) -> OpenAuctionBid<T> {
     let bid_amount = nft_buy_now_price::<T>() - 1u32.into();
-    let origin: T::Origin = RawOrigin::Signed(sender).into();
+    let origin: T::RuntimeOrigin = RawOrigin::Signed(sender).into();
     Pallet::<T>::make_open_auction_bid(origin, participant_id, video_id, bid_amount).unwrap();
     Pallet::<T>::open_auction_bid_by_video_and_member(video_id, participant_id)
 }
@@ -1675,4 +1657,16 @@ where
     T::AccountId: CreateAccountId,
 {
     set_all_channel_paused_features_except::<T>(channel_id, vec![]);
+}
+
+fn call_activate_amm<T: Config>(
+    sender: T::AccountId,
+    actor: ContentActor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
+    channel_id: T::ChannelId,
+) {
+    let params = AmmParams {
+        slope: 10_000_000u32.into(),
+        intercept: 100u32.into(),
+    };
+    Pallet::<T>::activate_amm(RawOrigin::Signed(sender).into(), actor, channel_id, params).unwrap()
 }

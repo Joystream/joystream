@@ -26,7 +26,7 @@ fn buy_nft_ok_with_proper_royalty_accounting_normal_case() {
             .call_and_assert(Ok(()));
 
         assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             VideoId::one(),
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -70,7 +70,7 @@ fn buy_nft_ok_with_proper_royalty_accounting_edge_case() {
                 .call_and_assert(Ok(()));
 
             assert_ok!(Content::buy_nft(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 SECOND_MEMBER_ID,
                 DEFAULT_NFT_PRICE,
@@ -107,7 +107,7 @@ fn buy_nft() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -121,7 +121,7 @@ fn buy_nft() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -129,7 +129,7 @@ fn buy_nft() {
 
         // Buy nft
         assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -178,7 +178,7 @@ fn buy_nft_video_does_not_exist() {
 
         // Make an attempt to buy nft which corresponding video does not exist yet
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -207,7 +207,7 @@ fn buy_nft_not_issued() {
 
         // Make an attempt to buy nft which is not issued yet
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -233,7 +233,7 @@ fn buy_nft_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -241,7 +241,7 @@ fn buy_nft_auth_failed() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -249,7 +249,7 @@ fn buy_nft_auth_failed() {
 
         // Make an attempt to buy nft with wrong credentials
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -274,7 +274,7 @@ fn buy_nft_not_in_buy_now_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -282,7 +282,7 @@ fn buy_nft_not_in_buy_now_state() {
 
         // Make an attempt to buy nft which is not in BuyNow state
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -302,7 +302,7 @@ fn buy_nft_insufficient_balance() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -312,7 +312,7 @@ fn buy_nft_insufficient_balance() {
         increase_account_balance_helper(SECOND_MEMBER_ACCOUNT_ID, ed() + DEFAULT_NFT_PRICE - 1);
         assert_noop!(
             Content::buy_nft(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 video_id,
                 SECOND_MEMBER_ID,
                 DEFAULT_NFT_PRICE,
@@ -342,7 +342,7 @@ fn buy_nft_fails_with_invalid_witness_price_provided() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test> {
@@ -361,7 +361,7 @@ fn buy_nft_fails_with_invalid_witness_price_provided() {
 
         // Seller races to set the price to 0
         assert_ok!(Content::update_buy_now_price(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             0,
@@ -369,7 +369,7 @@ fn buy_nft_fails_with_invalid_witness_price_provided() {
 
         // Attempt to buy NFT with witness_price protection
         let buy_nft_result = Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -397,7 +397,7 @@ fn buy_now_ok_with_nft_owner_member_correctly_credited() {
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
         assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             VideoId::one(),
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -424,7 +424,7 @@ fn buy_now_ok_with_nft_owner_channel_correctly_credited() {
         let platform_fee = Content::platform_fee_percentage().mul_floor(DEFAULT_NFT_PRICE);
 
         assert_ok!(Content::buy_nft(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             video_id,
             SECOND_MEMBER_ID,
             DEFAULT_NFT_PRICE,
@@ -450,7 +450,7 @@ fn buy_nft_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::buy_nft(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 SECOND_MEMBER_ID,
                 BalanceOf::<Test>::zero(),
@@ -474,7 +474,7 @@ fn buy_nft_fails_when_trying_to_use_locked_balance() {
 
         assert_noop!(
             Content::buy_nft(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 VideoId::one(),
                 SECOND_MEMBER_ID,
                 DEFAULT_NFT_PRICE,

@@ -163,7 +163,7 @@ fn toggle_nft_limits_ok_with_event_deposited_and_status_changed() {
     with_default_mock_builder(|| {
         run_to_block(1);
         // nft limits is true by chainspec configuration, changing to false..
-        assert_ok!(Content::toggle_nft_limits(Origin::root(), false));
+        assert_ok!(Content::toggle_nft_limits(RuntimeOrigin::root(), false));
 
         assert_eq!(
             System::events().last().unwrap().event,
@@ -179,7 +179,7 @@ fn toggle_nft_limits_fails_by_non_root_origin() {
         run_to_block(1);
         // nft limits is true by chainspec configuration
         assert_noop!(
-            Content::toggle_nft_limits(Origin::signed(LEAD_ACCOUNT_ID), false),
+            Content::toggle_nft_limits(RuntimeOrigin::signed(LEAD_ACCOUNT_ID), false),
             DispatchError::BadOrigin,
         );
     })

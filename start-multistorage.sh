@@ -7,8 +7,13 @@ cd $SCRIPT_PATH
 rm tests/network-tests/output.json || :
 
 # Run a complete joystream development network on your machine using docker
-export RUNTIME_PROFILE=${RUNTIME_PROFILE:=TESTING}
-export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:=$(./scripts/runtime-code-shasum.sh)}
+
+JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG}
+if [[ "$JOYSTREAM_NODE_TAG" == "" ]]; then
+  export RUNTIME_PROFILE=${RUNTIME_PROFILE:=TESTING}
+  JOYSTREAM_NODE_TAG=`./scripts/runtime-code-shasum.sh`
+fi
+export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG}
 
 INIT_CHAIN_SCENARIO=${INIT_CHAIN_SCENARIO:=setupNewChainMultiStorage}
 
@@ -23,7 +28,7 @@ else
       docker-compose down -v
   }
 
-  trap down EXIT
+  trap down EXIT ERR SIGINT SIGTERM
 fi
 
 if [ "${SKIP_NODE}" != true ]
@@ -44,7 +49,7 @@ docker-compose -f ./docker-compose.storage-squid.yml up -d
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
   export SKIP_QUERY_NODE_CHECKS=true
-  HOST_IP=$(tests/network-tests/get-host-ip.sh)
+  HOST_IP=`tests/network-tests/get-host-ip.sh`
   export COLOSSUS_1_URL=${COLOSSUS_1_URL:="http://${HOST_IP}:3333"}
   export DISTRIBUTOR_1_URL=${DISTRIBUTOR_1_URL:="http://${HOST_IP}:3334"}
   export COLOSSUS_2_URL=${COLOSSUS_2_URL:="http://${HOST_IP}:3335"}
@@ -52,7 +57,7 @@ if [[ $SKIP_CHAIN_SETUP != 'true' ]]; then
   ./tests/network-tests/run-test-scenario.sh ${INIT_CHAIN_SCENARIO}
 
   ## Member faucet
-  export INVITER_KEY=$(cat ./tests/network-tests/output.json | jq -r .faucet.suri)
+  export INVITER_KEY=`cat ./tests/network-tests/output.json | jq -r .faucet.suri`
   docker-compose up -d faucet
 
   ## Storage Infrastructure Nodes

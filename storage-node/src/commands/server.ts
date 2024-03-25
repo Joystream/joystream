@@ -350,7 +350,11 @@ Supported values: warn, error, debug, info. Default:debug`,
         },
         x_host_id: X_HOST_ID,
       })
-      app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
+      const server = app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
+
+      // INFO: https://nodejs.org/dist/latest-v18.x/docs/api/http.html#serverrequesttimeout
+      // Set the server request timeout to 0 to disable it. This was default behaviour pre Node.js 18.x
+      server.requestTimeout = 0
     } catch (err) {
       logger.error(`Server error: ${err}`)
       this.exit(ExitCodes.ServerError)

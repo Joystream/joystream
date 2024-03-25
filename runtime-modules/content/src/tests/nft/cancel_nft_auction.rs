@@ -19,7 +19,7 @@ fn cancel_nft_auction() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -27,7 +27,7 @@ fn cancel_nft_auction() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             get_open_auction_params()
@@ -35,7 +35,7 @@ fn cancel_nft_auction() {
 
         // Cancel nft auction
         assert_ok!(Content::cancel_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         ));
@@ -69,7 +69,7 @@ fn cancel_nft_auction_video_does_not_exist() {
 
         // Make an attempt to cancel nft auction which corresponding video does not exist yet
         let cancel_nft_auction_result = Content::cancel_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -93,7 +93,7 @@ fn cancel_nft_auction_not_issued() {
 
         // Make an attempt to cancel nft auction for nft which is not issued yet
         let cancel_nft_auction_result = Content::cancel_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -117,7 +117,7 @@ fn cancel_nft_auction_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -125,7 +125,7 @@ fn cancel_nft_auction_auth_failed() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             get_open_auction_params()
@@ -133,7 +133,7 @@ fn cancel_nft_auction_auth_failed() {
 
         // Make an attempt to cancel nft auction with wrong credentials
         let cancel_nft_auction_result = Content::cancel_open_auction(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -157,7 +157,7 @@ fn cancel_nft_auction_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -165,7 +165,7 @@ fn cancel_nft_auction_not_authorized() {
 
         // Start nft auction
         assert_ok!(Content::start_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             get_open_auction_params()
@@ -173,7 +173,7 @@ fn cancel_nft_auction_not_authorized() {
 
         // Make an attempt to cancel nft auction if actor is not authorized
         let cancel_nft_auction_result = Content::cancel_open_auction(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
         );
@@ -197,7 +197,7 @@ fn cancel_nft_auction_not_in_auction_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -205,7 +205,7 @@ fn cancel_nft_auction_not_in_auction_state() {
 
         // Make an attempt to cancel nft auction if there is no pending one
         let cancel_nft_auction_result = Content::cancel_open_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -232,7 +232,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -250,7 +250,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
 
         // Start nft auction
         assert_ok!(Content::start_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             auction_params
@@ -263,7 +263,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
 
         // Make an english auction bid
         assert_ok!(Content::make_english_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
             bid,
@@ -271,7 +271,7 @@ fn cancel_nft_auction_english_auction_with_bids() {
 
         // Make an attempt to cancel an english auction which already contains a bid
         let cancel_nft_auction_result = Content::cancel_english_auction(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
         );
@@ -297,7 +297,7 @@ fn cancel_open_auction_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::cancel_open_auction(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
             ),
@@ -319,7 +319,7 @@ fn cancel_english_auction_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::cancel_english_auction(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
             ),

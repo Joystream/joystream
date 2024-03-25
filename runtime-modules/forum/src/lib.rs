@@ -107,7 +107,7 @@ pub trait Config:
     + common::membership::MembershipTypes
     + balances::Config
 {
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     type CategoryId: Parameter
         + Member
@@ -175,7 +175,7 @@ pub trait Config:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         common::MemberId<Self>,
         Self::AccountId,
     >;
@@ -483,7 +483,7 @@ decl_event!(
 );
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
 
         /// Predefined errors
         type Error = Error<T>;
@@ -1923,7 +1923,7 @@ impl<T: Config> Module<T> {
 
     fn ensure_category_exists(category_id: &T::CategoryId) -> Result<CategoryOf<T>, Error<T>> {
         ensure!(
-            <CategoryById<T>>::contains_key(&category_id),
+            <CategoryById<T>>::contains_key(category_id),
             Error::<T>::CategoryDoesNotExist
         );
 
@@ -1938,7 +1938,7 @@ impl<T: Config> Module<T> {
         Self::ensure_is_forum_lead_account(&account_id)?;
 
         Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxTotalCategories>(
-            <CategoryCounter<T>>::get().into() as u64,
+            <CategoryCounter<T>>::get().into(),
         )?;
 
         // If not root, then check that we can create in parent category
@@ -2027,6 +2027,13 @@ impl<T: Config> Module<T> {
             thread.number_of_editable_posts.is_zero(),
             Error::<T>::CannotDeleteThreadWithOutstandingPosts
         );
+        Ok(())
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
         Ok(())
     }
 }

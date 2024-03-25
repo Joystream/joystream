@@ -19,7 +19,7 @@ fn update_buy_now_price() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -29,7 +29,7 @@ fn update_buy_now_price() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -37,7 +37,7 @@ fn update_buy_now_price() {
 
         // update buy now price
         assert_ok!(Content::update_buy_now_price(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NEW_NFT_PRICE,
@@ -71,7 +71,7 @@ fn update_buy_now_price_video_does_not_exist() {
 
         // Make an attempt to update buy now price which corresponding video does not exist yet
         let update_buy_now_price_result = Content::update_buy_now_price(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NEW_NFT_PRICE,
@@ -99,7 +99,7 @@ fn update_buy_now_price_not_issued() {
 
         // Make an attempt to update buy now price for nft which is not issued yet
         let update_buy_now_price_result = Content::update_buy_now_price(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NEW_NFT_PRICE,
@@ -124,7 +124,7 @@ fn update_buy_now_price_auth_failed() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -132,7 +132,7 @@ fn update_buy_now_price_auth_failed() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -140,7 +140,7 @@ fn update_buy_now_price_auth_failed() {
 
         // Make an attempt to update buy now price with wrong credentials
         let update_buy_now_price_result = Content::update_buy_now_price(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NEW_NFT_PRICE,
@@ -165,7 +165,7 @@ fn update_buy_now_price_not_authorized() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -173,7 +173,7 @@ fn update_buy_now_price_not_authorized() {
 
         // Sell nft
         assert_ok!(Content::sell_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             video_id,
             ContentActor::Member(DEFAULT_MEMBER_ID),
             DEFAULT_NFT_PRICE,
@@ -181,7 +181,7 @@ fn update_buy_now_price_not_authorized() {
 
         // Make an attempt to update buy now price if actor is not authorized
         let update_buy_now_price_result = Content::update_buy_now_price(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             ContentActor::Member(SECOND_MEMBER_ID),
             video_id,
             NEW_NFT_PRICE,
@@ -209,7 +209,7 @@ fn update_buy_now_price_not_in_auction_state() {
 
         // Issue nft
         assert_ok!(Content::issue_nft(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NftIssuanceParameters::<Test>::default(),
@@ -217,7 +217,7 @@ fn update_buy_now_price_not_in_auction_state() {
 
         // Make an attempt to update buy now price if there is no pending one
         let update_buy_now_price_result = Content::update_buy_now_price(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             NEW_NFT_PRICE,
@@ -244,7 +244,7 @@ fn update_buy_now_price_fails_during_channel_transfer() {
 
         assert_noop!(
             Content::update_buy_now_price(
-                Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
                 ContentActor::Member(DEFAULT_MEMBER_ID),
                 1u64,
                 Content::min_starting_price() + 1,

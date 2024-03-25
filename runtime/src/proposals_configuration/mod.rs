@@ -106,4 +106,7 @@ parameter_types! {
 
     pub UpdateChannelPayoutsProposalParameters: ProposalParameters<BlockNumber, Balance> =
         update_channel_payouts_proposal();
+
+    pub SetPalletFozenStatusProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        freeze_pallet_proposal();
 }

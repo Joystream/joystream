@@ -1,6 +1,7 @@
 import './augment/types-lookup'
 import './augment/registry'
 import './augment/augment-api'
+import './augment/augment-types'
 
 import { AnyU8a, Codec, DetectCodec, ITuple, Observable } from '@polkadot/types/types'
 import {

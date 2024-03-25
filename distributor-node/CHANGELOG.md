@@ -1,7 +1,19 @@
-### 2.1.0
+### 2.2.0
 
 - Updates `operator:set-metadata` CLI command to set distributor-node's operational status along with other metadata.
 - Adds `leader:set-node-operational-status` CLI command to set operational status of any distributor-node by Lead.
+
+### 2.1.1
+
+- Bump deps @polkadot/api v10.7.1
+
+### 2.1.0
+
+- Nara release.
+
+### 2.0.0
+
+- Replaced `Query-Node` API with `Storage-Squid` Graphql API. This is a breaking change and requires the `endpoints.queryNode` configuration option to be replaced with `endpoints.storageSquid`.
 
 ## 1.5.1
 

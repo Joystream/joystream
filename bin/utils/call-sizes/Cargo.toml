@@ -23,5 +23,5 @@ pallet-constitution = { package = 'pallet-constitution', default-features = fals
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../../runtime-modules/staking-handler'}
 bounty = { package = 'pallet-bounty', default-features = false, path = '../../../runtime-modules/bounty'}
 content = { package = 'pallet-content', default-features = false, path = '../../../runtime-modules/content'}
-joystream-utility = { package = 'pallet-utility', default-features = false, path = '../../../runtime-modules/utility'}
+joystream-utility = { package = 'pallet-joystream-utility', default-features = false, path = '../../../runtime-modules/utility'}
 project-token = { package = 'pallet-project-token', default-features = false, path = '../../../runtime-modules/project-token'}

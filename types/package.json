@@ -1,7 +1,7 @@
 {
   "name": "@joystream/types",
-  "version": "2.1.0",
-  "description": "Types for Joystream Substrate Runtime - Carthage release",
+  "version": "4.4.0",
+  "description": "Types for Joystream Substrate Runtime - Nara release",
   "main": "lib/cjs/index.js",
   "types": "lib/index.d.ts",
   "exports": {
@@ -29,26 +29,27 @@
     "lint": "eslint ./ --ext .ts",
     "format": "prettier ./ --write",
     "checks": "yarn build && madge --circular ./ && prettier ./ --check && yarn lint",
-    "generate:interfaces": "yarn ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./src/augment --endpoint ../chain-metadata.json && rm ./src/augment/index.ts ./src/augment/types.ts",
-    "generate:meta": "yarn ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ../chain-metadata.json --output ./src/augment --strict",
+    "generate:interfaces": "mkdir -p src/augment/ && yarn tsx node_modules/.bin/polkadot-types-from-defs --package . --endpoint ../chain-metadata.json --input ./src/augment && rm src/augment/index.ts && rm src/augment/types.ts",
+    "generate:meta": "mkdir -p src/augment/ && yarn tsx node_modules/.bin/polkadot-types-from-chain --package . --endpoint ../chain-metadata.json --output ./src/augment --strict",
     "generate:all": "yarn generate:interfaces && yarn generate:meta"
   },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@polkadot/api": "8.9.1",
-    "@polkadot/types": "8.9.1",
-    "@polkadot/keyring": "9.5.1",
+    "@polkadot/api": "10.7.1",
+    "@polkadot/keyring": "^12.6.2",
+    "@polkadot/types": "10.7.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "lodash": "^4.17.15",
     "moment": "^2.24.0"
   },
   "devDependencies": {
-    "@polkadot/typegen": "8.9.1",
+    "@polkadot/typegen": "10.1.4",
+    "madge": "^3.9.2",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3",
-    "madge": "^3.9.2"
+    "tsx": "^4.7.1",
+    "typescript": "^5.0.2"
   },
   "engines": {
     "node": ">=14.18.0",

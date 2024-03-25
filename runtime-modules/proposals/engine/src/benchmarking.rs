@@ -5,7 +5,7 @@ use crate::Module as ProposalsEngine;
 use balances::Pallet as Balances;
 use core::convert::TryInto;
 use council::Module as Council;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;
@@ -43,9 +43,9 @@ fn handle_from_id<T: membership::Config>(id: u32) -> Vec<u8> {
     handle
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     assert!(
         !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
@@ -54,9 +54,9 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
 
     assert!(
         !events.is_empty(),

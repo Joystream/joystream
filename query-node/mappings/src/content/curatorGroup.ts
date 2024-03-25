@@ -5,10 +5,11 @@ import { DatabaseManager, EventContext, StoreContext } from '@joystream/hydra-co
 import { BTreeSet } from '@polkadot/types'
 import { Curator, CuratorAgentPermissions, CuratorGroup } from 'query-node/dist/model'
 import { getById, getByIdOrFail, logger } from '../common'
-import { mapAgentPermission } from './utils'
 // Joystream types
-import { PalletContentIterableEnumsChannelActionPermission } from '@polkadot/types/lookup'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V1001 } from '../../generated/types/1001/types-lookup'
+import { PalletContentIterableEnumsChannelActionPermission as PalletContentIterableEnumsChannelActionPermission_V2002 } from '../../generated/types/2002/types-lookup'
 import {
+  Content_CuratorAddedEvent_V2002 as CuratorAddedEvent_V2002,
   Content_CuratorAddedEvent_V1001 as CuratorAddedEvent_V1001,
   Content_CuratorGroupCreatedEvent_V1001 as CuratorGroupCreatedEvent_V1001,
   Content_CuratorGroupStatusSetEvent_V1001 as CuratorGroupStatusSetEvent_V1001,
@@ -67,9 +68,14 @@ export async function content_CuratorGroupStatusSet({ store, event }: EventConte
   logger.info('Curator group status has been set', { id: curatorGroupId, isActive })
 }
 
-export async function content_CuratorAdded({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function content_CuratorAdded({ store, event, block }: EventContext & StoreContext): Promise<void> {
   // read event data
-  const [curatorGroupId, curatorId, permissions] = new CuratorAddedEvent_V1001(event).params
+  const { specVersion } = block.runtimeVersion
+
+  const [curatorGroupId, curatorId, permissions] =
+    parseInt(specVersion.toString()) < 2002
+      ? new CuratorAddedEvent_V1001(event).params
+      : new CuratorAddedEvent_V2002(event).params
 
   // load curator group
   const curatorGroup = await getByIdOrFail(store, CuratorGroup, curatorGroupId.toString(), ['curators'])
@@ -108,7 +114,9 @@ async function updateCuratorAgentPermissions(
   store: DatabaseManager,
   curatorGroup: CuratorGroup,
   curator: Curator,
-  permissions?: BTreeSet<PalletContentIterableEnumsChannelActionPermission>
+  permissions?: BTreeSet<
+    PalletContentIterableEnumsChannelActionPermission_V1001 | PalletContentIterableEnumsChannelActionPermission_V2002
+  >
 ) {
   // safest way to update permission is to delete existing and creating new ones
 
@@ -129,7 +137,9 @@ async function updateCuratorAgentPermissions(
   const curatorAgentPermissions = new CuratorAgentPermissions({
     curatorGroup: new CuratorGroup({ id: curatorGroup.id.toString() }),
     curator: new Curator({ id: curator.id.toString() }),
-    permissions: permissionsArray.map(mapAgentPermission),
+    permissions: permissionsArray.map((permissions) => {
+      return permissions.toString()
+    }),
   })
 
   await store.save(curatorAgentPermissions)

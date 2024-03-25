@@ -1,6 +1,6 @@
 // This file is part of Substrate.
 //
-// Copyright (C) 2020-2022 Parity Technologies (UK) Ltd.
+// Copyright (C) Parity Technologies (UK) Ltd.
 // SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
 //
 // This program is free software: you can redistribute it and/or modify
@@ -79,7 +79,6 @@ impl<TBlock: Block> PrettyPrinter<TBlock> for DebugPrinter {
 
 /// Aggregated error for `Inspector` operations.
 #[derive(Debug, thiserror::Error)]
-#[allow(clippy::large_enum_variant)]
 pub enum Error {
     /// Could not decode Block or Extrinsic.
     #[error(transparent)]
@@ -145,27 +144,27 @@ impl<TBlock: Block, TPrinter: PrettyPrinter<TBlock>> Inspector<TBlock, TPrinter>
             BlockAddress::Bytes(bytes) => TBlock::decode(&mut &*bytes)?,
             BlockAddress::Number(number) => {
                 let id = BlockId::number(number);
+                let hash = self.chain.expect_block_hash_from_id(&id)?;
                 let not_found = format!("Could not find block {:?}", id);
                 let body = self
                     .chain
-                    .block_body(&id)?
+                    .block_body(hash)?
                     .ok_or_else(|| Error::NotFound(not_found.clone()))?;
                 let header = self
                     .chain
-                    .header(id)?
+                    .header(hash)?
                     .ok_or_else(|| Error::NotFound(not_found.clone()))?;
                 TBlock::new(header, body)
             }
             BlockAddress::Hash(hash) => {
-                let id = BlockId::hash(hash);
-                let not_found = format!("Could not find block {:?}", id);
+                let not_found = format!("Could not find block {:?}", BlockId::<TBlock>::Hash(hash));
                 let body = self
                     .chain
-                    .block_body(&id)?
+                    .block_body(hash)?
                     .ok_or_else(|| Error::NotFound(not_found.clone()))?;
                 let header = self
                     .chain
-                    .header(id)?
+                    .header(hash)?
                     .ok_or_else(|| Error::NotFound(not_found.clone()))?;
                 TBlock::new(header, body)
             }
@@ -250,8 +249,6 @@ impl<Hash: FromStr + Debug, Number: FromStr + Debug> FromStr for ExtrinsicAddres
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // first try raw bytes
-        // sp_core::bytes is an alias for impl_serde::serialize
-        // Behavior we expect is only in v0.3.1, unit tests will break with v0.3.2
         if let Ok(bytes) = sp_core::bytes::from_hex(s).map(Self::Bytes) {
             return Ok(bytes);
         }
@@ -298,9 +295,6 @@ mod tests {
         assert_eq!(b3, Ok(BlockAddress::Bytes(vec![0, 0x12, 0x34, 0x5f])));
     }
 
-    // If you find these tests breaking
-    // Make sure Cargo.lock has pacakge impl_serde using v0.3.1
-    // unit tests will break with v0.3.2 (see notes above for impl of from_str for ExtrinsicAddress)
     #[test]
     fn should_parse_extrinsic_address() {
         type BlockAddress = super::BlockAddress<Hash, u64>;
@@ -312,7 +306,7 @@ mod tests {
         let b2 = ExtrinsicAddress::from_str("0 0");
         let b3 = ExtrinsicAddress::from_str("0x0012345f");
 
-        assert_eq!(e0, Err("Extrinsic index missing: example \"5:0\"".into()));
+        assert_eq!(e0, Ok(ExtrinsicAddress::Bytes(vec![0x12, 0x34])));
         assert_eq!(
             b0,
             Ok(ExtrinsicAddress::Block(
@@ -324,7 +318,7 @@ mod tests {
             b1,
             Ok(ExtrinsicAddress::Block(BlockAddress::Number(1234), 0))
         );
-        assert_eq!(b2, Ok(ExtrinsicAddress::Block(BlockAddress::Number(0), 0)));
+        assert_eq!(b2, Ok(ExtrinsicAddress::Bytes(vec![0, 0])));
         assert_eq!(b3, Ok(ExtrinsicAddress::Bytes(vec![0, 0x12, 0x34, 0x5f])));
     }
 }

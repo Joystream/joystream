@@ -5,7 +5,6 @@ import {
 } from '@joystream/metadata-protobuf'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { DispatchError } from '@polkadot/types/interfaces/system'
 import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
 import BN from 'bn.js'
 import { timeout } from 'promise-timeout'
@@ -125,7 +124,7 @@ export async function updateStorageBucketsForBags(
           if (e.method === 'ItemFailed') {
             return {
               args: txs[i].args.toString(),
-              error: formatDispatchError(api, e.data[0] as DispatchError),
+              error: formatDispatchError(api, e.data[0]),
             }
           }
         })

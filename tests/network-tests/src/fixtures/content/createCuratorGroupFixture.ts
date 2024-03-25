@@ -33,7 +33,7 @@ export class CreateCuratorGroupFixture extends BaseQueryNodeFixture {
     return this.createdCuratorGroupId as CuratorGroupId
   }
 
-  protected async getContentWgLeadAccount(): Promise<string> {
+  public async getContentWgLeadAccount(): Promise<string> {
     const contentWgLead = await this.api.query.contentWorkingGroup.currentLead()
     if (contentWgLead.isNone) {
       throw new Error('Content working group lead not set!')

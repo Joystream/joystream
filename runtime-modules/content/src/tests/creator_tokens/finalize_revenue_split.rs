@@ -2,6 +2,9 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
+use project_token::Error as ProjectTokenError;
 use project_token::Module as Token;
 
 #[test]
@@ -149,5 +152,34 @@ fn successful_finalize_curator_channel_revenue_split_by_lead() {
             .with_sender(LEAD_ACCOUNT_ID)
             .with_actor(ContentActor::Lead)
             .call_and_assert(Ok(()));
+    })
+}
+
+#[test]
+fn finalize_member_channel_revenue_split_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED,
+        );
+        IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
+        run_to_block(
+            1 + Token::<Test>::min_revenue_split_time_to_start() + DEFAULT_REVENUE_SPLIT_DURATION,
+        );
+
+        assert_ok!(Token::<Test>::set_frozen_status(
+            RawOrigin::Root.into(),
+            true
+        ));
+        FinalizeRevenueSplitFixture::default()
+            .call_and_assert(Err(ProjectTokenError::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::<Test>::set_frozen_status(
+            RawOrigin::Root.into(),
+            false
+        ));
+        FinalizeRevenueSplitFixture::default().call_and_assert(Ok(()));
     })
 }

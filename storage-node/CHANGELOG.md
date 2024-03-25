@@ -1,7 +1,23 @@
-### 4.1.0
+### 4.2.0
 
 - Updates `operator:set-metadata` CLI command to set storage-node's operational status along with other metadata.
 - Adds `leader:set-node-operational-status` CLI command to set operational status of any storage-node by Lead.
+
+### 4.1.1
+
+- Bump deps @polkadot/api v10.7.1
+
+### 4.1.0
+
+- Nara release.
+
+### 4.0.1
+
+- Set the `server.requestTimeout` option in `http.Server` instance to 0 to disable the timeout. This was default behaviour pre Node.js `18.x`
+
+### 4.0.0
+
+- Replaced `Query-Node` API with `Storage-Squid` Graphql API. This is a breaking change and requires the `--queryNodeEndpoint` configuration option to be replaced with `--storageSquidEndpoint`.
 
 ### 3.10.2
 

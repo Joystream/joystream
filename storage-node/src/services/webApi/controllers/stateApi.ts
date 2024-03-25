@@ -161,6 +161,7 @@ export async function getStatus(req: express.Request, res: express.Response<Stat
 
   res.status(200).json({
     version: proc.version,
+    uptime: Math.floor(process.uptime()),
     uploadBuckets,
     downloadBuckets,
     sync,

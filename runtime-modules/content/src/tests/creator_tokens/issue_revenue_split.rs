@@ -2,6 +2,8 @@
 use crate::tests::fixtures::*;
 use crate::tests::mock::*;
 use crate::*;
+use frame_support::assert_ok;
+use frame_system::RawOrigin;
 use sp_arithmetic::PerThing;
 
 #[test]
@@ -222,5 +224,24 @@ fn issue_revenue_split_leftover_funds_sent_to_council_budget() {
                 )
             )
         )
+    })
+}
+
+#[test]
+fn successful_issue_member_channel_revenue_split_by_owner_fails_on_frozen_pallet() {
+    with_default_mock_builder(|| {
+        ContentTest::with_member_channel().setup();
+        IssueCreatorTokenFixture::default().call_and_assert(Ok(()));
+        increase_account_balance_helper(
+            ContentTreasury::<Test>::account_for_channel(ChannelId::one()),
+            DEFAULT_PAYOUT_EARNED,
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        IssueRevenueSplitFixture::default()
+            .call_and_assert(Err(project_token::Error::<Test>::PalletFrozen.into()));
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        IssueRevenueSplitFixture::default().call_and_assert(Ok(()));
     })
 }

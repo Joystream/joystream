@@ -30,7 +30,7 @@
 //! pub trait Config: discussions::Config + common::membership::MembershipTypes {}
 //!
 //! decl_module! {
-//!     pub struct Module<T: Config> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
 //!         #[weight = 10_000_000]
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
@@ -85,7 +85,7 @@ use sp_runtime::traits::{AccountIdConversion, Saturating, Zero};
 use sp_std::clone::Clone;
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 use common::bloat_bond::{RepayableBloatBond, RepayableBloatBondOf};
 use common::costs::{has_sufficient_balance_for_fees, pay_fee};
@@ -138,17 +138,21 @@ pub trait Config:
     frame_system::Config + balances::Config + common::membership::MembershipTypes
 {
     /// Discussion event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Validates post author id and origin combination
-    type AuthorOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type AuthorOriginValidator: MemberOriginValidator<
+        Self::RuntimeOrigin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
 
     /// For checking member existance
     type MembershipInfoProvider: MembershipInfoProvider<Self>;
 
     /// Defines whether the member is an active councilor.
     type CouncilOriginValidator: CouncilOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         MemberId<Self>,
         Self::AccountId,
     >;
@@ -241,7 +245,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// 'Proposal discussion' substrate module
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -390,7 +394,7 @@ decl_module! {
                 Error::<T>::PostDoesntExist
             );
 
-            let post_author_id = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id).author_id;
+            let post_author_id = <PostThreadIdByPostId<T>>::get(thread_id, post_id).author_id;
 
             T::AuthorOriginValidator::ensure_member_controller_account_origin(
                 origin,
@@ -436,7 +440,7 @@ decl_module! {
 
             let thread_mode = Self::ensure_thread_mode_ok(&mode)?;
 
-            let thread = Self::thread_by_id(&thread_id);
+            let thread = Self::thread_by_id(thread_id);
 
             let is_councilor =
                     T::CouncilOriginValidator::ensure_member_consulate(origin, member_id)
@@ -541,7 +545,7 @@ impl<T: Config> Module<T> {
     }
 
     fn ensure_thread_mode(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         thread_author_id: MemberId<T>,
         thread_id: T::ThreadId,
     ) -> DispatchResult {
@@ -569,5 +573,12 @@ impl<T: Config> Module<T> {
 
     fn module_account_id() -> T::AccountId {
         T::ModuleId::get().into_sub_account_truncating("TREASURY")
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
+        Ok(())
     }
 }

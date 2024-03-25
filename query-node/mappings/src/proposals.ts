@@ -3,7 +3,6 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails } from '@polkadot/types/lookup'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import {
@@ -57,18 +56,11 @@ import {
   SlashWorkingGroupLeadProposalDetails,
   TerminateWorkingGroupLeadProposalDetails,
   UpdateChannelPayoutsProposalDetails,
+  UpdatePalletFrozenStatusProposalDetails,
   UpdateGlobalNftLimitProposalDetails,
   UpdateWorkingGroupBudgetProposalDetails,
   VetoProposalDetails,
 } from 'query-node/dist/model'
-import {
-  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
-  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
-  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
-  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
-  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
-  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
-} from '../generated/types'
 import {
   INT32MAX,
   asBN,
@@ -81,7 +73,21 @@ import {
   unwrap,
   whenDef,
 } from './common'
+import {
+  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsCodex_ProposalCreatedEvent_V2002 as ProposalCreatedEvent_V2002,
+  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
+  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
+  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
+  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
+  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
+} from '../generated/types'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } from '../generated/types/1001/types-lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
+
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
+
+type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 
 async function getProposal(store: DatabaseManager, id: string) {
   return getByIdOrFail(store, Proposal, id)
@@ -103,7 +109,7 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
 async function parseProposalDetails(
   event: SubstrateEvent,
   store: DatabaseManager,
-  proposalDetails: RuntimeProposalDetails
+  proposalDetails: RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 ): Promise<typeof ProposalDetails> {
   const eventTime = new Date(event.blockTimestamp)
 
@@ -311,6 +317,12 @@ async function parseProposalDetails(
       details.newWeeklyNftLimit = specificDetails[1].toNumber()
     }
     return details
+  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isSetPalletFozenStatus) {
+    const details = new UpdatePalletFrozenStatusProposalDetails()
+    const [frozen, pallet] = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
+    details.frozen = frozen.isTrue
+    details.pallet = pallet.toString()
+    return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
@@ -342,9 +354,17 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
   )
 }
 
-export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function proposalsCodex_ProposalCreated({
+  store,
+  event,
+  block,
+}: EventContext & StoreContext): Promise<void> {
+  const specVersion = block.runtimeVersion.specVersion
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    new ProposalCreatedEvent_V1001(event).params
+    parseInt(specVersion.toString()) >= 2002
+      ? new ProposalCreatedEvent_V2002(event).params
+      : new ProposalCreatedEvent_V1001(event).params
+
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
 

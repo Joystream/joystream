@@ -49,8 +49,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -58,7 +58,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -81,7 +81,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -96,7 +96,7 @@ impl common::membership::MembershipTypes for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
     type WeightInfo = ();
@@ -125,7 +125,7 @@ parameter_types! {
 }
 
 impl Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = ();
@@ -145,9 +145,9 @@ impl common::StakingAccountValidator<Test> for () {
 
 pub const ACTOR_ORIGIN_ERROR: &str = "Invalid membership";
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;
