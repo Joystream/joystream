@@ -1226,7 +1226,6 @@ impl VestedSpendFromBudgetFixture {
 
         if actual_result.is_ok() {
             assert_eq!(new_budget, old_budget - amount);
-            assert_eq!(new_balance, new_balance);
         } else {
             assert_eq!(old_budget, new_budget);
             assert_eq!(old_balance, new_balance);

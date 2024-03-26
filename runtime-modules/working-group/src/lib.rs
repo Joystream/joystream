@@ -67,12 +67,10 @@ use frame_support::dispatch::RawOrigin;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
-use frame_support::{decl_event, decl_module, decl_storage, ensure, PalletId, StorageValue};
+use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
 use sp_runtime::traits::Convert;
-use sp_runtime::traits::{
-    AccountIdConversion, Hash, One, SaturatedConversion, Saturating, StaticLookup, Zero,
-};
+use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, StaticLookup, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::{vec, vec::Vec};
@@ -137,9 +135,6 @@ pub trait Config<I: Instance = DefaultInstance>:
 
     /// Stake needed to create an opening
     type LeaderOpeningStake: Get<Self::Balance>;
-
-    /// Type for the Module Id account in order to locked payment the budget.
-    type ModuleId: Get<PalletId>;
 }
 
 decl_event!(
@@ -1680,11 +1675,6 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
         <WorkerById<T, I>>::iter()
             .map(|(worker_id, _)| worker_id)
             .collect()
-    }
-
-    /// Returns the account for the  module used for vested spending
-    pub fn module_treasury_account() -> T::AccountId {
-        <T as Config<I>>::ModuleId::get().into_sub_account_truncating(Vec::<u8>::new())
     }
 }
 

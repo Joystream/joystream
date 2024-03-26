@@ -1430,7 +1430,6 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
@@ -1445,7 +1444,6 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
@@ -1460,7 +1458,6 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
@@ -1475,7 +1472,6 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
@@ -1490,7 +1486,6 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
@@ -1505,7 +1500,6 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
@@ -1520,7 +1514,6 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
@@ -1535,7 +1528,6 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
@@ -1550,7 +1542,6 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 parameter_types! {
