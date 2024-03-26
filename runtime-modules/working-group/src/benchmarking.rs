@@ -782,7 +782,24 @@ benchmarks_instance! {
     }
 
     spend_from_budget {
-        // use core::ops::Div;
+        let (lead_id, _) = insert_a_worker::<T, I>(
+            OpeningType::Leader,
+            0,
+            None
+        );
+
+        let amount = VestingBalanceOf::<T>::from(10_000u32);
+        let budget = BalanceOf::<T>::from(100_000u32);
+        let block_no = 100u32;
+        let current_block = <T as frame_system::Config>::BlockNumber::from(1u32);
+        WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), budget).unwrap();
+    }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), amount, None)
+    verify {
+        assert_eq!(WorkingGroup::<T, I>::budget(), BalanceOf::<T>::from(90_000u32), "Budget not updated");
+        assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, amount, None).into());
+    }
+
+    vested_spend_from_budget {
         let (lead_id, _) = insert_a_worker::<T, I>(
             OpeningType::Leader,
             0,
@@ -798,7 +815,7 @@ benchmarks_instance! {
     }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), vested, None)
     verify {
         assert_eq!(WorkingGroup::<T, I>::budget(), BalanceOf::<T>::from(90_000u32), "Budget not updated");
-        assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, vested, None).into());
+        assert_last_event::<T, I>(RawEvent::VestedBudgetSpending(lead_id, vested, None).into());
     }
 
     fund_working_group_budget {
@@ -1021,6 +1038,13 @@ mod tests {
     fn test_spend_from_budget() {
         build_test_externalities().execute_with(|| {
             assert_ok!(WorkingGroup::<Test>::test_benchmark_spend_from_budget());
+        });
+    }
+
+    #[test]
+    fn test_vested_spend_from_budget() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_vested_spend_from_budget());
         });
     }
 

@@ -1183,7 +1183,7 @@ decl_module! {
         /// - DB:
         ///    - O(1) doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
+        #[weight = WeightInfoWorkingGroup::<T, I>::vested_spend_from_budget()]
         pub fn vested_spend_from_budget(
             origin,
             account_id: T::AccountId,
