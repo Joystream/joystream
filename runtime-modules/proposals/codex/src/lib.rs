@@ -512,7 +512,7 @@ decl_module! {
         const SetMaxValidatorCountProposalMaxValidators: u32 =
             T::SetMaxValidatorCountProposalMaxValidators::get();
 
-        /// Decrease Cuncil budget parameters
+        /// Decrease Council budget parameters
         const DecreaseCouncilBudgetProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::DecreaseCouncilBudgetProposalParameters::get();
 
