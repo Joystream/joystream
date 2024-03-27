@@ -182,6 +182,29 @@ export class QueryNodeApi {
     return result.data[resultKey]
   }
 
+  private getOperationallyActiveStorageBuckets(
+    buckets: Array<StorageBucketIdsFragment>
+  ): Array<StorageBucketIdsFragment> {
+    // Filter out nodes/operators under maintenance
+    return buckets.filter(({ operatorMetadata }) => {
+      const status = operatorMetadata?.nodeOperationalStatus
+      const date = new Date()
+      if (
+        !operatorMetadata ||
+        !status ||
+        status.__typename === 'NodeOperationalStatusNormal' ||
+        (status.__typename === 'NodeOperationalStatusNoServiceFrom' && new Date(status.from) > date) || // planned future maintenance (which has not started yet)
+        (status.__typename === 'NodeOperationalStatusNoServiceUntil' &&
+          new Date(status.from) > date &&
+          new Date(status.until) < date) // planned future maintenance with end time (which has not started yet)
+      ) {
+        return true
+      }
+
+      return false
+    })
+  }
+
   /**
    * Returns storage bucket IDs filtered by worker ID.
    *
@@ -197,7 +220,7 @@ export class QueryNodeApi {
       return []
     }
 
-    return result
+    return this.getOperationallyActiveStorageBuckets(result)
   }
 
   /**
@@ -301,7 +324,7 @@ export class QueryNodeApi {
       return []
     }
 
-    return result
+    return this.getOperationallyActiveStorageBuckets(result)
   }
 
   /**

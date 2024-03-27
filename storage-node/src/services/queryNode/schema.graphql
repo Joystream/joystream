@@ -432,10 +432,10 @@ enum DistributionBucketOperatorMetadataOrderByInput {
   nodeOperationalStatus_from_DESC
   nodeOperationalStatus_from_ASC_NULLS_FIRST
   nodeOperationalStatus_from_DESC_NULLS_LAST
-  nodeOperationalStatus_to_ASC
-  nodeOperationalStatus_to_DESC
-  nodeOperationalStatus_to_ASC_NULLS_FIRST
-  nodeOperationalStatus_to_DESC_NULLS_LAST
+  nodeOperationalStatus_until_ASC
+  nodeOperationalStatus_until_DESC
+  nodeOperationalStatus_until_ASC_NULLS_FIRST
+  nodeOperationalStatus_until_DESC_NULLS_LAST
   nodeOperationalStatus_isTypeOf_ASC
   nodeOperationalStatus_isTypeOf_DESC
   nodeOperationalStatus_isTypeOf_ASC_NULLS_FIRST
@@ -678,7 +678,7 @@ input DistributionBucketWhereInput {
 
 type DistributionNodeOperationalStatusSetEvent {
   """Distribution bucket operator"""
-  bucketOperator: DistributionBucketOperator
+  bucketOperator: DistributionBucketOperator!
 
   """Operational status that was set"""
   operationalStatus: NodeOperationalStatus!
@@ -1014,7 +1014,7 @@ input NodeLocationMetadataWhereInput {
   coordinates: GeoCoordinatesWhereInput
 }
 
-union NodeOperationalStatus = NodeOperationalStatusNormal | NodeOperationalStatusNoService | NodeOperationalStatusNoServiceFrom | NodeOperationalStatusNoServiceDuring
+union NodeOperationalStatus = NodeOperationalStatusNormal | NodeOperationalStatusNoService | NodeOperationalStatusNoServiceFrom | NodeOperationalStatusNoServiceUntil
 
 type NodeOperationalStatusNormal {
   """Reason why node was set to this state"""
@@ -1032,7 +1032,21 @@ type NodeOperationalStatusNoService {
   rationale: String
 }
 
-type NodeOperationalStatusNoServiceDuring {
+type NodeOperationalStatusNoServiceFrom {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is
+  meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """The time from which the bucket would have to no service"""
+  from: DateTime!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNoServiceUntil {
   """
   Whether the state was set by lead (true) or by the operator (false), it is
   meant to prevent worker from unilaterally reversing.
@@ -1043,21 +1057,7 @@ type NodeOperationalStatusNoServiceDuring {
   from: DateTime!
 
   """The time until which the bucket would have to no service"""
-  to: DateTime!
-
-  """Reason why node was set to this state"""
-  rationale: String
-}
-
-type NodeOperationalStatusNoServiceFrom {
-  """
-  Whether the state was set by lead (true) or by the operator (false), it is
-  meant to prevent worker from unilaterally reversing.
-  """
-  forced: Boolean!
-
-  """The time from which the bucket would have to no service"""
-  from: DateTime!
+  until: DateTime!
 
   """Reason why node was set to this state"""
   rationale: String
@@ -1093,15 +1093,15 @@ input NodeOperationalStatusWhereInput {
   from_lte: DateTime
   from_in: [DateTime!]
   from_not_in: [DateTime!]
-  to_isNull: Boolean
-  to_eq: DateTime
-  to_not_eq: DateTime
-  to_gt: DateTime
-  to_gte: DateTime
-  to_lt: DateTime
-  to_lte: DateTime
-  to_in: [DateTime!]
-  to_not_in: [DateTime!]
+  until_isNull: Boolean
+  until_eq: DateTime
+  until_not_eq: DateTime
+  until_gt: DateTime
+  until_gte: DateTime
+  until_lt: DateTime
+  until_lte: DateTime
+  until_in: [DateTime!]
+  until_not_in: [DateTime!]
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -1181,10 +1181,6 @@ type Query {
   distributionBucketFamilyById(id: String!): DistributionBucketFamily
   distributionBucketFamilyByUniqueInput(where: WhereIdInput!): DistributionBucketFamily @deprecated(reason: "Use distributionBucketFamilyById")
   distributionBucketFamiliesConnection(orderBy: [DistributionBucketFamilyOrderByInput!]!, after: String, first: Int, where: DistributionBucketFamilyWhereInput): DistributionBucketFamiliesConnection!
-  workers(where: WorkerWhereInput, orderBy: [WorkerOrderByInput!], offset: Int, limit: Int): [Worker!]!
-  workerById(id: String!): Worker
-  workerByUniqueInput(where: WhereIdInput!): Worker @deprecated(reason: "Use workerById")
-  workersConnection(orderBy: [WorkerOrderByInput!]!, after: String, first: Int, where: WorkerWhereInput): WorkersConnection!
   squidStatus: SquidStatus
   squidVersion: SquidVersion!
 }
@@ -1597,10 +1593,10 @@ enum StorageBucketOperatorMetadataOrderByInput {
   nodeOperationalStatus_from_DESC
   nodeOperationalStatus_from_ASC_NULLS_FIRST
   nodeOperationalStatus_from_DESC_NULLS_LAST
-  nodeOperationalStatus_to_ASC
-  nodeOperationalStatus_to_DESC
-  nodeOperationalStatus_to_ASC_NULLS_FIRST
-  nodeOperationalStatus_to_DESC_NULLS_LAST
+  nodeOperationalStatus_until_ASC
+  nodeOperationalStatus_until_DESC
+  nodeOperationalStatus_until_ASC_NULLS_FIRST
+  nodeOperationalStatus_until_DESC_NULLS_LAST
   nodeOperationalStatus_isTypeOf_ASC
   nodeOperationalStatus_isTypeOf_DESC
   nodeOperationalStatus_isTypeOf_ASC_NULLS_FIRST
@@ -2149,63 +2145,3 @@ input WhereIdInput {
   id: String!
 }
 
-type Worker {
-  """Worker id ({workingGroupName}-{workerId})"""
-  id: String!
-
-  """WorkerId in specific working group module"""
-  runtimeId: BigInt!
-}
-
-type WorkerEdge {
-  node: Worker!
-  cursor: String!
-}
-
-enum WorkerOrderByInput {
-  id_ASC
-  id_DESC
-  id_ASC_NULLS_FIRST
-  id_DESC_NULLS_LAST
-  runtimeId_ASC
-  runtimeId_DESC
-  runtimeId_ASC_NULLS_FIRST
-  runtimeId_DESC_NULLS_LAST
-}
-
-type WorkersConnection {
-  edges: [WorkerEdge!]!
-  pageInfo: PageInfo!
-  totalCount: Int!
-}
-
-input WorkerWhereInput {
-  id_isNull: Boolean
-  id_eq: String
-  id_not_eq: String
-  id_gt: String
-  id_gte: String
-  id_lt: String
-  id_lte: String
-  id_in: [String!]
-  id_not_in: [String!]
-  id_contains: String
-  id_not_contains: String
-  id_containsInsensitive: String
-  id_not_containsInsensitive: String
-  id_startsWith: String
-  id_not_startsWith: String
-  id_endsWith: String
-  id_not_endsWith: String
-  runtimeId_isNull: Boolean
-  runtimeId_eq: BigInt
-  runtimeId_not_eq: BigInt
-  runtimeId_gt: BigInt
-  runtimeId_gte: BigInt
-  runtimeId_lt: BigInt
-  runtimeId_lte: BigInt
-  runtimeId_in: [BigInt!]
-  runtimeId_not_in: [BigInt!]
-  AND: [WorkerWhereInput!]
-  OR: [WorkerWhereInput!]
-}

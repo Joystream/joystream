@@ -232,11 +232,30 @@ export class QueryNodeApi {
     return this.getDataObjectsByBagIds(bagIds)
   }
 
-  public getActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
-    return this.multipleEntitiesQuery<
+  public async getOperationallyActiveStorageBucketOperatorsData(): Promise<StorageBucketOperatorFieldsFragment[]> {
+    const buckets = await this.multipleEntitiesQuery<
       GetActiveStorageBucketOperatorsDataQuery,
       GetActiveStorageBucketOperatorsDataQueryVariables
     >(GetActiveStorageBucketOperatorsData, {}, 'storageBuckets')
+
+    // Filter out nodes/operators under maintenance
+    return buckets.filter(({ operatorMetadata }) => {
+      const status = operatorMetadata?.nodeOperationalStatus
+      const date = new Date()
+      if (
+        !operatorMetadata ||
+        !status ||
+        status.__typename === 'NodeOperationalStatusNormal' ||
+        (status.__typename === 'NodeOperationalStatusNoServiceFrom' && new Date(status.from) > date) || // planned future maintenance (which has not started yet)
+        (status.__typename === 'NodeOperationalStatusNoServiceUntil' &&
+          new Date(status.from) > date &&
+          new Date(status.until) < date) // planned future maintenance with end time (which has not started yet)
+      ) {
+        return true
+      }
+
+      return false
+    })
   }
 
   public async getPackageVersion(): Promise<string> {

@@ -103,21 +103,31 @@ fragment StorageBucketOperatorFields on StorageBucket {
   id
   operatorMetadata {
     nodeEndpoint
+    nodeOperationalStatus {
+      ... on NodeOperationalStatusNormal {
+        __typename
+      }
+      ... on NodeOperationalStatusNoService {
+        __typename
+        forced
+      }
+      ... on NodeOperationalStatusNoServiceFrom {
+        __typename
+        forced
+        from
+      }
+      ... on NodeOperationalStatusNoServiceUntil {
+        __typename
+        forced
+        from
+        until
+      }
+    }
   }
 }
 
 query getActiveStorageBucketOperatorsData {
-  storageBuckets(
-    where: {
-      operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" }
-      operatorMetadata: {
-        OR: [
-          { nodeOperationalStatus_isNull: true }
-          { nodeOperationalStatus: { isTypeOf_eq: "NodeOperationalStatusNormal" } }
-        ]
-      }
-    }
-  ) {
+  storageBuckets(where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive" } }) {
     ...StorageBucketOperatorFields
   }
 }
