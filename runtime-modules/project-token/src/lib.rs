@@ -65,7 +65,7 @@ use traits::PalletToken;
 use types::*;
 
 pub mod weights;
-pub use types::GovernanceParametersOf;
+pub use types::TokenConstraintsOf;
 pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
@@ -228,7 +228,7 @@ decl_module! {
         #[weight = WeightInfoToken::<T>::update_governance_parameters()]
         pub fn update_governance_parameters(
             origin,
-            parameters: GovernanceParametersOf<T>
+            parameters: TokenConstraintsOf<T>
         ) {
             // update parameters via proposal
             ensure_root(origin)?;
@@ -271,7 +271,7 @@ decl_module! {
                 BloatBond::<T>::put(new_bloat_bond);
             }
 
-            Self::deposit_event(RawEvent::GovernanceParametersUpdated(parameters));
+            Self::deposit_event(RawEvent::TokenConstraintsUpdated(parameters));
 
         }
 

@@ -261,7 +261,7 @@ benchmarks! {
     // Worst case scenario:
     // all parameters needs to be updated
     update_governance_parameters {
-        let parameters = GovernanceParameters {
+        let parameters = TokenConstraints {
             max_yearly_rate Some(YearlyRate(Permill::from_penrcent(15))),
             min_amm_slope: Some(100u32.into()),
             min_sale_duration: Some(10u32.into()),
@@ -276,7 +276,7 @@ benchmarks! {
     }: (origin, parameters.clone()) {
 
         assert_last_event::<T>(
-            RawEvent::GovernanceParametersUpdated(
+            RawEvent::TokenConstraintsUpdated(
                 parameters
             ).into()
         );

@@ -166,7 +166,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     uploader_account: member_controller_account,
                 })
             }
-            ProposalDetails::UpdateTokenPalletGovernanceParameters(parameters) => {
+            ProposalDetails::UpdateTokenPalletTokenConstraints(parameters) => {
                 RuntimeCall::ProjectToken(project_token::Call::update_governance_parameters {
                     parameters,
                 })

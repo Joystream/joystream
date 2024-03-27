@@ -48,7 +48,7 @@ impl<T: BalanceTrait> JoyTokenBalanceTrait for T {}
 /// Parameer pack for governance constraints
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
-pub struct GovernanceParameters<Balance, BlockNumber, JoyBalance> {
+pub struct TokenConstraints<Balance, BlockNumber, JoyBalance> {
     pub max_yearly_rate: Option<YearlyRate>,
     pub min_amm_slope: Option<Balance>,
     pub min_sale_duration: Option<BlockNumber>,
@@ -1695,8 +1695,5 @@ pub type AmmCurveOf<T> = AmmCurve<TokenBalanceOf<T>>;
 pub type AmmParamsOf<T> = AmmParams<TokenBalanceOf<T>>;
 
 /// Alias for the governance parameters
-pub type GovernanceParametersOf<T> = GovernanceParameters<
-    TokenBalanceOf<T>,
-    <T as frame_system::Config>::BlockNumber,
-    JoyBalanceOf<T>,
->;
+pub type TokenConstraintsOf<T> =
+    TokenConstraints<TokenBalanceOf<T>, <T as frame_system::Config>::BlockNumber, JoyBalanceOf<T>>;
