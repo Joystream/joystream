@@ -1,7 +1,6 @@
-import { INodeOperationalStatusMetadata, NodeOperationalStatusMetadata } from '@joystream/metadata-protobuf'
+import { INodeOperationalStatus, NodeOperationalStatus } from '@joystream/metadata-protobuf'
 import { flags } from '@oclif/command'
 import LeaderCommandBase from '../../command-base/LeaderCommandBase'
-import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../services/metadata/schemas'
 import { setStorageNodeOperationalStatus } from '../../services/runtime/extrinsics'
 
 /**
@@ -26,63 +25,68 @@ export default class LeadSetNodeOperationalStatus extends LeaderCommandBase {
       description: 'ID of the operator (storage group worker)',
       required: true,
     }),
-    operationalStatus: flags.enum<NodeOperationalStatus>({
+    operationalStatus: flags.enum<Exclude<NodeOperationalStatus['nodeOperationalStatus'], undefined>>({
       char: 'o',
-      options: [...NODE_OPERATIONAL_STATUS_OPTIONS],
-      required: false,
+      options: ['normal', 'noService', 'noServiceFrom', 'noServiceUntil'],
+      required: true,
       description: 'Operational status of the operator',
+    }),
+    rationale: flags.string({
+      char: 'r',
+      description: 'Rationale for the operational status',
     }),
     ...LeaderCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(LeadSetNodeOperationalStatus)
+    const {
+      bucketId,
+      workerId,
+      rationale,
+      operationalStatus: statusType,
+    } = this.parse(LeadSetNodeOperationalStatus).flags
 
     const account = this.getAccount()
     const api = await this.getApi()
 
-    let operationalStatus: INodeOperationalStatusMetadata = {}
-    switch (flags.operationalStatus) {
-      case 'Normal': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NORMAL }
+    let operationalStatus: INodeOperationalStatus
+    switch (statusType) {
+      case 'normal': {
+        operationalStatus = { normal: { rationale } }
         break
       }
-      case 'NoService': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE }
+      case 'noService': {
+        operationalStatus = { noService: { rationale } }
         break
       }
-      case 'NoServiceFrom': {
+      case 'noServiceFrom': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          noServiceFrom: {
+            rationale,
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          },
         }
         break
       }
-      case 'NoServiceDuring': {
+      case 'noServiceUntil': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
-          noServiceTo: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          noServiceUntil: {
+            rationale,
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+            until: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          },
         }
       }
     }
 
     this.log(`Setting node operational status...`, {
-      bucketId: flags.bucketId,
-      workerId: flags.workerId,
+      bucketId,
+      workerId,
       operationalStatus,
     })
 
-    const success = await setStorageNodeOperationalStatus(
-      api,
-      account,
-      flags.workerId,
-      flags.bucketId,
-      operationalStatus
-    )
+    const success = await setStorageNodeOperationalStatus(api, account, workerId, bucketId, operationalStatus)
 
     this.exitAfterRuntimeCall(success)
-
-    this.log('Successfully set storage node operational status!')
   }
 }

@@ -1,5 +1,5 @@
 import {
-  INodeOperationalStatusMetadata,
+  INodeOperationalStatus,
   ISetNodeOperationalStatus,
   SetNodeOperationalStatus,
 } from '@joystream/metadata-protobuf'
@@ -600,7 +600,7 @@ export async function setStorageNodeOperationalStatus(
   account: KeyringPair,
   workerId: number,
   bucketId: number,
-  operationalStatus: INodeOperationalStatusMetadata
+  operationalStatus: INodeOperationalStatus
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
     const metadata: ISetNodeOperationalStatus = {

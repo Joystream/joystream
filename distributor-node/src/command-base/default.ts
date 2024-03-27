@@ -107,7 +107,7 @@ export default abstract class DefaultCommandBase extends Command {
         type: 'datepicker',
         name: 'result',
         clearable: true,
-        default: new Date('2017-09-28 17:36:05').toISOString(),
+        default: new Date().toISOString(),
       },
     ])
 

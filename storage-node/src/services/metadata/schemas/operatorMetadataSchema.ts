@@ -1,5 +1,4 @@
 import { JSONSchema4 } from 'json-schema'
-import { NODE_OPERATIONAL_STATUS_OPTIONS } from './types'
 
 // Storage node operator metadata JSON schema.
 export const operatorMetadataSchema: JSONSchema4 = {
@@ -24,13 +23,79 @@ export const operatorMetadataSchema: JSONSchema4 = {
       },
     },
     operationalStatus: {
-      type: 'object',
-      properties: {
-        status: { type: 'string', enum: [...NODE_OPERATIONAL_STATUS_OPTIONS] },
-        noServiceFrom: { type: 'string', format: 'date-time' },
-        noServiceTo: { type: 'string', format: 'date-time' },
-        rationale: { type: 'string' },
-      },
+      oneOf: [
+        {
+          type: 'object',
+          properties: {
+            normal: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          required: ['normal'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            noService: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          required: ['noService'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            noServiceFrom: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+                from: {
+                  type: 'string',
+                },
+              },
+              required: ['from'],
+            },
+          },
+          required: ['noServiceFrom'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            noServiceUntil: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+                from: {
+                  type: 'string',
+                },
+                until: {
+                  type: 'string',
+                },
+              },
+              required: ['until'],
+            },
+          },
+          required: ['noServiceUntil'],
+          additionalProperties: false,
+        },
+      ],
     },
     extra: { type: 'string' },
   },

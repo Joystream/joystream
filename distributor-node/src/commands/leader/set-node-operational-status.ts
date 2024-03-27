@@ -1,12 +1,11 @@
 import {
-  INodeOperationalStatusMetadata,
+  INodeOperationalStatus,
   ISetNodeOperationalStatus,
-  NodeOperationalStatusMetadata,
+  NodeOperationalStatus,
   SetNodeOperationalStatus,
 } from '@joystream/metadata-protobuf'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
-import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../types/metadata'
 
 export default class LeadSetNodeOperationalStatus extends AccountsCommandBase {
   static description = `Set/update distribution node operational status. Requires distribution working group leader permissions.`
@@ -20,41 +19,54 @@ export default class LeadSetNodeOperationalStatus extends AccountsCommandBase {
       description: 'ID of the operator (distribution group worker)',
       required: true,
     }),
-    operationalStatus: flags.enum<NodeOperationalStatus>({
+    operationalStatus: flags.enum<Exclude<NodeOperationalStatus['nodeOperationalStatus'], undefined>>({
       char: 'o',
-      options: [...NODE_OPERATIONAL_STATUS_OPTIONS],
-      required: false,
+      options: ['normal', 'noService', 'noServiceFrom', 'noServiceUntil'],
+      required: true,
       description: 'Operational status of the operator',
+    }),
+    rationale: flags.string({
+      char: 'r',
+      description: 'Rationale for setting the operational status',
     }),
     ...DefaultCommandBase.flags,
   }
 
   async run(): Promise<void> {
-    const { bucketId, workerId, operationalStatus: statusType } = this.parse(LeadSetNodeOperationalStatus).flags
+    const {
+      bucketId,
+      workerId,
+      rationale,
+      operationalStatus: statusType,
+    } = this.parse(LeadSetNodeOperationalStatus).flags
     const leadKey = await this.getDistributorLeadKey()
 
-    let operationalStatus: INodeOperationalStatusMetadata = {}
+    let operationalStatus: INodeOperationalStatus
     switch (statusType) {
-      case 'Normal': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NORMAL }
+      case 'normal': {
+        operationalStatus = { normal: { rationale } }
         break
       }
-      case 'NoService': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE }
+      case 'noService': {
+        operationalStatus = { noService: { rationale } }
         break
       }
-      case 'NoServiceFrom': {
+      case 'noServiceFrom': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          noServiceFrom: {
+            rationale,
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          },
         }
         break
       }
-      case 'NoServiceDuring': {
+      case 'noServiceUntil': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
-          noServiceTo: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          noServiceUntil: {
+            rationale,
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+            until: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          },
         }
       }
     }

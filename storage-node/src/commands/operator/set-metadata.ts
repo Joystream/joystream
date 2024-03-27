@@ -1,13 +1,12 @@
 import {
-  INodeOperationalStatusMetadata,
+  INodeOperationalStatus,
   IStorageBucketOperatorMetadata,
-  NodeOperationalStatusMetadata,
+  NodeOperationalStatus,
   StorageBucketOperatorMetadata,
 } from '@joystream/metadata-protobuf'
 import { flags } from '@oclif/command'
 import fs from 'fs'
 import ApiCommandBase from '../../command-base/ApiCommandBase'
-import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../services/metadata/schemas'
 import { ValidationService } from '../../services/metadata/validationService'
 import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
 import { getWorkerRoleAccount } from '../../services/runtime/queries'
@@ -40,9 +39,9 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       description: 'Root distribution node endpoint',
       exclusive: ['jsonFile'],
     }),
-    operationalStatus: flags.enum<NodeOperationalStatus>({
+    operationalStatus: flags.enum<Exclude<NodeOperationalStatus['nodeOperationalStatus'], undefined>>({
       char: 'o',
-      options: [...NODE_OPERATIONAL_STATUS_OPTIONS],
+      options: ['normal', 'noService', 'noServiceFrom', 'noServiceUntil'],
       required: false,
       description: 'Operational status of the operator',
     }),
@@ -58,28 +57,30 @@ export default class OperatorSetMetadata extends ApiCommandBase {
     const { flags } = this.parse(OperatorSetMetadata)
     const { workerId, bucketId, jsonFile, endpoint, operationalStatus: statusType } = flags
 
-    let operationalStatus: INodeOperationalStatusMetadata = {}
+    let operationalStatus: INodeOperationalStatus
     switch (statusType) {
-      case 'Normal': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NORMAL }
+      case 'normal': {
+        operationalStatus = { normal: {} }
         break
       }
-      case 'NoService': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE }
+      case 'noService': {
+        operationalStatus = { noService: {} }
         break
       }
-      case 'NoServiceFrom': {
+      case 'noServiceFrom': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          noServiceFrom: {
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          },
         }
         break
       }
-      case 'NoServiceDuring': {
+      case 'noServiceUntil': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
-          noServiceTo: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          noServiceUntil: {
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+            until: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          },
         }
       }
     }
@@ -90,15 +91,7 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       const input = validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(jsonFile).toString()))
       metadata = {
         ...input,
-        operationalStatus: input.operationalStatus
-          ? {
-              ...input.operationalStatus,
-              status:
-                input.operationalStatus?.status === 'Normal'
-                  ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
-                  : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-            }
-          : {},
+        ...(input.operationalStatus && { operationalStatus: input.operationalStatus }),
       }
     } else {
       metadata = { endpoint, operationalStatus }

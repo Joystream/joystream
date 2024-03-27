@@ -1,14 +1,13 @@
 import {
   DistributionBucketOperatorMetadata,
   IDistributionBucketOperatorMetadata,
-  INodeOperationalStatusMetadata,
-  NodeOperationalStatusMetadata,
+  INodeOperationalStatus,
+  NodeOperationalStatus,
 } from '@joystream/metadata-protobuf'
 import fs from 'fs'
 import AccountsCommandBase from '../../command-base/accounts'
 import DefaultCommandBase, { flags } from '../../command-base/default'
 import { ValidationService } from '../../services/validation/ValidationService'
-import { NODE_OPERATIONAL_STATUS_OPTIONS, NodeOperationalStatus } from '../../types/metadata'
 
 export default class OperatorSetMetadata extends AccountsCommandBase {
   static description = `Set/update distribution bucket operator metadata.
@@ -28,9 +27,9 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
       description: 'Root distribution node endpoint',
       exclusive: ['input'],
     }),
-    operationalStatus: flags.enum<NodeOperationalStatus>({
+    operationalStatus: flags.enum<Exclude<NodeOperationalStatus['nodeOperationalStatus'], undefined>>({
       char: 'o',
-      options: [...NODE_OPERATIONAL_STATUS_OPTIONS],
+      options: ['normal', 'noService', 'noServiceFrom', 'noServiceUntil'],
       required: false,
       description: 'Operational status of the operator',
     }),
@@ -46,28 +45,30 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
     const { bucketId, workerId, input, endpoint, operationalStatus: statusType } = this.parse(OperatorSetMetadata).flags
     const workerKey = await this.getDistributorWorkerRoleKey(workerId)
 
-    let operationalStatus: INodeOperationalStatusMetadata = {}
+    let operationalStatus: INodeOperationalStatus
     switch (statusType) {
-      case 'Normal': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NORMAL }
+      case 'normal': {
+        operationalStatus = { normal: {} }
         break
       }
-      case 'NoService': {
-        operationalStatus = { status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE }
+      case 'noService': {
+        operationalStatus = { noService: {} }
         break
       }
-      case 'NoServiceFrom': {
+      case 'noServiceFrom': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          noServiceFrom: {
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          },
         }
         break
       }
-      case 'NoServiceDuring': {
+      case 'noServiceUntil': {
         operationalStatus = {
-          status: NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-          noServiceFrom: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
-          noServiceTo: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          noServiceUntil: {
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+            until: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          },
         }
       }
     }
@@ -78,15 +79,7 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
       const params = validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(input).toString()))
       metadata = {
         ...params,
-        operationalStatus: params.operationalStatus
-          ? {
-              ...params.operationalStatus,
-              status:
-                params.operationalStatus?.status === 'Normal'
-                  ? NodeOperationalStatusMetadata.OperationalStatus.NORMAL
-                  : NodeOperationalStatusMetadata.OperationalStatus.NO_SERVICE,
-            }
-          : {},
+        ...(params.operationalStatus && { operationalStatus: params.operationalStatus }),
       }
     } else {
       metadata = { endpoint, operationalStatus }
@@ -96,8 +89,8 @@ export default class OperatorSetMetadata extends AccountsCommandBase {
       bucketId: bucketId.toHuman(),
       workerId,
       metadata,
-      operationalStatus,
     })
+
     await this.sendAndFollowTx(
       await this.getDecodedPair(workerKey),
       this.api.tx.storage.setDistributionOperatorMetadata(
