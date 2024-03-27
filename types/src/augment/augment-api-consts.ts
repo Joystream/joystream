@@ -554,6 +554,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       createWorkingGroupLeadOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Decrease Council budget parameters
+       **/
+      decreaseCouncilBudgetProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
        * Exports 'Decrease Working Group Lead Stake' proposal parameters.
        **/
       decreaseWorkingGroupLeadStakeProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
@@ -603,6 +607,9 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Set Membership Price' proposal parameters.
        **/
       setMembershipPriceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Set Pallet Frozen status
+       **/
       setPalletFozenStatusProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       setReferralCutProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**

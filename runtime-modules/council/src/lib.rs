@@ -423,6 +423,11 @@ decl_event! {
         /// Councilor reward has been updated.
         CouncilorRewardUpdated(Balance),
 
+        /// Councilor budget has been decreased
+        /// Params:
+        /// - Reduction amount
+        CouncilBudgetDecreased(Balance),
+
         /// Request has been funded
         RequestFunded(AccountId, Balance),
 
@@ -518,6 +523,9 @@ decl_error! {
 
         /// Cannot withdraw: insufficient budget balance.
         InsufficientBalanceForTransfer,
+
+        /// Cannot reduce the budget by the given amount.
+        ReductionAmountTooLarge
     }
 }
 
@@ -843,6 +851,38 @@ decl_module! {
             Ok(())
         }
 
+        /// Decrease the council total budget
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::decrease_council_budget()]
+        pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_decrease_council_budget(origin)?;
+
+            // ensure reduction amount is not too large
+            ensure!(
+                reduction_amount <= Self::budget(),
+                Error::<T>::ReductionAmountTooLarge
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::decrease_budget(reduction_amount);
+
+            // emit event
+            Self::deposit_event(RawEvent::CouncilBudgetDecreased(reduction_amount));
+
+            Ok(())
+        }
 
         /// Transfers funds from council budget to account
         ///
@@ -1784,6 +1824,13 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in setting the councilor reward.
     fn can_set_councilor_reward(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in decreasing the council budget
+    fn can_decrease_council_budget(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())

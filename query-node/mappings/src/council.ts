@@ -25,6 +25,7 @@ import {
   CandidacyWithdrawEvent,
   Candidate,
   CastVote,
+  CouncilBudgetDecreasedEvent,
   CouncilBudgetFundedEvent,
   CouncilMember,
   CouncilStage,
@@ -68,6 +69,7 @@ import {
   Council_CandidacyStakeReleaseEvent_V1001 as CandidacyStakeReleaseEvent_V1001,
   Council_CandidacyWithdrawEvent_V1001 as CandidacyWithdrawEvent_V1001,
   Council_CouncilBudgetFundedEvent_V1001 as CouncilBudgetFundedEvent_V1001,
+  Council_CouncilBudgetDecreasedEvent_V2003 as CouncilBudgetDecreasedEvent_V2003,
   Council_RequestFundedEvent_V1001,
   Council_CouncilorRewardUpdatedEvent_V1001 as CouncilorRewardUpdatedEvent_V1001,
   Council_NewCandidateEvent_V1001 as NewCandidateEvent_V1001,
@@ -853,6 +855,21 @@ export async function council_CouncilBudgetFunded({ event, store }: EventContext
   })
 
   await store.save<RequestFundedEvent>(requestFundedEvent)
+
+  // no specific event processing
+}
+
+export async function council_CouncilBudgetDecreased({ event, store }: EventContext & StoreContext): Promise<void> {
+  // common event processing
+
+  const [amount] = new CouncilBudgetDecreasedEvent_V2003(event).params
+
+  const budgetDecreasedEvent = new CouncilBudgetDecreasedEvent({
+    ...genericEventFields(event),
+    amount,
+  })
+
+  await store.save<CouncilBudgetDecreasedEvent>(budgetDecreasedEvent)
 
   // no specific event processing
 }

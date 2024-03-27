@@ -59,6 +59,7 @@ pub trait WeightInfo {
 	fn set_budget() -> Weight;
 	fn plan_budget_refill() -> Weight;
 	fn fund_council_budget() -> Weight;
+	fn decrease_council_budget() -> Weight;
 	fn candidate_remark() -> Weight;
 	fn councilor_remark() -> Weight;
 }
@@ -316,6 +317,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+	fn decrease_council_budget() -> Weight {
+		Weight::from_parts(0, 0u64)
+	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
 	// Storage: Council Candidates (r:1 w:0)
@@ -399,4 +403,8 @@ impl WeightInfo for () {
 	fn councilor_remark() -> Weight {
 		Weight::from_parts(0, 0)
 	}
+	fn decrease_council_budget() -> Weight {
+		Weight::from_parts(0, 0u64)
+	}
+
 }

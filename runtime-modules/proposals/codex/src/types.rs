@@ -127,6 +127,9 @@ pub enum ProposalDetails<
 
     /// Update CRT governance parameters
     UpdateTokenPalletGovernanceParameters(TokenGovernanceParameters),
+
+    /// `DecreaseCouncilBudget` proposal
+    DecreaseCouncilBudget(Balance),
 }
 
 impl<

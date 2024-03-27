@@ -112,4 +112,7 @@ parameter_types! {
 
     pub UpdateTokenPalletGovernanceParameters: ProposalParameters<BlockNumber, Balance> =
         update_token_pallet_token_governance_parameters();
+
+    pub DecreaseCouncilBudgetProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        decrease_council_budget();
 }

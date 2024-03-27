@@ -160,6 +160,7 @@ typegen:
     - council.CouncilorRewardUpdated
     - council.RequestFunded
     - council.CouncilBudgetFunded
+    - council.CouncilBudgetDecreased
     # Referendum
     - referendum.ReferendumStarted
     - referendum.ReferendumStartedForcefully
@@ -914,6 +915,8 @@ mappings:
       handler: council_RequestFunded
     - event: council.CouncilBudgetFunded
       handler: council_CouncilBudgetFunded
+    - event: council.CouncilBudgetDecreased
+      handler: council_CouncilBudgetDecreased
     # Referendum
     - event: referendum.ReferendumStarted
       handler: referendum_ReferendumStarted

@@ -1,6 +1,7 @@
 mod mock;
 
 use content::NftLimitPeriod;
+use frame_support::assert_noop;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
@@ -1694,6 +1695,28 @@ fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
     for group in WorkingGroup::iter() {
         run_create_terminate_working_group_leader_role_proposal_common_checks_succeed(group);
     }
+}
+
+#[test]
+fn create_decrease_working_group_budget_fails_with_zero_reduction_amount() {
+    let general_proposal_parameters = GeneralProposalParameters::<Test> {
+        member_id: 1,
+        title: b"title".to_vec(),
+        description: b"body".to_vec(),
+        staking_account_id: Some(1),
+        exact_execution_block: None,
+    };
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+        assert_noop!(
+            ProposalsCodex::create_proposal(
+                RawOrigin::Signed(1).into(),
+                general_proposal_parameters,
+                ProposalDetails::DecreaseCouncilBudget(0u64)
+            ),
+            Error::<Test>::ReductionAmountZero
+        );
+    })
 }
 
 fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed(

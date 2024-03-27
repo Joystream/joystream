@@ -95,7 +95,6 @@ frame_support::construct_runtime!(
         Token: token::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
-        Council: council::{Pallet, Call, Storage, Event<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
@@ -107,6 +106,7 @@ frame_support::construct_runtime!(
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -743,6 +743,7 @@ impl crate::Config for Test {
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type SetPalletFozenStatusProposalParameters = DefaultProposalParameters;
     type UpdateTokenPalletGovernanceParameters = DefaultProposalParameters;
+    type DecreaseCouncilBudgetProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {

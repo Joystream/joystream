@@ -176,6 +176,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     RuntimeCall::ProjectToken(project_token::Call::set_frozen_status { freeze })
                 }
             },
+            ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
+                RuntimeCall::Council(council::Call::decrease_council_budget { reduction_amount })
+            }
         };
 
         call.encode()
