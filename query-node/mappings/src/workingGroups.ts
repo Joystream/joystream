@@ -1022,14 +1022,14 @@ export async function workingGroups_BudgetSet({ store, event }: EventContext & S
 }
 
 export async function workingGroups_BudgetSpending({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [reciever, amount, optRationale] = new WorkingGroup_BudgetSpendingEvent_V1001(event).params
+  const [receiver, amount, optRationale] = new WorkingGroup_BudgetSpendingEvent_V1001(event).params
   const group = await getWorkingGroupOrFail(store, event)
 
   const budgetSpendingEvent = new BudgetSpendingEvent({
     ...genericEventFields(event),
     group,
     amount,
-    reciever: reciever.toString(),
+    receiver: receiver.toString(),
     rationale: optRationale.isSome ? bytesToString(optRationale.unwrap()) : undefined,
   })
 

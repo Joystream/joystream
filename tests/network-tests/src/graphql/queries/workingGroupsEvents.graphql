@@ -435,7 +435,7 @@ fragment BudgetSpendingEventFields on BudgetSpendingEvent {
   group {
     name
   }
-  reciever
+  receiver
   amount
   rationale
 }

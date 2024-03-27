@@ -52,7 +52,7 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
   protected assertQueryNodeEventIsValid(qEvent: BudgetSpendingEventFieldsFragment, i: number): void {
     assert.equal(qEvent.group.name, this.group)
     assert.equal(qEvent.amount, this.amounts[i].toString())
-    assert.equal(qEvent.reciever, this.recievers[i])
+    assert.equal(qEvent.receiver, this.recievers[i])
     assert.equal(qEvent.rationale, this.getRationale(this.recievers[i]))
   }
 
