@@ -50,6 +50,7 @@ typegen:
     - storageWorkingGroup.WorkerRewardAmountUpdated
     - storageWorkingGroup.StatusTextChanged
     - storageWorkingGroup.BudgetSpending
+    - storageWorkingGroup.VestedBudgetSpending
     - storageWorkingGroup.RewardPaid
     - storageWorkingGroup.NewMissedRewardLevelReached
     - storageWorkingGroup.LeadRemarked
@@ -289,6 +290,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: storageWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: storageWorkingGroup.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: storageWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
     - event: storageWorkingGroup.NewMissedRewardLevelReached
@@ -336,6 +339,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: forumWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: forumWorkingGroup.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: forumWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
     - event: forumWorkingGroup.NewMissedRewardLevelReached
@@ -387,6 +392,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: membershipWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: membershipWorkingGroup.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: membershipWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
     - event: membershipWorkingGroup.NewMissedRewardLevelReached
@@ -438,6 +445,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: contentWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: contentWorkingGroup.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: contentWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
     - event: contentWorkingGroup.NewMissedRewardLevelReached
@@ -485,6 +494,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: operationsWorkingGroupAlpha.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroupAlpha.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: operationsWorkingGroupAlpha.RewardPaid
       handler: workingGroups_RewardPaid
     - event: operationsWorkingGroupAlpha.NewMissedRewardLevelReached
@@ -532,6 +543,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: operationsWorkingGroupBeta.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroupBeta.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: operationsWorkingGroupBeta.RewardPaid
       handler: workingGroups_RewardPaid
     - event: operationsWorkingGroupBeta.NewMissedRewardLevelReached
@@ -579,6 +592,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: operationsWorkingGroupGamma.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: operationsWorkingGroupGamma.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: operationsWorkingGroupGamma.RewardPaid
       handler: workingGroups_RewardPaid
     - event: operationsWorkingGroupGamma.NewMissedRewardLevelReached
@@ -626,6 +641,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: distributionWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: distributionWorkingGroup.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: distributionWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
     - event: distributionWorkingGroup.NewMissedRewardLevelReached
@@ -673,6 +690,8 @@ mappings:
       handler: workingGroups_StatusTextChanged
     - event: appWorkingGroup.BudgetSpending
       handler: workingGroups_BudgetSpending
+    - event: appWorkingGroup.VestedBudgetSpending
+      handler: workingGroups_VestedBudgetSpending
     - event: appWorkingGroup.RewardPaid
       handler: workingGroups_RewardPaid
     - event: appWorkingGroup.NewMissedRewardLevelReached
