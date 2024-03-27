@@ -402,7 +402,7 @@ export class NetworkingService {
 
   async checkActiveStorageNodeEndpoints(): Promise<void> {
     try {
-      const activeStorageOperators = await this.queryNodeApi.getActiveStorageBucketOperatorsData()
+      const activeStorageOperators = await this.queryNodeApi.getOperationallyActiveStorageBucketOperatorsData()
       const endpoints = this.filterStorageNodeEndpoints(
         activeStorageOperators.map(({ id, operatorMetadata }) => ({
           bucketId: id,

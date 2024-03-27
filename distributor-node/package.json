@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -34,6 +34,7 @@
     "graphql": "^15.3.0",
     "graphql-tag": "^2.12.6",
     "inquirer": "^8.1.2",
+    "inquirer-datepicker": "2.0.2",
     "js-image-generator": "^1.0.3",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",

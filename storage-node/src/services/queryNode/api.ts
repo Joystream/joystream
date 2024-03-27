@@ -28,6 +28,9 @@ import {
   GetStorageBucketsByWorkerId,
   GetStorageBucketsByWorkerIdQuery,
   GetStorageBucketsByWorkerIdQueryVariables,
+  GetStorageBucketsOperationalStatus,
+  GetStorageBucketsOperationalStatusQuery,
+  GetStorageBucketsOperationalStatusQueryVariables,
   GetStorageBucketsQuery,
   GetStorageBucketsQueryVariables,
   SquidStatus,
@@ -179,12 +182,35 @@ export class QueryNodeApi {
     return result.data[resultKey]
   }
 
+  private getOperationallyActiveStorageBuckets(
+    buckets: Array<StorageBucketIdsFragment>
+  ): Array<StorageBucketIdsFragment> {
+    // Filter out nodes/operators under maintenance
+    return buckets.filter(({ operatorMetadata }) => {
+      const status = operatorMetadata?.nodeOperationalStatus
+      const date = new Date()
+      if (
+        !operatorMetadata ||
+        !status ||
+        status.__typename === 'NodeOperationalStatusNormal' ||
+        (status.__typename === 'NodeOperationalStatusNoServiceFrom' && new Date(status.from) > date) || // planned future maintenance (which has not started yet)
+        (status.__typename === 'NodeOperationalStatusNoServiceUntil' &&
+          new Date(status.from) > date &&
+          new Date(status.until) < date) // planned future maintenance with end time (which has not started yet)
+      ) {
+        return true
+      }
+
+      return false
+    })
+  }
+
   /**
    * Returns storage bucket IDs filtered by worker ID.
    *
    * @param workerId - worker ID
    */
-  public async getStorageBucketIdsByWorkerId(workerId: number): Promise<Array<StorageBucketIdsFragment>> {
+  public async getStorageBucketIdsByWorkerId(workerId: bigint): Promise<Array<StorageBucketIdsFragment>> {
     const result = await this.multipleEntitiesQuery<
       GetStorageBucketsByWorkerIdQuery,
       GetStorageBucketsByWorkerIdQueryVariables
@@ -194,7 +220,7 @@ export class QueryNodeApi {
       return []
     }
 
-    return result
+    return this.getOperationallyActiveStorageBuckets(result)
   }
 
   /**
@@ -293,6 +319,25 @@ export class QueryNodeApi {
       {},
       'storageBuckets'
     )
+
+    if (!result) {
+      return []
+    }
+
+    return this.getOperationallyActiveStorageBuckets(result)
+  }
+
+  /**
+   * Returns storage bucket IDs.
+   *
+   */
+  public async getStorageBucketsOperationalStatus(
+    bucketIds: string[]
+  ): Promise<Array<GetStorageBucketsOperationalStatusQuery['storageBuckets'][number]>> {
+    const result = await this.multipleEntitiesQuery<
+      GetStorageBucketsOperationalStatusQuery,
+      GetStorageBucketsOperationalStatusQueryVariables
+    >(GetStorageBucketsOperationalStatus, { ids: bucketIds }, 'storageBuckets')
 
     if (!result) {
       return []

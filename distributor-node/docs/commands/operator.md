@@ -39,18 +39,24 @@ USAGE
   $ joystream-distributor operator:set-metadata
 
 OPTIONS
-  -B, --bucketId=bucketId      (required) Distribution bucket ID in {familyId}:{bucketIndex} format.
+  -B, --bucketId=bucketId                                                   (required) Distribution bucket ID in
+                                                                            {familyId}:{bucketIndex} format.
 
-  -c, --configPath=configPath  [default: ./config.yml] Path to config JSON/YAML file (relative to current working
-                               directory)
+  -c, --configPath=configPath                                               [default: ./config.yml] Path to config
+                                                                            JSON/YAML file (relative to current working
+                                                                            directory)
 
-  -e, --endpoint=endpoint      Root distribution node endpoint
+  -e, --endpoint=endpoint                                                   Root distribution node endpoint
 
-  -i, --input=input            Path to JSON metadata file
+  -i, --input=input                                                         Path to JSON metadata file
 
-  -w, --workerId=workerId      (required) ID of the operator (distribution group worker)
+  -o, --operationalStatus=(Normal|NoService|NoServiceFrom|NoServiceDuring)  Operational status of the operator
 
-  -y, --yes                    Answer "yes" to any prompt, skipping any manual confirmations
+  -w, --workerId=workerId                                                   (required) ID of the operator (distribution
+                                                                            group worker)
+
+  -y, --yes                                                                 Answer "yes" to any prompt, skipping any
+                                                                            manual confirmations
 
 DESCRIPTION
   Requires active distribution bucket operator worker role key.

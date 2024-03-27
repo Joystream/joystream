@@ -15,12 +15,14 @@ message StorageBucketOperatorMetadata {
   optional string endpoint = 1; // Root storage node endpoint (ie. https://example.com/storage)
   optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
   optional string extra = 3; // Additional information about the node / node operator
+  optional NodeOperationalStatus operational_status = 4; // Node's operational status to set
 }
 
 message DistributionBucketOperatorMetadata {
   optional string endpoint = 1; // Root distribution node endpoint (ie. https://example.com/distribution)
   optional NodeLocationMetadata location = 2; // Information about node's phisical location (providing {} will unset current value)
   optional string extra = 3; // Additional information about the node / node operator
+  optional NodeOperationalStatus operational_status = 4; // Node's operational status to set
 }
 
 message GeographicalArea {
@@ -45,4 +47,41 @@ message DistributionBucketFamilyMetadata {
   optional string description = 2; // Additional, more specific description of the region
   repeated GeographicalArea areas = 3; // Standarized geographical areas covered by the family (providing [{}] will unset the current value)
   repeated string latency_test_targets = 4; // List of targets (hosts/ips) best suited latency measurements for this family
+}
+
+message NodeOperationalStatusNormal {  
+  optional string rationale = 1;  
+
+}  
+
+message NodeOperationalStatusNoService {  
+   optional string rationale = 1;  
+  }  
+
+message NodeOperationalStatusNoServiceFrom {  
+  optional string rationale = 1;  
+  required string from = 2;  // date  
+}  
+
+message NodeOperationalStatusNoServiceUntil {  
+  optional string rationale = 1;  
+  optional string from = 2;  // date  
+  required string until = 3;  // date  
+}  
+
+
+message NodeOperationalStatus {
+  oneof node_operational_status {
+    NodeOperationalStatusNormal normal = 1;
+    NodeOperationalStatusNoService no_service = 2;
+    NodeOperationalStatusNoServiceFrom no_service_from = 3;
+    NodeOperationalStatusNoServiceUntil no_service_until = 4;
+  } 
+}
+
+message SetNodeOperationalStatus {
+  required string worker_id = 1; // Storage/Distribution Worker ID
+  required string bucket_id = 2; // Storage/Distribution Bucket ID 
+  required NodeOperationalStatus operational_status = 3; // Node's operational status to set
+
 }

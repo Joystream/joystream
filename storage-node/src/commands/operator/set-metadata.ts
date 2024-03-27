@@ -1,10 +1,14 @@
+import {
+  INodeOperationalStatus,
+  IStorageBucketOperatorMetadata,
+  NodeOperationalStatus,
+  StorageBucketOperatorMetadata,
+} from '@joystream/metadata-protobuf'
 import { flags } from '@oclif/command'
-import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
-import ApiCommandBase from '../../command-base/ApiCommandBase'
-import logger from '../../services/logger'
-import { ValidationService } from '../../services/metadata/validationService'
-import { StorageBucketOperatorMetadata, IStorageBucketOperatorMetadata } from '@joystream/metadata-protobuf'
 import fs from 'fs'
+import ApiCommandBase from '../../command-base/ApiCommandBase'
+import { ValidationService } from '../../services/metadata/validationService'
+import { setStorageOperatorMetadata } from '../../services/runtime/extrinsics'
 import { getWorkerRoleAccount } from '../../services/runtime/queries'
 
 /**
@@ -35,6 +39,12 @@ export default class OperatorSetMetadata extends ApiCommandBase {
       description: 'Root distribution node endpoint',
       exclusive: ['jsonFile'],
     }),
+    operationalStatus: flags.enum<Exclude<NodeOperationalStatus['nodeOperationalStatus'], undefined>>({
+      char: 'o',
+      options: ['normal', 'noService', 'noServiceFrom', 'noServiceUntil'],
+      required: false,
+      description: 'Operational status of the operator',
+    }),
     jsonFile: flags.string({
       char: 'j',
       description: 'Path to JSON metadata file',
@@ -45,16 +55,50 @@ export default class OperatorSetMetadata extends ApiCommandBase {
 
   async run(): Promise<void> {
     const { flags } = this.parse(OperatorSetMetadata)
-    const { workerId, bucketId, jsonFile, endpoint } = flags
+    const { workerId, bucketId, jsonFile, endpoint, operationalStatus: statusType } = flags
+
+    let operationalStatus: INodeOperationalStatus
+    switch (statusType) {
+      case 'normal': {
+        operationalStatus = { normal: {} }
+        break
+      }
+      case 'noService': {
+        operationalStatus = { noService: {} }
+        break
+      }
+      case 'noServiceFrom': {
+        operationalStatus = {
+          noServiceFrom: {
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+          },
+        }
+        break
+      }
+      case 'noServiceUntil': {
+        operationalStatus = {
+          noServiceUntil: {
+            from: (await this.datePrompt({ message: 'Enter No Service period start date' })).toISOString(),
+            until: (await this.datePrompt({ message: 'Enter No Service period end date' })).toISOString(),
+          },
+        }
+      }
+    }
 
     const validation = new ValidationService()
-    const metadata: IStorageBucketOperatorMetadata = jsonFile
-      ? validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(jsonFile).toString()))
-      : { endpoint }
+    let metadata: IStorageBucketOperatorMetadata
+    if (jsonFile) {
+      const input = validation.validate('OperatorMetadata', JSON.parse(fs.readFileSync(jsonFile).toString()))
+      metadata = {
+        ...input,
+        ...(input.operationalStatus && { operationalStatus: input.operationalStatus }),
+      }
+    } else {
+      metadata = { endpoint, operationalStatus }
+    }
 
     const encodedMetadata = '0x' + Buffer.from(StorageBucketOperatorMetadata.encode(metadata).finish()).toString('hex')
 
-    logger.info('Setting the storage operator metadata...')
     if (flags.dev) {
       await this.ensureDevelopmentChain()
     }

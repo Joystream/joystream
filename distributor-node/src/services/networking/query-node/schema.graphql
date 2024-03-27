@@ -347,7 +347,7 @@ type DistributionBucketOperator {
   distributionBucket: DistributionBucket!
 
   """ID of the distribution group worker"""
-  workerId: Int!
+  workerId: BigInt!
 
   """Current operator status"""
   status: DistributionBucketOperatorStatus!
@@ -372,6 +372,9 @@ type DistributionBucketOperatorMetadata {
 
   """Optional node location metadata"""
   nodeLocation: NodeLocationMetadata
+
+  """Optional node operational status"""
+  nodeOperationalStatus: NodeOperationalStatus
 
   """Additional information about the node/operator"""
   extra: String
@@ -417,6 +420,26 @@ enum DistributionBucketOperatorMetadataOrderByInput {
   nodeLocation_city_DESC
   nodeLocation_city_ASC_NULLS_FIRST
   nodeLocation_city_DESC_NULLS_LAST
+  nodeOperationalStatus_rationale_ASC
+  nodeOperationalStatus_rationale_DESC
+  nodeOperationalStatus_rationale_ASC_NULLS_FIRST
+  nodeOperationalStatus_rationale_DESC_NULLS_LAST
+  nodeOperationalStatus_forced_ASC
+  nodeOperationalStatus_forced_DESC
+  nodeOperationalStatus_forced_ASC_NULLS_FIRST
+  nodeOperationalStatus_forced_DESC_NULLS_LAST
+  nodeOperationalStatus_from_ASC
+  nodeOperationalStatus_from_DESC
+  nodeOperationalStatus_from_ASC_NULLS_FIRST
+  nodeOperationalStatus_from_DESC_NULLS_LAST
+  nodeOperationalStatus_until_ASC
+  nodeOperationalStatus_until_DESC
+  nodeOperationalStatus_until_ASC_NULLS_FIRST
+  nodeOperationalStatus_until_DESC_NULLS_LAST
+  nodeOperationalStatus_isTypeOf_ASC
+  nodeOperationalStatus_isTypeOf_DESC
+  nodeOperationalStatus_isTypeOf_ASC_NULLS_FIRST
+  nodeOperationalStatus_isTypeOf_DESC_NULLS_LAST
   extra_ASC
   extra_DESC
   extra_ASC_NULLS_FIRST
@@ -462,6 +485,8 @@ input DistributionBucketOperatorMetadataWhereInput {
   nodeEndpoint_not_endsWith: String
   nodeLocation_isNull: Boolean
   nodeLocation: NodeLocationMetadataWhereInput
+  nodeOperationalStatus_isNull: Boolean
+  nodeOperationalStatus: NodeOperationalStatusWhereInput
   extra_isNull: Boolean
   extra_eq: String
   extra_not_eq: String
@@ -558,14 +583,14 @@ input DistributionBucketOperatorWhereInput {
   distributionBucket_isNull: Boolean
   distributionBucket: DistributionBucketWhereInput
   workerId_isNull: Boolean
-  workerId_eq: Int
-  workerId_not_eq: Int
-  workerId_gt: Int
-  workerId_gte: Int
-  workerId_lt: Int
-  workerId_lte: Int
-  workerId_in: [Int!]
-  workerId_not_in: [Int!]
+  workerId_eq: BigInt
+  workerId_not_eq: BigInt
+  workerId_gt: BigInt
+  workerId_gte: BigInt
+  workerId_lt: BigInt
+  workerId_lte: BigInt
+  workerId_in: [BigInt!]
+  workerId_not_in: [BigInt!]
   status_isNull: Boolean
   status_eq: DistributionBucketOperatorStatus
   status_not_eq: DistributionBucketOperatorStatus
@@ -651,6 +676,14 @@ input DistributionBucketWhereInput {
   OR: [DistributionBucketWhereInput!]
 }
 
+type DistributionNodeOperationalStatusSetEvent {
+  """Distribution bucket operator"""
+  bucketOperator: DistributionBucketOperator!
+
+  """Operational status that was set"""
+  operationalStatus: NodeOperationalStatus!
+}
+
 type Event {
   """{blockNumber}-{indexInBlock}"""
   id: String!
@@ -671,7 +704,7 @@ type Event {
   data: EventData!
 }
 
-union EventData = MetaprotocolTransactionStatusEventData | DataObjectDeletedEventData
+union EventData = MetaprotocolTransactionStatusEventData | DataObjectDeletedEventData | StorageNodeOperationalStatusSetEvent | DistributionNodeOperationalStatusSetEvent
 
 input EventDataWhereInput {
   result_isNull: Boolean
@@ -693,6 +726,12 @@ input EventDataWhereInput {
   dataObjectId_not_startsWith: String
   dataObjectId_endsWith: String
   dataObjectId_not_endsWith: String
+  storageBucket_isNull: Boolean
+  storageBucket: StorageBucketWhereInput
+  operationalStatus_isNull: Boolean
+  operationalStatus: NodeOperationalStatusWhereInput
+  bucketOperator_isNull: Boolean
+  bucketOperator: DistributionBucketOperatorWhereInput
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -973,6 +1012,113 @@ input NodeLocationMetadataWhereInput {
   city_not_endsWith: String
   coordinates_isNull: Boolean
   coordinates: GeoCoordinatesWhereInput
+}
+
+union NodeOperationalStatus = NodeOperationalStatusNormal | NodeOperationalStatusNoService | NodeOperationalStatusNoServiceFrom | NodeOperationalStatusNoServiceUntil
+
+type NodeOperationalStatusNormal {
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNoService {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is
+  meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNoServiceFrom {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is
+  meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """The time from which the bucket would have to no service"""
+  from: DateTime!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+type NodeOperationalStatusNoServiceUntil {
+  """
+  Whether the state was set by lead (true) or by the operator (false), it is
+  meant to prevent worker from unilaterally reversing.
+  """
+  forced: Boolean!
+
+  """The time from which the bucket would have to no service"""
+  from: DateTime!
+
+  """The time until which the bucket would have to no service"""
+  until: DateTime!
+
+  """Reason why node was set to this state"""
+  rationale: String
+}
+
+input NodeOperationalStatusWhereInput {
+  rationale_isNull: Boolean
+  rationale_eq: String
+  rationale_not_eq: String
+  rationale_gt: String
+  rationale_gte: String
+  rationale_lt: String
+  rationale_lte: String
+  rationale_in: [String!]
+  rationale_not_in: [String!]
+  rationale_contains: String
+  rationale_not_contains: String
+  rationale_containsInsensitive: String
+  rationale_not_containsInsensitive: String
+  rationale_startsWith: String
+  rationale_not_startsWith: String
+  rationale_endsWith: String
+  rationale_not_endsWith: String
+  forced_isNull: Boolean
+  forced_eq: Boolean
+  forced_not_eq: Boolean
+  from_isNull: Boolean
+  from_eq: DateTime
+  from_not_eq: DateTime
+  from_gt: DateTime
+  from_gte: DateTime
+  from_lt: DateTime
+  from_lte: DateTime
+  from_in: [DateTime!]
+  from_not_in: [DateTime!]
+  until_isNull: Boolean
+  until_eq: DateTime
+  until_not_eq: DateTime
+  until_gt: DateTime
+  until_gte: DateTime
+  until_lt: DateTime
+  until_lte: DateTime
+  until_in: [DateTime!]
+  until_not_in: [DateTime!]
+  isTypeOf_isNull: Boolean
+  isTypeOf_eq: String
+  isTypeOf_not_eq: String
+  isTypeOf_gt: String
+  isTypeOf_gte: String
+  isTypeOf_lt: String
+  isTypeOf_lte: String
+  isTypeOf_in: [String!]
+  isTypeOf_not_in: [String!]
+  isTypeOf_contains: String
+  isTypeOf_not_contains: String
+  isTypeOf_containsInsensitive: String
+  isTypeOf_not_containsInsensitive: String
+  isTypeOf_startsWith: String
+  isTypeOf_not_startsWith: String
+  isTypeOf_endsWith: String
+  isTypeOf_not_endsWith: String
 }
 
 type PageInfo {
@@ -1376,6 +1522,9 @@ type StorageBucketOperatorMetadata {
   """Optional node location metadata"""
   nodeLocation: NodeLocationMetadata
 
+  """Optional node operational status"""
+  nodeOperationalStatus: NodeOperationalStatus
+
   """Additional information about the node/operator"""
   extra: String
 }
@@ -1432,6 +1581,26 @@ enum StorageBucketOperatorMetadataOrderByInput {
   nodeLocation_city_DESC
   nodeLocation_city_ASC_NULLS_FIRST
   nodeLocation_city_DESC_NULLS_LAST
+  nodeOperationalStatus_rationale_ASC
+  nodeOperationalStatus_rationale_DESC
+  nodeOperationalStatus_rationale_ASC_NULLS_FIRST
+  nodeOperationalStatus_rationale_DESC_NULLS_LAST
+  nodeOperationalStatus_forced_ASC
+  nodeOperationalStatus_forced_DESC
+  nodeOperationalStatus_forced_ASC_NULLS_FIRST
+  nodeOperationalStatus_forced_DESC_NULLS_LAST
+  nodeOperationalStatus_from_ASC
+  nodeOperationalStatus_from_DESC
+  nodeOperationalStatus_from_ASC_NULLS_FIRST
+  nodeOperationalStatus_from_DESC_NULLS_LAST
+  nodeOperationalStatus_until_ASC
+  nodeOperationalStatus_until_DESC
+  nodeOperationalStatus_until_ASC_NULLS_FIRST
+  nodeOperationalStatus_until_DESC_NULLS_LAST
+  nodeOperationalStatus_isTypeOf_ASC
+  nodeOperationalStatus_isTypeOf_DESC
+  nodeOperationalStatus_isTypeOf_ASC_NULLS_FIRST
+  nodeOperationalStatus_isTypeOf_DESC_NULLS_LAST
   extra_ASC
   extra_DESC
   extra_ASC_NULLS_FIRST
@@ -1477,6 +1646,8 @@ input StorageBucketOperatorMetadataWhereInput {
   nodeEndpoint_not_endsWith: String
   nodeLocation_isNull: Boolean
   nodeLocation: NodeLocationMetadataWhereInput
+  nodeOperationalStatus_isNull: Boolean
+  nodeOperationalStatus: NodeOperationalStatusWhereInput
   extra_isNull: Boolean
   extra_eq: String
   extra_not_eq: String
@@ -1501,12 +1672,12 @@ input StorageBucketOperatorMetadataWhereInput {
 union StorageBucketOperatorStatus = StorageBucketOperatorStatusMissing | StorageBucketOperatorStatusInvited | StorageBucketOperatorStatusActive
 
 type StorageBucketOperatorStatusActive {
-  workerId: Int!
+  workerId: BigInt!
   transactorAccountId: String!
 }
 
 type StorageBucketOperatorStatusInvited {
-  workerId: Int!
+  workerId: BigInt!
 }
 
 type StorageBucketOperatorStatusMissing {
@@ -1524,14 +1695,14 @@ input StorageBucketOperatorStatusWhereInput {
   phantom_in: [Int!]
   phantom_not_in: [Int!]
   workerId_isNull: Boolean
-  workerId_eq: Int
-  workerId_not_eq: Int
-  workerId_gt: Int
-  workerId_gte: Int
-  workerId_lt: Int
-  workerId_lte: Int
-  workerId_in: [Int!]
-  workerId_not_in: [Int!]
+  workerId_eq: BigInt
+  workerId_not_eq: BigInt
+  workerId_gt: BigInt
+  workerId_gte: BigInt
+  workerId_lt: BigInt
+  workerId_lte: BigInt
+  workerId_in: [BigInt!]
+  workerId_not_in: [BigInt!]
   transactorAccountId_isNull: Boolean
   transactorAccountId_eq: String
   transactorAccountId_not_eq: String
@@ -1858,6 +2029,14 @@ input StorageDataObjectWhereInput {
   stateBloatBond_not_in: [BigInt!]
   AND: [StorageDataObjectWhereInput!]
   OR: [StorageDataObjectWhereInput!]
+}
+
+type StorageNodeOperationalStatusSetEvent {
+  """Storage Bucket"""
+  storageBucket: StorageBucket!
+
+  """Operational status that was set"""
+  operationalStatus: NodeOperationalStatus!
 }
 
 type VideoSubtitle {

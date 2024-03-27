@@ -1,5 +1,5 @@
-import { schemas } from './schemas'
 import { OperatorMetadataJson } from '../generated/OperatorMetadataJson'
+import { schemas } from './schemas'
 
 export type SchemaKey = keyof typeof schemas & string
 

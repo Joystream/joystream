@@ -1,3 +1,8 @@
+### 4.2.0
+
+- Updates `operator:set-metadata` CLI command to set storage-node's operational status along with other metadata.
+- Adds `leader:set-node-operational-status` CLI command to set operational status of any storage-node by Lead.
+
 ### 4.1.1
 
 - Bump deps @polkadot/api v10.7.1
