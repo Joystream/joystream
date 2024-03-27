@@ -307,7 +307,7 @@ pub fn testnet_genesis(
             minimum_validator_count: initial_authorities.len().min(4) as u32,
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
-            force_era: Forcing::ForceNone,
+            force_era: Forcing::NotForcing,
             stakers,
             min_nominator_bond: GENESIS_MIN_NOMINATOR_BOND,
             min_validator_bond: GENESIS_MIN_VALIDATOR_BOND,
