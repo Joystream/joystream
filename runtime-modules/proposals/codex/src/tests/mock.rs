@@ -90,9 +90,6 @@ frame_support::construct_runtime!(
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
         Membership: membership::{Pallet, Call, Storage, Event<T>},
-
-        Storage: storage::{Pallet, Call, Storage, Event<T>},
-        Token: token::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
@@ -107,6 +104,8 @@ frame_support::construct_runtime!(
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Token: token::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -346,7 +345,7 @@ parameter_types! {
 }
 
 impl storage::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -376,7 +375,7 @@ impl storage::Config for Test {
 }
 
 impl token::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Balance = u64;
     type TokenId = u64;
     type DataObjectStorage = storage::Module<Self>;
