@@ -371,7 +371,7 @@ decl_storage! { generate_storage_info
 
         /// Era payou damping factor: a parameter in [0,1] that can be used to reduce the era
         /// payout without changing the reward curve directly
-        pub EraPayoutDampingFactor get(fn era_payout_damping_factor) config(): Percent;
+        pub EraPayoutDampingFactor get(fn era_payout_damping_factor) config(): Percent = Percent::from_percent(100);
     }
 }
 
@@ -868,7 +868,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = 10_000_000] // TODO: adjust
+        #[weight = CouncilWeightInfo::<T>::set_era_payout_damping_factor()] // TODO: adjust
         pub fn set_era_payout_damping_factor(origin, new_parameter: Percent) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_set_era_payout_damping_factor(origin)?;
