@@ -633,7 +633,7 @@ declare module '@polkadot/api-base/types/consts' {
       /**
        * pallet token governance parameters proposal
        **/
-      updateTokenPalletGovernanceParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      updateTokenPalletTokenConstraints: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Update Working Group Budget' proposal parameters.
        **/

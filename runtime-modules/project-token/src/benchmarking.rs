@@ -262,7 +262,7 @@ benchmarks! {
     // all parameters needs to be updated
     update_governance_parameters {
         let parameters = TokenConstraints {
-            max_yearly_rate Some(YearlyRate(Permill::from_penrcent(15))),
+            max_yearly_rate: Some(YearlyRate(Permill::from_penrcent(15))),
             min_amm_slope: Some(100u32.into()),
             min_sale_duration: Some(10u32.into()),
             min_revenue_split_duration: Some(10u32.into()),
