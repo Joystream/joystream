@@ -89,8 +89,8 @@ frame_support::construct_runtime!(
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
-
         Membership: membership::{Pallet, Call, Storage, Event<T>},
+
         Storage: storage::{Pallet, Call, Storage, Event<T>},
         Token: token::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
