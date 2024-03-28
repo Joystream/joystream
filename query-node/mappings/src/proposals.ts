@@ -60,6 +60,7 @@ import {
   UpdateGlobalNftLimitProposalDetails,
   UpdateWorkingGroupBudgetProposalDetails,
   VetoProposalDetails,
+  DecreaseCouncilBudgetProposalDetails,
 } from 'query-node/dist/model'
 import {
   INT32MAX,
@@ -75,19 +76,17 @@ import {
 } from './common'
 import {
   ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
-  ProposalsCodex_ProposalCreatedEvent_V2002 as ProposalCreatedEvent_V2002,
+  ProposalsCodex_ProposalCreatedEvent_V2003 as ProposalCreatedEvent_V2003,
   ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
   ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
   ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
   ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
   ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
 } from '../generated/types'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V1001 } from '../generated/types/1001/types-lookup'
 import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2003 } from '../generated/types/2003/types-lookup'
 
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
-
-type RuntimeProposalDetails = RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
 
 async function getProposal(store: DatabaseManager, id: string) {
   return getByIdOrFail(store, Proposal, id)
@@ -109,7 +108,7 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
 async function parseProposalDetails(
   event: SubstrateEvent,
   store: DatabaseManager,
-  proposalDetails: RuntimeProposalDetails_V1001 | RuntimeProposalDetails_V2002
+  proposalDetails: RuntimeProposalDetails_V2003
 ): Promise<typeof ProposalDetails> {
   const eventTime = new Date(event.blockTimestamp)
 
@@ -317,11 +316,19 @@ async function parseProposalDetails(
       details.newWeeklyNftLimit = specificDetails[1].toNumber()
     }
     return details
-  } else if ((proposalDetails as RuntimeProposalDetails_V2002).isSetPalletFozenStatus) {
+  }
+  // RuntimeProposalDetails
+  else if (proposalDetails.isSetPalletFozenStatus) {
     const details = new UpdatePalletFrozenStatusProposalDetails()
     const [frozen, pallet] = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
     details.frozen = frozen.isTrue
     details.pallet = pallet.toString()
+    return details
+  }
+  // DecreaseCouncilBudgetProposalDetails
+  else if (proposalDetails.isDecreaseCouncilBudget) {
+    const details = new DecreaseCouncilBudgetProposalDetails()
+    details.amount = new BN(proposalDetails.asDecreaseCouncilBudget.toString())
     return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
@@ -361,12 +368,16 @@ export async function proposalsCodex_ProposalCreated({
 }: EventContext & StoreContext): Promise<void> {
   const specVersion = block.runtimeVersion.specVersion
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    parseInt(specVersion.toString()) >= 2002
-      ? new ProposalCreatedEvent_V2002(event).params
-      : new ProposalCreatedEvent_V1001(event).params
+    Number(specVersion) < 2001
+      ? new ProposalCreatedEvent_V1001(event).params
+      : new ProposalCreatedEvent_V2003(event).params
 
   const eventTime = new Date(event.blockTimestamp)
-  const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
+  const proposalDetails = await parseProposalDetails(
+    event,
+    store,
+    runtimeProposalDetails as RuntimeProposalDetails_V2003
+  )
 
   const proposal = new Proposal({
     id: proposalId.toString(),

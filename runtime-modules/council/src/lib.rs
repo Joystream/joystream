@@ -885,6 +885,7 @@ decl_module! {
 
             Ok(())
         }
+
         /// Decrease the council total budget
         ///
         /// # <weight>
@@ -894,7 +895,7 @@ decl_module! {
         /// - db:
         ///    - `O(1)` doesn't depend on the state or parameters
         /// # </weight>
-        #[weight = 10_000_000] // TODO: adjust
+        #[weight = CouncilWeightInfo::<T>::decrease_council_budget()]
         pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_decrease_council_budget(origin)?;

@@ -126,6 +126,9 @@ pub enum ProposalDetails<
 
     /// `SetEraPayoutDampingFactor` proposal
     SetEraPayoutDampingFactor(Percent),
+
+    /// `DecreaseCouncilBudget` proposal
+    DecreaseCouncilBudget(Balance),
 }
 
 impl<

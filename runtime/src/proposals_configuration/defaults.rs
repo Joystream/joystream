@@ -372,3 +372,17 @@ pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber,
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Decrease Council' proposal
+pub(crate) fn decrease_council_budget() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: days!(3),
+        grace_period: 0,
+        approval_quorum_percentage: ALL,
+        approval_threshold_percentage: ALL,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}

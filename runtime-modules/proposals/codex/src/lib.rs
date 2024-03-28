@@ -138,6 +138,7 @@ pub trait Config:
     + working_group::Config<OperationsWorkingGroupInstanceBeta>
     + working_group::Config<OperationsWorkingGroupInstanceGamma>
     + working_group::Config<DistributionWorkingGroupInstance>
+    + council::Config
 {
     /// Proposal Codex module event type.
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
@@ -284,6 +285,11 @@ pub trait Config:
     type SetEraPayoutDampingFactorProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// `Decrease Council Budget` proposal parameters
+    type DecreaseCouncilBudgetProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -390,6 +396,9 @@ decl_error! {
 
         /// Arithmeic Error
         ArithmeticError,
+
+        /// Reduction Amount Zero
+        ReductionAmountZero,
     }
 }
 
@@ -508,7 +517,11 @@ decl_module! {
         const SetMaxValidatorCountProposalMaxValidators: u32 =
             T::SetMaxValidatorCountProposalMaxValidators::get();
 
-        /// Setting pallet as frozen
+        /// Decrease Council budget parameters
+        const DecreaseCouncilBudgetProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::DecreaseCouncilBudgetProposalParameters::get();
+
+        /// Set Pallet Frozen status
         const SetPalletFozenStatusProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
 
@@ -890,6 +903,12 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetEraPayoutDampingFactor(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
+                ensure!(
+                    !(*reduction_amount).is_zero(),
+                    Error::<T>::ReductionAmountZero
+                );
+            }
         }
 
         Ok(())
@@ -962,6 +981,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetEraPayoutDampingFactor(..) => {
                 T::SetEraPayoutDampingFactorProposalParameters::get()
+            }
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                T::DecreaseCouncilBudgetProposalParameters::get()
             }
         }
     }
@@ -1132,6 +1154,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetEraPayoutDampingFactor(..) => {
                 WeightInfoCodex::<T>::create_proposal_set_era_payout_damping_factor(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                WeightInfoCodex::<T>::create_proposal_decrease_council_budget(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

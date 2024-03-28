@@ -112,4 +112,7 @@ parameter_types! {
 
     pub SetEraPayoutDampingFactorProposalParameters: ProposalParameters<BlockNumber, Balance> =
         set_era_payout_damping_factor();
+
+    pub DecreaseCouncilBudgetProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        decrease_council_budget();
 }
