@@ -2,6 +2,7 @@ use node_runtime::{
     constants::currency, council::CouncilStageUpdate, days, dollars, hours,
     monthly_dollars_to_per_block, Balance, CouncilConfig, ExpectedBlockTime,
 };
+use sp_runtime::Percent;
 
 pub fn create_council_config() -> CouncilConfig {
     CouncilConfig {
@@ -12,5 +13,6 @@ pub fn create_council_config() -> CouncilConfig {
         next_budget_refill: 1,
         budget_increment: dollars!(22_000),
         councilor_reward: monthly_dollars_to_per_block!(10_000),
+        era_payout_damping_factor: Percent::from_percent(100),
     }
 }

@@ -110,6 +110,9 @@ parameter_types! {
     pub SetPalletFozenStatusProposalParameters: ProposalParameters<BlockNumber, Balance> =
         freeze_pallet_proposal();
 
+    pub SetEraPayoutDampingFactorProposalParameters: ProposalParameters<BlockNumber, Balance> =
+        set_era_payout_damping_factor();
+
     pub DecreaseCouncilBudgetProposalParameters: ProposalParameters<BlockNumber, Balance> =
         decrease_council_budget();
 }

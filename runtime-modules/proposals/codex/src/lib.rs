@@ -281,6 +281,11 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Set Era Payout Damping Factor` proposal parameters
+    type SetEraPayoutDampingFactorProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
     /// `Decrease Council Budget` proposal parameters
     type DecreaseCouncilBudgetProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
@@ -519,6 +524,10 @@ decl_module! {
         /// Set Pallet Frozen status
         const SetPalletFozenStatusProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
+
+        /// Era payout damping factor
+        const SetEraPayoutDampingFactorProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetEraPayoutDampingFactorProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -891,6 +900,9 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                // Note: No checks for this proposal for now
+            }
             ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
                 ensure!(
                     !(*reduction_amount).is_zero(),
@@ -966,6 +978,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetPalletFozenStatus(..) => {
                 T::SetPalletFozenStatusProposalParameters::get()
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                T::SetEraPayoutDampingFactorProposalParameters::get()
             }
             ProposalDetails::DecreaseCouncilBudget(..) => {
                 T::DecreaseCouncilBudgetProposalParameters::get()
@@ -1133,6 +1148,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetPalletFozenStatus(..) => {
                 WeightInfoCodex::<T>::create_proposal_freeze_pallet(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_era_payout_damping_factor(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

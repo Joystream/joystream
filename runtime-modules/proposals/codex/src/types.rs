@@ -10,6 +10,7 @@ use sp_std::vec::Vec;
 use common::working_group::WorkingGroup;
 use common::BalanceKind;
 use common::FundingRequestParameters;
+use sp_runtime::Percent;
 
 use content::NftLimitPeriod;
 use working_group::StakePolicy;
@@ -122,6 +123,9 @@ pub enum ProposalDetails<
 
     /// `SetPalletFozenStatus` proposal
     SetPalletFozenStatus(bool, FreezablePallet),
+
+    /// `SetEraPayoutDampingFactor` proposal
+    SetEraPayoutDampingFactor(Percent),
 
     /// `DecreaseCouncilBudget` proposal
     DecreaseCouncilBudget(Balance),
