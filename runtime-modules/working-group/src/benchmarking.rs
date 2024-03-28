@@ -788,7 +788,7 @@ benchmarks_instance! {
             None
         );
 
-        let amount = VestingBalanceOf::<T>::from(10_000u32);
+        let amount = BalanceOf::<T>::from(10_000u32);
         let budget = BalanceOf::<T>::from(100_000u32);
         let block_no = 100u32;
         let current_block = <T as frame_system::Config>::BlockNumber::from(1u32);
