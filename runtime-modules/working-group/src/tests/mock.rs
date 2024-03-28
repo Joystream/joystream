@@ -155,7 +155,6 @@ impl Config for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = WorkingGroupModuleId;
 }
 
 pub struct BlockNumberToBalance();

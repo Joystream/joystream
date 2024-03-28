@@ -480,9 +480,6 @@ impl common::council::CouncilBudgetManager<U256, u64> for CouncilBudgetManager {
 }
 
 parameter_types! {
-    pub const DWGModuleId: PalletId = PalletId(*b"m_distwg");
-    pub const SWGModuleId: PalletId = PalletId(*b"m_storwg");
-    pub const CWGModuleId: PalletId = PalletId(*b"m_contwg");
     pub const MinVestedTransfer: u64 = 10;
     pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
         WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
@@ -503,7 +500,6 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = SWGModuleId;
 }
 // The distribution working group instance alias.
 pub type DistributionWorkingGroupInstance = working_group::Instance9;
@@ -520,7 +516,6 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
     type VestingBalanceToBalance = BalanceConverter;
-    type ModuleId = DWGModuleId;
 }
 
 pub struct BlockNumberToBalance();
@@ -561,7 +556,6 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = CWGModuleId;
     type VestingBalanceToBalance = BalanceConverter;
 }
 

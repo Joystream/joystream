@@ -154,7 +154,6 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = ForumModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 

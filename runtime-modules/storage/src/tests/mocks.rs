@@ -214,7 +214,6 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = SWGModuleId;
     type VestingBalanceToBalance = ();
 }
 
@@ -230,7 +229,6 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = DWGModuleId;
     type VestingBalanceToBalance = ();
 }
 

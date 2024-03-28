@@ -11,7 +11,6 @@ use frame_support::{
         ConstU16, ConstU32, ConstU64, EitherOfDiverse, LockIdentifier, OnFinalize, OnInitialize,
         WithdrawReasons,
     },
-    PalletId,
 };
 use frame_system::{EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
 use sp_core::H256;
@@ -291,16 +290,6 @@ impl Convert<Balance, VestingBalance> for VestingBalanceToBalance {
     }
 }
 parameter_types! {
-    // WG modules ids : 8 characters starting with m_ and ending with wg
-    pub const DistributionModuleId: PalletId = PalletId(*b"m_distwg");
-    pub const StorageModuleId: PalletId = PalletId(*b"m_storwg");
-    pub const ContentModuleId: PalletId = PalletId(*b"m_contwg");
-    pub const ForumModuleId: PalletId = PalletId(*b"m_foruwg");
-    pub const MembershipModuleId: PalletId = PalletId(*b"m_membwg");
-    pub const OperationsAlphaModuleId: PalletId = PalletId(*b"m_opsawg");
-    pub const OperationsBetaModuleId: PalletId = PalletId(*b"m_opsbwg");
-    pub const OperationsGammaModuleId: PalletId = PalletId(*b"m_opscwg");
-    pub const AppModuleId: PalletId = PalletId(*b"m_appswg");
     pub const MinVestedTransfer: u64 = 10;
     pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
         WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
@@ -342,7 +331,6 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = ForumModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -357,7 +345,6 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = StorageModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -372,7 +359,6 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = ContentModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -387,7 +373,6 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = OperationsAlphaModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -402,7 +387,6 @@ impl working_group::Config<AppWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = AppModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -417,7 +401,6 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = MembershipModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -432,7 +415,6 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = OperationsBetaModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -447,7 +429,6 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = OperationsGammaModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
@@ -462,7 +443,6 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-    type ModuleId = DistributionModuleId;
     type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
