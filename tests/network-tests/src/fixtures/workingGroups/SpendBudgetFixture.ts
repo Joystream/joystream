@@ -9,6 +9,12 @@ import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
 import { BudgetSpendingEventFieldsFragment, WorkingGroupFieldsFragment } from '../../graphql/generated/queries'
 
+export type VestingSchedule = {
+  locked: BN
+  perBlock: BN
+  startingBlock?: BN
+}
+
 export class SpendBudgetFixture extends BaseWorkingGroupFixture {
   protected recievers: string[]
   protected amounts: BN[]

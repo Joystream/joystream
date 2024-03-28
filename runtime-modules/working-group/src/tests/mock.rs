@@ -1,8 +1,9 @@
-use frame_support::parameter_types;
-use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier};
+use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::{parameter_types, PalletId};
 
 use sp_core::H256;
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -10,14 +11,14 @@ use sp_runtime::{
 use staking_handler::LockComparator;
 use std::convert::{TryFrom, TryInto};
 
-use crate as working_group;
+use crate::{self as working_group, BalanceOf, VestingBalanceOf};
 use crate::{Config, Module};
 use frame_support::dispatch::DispatchError;
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 10;
+    pub const ExistentialDeposit: u64 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const DefaultMemberInvitesCount: u32 = 2;
@@ -39,6 +40,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Balances: balances,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T> },
         Timestamp: pallet_timestamp,
         TestWorkingGroup: working_group::{Pallet, Call, Storage, Event<T>},
     }
@@ -76,6 +78,22 @@ impl pallet_timestamp::Config for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 1;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
 }
 
 impl balances::Config for Test {
@@ -122,10 +140,12 @@ parameter_types! {
     pub const MinimumApplicationStake: u64 = 50;
     pub const LockId: [u8; 8] = [1; 8];
     pub const LeaderOpeningStake: u64 = 20;
+    pub const WorkingGroupModuleId: PalletId = PalletId(*b"mworking"); // module storage
 }
 
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
+    type VestingBalanceToBalance = BalanceConverter;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = ();
@@ -135,6 +155,21 @@ impl Config for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+}
+
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, BalanceOf<Test>>
+    for BlockNumberToBalance
+{
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> BalanceOf<Test> {
+        block as u64
+    }
+}
+pub struct BalanceConverter();
+impl Convert<BalanceOf<Test>, VestingBalanceOf<Test>> for BalanceConverter {
+    fn convert(balance: BalanceOf<Test>) -> VestingBalanceOf<Test> {
+        balance as u64
+    }
 }
 
 impl common::StakingAccountValidator<Test> for () {

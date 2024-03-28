@@ -1,6 +1,7 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use frame_support::traits::Currency;
 use scale_info::TypeInfo;
 use sp_std::vec::Vec;
 
@@ -59,6 +60,10 @@ pub type Worker<T> = GroupWorker<
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Config>::Balance;
+
+/// Balance alias used by the vesting pallet
+pub type VestingBalanceOf<T> =
+    <<T as vesting::Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.

@@ -46,6 +46,7 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 frame-election-provider-support = { package = 'frame-election-provider-support', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-bags-list = { package = 'pallet-bags-list', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 
 [features]
 default = ['std']
