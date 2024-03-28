@@ -357,6 +357,21 @@ pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balanc
     }
 }
 
+// Proposal parameters for the 'Update Pallet Token Governance Parameters' proposal
+pub(crate) fn update_token_pallet_token_governance_parameters(
+) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: 0,
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}
+
 // Proposal parameters for the 'Decrease Council Budget' proposal
 pub(crate) fn decrease_council_budget() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
