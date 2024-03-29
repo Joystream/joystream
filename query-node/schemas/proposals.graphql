@@ -352,6 +352,27 @@ type DecreaseCouncilBudgetProposalDetails @variant {
   amount: BigInt!
 }
 
+type UpdateTokenPalletTokenConstraintsProposalDetails @variant {
+  " (Permill)"
+  maxYearlyRate: Int
+  ""
+  minAmmSlope: BigInt
+  ""
+  minSaleDuration: Int
+  ""
+  minRevenueSplitDuration: Int
+  ""
+  minRevenueSplitTimeToStart: Int
+  " (Permill)"
+  salePlatformFee: Int
+  " (Permill)"
+  ammBuyTxFees: Int
+  " (Permill)"
+  ammSellTxFees: Int
+  ""
+  bloatBond: BigInt
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -378,3 +399,4 @@ union ProposalDetails =
   | UpdatePalletFrozenStatusProposalDetails
   | UpdateGlobalNftLimitProposalDetails
   | DecreaseCouncilBudgetProposalDetails
+  | UpdateTokenPalletTokenConstraintsProposalDetails
