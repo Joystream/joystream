@@ -1,17 +1,14 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::types::*;
-use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::Module as Token;
 use balances::Pallet as Balances;
 use common::membership::MembershipTypes;
-use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_system::EventRecord;
-use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::{BuyMembershipParameters, Module as Members};
-use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
+use sp_runtime::{Permill, SaturatedConversion};
 use sp_std::{vec, vec::Vec};
 use storage::BagId;
 
