@@ -3488,6 +3488,7 @@ dependencies = [
  "pallet-proposals-codex",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
+ "pallet-proxy",
  "pallet-referendum",
  "pallet-session",
  "pallet-session-benchmarking",
@@ -5637,6 +5638,21 @@ dependencies = [
  "serde",
  "sp-arithmetic",
  "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-proxy"
+version = "4.0.0-dev"
+source = "git+https://github.com/joystream/substrate.git?rev=1d0eefca86ef31b9e7727df01a6ed23ad65491e9#1d0eefca86ef31b9e7727df01a6ed23ad65491e9"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
  "sp-io",
  "sp-runtime",
  "sp-std",
