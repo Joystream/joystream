@@ -52,16 +52,16 @@ mod weights;
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use codec::Decode;
+use codec::{Decode, Encode, MaxEncodedLen};
 use frame_election_provider_support::{
     onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
 };
 use frame_support::traits::{
-    ConstU16, ConstU32, Contains, Currency, EitherOfDiverse, Imbalance, KeyOwnerProofSystem,
-    LockIdentifier, OnUnbalanced, WithdrawReasons,
+    ConstU16, ConstU32, Contains, Currency, EitherOfDiverse, Imbalance, InstanceFilter,
+    KeyOwnerProofSystem, LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, Weight};
-use frame_support::{dispatch::DispatchClass, pallet_prelude::Get};
+use frame_support::{dispatch::DispatchClass, pallet_prelude::Get, RuntimeDebug};
 pub use weights::{
     block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
     rocksdb_weights::constants::RocksDbWeight,
@@ -1812,6 +1812,92 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const ProxyDepositBase: Balance = dollars!(1);
+    pub const ProxyDepositFactor: Balance = dollars!(1);
+    pub const AnnouncementDepositBase: Balance = dollars!(1);
+    pub const AnnouncementDepositFactor: Balance = dollars!(1);
+}
+
+/// The type used to represent the kinds of proxying allowed.
+#[derive(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Encode,
+    Decode,
+    RuntimeDebug,
+    MaxEncodedLen,
+    scale_info::TypeInfo,
+)]
+pub enum ProxyType {
+    Any,
+    NonTransfer,
+    Governance,
+    Staking,
+    WorkingGroups,
+}
+impl Default for ProxyType {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+impl InstanceFilter<RuntimeCall> for ProxyType {
+    fn filter(&self, c: &RuntimeCall) -> bool {
+        match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => !matches!(
+                c,
+                RuntimeCall::Balances(..)
+                    | RuntimeCall::Vesting(pallet_vesting::Call::vested_transfer { .. })
+                    | RuntimeCall::Content(content::Call::initialize_channel_transfer { .. })
+                    | RuntimeCall::Content(content::Call::buy_nft { .. })
+                    | RuntimeCall::ProjectToken(project_token::Call::transfer { .. })
+            ),
+            ProxyType::Governance => matches!(
+                c,
+                RuntimeCall::Council(..)
+                    | RuntimeCall::Referendum(..)
+                    | RuntimeCall::ProposalsEngine(..)
+            ),
+            ProxyType::Staking => matches!(c, RuntimeCall::Staking(..)),
+            ProxyType::WorkingGroups => matches!(
+                c,
+                RuntimeCall::StorageWorkingGroup(..)
+                    | RuntimeCall::DistributionWorkingGroup(..)
+                    | RuntimeCall::ContentWorkingGroup(..)
+            ),
+        }
+    }
+    fn is_superset(&self, o: &Self) -> bool {
+        match (self, o) {
+            (x, y) if x == y => true,
+            (ProxyType::Any, _) => true,
+            (_, ProxyType::Any) => false,
+            (ProxyType::NonTransfer, _) => true,
+            _ => false,
+        }
+    }
+}
+
+impl pallet_proxy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type ProxyType = ProxyType;
+    type ProxyDepositBase = ProxyDepositBase;
+    type ProxyDepositFactor = ProxyDepositFactor;
+    type MaxProxies = ConstU32<32>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type MaxPending = ConstU32<32>;
+    type CallHasher = BlakeTwo256;
+    type AnnouncementDepositBase = AnnouncementDepositBase;
+    type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -1882,6 +1968,7 @@ construct_runtime!(
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
+        Proxy: pallet_proxy,
     }
 );
 
