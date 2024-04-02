@@ -126,7 +126,7 @@ pub enum ProposalDetails<
     SetPalletFozenStatus(bool, FreezablePallet),
 
     /// Update token constraints
-    UpdateTokenPalletTokenConstraints(TokenTokenConstraints),
+    UpdateTokenPalletTokenConstraints(TokenConstraints),
 
     /// `DecreaseCouncilBudget` proposal
     DecreaseCouncilBudget(Balance),
@@ -140,7 +140,7 @@ impl<
         OpeningId,
         ProposalId,
         UpdateChannelPayoutsParameters,
-        TokenTokenConstraints,
+        TokenConstraints,
     > Default
     for ProposalDetails<
         Balance,
@@ -150,7 +150,7 @@ impl<
         OpeningId,
         ProposalId,
         UpdateChannelPayoutsParameters,
-        TokenTokenConstraints,
+        TokenConstraints,
     >
 {
     fn default() -> Self {

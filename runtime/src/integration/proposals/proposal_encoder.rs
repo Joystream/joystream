@@ -167,7 +167,7 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                 })
             }
             ProposalDetails::UpdateTokenPalletTokenConstraints(parameters) => {
-                RuntimeCall::ProjectToken(project_token::Call::update_governance_parameters {
+                RuntimeCall::ProjectToken(project_token::Call::update_token_constraints {
                     parameters,
                 })
             }
