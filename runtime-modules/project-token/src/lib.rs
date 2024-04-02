@@ -225,8 +225,8 @@ decl_module! {
         /// ## Weight
         /// `O (1)`
         /// # </weight>
-        #[weight = WeightInfoToken::<T>::update_governance_parameters()]
-        pub fn update_governance_parameters(
+        #[weight = WeightInfoToken::<T>::update_token_constraints()]
+        pub fn update_token_constraints(
             origin,
             parameters: TokenConstraintsOf<T>
         ) {

@@ -5,11 +5,13 @@ use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::Module as Token;
 use balances::Pallet as Balances;
 use common::membership::MembershipTypes;
+use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks, Zero};
 use frame_system::EventRecord;
+use frame_system::Pallet as System;
 use frame_system::RawOrigin;
 use membership::{BuyMembershipParameters, Module as Members};
-use sp_runtime::{Permill, SaturatedConversion};
+use sp_runtime::{traits::Hash, Permill, SaturatedConversion};
 use sp_std::{vec, vec::Vec};
 use storage::BagId;
 
@@ -255,10 +257,9 @@ benchmarks! {
     where_clause {
         where T: Config
     }
-
     // Worst case scenario:
     // all parameters needs to be updated
-    update_governance_parameters {
+    update_token_constraints {
         let parameters = TokenConstraints {
             max_yearly_rate: Some(YearlyRate(Permill::from_percent(15))),
             min_amm_slope: Some(100u32.into()),
@@ -271,13 +272,14 @@ benchmarks! {
             bloat_bond: Some(1000u32.into()),
         };
         let origin = RawOrigin::Root;
-    }: (origin, parameters.clone()) {
+    }: _(origin, parameters.clone())
+    verify {
 
         assert_last_event::<T>(
             RawEvent::TokenConstraintsUpdated(
                 parameters
             ).into()
-        );
+        )
     }
 
     // Worst case scenario:
@@ -811,6 +813,13 @@ mod tests {
     fn test_sell_on_amm() {
         build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
             assert_ok!(Token::test_benchmark_sell_on_amm());
+        });
+    }
+
+    #[test]
+    fn test_update_token_constraints() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(Token::test_benchmark_update_token_constraints());
         });
     }
 }
