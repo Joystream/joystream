@@ -1788,7 +1788,7 @@ parameter_types! {
 
 #[cfg(feature = "runtime-benchmarks")]
 parameter_types! {
-    pub const MinVestedTransfer: Balance = 100;
+    pub const MinVestedTransfer: Balance = ExistentialDeposit;
     pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons = WithdrawReasons::empty();
 }
 
