@@ -4234,7 +4234,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * `O (1)`
        * # </weight>
        **/
-      updateGovernanceParameters: AugmentedSubmittable<(parameters: PalletProjectTokenTokenConstraints | { maxYearlyRate?: any; minAmmSlope?: any; minSaleDuration?: any; minRevenueSplitDuration?: any; minRevenueSplitTimeToStart?: any; salePlatformFee?: any; ammBuyTxFees?: any; ammSellTxFees?: any; bloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProjectTokenTokenConstraints]>;
+      updateTokenConstraints: AugmentedSubmittable<(parameters: PalletProjectTokenTokenConstraints | { maxYearlyRate?: any; minAmmSlope?: any; minSaleDuration?: any; minRevenueSplitDuration?: any; minRevenueSplitTimeToStart?: any; salePlatformFee?: any; ammBuyTxFees?: any; ammSellTxFees?: any; bloatBond?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [PalletProjectTokenTokenConstraints]>;
     };
     proposalsCodex: {
       /**

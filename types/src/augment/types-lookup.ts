@@ -4036,8 +4036,8 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProjectTokenCall (402) */
   interface PalletProjectTokenCall extends Enum {
-    readonly isUpdateGovernanceParameters: boolean;
-    readonly asUpdateGovernanceParameters: {
+    readonly isUpdateTokenConstraints: boolean;
+    readonly asUpdateTokenConstraints: {
       readonly parameters: PalletProjectTokenTokenConstraints;
     } & Struct;
     readonly isTransfer: boolean;
@@ -4099,7 +4099,7 @@ declare module '@polkadot/types/lookup' {
     readonly asSetFrozenStatus: {
       readonly freeze: bool;
     } & Struct;
-    readonly type: 'UpdateGovernanceParameters' | 'Transfer' | 'Burn' | 'DustAccount' | 'JoinWhitelist' | 'PurchaseTokensOnSale' | 'ParticipateInSplit' | 'ExitRevenueSplit' | 'BuyOnAmm' | 'SellOnAmm' | 'SetFrozenStatus';
+    readonly type: 'UpdateTokenConstraints' | 'Transfer' | 'Burn' | 'DustAccount' | 'JoinWhitelist' | 'PurchaseTokensOnSale' | 'ParticipateInSplit' | 'ExitRevenueSplit' | 'BuyOnAmm' | 'SellOnAmm' | 'SetFrozenStatus';
   }
 
   /** @name PalletProjectTokenMerkleProof (406) */

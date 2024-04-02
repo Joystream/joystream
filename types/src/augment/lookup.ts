@@ -3482,7 +3482,7 @@ export default {
    **/
   PalletProjectTokenCall: {
     _enum: {
-      update_governance_parameters: {
+      update_token_constraints: {
         parameters: 'PalletProjectTokenTokenConstraints',
       },
       transfer: {
