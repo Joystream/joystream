@@ -46,7 +46,7 @@ pub enum ProposalDetails<
     OpeningId,
     ProposalId,
     UpdateChannelPayoutsParameters,
-    TokenTokenConstraints,
+    TokenConstraints,
 > {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
