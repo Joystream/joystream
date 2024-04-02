@@ -268,7 +268,7 @@ benchmarks! {
             amm_buy_tx_fees: Some(Permill::from_percent(1)),
             amm_sell_tx_fees: Some(Permill::from_percent(1)),
             bloat_bond: Some(1000u32.into()),
-        }
+        };
         let origin = RawOrigin::root_account()
     }: (origin, parameters.clone()) {
 
