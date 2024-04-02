@@ -806,7 +806,7 @@ benchmarks_instance! {
             None
         );
 
-        let raw_amount_vesting = 200000000000u32;
+        let raw_amount_vesting = 200000000000u64;
         let amount_vesting = VestingBalanceOf::<T>::from(raw_amount_vesting);
         let budget = BalanceOf::<T>::from(raw_amount_vesting * 10);
         let block_no = 100u32;
