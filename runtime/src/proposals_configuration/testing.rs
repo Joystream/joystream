@@ -350,13 +350,13 @@ pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balanc
 // Proposal parameters for the 'Set Era Payout Damping Factor' proposal
 pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: days!(3),
+        voting_period: 30,
         grace_period: 0,
-        approval_quorum_percentage: TWO_OUT_OF_THREE,
-        approval_threshold_percentage: TWO_OUT_OF_THREE,
-        slashing_quorum_percentage: ALL,
-        slashing_threshold_percentage: ALL,
-        required_stake: Some(dollars!(50)),
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(currency::DOLLARS.saturating_mul(50)),
         constitutionality: 1,
     }
 }

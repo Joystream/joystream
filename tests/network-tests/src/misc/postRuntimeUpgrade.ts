@@ -64,5 +64,9 @@ export default async function assertValues({ api }: FlowProps): Promise<void> {
   // assert.deepEqual(curatorGroup.permissionsByLevel, expectedPermissions)
   assert.equal(`${curatorGroup.permissionsByLevel}`, `${expectedPermissions}`)
 
+  // Damping factor after runtime should be 100% = default
+  const dampingFactor = await api.query.council.eraPayoutDampingFactor()
+  assert(dampingFactor.eqn(100), 'Damping factor should be default = 100%')
+
   debug('Done')
 }
