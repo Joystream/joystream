@@ -1780,15 +1780,8 @@ impl bounty::Config for Runtime {
     type CreatorStateBloatBondAmount = CreatorStateBloatBondAmount;
 }
 
-#[cfg(not(feature = "runtime-benchmarks"))]
 parameter_types! {
     pub const MinVestedTransfer: Balance = dollars!(1);
-    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons = WithdrawReasons::empty();
-}
-
-#[cfg(feature = "runtime-benchmarks")]
-parameter_types! {
-    pub MinVestedTransfer: Balance = ExistentialDeposit::get();
     pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons = WithdrawReasons::empty();
 }
 
