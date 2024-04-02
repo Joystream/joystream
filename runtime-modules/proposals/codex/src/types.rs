@@ -125,7 +125,7 @@ pub enum ProposalDetails<
     /// `SetPalletFozenStatus` proposal
     SetPalletFozenStatus(bool, FreezablePallet),
 
-    /// Update CRT governance parameters
+    /// Update token constraints
     UpdateTokenPalletTokenConstraints(TokenTokenConstraints),
 
     /// `DecreaseCouncilBudget` proposal
