@@ -1,6 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use crate::types::*;
+use crate::utils::{build_merkle_path_helper, generate_merkle_root_helper};
 use crate::Module as Token;
 use balances::Pallet as Balances;
 use common::membership::MembershipTypes;
