@@ -94,6 +94,7 @@ export const proposalTypeToProposalParamsKey = {
   'UpdateGlobalNftLimit': 'updateGlobalNftLimitProposalParameters',
   'UpdateChannelPayouts': 'updateChannelPayoutsProposalParameters',
   'SetPalletFozenStatus': 'setPalletFozenStatusProposalParameters',
+  'SetRewardCurveDampingFactor': 'setRewardCurveDampingFactor',
 } as const
 
 type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }
