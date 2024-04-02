@@ -17,9 +17,9 @@ frame-support = { package = 'frame-support', default-features = false, git = 'ht
 frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 common = { package = 'pallet-common', default-features = false, path = '../common' }
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler' }
 
 # Benchmarking
@@ -38,6 +38,7 @@ runtime-benchmarks = [
 	"frame-benchmarking",
 	"membership",
 	"common/runtime-benchmarks",
+	"vesting/runtime-benchmarks",
 ]
 std = [
 	'serde',
@@ -48,10 +49,10 @@ std = [
 	'sp-arithmetic/std',
 	'sp-std/std',
 	'common/std',
-	'vesting/std',
 	'balances/std',
 	'staking-handler/std',
 	'membership/std',
 	'scale-info/std',
+	'vesting/std',
 ]
 try-runtime = ["frame-support/try-runtime"]
