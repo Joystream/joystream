@@ -337,14 +337,14 @@ async function parseProposalDetails(
     const specificDetails = proposalDetails.asUpdateTokenPalletTokenConstraints
 
     details.maxYearlyRate = unwrap(specificDetails.maxYearlyRate)?.toNumber()
-    details.minAmmSlope = unwrap(specificDetails.minAmmSlope)?.toBn()
+    details.minAmmSlope = whenDef(unwrap(specificDetails.minAmmSlope), asBN)
     details.minSaleDuration = unwrap(specificDetails.minSaleDuration)?.toNumber()
     details.minRevenueSplitDuration = unwrap(specificDetails.minRevenueSplitDuration)?.toNumber()
     details.minRevenueSplitTimeToStart = unwrap(specificDetails.minRevenueSplitTimeToStart)?.toNumber()
     details.salePlatformFee = unwrap(specificDetails.salePlatformFee)?.toNumber()
     details.ammBuyTxFees = unwrap(specificDetails.ammBuyTxFees)?.toNumber()
     details.ammSellTxFees = unwrap(specificDetails.ammSellTxFees)?.toNumber()
-    details.bloatBond = unwrap(specificDetails.bloatBond)?.toBn()
+    details.bloatBond = whenDef(unwrap(specificDetails.bloatBond), asBN)
 
     return details
   } else {
