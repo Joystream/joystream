@@ -94,7 +94,7 @@ export const proposalTypeToProposalParamsKey = {
   'UpdateGlobalNftLimit': 'updateGlobalNftLimitProposalParameters',
   'UpdateChannelPayouts': 'updateChannelPayoutsProposalParameters',
   'SetPalletFozenStatus': 'setPalletFozenStatusProposalParameters',
-  'SetEraPayoutDampingFactor': 'setEraPayoutDampingFactor',
+  'SetEraPayoutDampingFactor': 'setEraPayoutDampingFactorProposalParameters',
   'UpdateTokenPalletTokenConstraints': 'updateTokenPalletTokenConstraints',
 } as const
 
