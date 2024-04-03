@@ -128,6 +128,7 @@ pub trait Config:
     + proposals_discussion::Config
     + common::membership::MembershipTypes
     + staking::Config
+    + token::Config
     + proposals_engine::Config
     + working_group::Config<ForumWorkingGroupInstance>
     + working_group::Config<StorageWorkingGroupInstance>
@@ -278,6 +279,11 @@ pub trait Config:
 
     /// `Freeze Pallet` proposal parameters
     type SetPalletFozenStatusProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Update pallet project token` proposal parameters
+    type UpdateTokenPalletTokenConstraints: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
@@ -520,6 +526,9 @@ decl_module! {
         const SetPalletFozenStatusProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
 
+        /// pallet token governance parameters proposal
+        const UpdateTokenPalletTokenConstraints:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateTokenPalletTokenConstraints::get();
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -891,6 +900,9 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                // Note: No checks for this proposal for now
+            }
             ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
                 ensure!(
                     !(*reduction_amount).is_zero(),
@@ -966,6 +978,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetPalletFozenStatus(..) => {
                 T::SetPalletFozenStatusProposalParameters::get()
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                T::UpdateTokenPalletTokenConstraints::get()
             }
             ProposalDetails::DecreaseCouncilBudget(..) => {
                 T::DecreaseCouncilBudgetProposalParameters::get()
@@ -1133,6 +1148,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetPalletFozenStatus(..) => {
                 WeightInfoCodex::<T>::create_proposal_freeze_pallet(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_token_pallet_governance_parameters(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

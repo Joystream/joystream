@@ -32,6 +32,8 @@ use working_group::{
 const SEED: u32 = 0;
 const MAX_KILOBYTES_METADATA: u32 = 100;
 
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
+
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
     let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
@@ -65,7 +67,7 @@ fn member_funded_account<T: Config + membership::Config>() -> (T::AccountId, T::
     let handle = handle_from_id(member_id.saturated_into());
 
     // Give balance for buying membership
-    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
@@ -77,7 +79,7 @@ fn member_funded_account<T: Config + membership::Config>() -> (T::AccountId, T::
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -872,15 +874,15 @@ benchmarks! {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..(i * 1000)).map(|v| u8::MAX))
             },
-            expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
-            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()
+            expected_data_size_fee: u128::MAX.saturated_into::<BalanceOf::<T>>(),
+            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<BalanceOf::<T>>()
         };
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<T> {
                 commitment: Some(commitment),
                 payload: Some(payload),
-                min_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
-                max_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
+                min_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf::<T>>()),
+                max_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf::<T>>()),
                 channel_cashouts_enabled: Some(true),
             }
         );

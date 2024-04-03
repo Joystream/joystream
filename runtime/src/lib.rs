@@ -1707,6 +1707,7 @@ impl proposals_codex::Config for Runtime {
     type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
+    type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }

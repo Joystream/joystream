@@ -32,6 +32,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     working_group::OpeningId,
     <T as proposals_engine::Config>::ProposalId,
     content::UpdateChannelPayoutsParameters<T>,
+    token::TokenConstraintsOf<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -45,6 +46,7 @@ pub enum ProposalDetails<
     OpeningId,
     ProposalId,
     UpdateChannelPayoutsParameters,
+    TokenConstraints,
 > {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
@@ -123,6 +125,9 @@ pub enum ProposalDetails<
     /// `SetPalletFozenStatus` proposal
     SetPalletFozenStatus(bool, FreezablePallet),
 
+    /// Update token constraints
+    UpdateTokenPalletTokenConstraints(TokenConstraints),
+
     /// `DecreaseCouncilBudget` proposal
     DecreaseCouncilBudget(Balance),
 }
@@ -135,6 +140,7 @@ impl<
         OpeningId,
         ProposalId,
         UpdateChannelPayoutsParameters,
+        TokenConstraints,
     > Default
     for ProposalDetails<
         Balance,
@@ -144,6 +150,7 @@ impl<
         OpeningId,
         ProposalId,
         UpdateChannelPayoutsParameters,
+        TokenConstraints,
     >
 {
     fn default() -> Self {

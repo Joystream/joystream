@@ -257,6 +257,30 @@ benchmarks! {
     where_clause {
         where T: Config
     }
+    // Worst case scenario:
+    // all parameters needs to be updated
+    update_token_constraints {
+        let parameters = TokenConstraints {
+            max_yearly_rate: Some(YearlyRate(Permill::from_percent(15))),
+            min_amm_slope: Some(100u32.into()),
+            min_sale_duration: Some(10u32.into()),
+            min_revenue_split_duration: Some(10u32.into()),
+            min_revenue_split_time_to_start: Some(10u32.into()),
+            sale_platform_fee: Some(Permill::from_percent(1)),
+            amm_buy_tx_fees: Some(Permill::from_percent(1)),
+            amm_sell_tx_fees: Some(Permill::from_percent(1)),
+            bloat_bond: Some(1000u32.into()),
+        };
+        let origin = RawOrigin::Root;
+    }: _(origin, parameters.clone())
+    verify {
+
+        assert_last_event::<T>(
+            RawEvent::TokenConstraintsUpdated(
+                parameters
+            ).into()
+        )
+    }
 
     // Worst case scenario:
     // - source_accout.vesting_schedules.len() is T::MaxVestingSchedulesPerAccountPerToken
@@ -789,6 +813,13 @@ mod tests {
     fn test_sell_on_amm() {
         build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
             assert_ok!(Token::test_benchmark_sell_on_amm());
+        });
+    }
+
+    #[test]
+    fn test_update_token_constraints() {
+        build_test_externalities(GenesisConfigBuilder::new_empty().build()).execute_with(|| {
+            assert_ok!(Token::test_benchmark_update_token_constraints());
         });
     }
 }

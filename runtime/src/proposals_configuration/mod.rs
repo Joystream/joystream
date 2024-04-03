@@ -110,6 +110,9 @@ parameter_types! {
     pub SetPalletFozenStatusProposalParameters: ProposalParameters<BlockNumber, Balance> =
         freeze_pallet_proposal();
 
+    pub UpdateTokenPalletTokenConstraints: ProposalParameters<BlockNumber, Balance> =
+        update_token_pallet_token_governance_parameters();
+
     pub DecreaseCouncilBudgetProposalParameters: ProposalParameters<BlockNumber, Balance> =
         decrease_council_budget();
 }
