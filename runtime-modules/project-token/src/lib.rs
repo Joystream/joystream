@@ -252,7 +252,7 @@ decl_module! {
             }
 
             if let Some(new_min_revenue_split_time_to_start) = parameters.min_revenue_split_time_to_start {
-                MinRevenueSplitDuration::<T>::put(new_min_revenue_split_time_to_start);
+                MinRevenueSplitTimeToStart::<T>::put(new_min_revenue_split_time_to_start);
             }
 
             if let Some(new_sale_platform_fee) = parameters.sale_platform_fee {
