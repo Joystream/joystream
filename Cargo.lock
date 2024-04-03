@@ -3446,7 +3446,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "12.2002.0"
+version = "12.2003.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -5259,6 +5259,7 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-storage",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5345,6 +5346,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5427,6 +5429,7 @@ dependencies = [
  "pallet-referendum",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5581,6 +5584,7 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5779,6 +5783,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5913,6 +5918,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "parity-scale-codec",
  "scale-info",
  "serde",
