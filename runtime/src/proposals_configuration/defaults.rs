@@ -344,6 +344,21 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
     }
 }
 
+// Proposal parameters for the 'Update Pallet Token Governance Parameters' proposal
+pub(crate) fn update_token_pallet_token_governance_parameters(
+) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: days!(7),
+        grace_period: days!(1),
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: ALL,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(100)),
+        constitutionality: 1,
+    }
+}
+
 // Proposal parameters for the 'Freeze Pallet' proposal
 pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {

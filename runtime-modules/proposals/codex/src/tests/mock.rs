@@ -109,6 +109,8 @@ frame_support::construct_runtime!(
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Token: token::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -321,6 +323,76 @@ impl membership::Config for Test {
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
+}
+
+parameter_types! {
+    // constants for token::Config
+    pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
+    // constants for storage::Config
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    pub const DataObjectDeletionPrize: u64 = 15;
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const BlacklistSizeLimit: u64 = 1;
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
+    pub const MaxRandomIterationNumber: u64 = 3;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
+    pub const MaxDataObjectSize: u64 = 1_000_000_000;
+    pub const MinStorageBucketsPerBag: u32 = 3;
+    pub const MaxStorageBucketsPerBag: u32 = 10;
+    pub const MinDistributionBucketsPerBag: u32 = 3;
+    pub const MaxDistributionBucketsPerBag: u32 = 10;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
+}
+
+impl storage::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type DataObjectId = u64;
+    type StorageBucketId = u64;
+    type DistributionBucketIndex = u64;
+    type DistributionBucketFamilyId = u64;
+    type DistributionBucketOperatorId = u64;
+    type ChannelId = u64;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
+    type ModuleId = StorageModuleId;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
+    type ContentId = u64;
+    type MaxDataObjectSize = MaxDataObjectSize;
+    type StorageWorkingGroup = Wg;
+    type DistributionWorkingGroup = Wg;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
+    type WeightInfo = ();
+}
+
+impl token::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = u64;
+    type TokenId = u64;
+    type DataObjectStorage = storage::Module<Self>;
+    type ModuleId = TokenModuleId;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type BlocksPerYear = BlocksPerYear;
+    type WeightInfo = ();
+    type MemberOriginValidator = membership::Module<Self>;
+    type MembershipInfoProvider = membership::Module<Self>;
+    type MaxOutputs = MaxOutputs;
 }
 
 pub struct Wg;
@@ -713,6 +785,7 @@ impl crate::Config for Test {
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type SetPalletFozenStatusProposalParameters = DefaultProposalParameters;
+    type UpdateTokenPalletTokenConstraints = DefaultProposalParameters;
     type SetEraPayoutDampingFactorProposalParameters = DefaultProposalParameters;
     type DecreaseCouncilBudgetProposalParameters = DefaultProposalParameters;
 }

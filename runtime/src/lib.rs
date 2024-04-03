@@ -595,7 +595,6 @@ impl pallet_staking::Config for Runtime {
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type VoterList = VoterList;
-    // type VoterList = VoterList; // not renaming for now
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
@@ -1719,6 +1718,7 @@ impl proposals_codex::Config for Runtime {
     type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
+    type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
     type SetEraPayoutDampingFactorProposalParameters = SetEraPayoutDampingFactorProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;

@@ -55,6 +55,7 @@ pub trait WeightInfo {
 	fn buy_on_amm_with_account_creation() -> Weight;
 	fn buy_on_amm_with_existing_account() -> Weight;
 	fn sell_on_amm() -> Weight;
+    fn update_token_constraints() -> Weight;
 }
 
 /// Weights for project_token using the Substrate node and recommended hardware.
@@ -64,6 +65,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	// Proof: Token PalletFrozen (max_values: Some(1), max_size: Some(1), added: 496, mode: MaxEncodedLen)
 	// Storage: Membership MembershipById (r:25 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
+	fn update_token_constraints() -> Weight {
+		Weight::from_parts(0, 0)
+    }
+	// Storage: Membership MembershipById (r:2 w:0)
 	// Storage: Token TokenInfoById (r:1 w:1)
 	// Proof: Token TokenInfoById (max_values: None, max_size: Some(352), added: 2827, mode: MaxEncodedLen)
 	// Storage: Token AccountInfoByTokenAndMember (r:25 w:25)
@@ -331,4 +336,7 @@ impl WeightInfo for () {
 	fn sell_on_amm() -> Weight {
 		Weight::from_parts(0, 0)
 	}
+    fn update_token_constraints() -> Weight {
+		Weight::from_parts(0, 0)
+    }
 }

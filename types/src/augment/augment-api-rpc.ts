@@ -21,7 +21,7 @@ import type { CreatedBlock } from '@polkadot/types/interfaces/engine';
 import type { EthAccount, EthCallRequest, EthFeeHistory, EthFilter, EthFilterChanges, EthLog, EthReceipt, EthRichBlock, EthSubKind, EthSubParams, EthSyncStatus, EthTransaction, EthTransactionRequest, EthWork } from '@polkadot/types/interfaces/eth';
 import type { Extrinsic } from '@polkadot/types/interfaces/extrinsics';
 import type { EncodedFinalityProofs, JustificationNotification, ReportedRoundStates } from '@polkadot/types/interfaces/grandpa';
-import type { MmrHash, MmrLeafBatchProof } from '@polkadot/types/interfaces/mmr';
+import type { MmrLeafBatchProof, MmrLeafProof } from '@polkadot/types/interfaces/mmr';
 import type { StorageKind } from '@polkadot/types/interfaces/offchain';
 import type { FeeDetails, RuntimeDispatchInfoV1 } from '@polkadot/types/interfaces/payment';
 import type { RpcMethods } from '@polkadot/types/interfaces/rpc';
@@ -373,21 +373,13 @@ declare module '@polkadot/rpc-core/types/jsonrpc' {
     };
     mmr: {
       /**
-       * Generate MMR proof for the given block numbers.
+       * Generate MMR proof for the given leaf indices.
        **/
-      generateProof: AugmentedRpc<(blockNumbers: Vec<u64> | (u64 | AnyNumber | Uint8Array)[], bestKnownBlockNumber?: u64 | AnyNumber | Uint8Array, at?: BlockHash | string | Uint8Array) => Observable<MmrLeafBatchProof>>;
+      generateBatchProof: AugmentedRpc<(leafIndices: Vec<u64> | (u64 | AnyNumber | Uint8Array)[], at?: BlockHash | string | Uint8Array) => Observable<MmrLeafProof>>;
       /**
-       * Get the MMR root hash for the current best block.
+       * Generate MMR proof for given leaf index.
        **/
-      root: AugmentedRpc<(at?: BlockHash | string | Uint8Array) => Observable<MmrHash>>;
-      /**
-       * Verify an MMR proof
-       **/
-      verifyProof: AugmentedRpc<(proof: MmrLeafBatchProof | { blockHash?: any; leaves?: any; proof?: any } | string | Uint8Array) => Observable<bool>>;
-      /**
-       * Verify an MMR proof statelessly given an mmr_root
-       **/
-      verifyProofStateless: AugmentedRpc<(root: MmrHash | string | Uint8Array, proof: MmrLeafBatchProof | { blockHash?: any; leaves?: any; proof?: any } | string | Uint8Array) => Observable<bool>>;
+      generateProof: AugmentedRpc<(leafIndex: u64 | AnyNumber | Uint8Array, at?: BlockHash | string | Uint8Array) => Observable<MmrLeafBatchProof>>;
     };
     net: {
       /**

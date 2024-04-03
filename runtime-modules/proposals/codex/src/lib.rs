@@ -128,6 +128,7 @@ pub trait Config:
     + proposals_discussion::Config
     + common::membership::MembershipTypes
     + staking::Config
+    + token::Config
     + proposals_engine::Config
     + working_group::Config<ForumWorkingGroupInstance>
     + working_group::Config<StorageWorkingGroupInstance>
@@ -278,6 +279,11 @@ pub trait Config:
 
     /// `Freeze Pallet` proposal parameters
     type SetPalletFozenStatusProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Update pallet project token` proposal parameters
+    type UpdateTokenPalletTokenConstraints: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
@@ -524,6 +530,10 @@ decl_module! {
         /// Set Pallet Frozen status
         const SetPalletFozenStatusProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
+
+        /// pallet token governance parameters proposal
+        const UpdateTokenPalletTokenConstraints:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateTokenPalletTokenConstraints::get();
 
         /// Era payout damping factor
         const SetEraPayoutDampingFactorProposalParameters:
@@ -900,14 +910,17 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::SetEraPayoutDampingFactor(..) => {
-                // Note: No checks for this proposal for now
-            }
             ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
                 ensure!(
                     !(*reduction_amount).is_zero(),
                     Error::<T>::ReductionAmountZero
                 );
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                // Note: No checks for this proposal for now
             }
         }
 
@@ -979,11 +992,14 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 T::SetPalletFozenStatusProposalParameters::get()
             }
-            ProposalDetails::SetEraPayoutDampingFactor(..) => {
-                T::SetEraPayoutDampingFactorProposalParameters::get()
-            }
             ProposalDetails::DecreaseCouncilBudget(..) => {
                 T::DecreaseCouncilBudgetProposalParameters::get()
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                T::UpdateTokenPalletTokenConstraints::get()
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                T::SetEraPayoutDampingFactorProposalParameters::get()
             }
         }
     }
@@ -1152,14 +1168,20 @@ impl<T: Config> Module<T> {
                     to_kb(description_length.saturated_into()),
                 )
             }
-            ProposalDetails::SetEraPayoutDampingFactor(..) => {
-                WeightInfoCodex::<T>::create_proposal_set_era_payout_damping_factor(
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                WeightInfoCodex::<T>::create_proposal_decrease_council_budget(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )
             }
-            ProposalDetails::DecreaseCouncilBudget(..) => {
-                WeightInfoCodex::<T>::create_proposal_decrease_council_budget(
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_token_pallet_token_constraints(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_era_payout_damping_factor(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )
