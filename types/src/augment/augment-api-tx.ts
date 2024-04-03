@@ -177,18 +177,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -240,6 +228,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -1508,18 +1509,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -1571,6 +1560,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -1916,18 +1918,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -1979,6 +1969,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -2447,18 +2450,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -2510,6 +2501,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -3004,18 +3008,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -3067,6 +3059,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -3369,18 +3374,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -3432,6 +3425,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -3618,18 +3624,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -3681,6 +3675,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -3867,18 +3874,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -3930,6 +3925,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 
@@ -5339,18 +5347,6 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       slashStake: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, penalty: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [u64, u128, Option<Bytes>]>;
-      /**
-       * Transfers specified amount to any account.
-       * Requires leader origin.
-       * 
-       * # <weight>
-       * 
-       * ## Weight
-       * `O (1)`
-       * - DB:
-       * - O(1) doesn't depend on the state or parameters
-       * # </weight>
-       **/
       spendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, amount: u128 | AnyNumber | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, u128, Option<Bytes>]>;
       /**
        * Terminate the active worker by the lead.
@@ -5402,6 +5398,19 @@ declare module '@polkadot/api-base/types/submittable' {
        * # </weight>
        **/
       updateRoleAccount: AugmentedSubmittable<(workerId: u64 | AnyNumber | Uint8Array, newRoleAccountId: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [u64, AccountId32]>;
+      /**
+       * Transfers specified amount to any account.
+       * Requires leader origin.
+       * 
+       * # <weight>
+       * 
+       * ## Weight
+       * `O (1)`
+       * - DB:
+       * - O(1) doesn't depend on the state or parameters
+       * # </weight>
+       **/
+      vestedSpendFromBudget: AugmentedSubmittable<(accountId: AccountId32 | string | Uint8Array, vestingSchedule: PalletVestingVestingInfo | { locked?: any; perBlock?: any; startingBlock?: any } | string | Uint8Array, rationale: Option<Bytes> | null | Uint8Array | Bytes | string) => SubmittableExtrinsic<ApiType>, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Withdraw the worker application. Can be done by the worker only.
        * 

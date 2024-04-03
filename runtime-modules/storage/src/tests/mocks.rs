@@ -7,7 +7,7 @@ use common::locks::{
 pub use frame_support::traits::LockIdentifier;
 use frame_support::{
     ensure, parameter_types,
-    traits::{ConstU16, ConstU32, ConstU64},
+    traits::{ConstU16, ConstU32, ConstU64, WithdrawReasons},
     PalletId,
 };
 use frame_system::ensure_signed;
@@ -54,6 +54,7 @@ frame_support::construct_runtime!(
         Timestamp: pallet_timestamp,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         Storage: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
         // Need to be added for benchmarks to work
         Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
         Wg9: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
@@ -194,6 +195,11 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
+    pub const SWGModuleId: PalletId = PalletId(*b"m_storwg");
+    pub const DWGModuleId: PalletId = PalletId(*b"m_distwg");
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
 }
 
 // implemented for benchmarks features to work
@@ -208,6 +214,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = ();
 }
 
 // implemented for benchmarks only
@@ -222,6 +229,17 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = ();
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = ();
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
 }
 
 impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
