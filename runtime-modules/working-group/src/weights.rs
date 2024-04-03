@@ -60,6 +60,7 @@ pub trait WeightInfo {
 	fn increase_stake() -> Weight;
 	fn decrease_stake() -> Weight;
 	fn spend_from_budget() -> Weight;
+	fn vested_spend_from_budget() -> Weight;
 	fn fund_working_group_budget() -> Weight;
 	fn update_reward_amount() -> Weight;
 	fn set_status_text(_i: u32, ) -> Weight;
@@ -419,6 +420,9 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
+	fn vested_spend_from_budget() -> Weight {
+		Weight::from_parts(0, 0u64)
+	}
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
 	// Storage: System Account (r:1 w:1)
@@ -639,5 +643,8 @@ impl WeightInfo for () {
 	}
 	fn worker_remark(i: u32, ) -> Weight {
 		Weight::from_parts(0, 0)
+	}
+	fn vested_spend_from_budget() -> Weight {
+		Weight::from_parts(0, 0u64)
 	}
 }

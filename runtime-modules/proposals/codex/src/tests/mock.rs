@@ -3,6 +3,7 @@
 #![allow(non_fmt_panics)]
 
 use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
+use frame_support::traits::WithdrawReasons;
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
@@ -17,6 +18,7 @@ pub use frame_system;
 use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::{Header, TestXt, UintAuthorityId},
     traits::{IdentityLookup, Zero},
@@ -48,6 +50,7 @@ pub(crate) type AccountId = u64;
 pub(crate) type AccountIndex = u64;
 pub(crate) type BlockNumber = u64;
 pub(crate) type Balance = u64;
+pub(crate) type VestingBalance = u64;
 
 /// Another session handler struct to test on_disabled.
 pub struct OtherSessionHandler;
@@ -89,6 +92,8 @@ frame_support::construct_runtime!(
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
+
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
@@ -147,6 +152,7 @@ impl frame_system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
+
 impl balances::Config for Test {
     type MaxLocks = frame_support::traits::ConstU32<1024>;
     type MaxReserves = ();
@@ -560,6 +566,35 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> Balance {
+        block as u64
+    }
+}
+pub struct VestingBalanceToBalance();
+impl Convert<Balance, VestingBalance> for VestingBalanceToBalance {
+    fn convert(balance: Balance) -> VestingBalance {
+        balance as u64
+    }
+}
+
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
@@ -586,6 +621,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
@@ -599,6 +635,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
@@ -612,6 +649,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
@@ -625,6 +663,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Test {
@@ -638,6 +677,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
@@ -651,6 +691,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
@@ -664,6 +705,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
@@ -677,6 +719,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
@@ -690,6 +733,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 parameter_types! {
