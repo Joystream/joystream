@@ -62,6 +62,7 @@ pub trait WeightInfo {
 	fn decrease_council_budget() -> Weight;
 	fn candidate_remark() -> Weight;
 	fn councilor_remark() -> Weight;
+	fn set_era_payout_damping_factor() -> Weight;
 }
 
 /// Weights for council using the Substrate node and recommended hardware.
@@ -348,6 +349,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_parts(0, 5400))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 	}
+
+	fn set_era_payout_damping_factor() -> Weight {
+		Weight::from_parts(0, 0u64)
+	}
+
 }
 
 // Default implementation for tests
@@ -404,6 +410,9 @@ impl WeightInfo for () {
 		Weight::from_parts(0, 0)
 	}
 	fn decrease_council_budget() -> Weight {
+		Weight::from_parts(0, 0u64)
+	}
+	fn set_era_payout_damping_factor() -> Weight {
 		Weight::from_parts(0, 0u64)
 	}
 

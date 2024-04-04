@@ -426,6 +426,11 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       councilorReward: AugmentedQuery<ApiType, () => Observable<u128>, []>;
       /**
+       * Era payou damping factor: a parameter in [0,1] that can be used to reduce the era
+       * payout without changing the reward curve directly
+       **/
+      eraPayoutDampingFactor: AugmentedQuery<ApiType, () => Observable<Percent>, []>;
+      /**
        * The next block in which the budget will be increased.
        **/
       nextBudgetRefill: AugmentedQuery<ApiType, () => Observable<u32>, []>;

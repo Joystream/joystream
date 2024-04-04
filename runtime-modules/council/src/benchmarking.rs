@@ -716,6 +716,16 @@ benchmarks! {
         );
     }
 
+    set_era_payout_damping_factor {
+        let new_value = Percent::from_percent(80);
+
+    }: _ (RawOrigin::Root, new_value)
+    verify {
+        assert_eq!(Council::<T>::era_payout_damping_factor(), Percent::from_percent(80), "Budget not updated");
+        assert_last_event::<T>(
+            RawEvent::EraPayoutDampingFactorSet(new_value).into()
+        );
+    }
 
     candidate_remark {
         let msg = b"test".to_vec();
@@ -898,6 +908,14 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(Council::<Runtime>::test_benchmark_candidate_remark());
+        })
+    }
+
+    #[test]
+    fn test_set_era_payout_damping_factor() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_set_era_payout_damping_factor());
         })
     }
 }

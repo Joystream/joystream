@@ -176,6 +176,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     RuntimeCall::ProjectToken(project_token::Call::set_frozen_status { freeze })
                 }
             },
+            ProposalDetails::SetEraPayoutDampingFactor(new_parameter) => {
+                RuntimeCall::Council(council::Call::set_era_payout_damping_factor { new_parameter })
+            }
             ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
                 RuntimeCall::Council(council::Call::decrease_council_budget { reduction_amount })
             }

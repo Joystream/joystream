@@ -287,6 +287,11 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Set Era Payout Damping Factor` proposal parameters
+    type SetEraPayoutDampingFactorProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
     /// `Decrease Council Budget` proposal parameters
     type DecreaseCouncilBudgetProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
@@ -529,6 +534,11 @@ decl_module! {
         /// pallet token governance parameters proposal
         const UpdateTokenPalletTokenConstraints:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateTokenPalletTokenConstraints::get();
+
+        /// Era payout damping factor
+        const SetEraPayoutDampingFactorProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetEraPayoutDampingFactorProposalParameters::get();
+
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
         ///
@@ -900,14 +910,17 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 // Note: No checks for this proposal for now
             }
-            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
-                // Note: No checks for this proposal for now
-            }
             ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
                 ensure!(
                     !(*reduction_amount).is_zero(),
                     Error::<T>::ReductionAmountZero
                 );
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                // Note: No checks for this proposal for now
             }
         }
 
@@ -979,11 +992,14 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 T::SetPalletFozenStatusProposalParameters::get()
             }
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                T::DecreaseCouncilBudgetProposalParameters::get()
+            }
             ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
                 T::UpdateTokenPalletTokenConstraints::get()
             }
-            ProposalDetails::DecreaseCouncilBudget(..) => {
-                T::DecreaseCouncilBudgetProposalParameters::get()
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                T::SetEraPayoutDampingFactorProposalParameters::get()
             }
         }
     }
@@ -1152,14 +1168,20 @@ impl<T: Config> Module<T> {
                     to_kb(description_length.saturated_into()),
                 )
             }
-            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
-                WeightInfoCodex::<T>::create_proposal_update_token_pallet_governance_parameters(
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                WeightInfoCodex::<T>::create_proposal_decrease_council_budget(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )
             }
-            ProposalDetails::DecreaseCouncilBudget(..) => {
-                WeightInfoCodex::<T>::create_proposal_decrease_council_budget(
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_token_pallet_token_constraints(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_era_payout_damping_factor(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

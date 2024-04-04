@@ -68,7 +68,8 @@ pub trait WeightInfo {
 	fn create_proposal_update_global_nft_limit(_t: u32, _d: u32, ) -> Weight;
 	fn create_proposal_update_channel_payouts(_t: u32, _d: u32, _i: u32, ) -> Weight;
 	fn create_proposal_freeze_pallet(_t: u32, _d: u32, ) -> Weight;
-	fn create_proposal_update_token_pallet_governance_parameters(_t: u32, _d: u32, ) -> Weight;
+	fn create_proposal_update_token_pallet_token_constraints(_t: u32, _d: u32, ) -> Weight;
+	fn create_proposal_set_era_payout_damping_factor(_t: u32, _d: u32) -> Weight;
 	fn create_proposal_decrease_council_budget(_t: u32, _d: u32, ) -> Weight;
 }
 
@@ -1021,8 +1022,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
-	fn create_proposal_update_token_pallet_governance_parameters(_t: u32, _d: u32) -> Weight {
+	fn create_proposal_update_token_pallet_token_constraints(_t: u32, _d: u32, ) -> Weight {	
 		Weight::from_parts(0, 0)
+	}
+	fn create_proposal_set_era_payout_damping_factor(_t: u32, _d: u32) -> Weight {
+		Weight::from_parts(0,0)
 	}
 
 	fn create_proposal_decrease_council_budget(t: u32, d: u32, ) -> Weight {
@@ -1104,8 +1108,12 @@ impl WeightInfo for () {
 	fn create_proposal_freeze_pallet(t: u32, d: u32, ) -> Weight {
 		Weight::from_parts(0, 0)
 	}
-	fn create_proposal_update_token_pallet_governance_parameters(_t: u32, _d: u32, ) -> Weight {
+	fn create_proposal_update_token_pallet_token_constraints(_t: u32, _d: u32, ) -> Weight {	
 		Weight::from_parts(0, 0)
+	}
+
+	fn create_proposal_set_era_payout_damping_factor(_t: u32, _d: u32) -> Weight {
+		Weight::from_parts(0,0)
 	}
 	fn create_proposal_decrease_council_budget(t: u32, d: u32, ) -> Weight {
 		Weight::from_parts(0, 0)

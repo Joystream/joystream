@@ -590,6 +590,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       setCouncilorRewardProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Era payout damping factor
+       **/
+      setEraPayoutDampingFactorProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
        * Exports `Set Initial Invitation Balance` proposal parameters.
        **/
       setInitialInvitationBalanceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;

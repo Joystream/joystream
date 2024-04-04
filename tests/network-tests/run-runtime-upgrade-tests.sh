@@ -12,13 +12,13 @@ DATA_PATH=$PWD/data
 mkdir -p ${DATA_PATH}
 
 # The latest docker image tag to use for joystream/node (testing profile)
-RUNTIME=${RUNTIME:=current}
+RUNTIME=${RUNTIME:=latest}
 TARGET_RUNTIME=${TARGET_RUNTIME:=target}
 
 # Source of funds for all new accounts that are created in the tests.
 TREASURY_INITIAL_BALANCE=${TREASURY_INITIAL_BALANCE:="100000000"}
 TREASURY_ACCOUNT_URI=${TREASURY_ACCOUNT_URI:="//Bob"}
-TREASURY_ACCOUNT=`docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r`
+TREASURY_ACCOUNT=$(docker run --pull never --rm joystream/node:${RUNTIME} key inspect ${TREASURY_ACCOUNT_URI} --output-type json | jq .ss58Address -r)
 
 echo >&2 "treasury account from suri: ${TREASURY_ACCOUNT}"
 
@@ -106,11 +106,11 @@ function fork_off_init() {
 
     # http endpoint where to get metadata from mainnet
     if [[ -z $WS_RPC_ENDPOINT ]]; then
-        export WS_RPC_ENDPOINT="wss://rpc.joystream.org:9944"
+        export WS_RPC_ENDPOINT="wss://65.108.208.60.nip.io/ws-rpc"
     fi
     # http endpoint where to download storage data
     if [[ -z $HTTP_RPC_ENDPOINT ]]; then
-        export HTTP_RPC_ENDPOINT="http://mainnet-rpc-1.joystream.org:9933"
+        export HTTP_RPC_ENDPOINT="http://65.108.208.60.nip.io/pioneer"
     fi
 
     # download the raw storage state

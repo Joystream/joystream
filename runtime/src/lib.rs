@@ -53,6 +53,7 @@ mod weights;
 extern crate lazy_static; // for proposals_configuration module
 
 use codec::Decode;
+use core::ops::Div;
 use frame_election_provider_support::{
     onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
 };
@@ -536,11 +537,21 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
             // PoA mode: no inflation.
             (0, 0)
         } else {
-            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
-                total_staked,
-                total_issuance,
-                era_duration_millis,
-            )
+            // rescale the era payout according to the damping factor while keeping the invariant
+            // era_payou + rest = max_payout
+            let (era_payout_unscaled, rest_unscaled) =
+                <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                    total_staked,
+                    total_issuance,
+                    era_duration_millis,
+                );
+            let max_payout = era_payout_unscaled.saturating_add(rest_unscaled);
+            let damping_factor_parts = Council::era_payout_damping_factor().deconstruct();
+            let era_payout_scaled = era_payout_unscaled
+                .saturating_mul(damping_factor_parts.into())
+                .div(100u128);
+            let rest_scaled = max_payout.saturating_sub(era_payout_scaled);
+            (era_payout_scaled, rest_scaled)
         }
     }
 }
@@ -1709,6 +1720,7 @@ impl proposals_codex::Config for Runtime {
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
+    type SetEraPayoutDampingFactorProposalParameters = SetEraPayoutDampingFactorProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 
