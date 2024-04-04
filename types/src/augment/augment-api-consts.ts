@@ -590,6 +590,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       setCouncilorRewardProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Era payout damping factor
+       **/
+      setEraPayoutDampingFactorProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
        * Exports `Set Initial Invitation Balance` proposal parameters.
        **/
       setInitialInvitationBalanceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
@@ -630,6 +634,10 @@ declare module '@polkadot/api-base/types/consts' {
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * pallet token governance parameters proposal
+       **/
+      updateTokenPalletTokenConstraints: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Update Working Group Budget' proposal parameters.
        **/

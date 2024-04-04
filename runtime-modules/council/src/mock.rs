@@ -27,6 +27,7 @@ use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Zero},
+    Percent,
 };
 use staking_handler::{LockComparator, StakingHandler, StakingManager};
 use std::boxed::Box;
@@ -538,6 +539,7 @@ pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
         next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
         budget_increment: 1,
         councilor_reward: 100,
+        era_payout_damping_factor: Percent::from_percent(100),
     }
 }
 

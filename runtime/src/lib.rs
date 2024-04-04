@@ -53,6 +53,7 @@ mod weights;
 extern crate lazy_static; // for proposals_configuration module
 
 use codec::{Decode, Encode, MaxEncodedLen};
+use core::ops::Div;
 use frame_election_provider_support::{
     onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
 };
@@ -536,11 +537,21 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
             // PoA mode: no inflation.
             (0, 0)
         } else {
-            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
-                total_staked,
-                total_issuance,
-                era_duration_millis,
-            )
+            // rescale the era payout according to the damping factor while keeping the invariant
+            // era_payou + rest = max_payout
+            let (era_payout_unscaled, rest_unscaled) =
+                <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                    total_staked,
+                    total_issuance,
+                    era_duration_millis,
+                );
+            let max_payout = era_payout_unscaled.saturating_add(rest_unscaled);
+            let damping_factor_parts = Council::era_payout_damping_factor().deconstruct();
+            let era_payout_scaled = era_payout_unscaled
+                .saturating_mul(damping_factor_parts.into())
+                .div(100u128);
+            let rest_scaled = max_payout.saturating_sub(era_payout_scaled);
+            (era_payout_scaled, rest_scaled)
         }
     }
 }
@@ -584,7 +595,6 @@ impl pallet_staking::Config for Runtime {
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type VoterList = VoterList;
-    // type VoterList = VoterList; // not renaming for now
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
@@ -1355,6 +1365,7 @@ parameter_types! {
     pub const MinimumApplicationStake: Balance = dollars!(20);
     // This should be more costly than `add_opening` fee
     pub const LeaderOpeningStake: Balance = dollars!(100);
+    pub const WorkingGroupModuleId: PalletId = PalletId(*b"mworking"); // module storage
 }
 
 // Make sure that one cannot leave before a slashing proposal for lead can go through.
@@ -1428,6 +1439,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
@@ -1441,6 +1453,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
@@ -1454,6 +1467,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
@@ -1467,6 +1481,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
@@ -1480,6 +1495,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
@@ -1493,6 +1509,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
@@ -1506,6 +1523,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
@@ -1519,6 +1537,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
@@ -1532,6 +1551,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 parameter_types! {
@@ -1698,7 +1718,9 @@ impl proposals_codex::Config for Runtime {
     type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
+    type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
+    type SetEraPayoutDampingFactorProposalParameters = SetEraPayoutDampingFactorProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 

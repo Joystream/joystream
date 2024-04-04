@@ -14,6 +14,7 @@ use crate::types::StakeParameters;
 use crate::Module as WorkingGroup;
 use balances::Pallet as Balances;
 use membership::Module as Membership;
+use vesting::Config as VestingConfig;
 
 const SEED: u32 = 0;
 const MAX_KILOBYTES_METADATA: u32 = 100;
@@ -255,7 +256,7 @@ pub fn complete_opening<T: Config<I> + membership::Config, I: Instance>(
 
 benchmarks_instance! {
     where_clause {
-        where T: membership::Config
+        where T: membership::Config + Config<I>
     }
 
     on_initialize_leaving {
@@ -795,6 +796,27 @@ benchmarks_instance! {
         assert_last_event::<T, I>(RawEvent::BudgetSpending(lead_id, current_budget, None).into());
     }
 
+    vested_spend_from_budget {
+        use core::ops::Div;
+
+        let (lead_id, _) = insert_a_worker::<T, I>(
+            OpeningType::Leader,
+            0,
+            None
+        );
+
+        let amount = core::cmp::max(<T as VestingConfig>::MinVestedTransfer::get(), VestingBalanceOf::<T>::from(10_000u32));
+        let amount_balance = <T as Config<I>>::VestingBalanceToBalance::convert(amount);
+        let budget = amount_balance.saturating_mul(10u32.into());
+        let current_block = <T as frame_system::Config>::BlockNumber::from(1u32);
+        let vested = VestingInfoOf::<T>::new(amount, amount.div(10u32.into()), current_block);
+        WorkingGroup::<T, _>::set_budget(RawOrigin::Root.into(), budget).unwrap();
+    }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), vested, None)
+    verify {
+        assert_eq!(WorkingGroup::<T, I>::budget(), budget.saturating_sub(amount_balance), "Budget not updated");
+        assert_last_event::<T, I>(RawEvent::VestedBudgetSpending(lead_id, vested, None).into());
+    }
+
     fund_working_group_budget {
         let amount: BalanceOf<T> = 100u32.into();
 
@@ -1015,6 +1037,13 @@ mod tests {
     fn test_spend_from_budget() {
         build_test_externalities().execute_with(|| {
             assert_ok!(WorkingGroup::<Test>::test_benchmark_spend_from_budget());
+        });
+    }
+
+    #[test]
+    fn test_vested_spend_from_budget() {
+        build_test_externalities().execute_with(|| {
+            assert_ok!(WorkingGroup::<Test>::test_benchmark_vested_spend_from_budget());
         });
     }
 

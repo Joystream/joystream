@@ -35,6 +35,7 @@ token = { package = 'pallet-project-token', default-features = false, path = '..
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9', optional = true }
 
 [dev-dependencies]
+storage = { package = 'pallet-storage', default-features = false, path = '../../storage' }
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
@@ -46,6 +47,7 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 frame-election-provider-support = { package = 'frame-election-provider-support', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-bags-list = { package = 'pallet-bags-list', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 sp-npos-elections = { package = 'sp-npos-elections', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 
 [features]
 default = ['std']
@@ -74,6 +76,7 @@ std = [
     'membership/std',
     'content/std',
     'token/std',
+    'storage/std',
     'staking/std',
     'scale-info/std',
     'frame-election-provider-support/std',
