@@ -2425,9 +2425,8 @@ declare module '@polkadot/types/lookup' {
     readonly isGovernance: boolean;
     readonly isReferendum: boolean;
     readonly isStaking: boolean;
-    readonly isMultisig: boolean;
     readonly isStorageTransactor: boolean;
-    readonly type: 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor';
+    readonly type: 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor';
   }
 
   /** @name FrameSystemPhase (253) */

@@ -1988,7 +1988,7 @@ export default {
    * Lookup251: joystream_node_runtime::ProxyType
    **/
   JoystreamNodeRuntimeProxyType: {
-    _enum: ['Any', 'NonTransfer', 'Governance', 'Referendum', 'Staking', 'Multisig', 'StorageTransactor']
+    _enum: ['Any', 'NonTransfer', 'Governance', 'Referendum', 'Staking', 'StorageTransactor']
   },
   /**
    * Lookup253: frame_system::Phase

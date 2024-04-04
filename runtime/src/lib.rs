@@ -1861,7 +1861,6 @@ pub enum ProxyType {
     Governance,
     Referendum,
     Staking,
-    Multisig,
     StorageTransactor,
 }
 impl Default for ProxyType {
@@ -1894,7 +1893,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     | RuntimeCall::Referendum(referendum::Call::release_vote_stake { .. })
             ),
             ProxyType::Staking => matches!(c, RuntimeCall::Staking(..)),
-            ProxyType::Multisig => matches!(c, RuntimeCall::Multisig(..)),
             ProxyType::StorageTransactor => matches!(
                 c,
                 RuntimeCall::Storage(storage::Call::accept_pending_data_objects { .. })

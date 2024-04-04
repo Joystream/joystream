@@ -4392,7 +4392,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `delay`: The announcement period required of the initial proxy. Will generally be
        * zero.
        **/
-      addProxy: AugmentedSubmittable<(delegate: AccountId32 | string | Uint8Array, proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor' | number | Uint8Array, delay: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, JoystreamNodeRuntimeProxyType, u32]>;
+      addProxy: AugmentedSubmittable<(delegate: AccountId32 | string | Uint8Array, proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor' | number | Uint8Array, delay: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, JoystreamNodeRuntimeProxyType, u32]>;
       /**
        * Publish the hash of a proxy-call that will be made in the future.
        * 
@@ -4431,7 +4431,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * 
        * Fails if there are insufficient funds to pay for deposit.
        **/
-      createPure: AugmentedSubmittable<(proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor' | number | Uint8Array, delay: u32 | AnyNumber | Uint8Array, index: u16 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [JoystreamNodeRuntimeProxyType, u32, u16]>;
+      createPure: AugmentedSubmittable<(proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor' | number | Uint8Array, delay: u32 | AnyNumber | Uint8Array, index: u16 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [JoystreamNodeRuntimeProxyType, u32, u16]>;
       /**
        * Removes a previously spawned pure proxy.
        * 
@@ -4450,7 +4450,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Fails with `NoPermission` in case the caller is not a previously created pure
        * account whose `pure` call has corresponding parameters.
        **/
-      killPure: AugmentedSubmittable<(spawner: AccountId32 | string | Uint8Array, proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor' | number | Uint8Array, index: u16 | AnyNumber | Uint8Array, height: Compact<u32> | AnyNumber | Uint8Array, extIndex: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, JoystreamNodeRuntimeProxyType, u16, Compact<u32>, Compact<u32>]>;
+      killPure: AugmentedSubmittable<(spawner: AccountId32 | string | Uint8Array, proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor' | number | Uint8Array, index: u16 | AnyNumber | Uint8Array, height: Compact<u32> | AnyNumber | Uint8Array, extIndex: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, JoystreamNodeRuntimeProxyType, u16, Compact<u32>, Compact<u32>]>;
       /**
        * Dispatch the given `call` from an account that the sender is authorised for through
        * `add_proxy`.
@@ -4462,7 +4462,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `force_proxy_type`: Specify the exact proxy type to be used and checked for this call.
        * - `call`: The call to be made by the `real` account.
        **/
-      proxy: AugmentedSubmittable<(real: AccountId32 | string | Uint8Array, forceProxyType: Option<JoystreamNodeRuntimeProxyType> | null | Uint8Array | JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor' | number, call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Option<JoystreamNodeRuntimeProxyType>, Call]>;
+      proxy: AugmentedSubmittable<(real: AccountId32 | string | Uint8Array, forceProxyType: Option<JoystreamNodeRuntimeProxyType> | null | Uint8Array | JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor' | number, call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, Option<JoystreamNodeRuntimeProxyType>, Call]>;
       /**
        * Dispatch the given `call` from an account that the sender is authorized for through
        * `add_proxy`.
@@ -4476,7 +4476,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `force_proxy_type`: Specify the exact proxy type to be used and checked for this call.
        * - `call`: The call to be made by the `real` account.
        **/
-      proxyAnnounced: AugmentedSubmittable<(delegate: AccountId32 | string | Uint8Array, real: AccountId32 | string | Uint8Array, forceProxyType: Option<JoystreamNodeRuntimeProxyType> | null | Uint8Array | JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor' | number, call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, AccountId32, Option<JoystreamNodeRuntimeProxyType>, Call]>;
+      proxyAnnounced: AugmentedSubmittable<(delegate: AccountId32 | string | Uint8Array, real: AccountId32 | string | Uint8Array, forceProxyType: Option<JoystreamNodeRuntimeProxyType> | null | Uint8Array | JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor' | number, call: Call | IMethod | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, AccountId32, Option<JoystreamNodeRuntimeProxyType>, Call]>;
       /**
        * Remove the given announcement of a delegate.
        * 
@@ -4521,7 +4521,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - `proxy`: The account that the `caller` would like to remove as a proxy.
        * - `proxy_type`: The permissions currently enabled for the removed proxy account.
        **/
-      removeProxy: AugmentedSubmittable<(delegate: AccountId32 | string | Uint8Array, proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'Multisig' | 'StorageTransactor' | number | Uint8Array, delay: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, JoystreamNodeRuntimeProxyType, u32]>;
+      removeProxy: AugmentedSubmittable<(delegate: AccountId32 | string | Uint8Array, proxyType: JoystreamNodeRuntimeProxyType | 'Any' | 'NonTransfer' | 'Governance' | 'Referendum' | 'Staking' | 'StorageTransactor' | number | Uint8Array, delay: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [AccountId32, JoystreamNodeRuntimeProxyType, u32]>;
     };
     referendum: {
       /**
