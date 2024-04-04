@@ -376,7 +376,7 @@ pub(crate) fn update_token_pallet_token_governance_parameters(
 // Proposal parameters for the 'Set Era Payout Damping Factor' proposal
 pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
-        voting_period: days!(3),
+        voting_period: minutes!(20),
         grace_period: 0,
         approval_quorum_percentage: TWO_OUT_OF_THREE,
         approval_threshold_percentage: TWO_OUT_OF_THREE,
