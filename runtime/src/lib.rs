@@ -1859,8 +1859,10 @@ pub enum ProxyType {
     Any,
     NonTransfer,
     Governance,
+    Referendum,
     Staking,
-    WorkingGroups,
+    Multisig,
+    StorageTransactor,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -1885,12 +1887,17 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     | RuntimeCall::Referendum(..)
                     | RuntimeCall::ProposalsEngine(..)
             ),
-            ProxyType::Staking => matches!(c, RuntimeCall::Staking(..)),
-            ProxyType::WorkingGroups => matches!(
+            ProxyType::Referendum => matches!(
                 c,
-                RuntimeCall::StorageWorkingGroup(..)
-                    | RuntimeCall::DistributionWorkingGroup(..)
-                    | RuntimeCall::ContentWorkingGroup(..)
+                RuntimeCall::Referendum(referendum::Call::vote { .. })
+                    | RuntimeCall::Referendum(referendum::Call::reveal_vote { .. })
+                    | RuntimeCall::Referendum(referendum::Call::release_vote_stake { .. })
+            ),
+            ProxyType::Staking => matches!(c, RuntimeCall::Staking(..)),
+            ProxyType::Multisig => matches!(c, RuntimeCall::Multisig(..)),
+            ProxyType::StorageTransactor => matches!(
+                c,
+                RuntimeCall::Storage(storage::Call::accept_pending_data_objects { .. })
             ),
         }
     }
