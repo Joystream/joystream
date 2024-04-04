@@ -155,6 +155,9 @@ decl_error! {
         /// Revenue split rate cannot be 0
         RevenueSplitRateIsZero,
 
+        /// Cannot Issue Revenue Split with ongoing AMM
+        AmmActive,
+
         // ------ Burning ------------------------------------------------------
 
         /// Provided amount to burn is == 0

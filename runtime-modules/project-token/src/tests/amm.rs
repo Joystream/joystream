@@ -344,6 +344,26 @@ fn activation_fails_when_status_is_not_idle() {
 }
 
 #[test]
+fn amm_activation_fails_when_revenue_split() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+
+        let result = ActivateAmmFixture::default().execute_call();
+
+        assert_err!(
+            result,
+            Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive
+        );
+    })
+}
+
+#[test]
 fn activation_fails_when_amm_status_already_active() {
     let config = GenesisConfigBuilder::new_empty().build();
     build_test_externalities(config).execute_with(|| {

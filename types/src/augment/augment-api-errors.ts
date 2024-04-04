@@ -2243,6 +2243,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       AccountInformationDoesNotExist: AugmentedError<ApiType>;
       /**
+       * Cannot Issue Revenue Split with ongoing AMM
+       **/
+      AmmActive: AugmentedError<ApiType>;
+      /**
        * Unexpected arithmetic error (overflow / underflow)
        **/
       ArithmeticError: AugmentedError<ApiType>;

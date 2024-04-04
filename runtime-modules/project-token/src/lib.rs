@@ -1500,6 +1500,11 @@ impl<T: Config>
         let token_info = Self::ensure_token_exists(token_id)?;
         token_info.revenue_split.ensure_inactive::<T>()?;
 
+        ensure!(
+            OfferingStateOf::<T>::ensure_amm_of::<T>(&token_info).is_err(),
+            Error::<T>::AmmActive
+        );
+
         let allocation_amount = token_info.revenue_split_rate.mul_floor(revenue_amount);
 
         ensure!(
@@ -1653,6 +1658,8 @@ impl<T: Config>
         Self::ensure_unfrozen_state()?;
 
         let token_data = Self::ensure_token_exists(token_id)?;
+
+        token_data.ensure_can_modify_supply::<T>()?;
 
         ensure!(
             OfferingStateOf::<T>::ensure_idle_of::<T>(&token_data).is_ok(),

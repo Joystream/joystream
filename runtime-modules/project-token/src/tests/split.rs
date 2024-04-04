@@ -939,6 +939,43 @@ fn exit_revenue_split_ok_with_active_and_ended_split() {
 }
 
 #[test]
+fn issue_revenue_split_fails_with_amm_activated() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap(); // send participation to other acc
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let result = IssueRevenueSplitFixture::default()
+            .with_revenue_amount(DEFAULT_SPLIT_REVENUE)
+            .execute_call();
+
+        assert_err!(result, Error::<Test>::AmmActive);
+    })
+}
+
+#[test]
+fn issue_revenue_split_ok_with_sale_activated() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        InitTokenSaleFixture::default().execute_call().unwrap();
+
+        let result = IssueRevenueSplitFixture::default()
+            .with_revenue_amount(DEFAULT_SPLIT_REVENUE)
+            .execute_call();
+
+        assert_ok!(result);
+    })
+}
+
+#[test]
 fn issue_revenue_split_ok_with_revenue_leftovers_retained_by_issuer() {
     let leftovers = DEFAULT_SPLIT_RATE
         .left_from_one()
