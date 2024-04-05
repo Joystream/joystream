@@ -911,6 +911,8 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
+            token_data.ensure_can_modify_supply::<T>()?;
+
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
@@ -997,6 +999,8 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
+            token_data.ensure_can_modify_supply::<T>()?;
+
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
             let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
 
