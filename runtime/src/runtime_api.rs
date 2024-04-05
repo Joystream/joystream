@@ -126,6 +126,7 @@ mod benches {
         [storage, Storage]
         [content, Content]
         [project_token, ProjectToken]
+        [pallet_proxy, Proxy]
     );
 }
 

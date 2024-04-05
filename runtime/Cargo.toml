@@ -72,6 +72,7 @@ substrate-utility = { package = 'pallet-utility', default-features = false, git 
 pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-staking-runtime-api = { package = 'pallet-staking-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+pallet-proxy = { package = 'pallet-proxy', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9', default-features = false, optional = true }
@@ -169,6 +170,7 @@ std = [
     'pallet-election-provider-multi-phase/std',
     'pallet-election-provider-support-benchmarking?/std',
     'pallet-staking-runtime-api/std',
+    'pallet-proxy/std',
 
     # Joystream
     'common/std',
@@ -213,6 +215,7 @@ runtime-benchmarks = [
     "substrate-utility/runtime-benchmarks",
     "pallet-election-provider-multi-phase/runtime-benchmarks",
     "pallet-election-provider-support-benchmarking/runtime-benchmarks",
+    "pallet-proxy/runtime-benchmarks",
 
     # Joystream
     "common/runtime-benchmarks",
@@ -271,6 +274,7 @@ try-runtime = [
     "pallet-transaction-payment/try-runtime",
     "pallet-vesting/try-runtime",
     "substrate-utility/try-runtime",
+    "pallet-proxy/try-runtime",
     # joystream
     'forum/try-runtime',
     'membership/try-runtime',
