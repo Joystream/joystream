@@ -890,6 +890,7 @@ decl_module! {
         /// - user usable JOY balance must be enough for buying (+ existential deposit)
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        /// - token supply can be modified (there is no active revenue split)
         ///
         /// Postconditions
         /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
@@ -911,6 +912,8 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
+            token_data.ensure_can_modify_supply::<T>()?;
+
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
@@ -975,6 +978,7 @@ decl_module! {
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         /// - amm treasury account must have sufficient JOYs for the operation
+        /// - token supply can be modified (there is no active revenue split)
         ///
         /// Postconditions
         /// - `amount` burned from user account
@@ -997,6 +1001,8 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
+            token_data.ensure_can_modify_supply::<T>()?;
+
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
             let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
 
