@@ -20,10 +20,11 @@ use frame_system::RawOrigin;
 use membership::Module as Membership;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
-use sp_runtime::traits::One;
+use sp_runtime::{traits::One, Percent, Permill};
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
+use token::types::YearlyRate;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById,
@@ -921,6 +922,84 @@ benchmarks! {
             proposal_details
         );
     }
+
+    create_proposal_update_token_pallet_token_constraints {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::UpdateTokenPalletTokenConstraints(
+            token::types::TokenConstraints {
+                max_yearly_rate: Some(YearlyRate(Permill::from_percent(15))),
+                min_amm_slope: Some(100u32.into()),
+                min_sale_duration: Some(10u32.into()),
+                min_revenue_split_duration: Some(10u32.into()),
+                min_revenue_split_time_to_start: Some(10u32.into()),
+                sale_platform_fee: Some(Permill::from_percent(1)),
+                amm_buy_tx_fees: Some(Permill::from_percent(1)),
+                amm_sell_tx_fees: Some(Permill::from_percent(1)),
+                bloat_bond: Some(1000u32.into()),
+            }
+        );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_set_era_payout_damping_factor {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::SetEraPayoutDampingFactor(Percent::from_percent(33));
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_decrease_council_budget {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::DecreaseCouncilBudget(BalanceOf::<T>::one());
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
 }
 
 #[cfg(test)]
@@ -1101,6 +1180,29 @@ mod tests {
     fn test_update_channel_payouts_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_channel_payouts());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_update_token_pallet_token_constraints() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_token_pallet_token_constraints());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_set_era_payout_damping_factor() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_era_payout_damping_factor()
+            );
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_decrease_council_budget() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_decrease_council_budget());
         });
     }
 }

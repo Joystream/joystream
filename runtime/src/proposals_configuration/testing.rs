@@ -361,7 +361,6 @@ pub(crate) fn update_token_pallet_token_governance_parameters(
     }
 }
 
-// TODO (luxor/reward-curve-proposal): adjust parameters
 // Proposal parameters for the 'Set Era Payout Damping Factor' proposal
 pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {

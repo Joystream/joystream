@@ -1,7 +1,7 @@
 {
   "name": "eks-cluster",
   "devDependencies": {
-    "@types/node": "^10.0.0"
+    "@types/node": "^18.6.0"
   },
   "dependencies": {
     "@pulumi/awsx": "^0.30.0",

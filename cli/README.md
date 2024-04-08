@@ -26,7 +26,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/1.4.0 darwin-arm64 node-v18.6.0
+@joystream/cli/1.5.1 darwin-arm64 node-v18.6.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -118,10 +118,8 @@ When using the CLI for the first time there are a few common steps you might wan
 - [`joystream-cli content:curatorGroup ID`](#joystream-cli-contentcuratorgroup-id)
 - [`joystream-cli content:curatorGroups`](#joystream-cli-contentcuratorgroups)
 - [`joystream-cli content:deleteChannel`](#joystream-cli-contentdeletechannel)
-- [`joystream-cli content:deleteChannelAsModerator`](#joystream-cli-contentdeletechannelasmoderator)
 - [`joystream-cli content:deleteChannelAssetsAsModerator`](#joystream-cli-contentdeletechannelassetsasmoderator)
 - [`joystream-cli content:deleteVideo`](#joystream-cli-contentdeletevideo)
-- [`joystream-cli content:deleteVideoAsModerator`](#joystream-cli-contentdeletevideoasmoderator)
 - [`joystream-cli content:deleteVideoAssetsAsModerator`](#joystream-cli-contentdeletevideoassetsasmoderator)
 - [`joystream-cli content:directChannelPayment`](#joystream-cli-contentdirectchannelpayment)
 - [`joystream-cli content:generateChannelPayoutsCommitment`](#joystream-cli-contentgeneratechannelpayoutscommitment)
@@ -725,10 +723,11 @@ ARGUMENTS
   CURATORID  ID of the curator
 
 OPTIONS
-  -p, --permissions=UpdateChannelMetadata|ManageNonVideoChannelAssets|ManageChannelCollaborators|UpdateVideoMetadata|Add
-  Video|ManageVideoAssets|DeleteChannel|DeleteVideo|ManageVideoNfts|AgentRemark|TransferChannel|ClaimChannelReward|Withd
-  rawFromChannelBalance|IssueCreatorToken|ClaimCreatorTokenPatronage|InitAndManageCreatorTokenSale|CreatorTokenIssuerTra
-  nsfer|MakeCreatorTokenPermissionless|ReduceCreatorTokenPatronageRate|ManageRevenueSplits|DeissueCreatorToken
+  -p,
+  --permissions=UpdateChannelMetadata|ManageNonVideoChannelAssets|ManageChannelCollaborators|UpdateVideoMetadata|AddVide
+  o|ManageVideoAssets|DeleteChannel|DeleteVideo|ManageVideoNfts|AgentRemark|TransferChannel|ClaimChannelReward|WithdrawF
+  romChannelBalance|IssueCreatorToken|ClaimCreatorTokenPatronage|InitAndManageCreatorTokenSale|CreatorTokenIssuerTransfe
+  r|MakeCreatorTokenPermissionless|ReduceCreatorTokenPatronageRate|ManageRevenueSplits|DeissueCreatorToken|AmmControl
       List of permissions to associate with the curator, e.g. -p ManageChannelCollaborators UpdateVideoMetadata
 
   --useMemberId=useMemberId
@@ -969,25 +968,6 @@ OPTIONS
 
 _See code: [src/commands/content/deleteChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannel.ts)_
 
-## `joystream-cli content:deleteChannelAsModerator`
-
-Delete the channel and optionally all associated data objects.
-
-```
-USAGE
-  $ joystream-cli content:deleteChannelAsModerator
-
-OPTIONS
-  -c, --channelId=channelId  (required) ID of the Channel
-  -f, --force                Force-remove all associated channel data objects
-  -r, --rationale=rationale  (required) Reason of deleting the channel by moderator
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/content/deleteChannelAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteChannelAsModerator.ts)_
-
 ## `joystream-cli content:deleteChannelAssetsAsModerator`
 
 Delete the channel assets.
@@ -1024,25 +1004,6 @@ OPTIONS
 ```
 
 _See code: [src/commands/content/deleteVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideo.ts)_
-
-## `joystream-cli content:deleteVideoAsModerator`
-
-Delete the video and optionally all associated data objects.
-
-```
-USAGE
-  $ joystream-cli content:deleteVideoAsModerator
-
-OPTIONS
-  -f, --force                Force-remove all associated video data objects
-  -r, --rationale=rationale  (required) reason of deleting the video by moderator
-  -v, --videoId=videoId      (required) ID of the Video
-  --context=(Lead|Curator)   Actor context to execute the command in (Lead/Curator)
-  --useMemberId=useMemberId  Try using the specified member id as context whenever possible
-  --useWorkerId=useWorkerId  Try using the specified worker id as context whenever possible
-```
-
-_See code: [src/commands/content/deleteVideoAsModerator.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content/deleteVideoAsModerator.ts)_
 
 ## `joystream-cli content:deleteVideoAssetsAsModerator`
 

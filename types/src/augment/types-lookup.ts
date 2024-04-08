@@ -3143,14 +3143,6 @@ declare module '@polkadot/types/lookup' {
     readonly asSetCouncilorReward: {
       readonly councilorReward: u128;
     } & Struct;
-    readonly isSetEraPayoutDampingFactor: boolean;
-    readonly asSetEraPayoutDampingFactor: {
-      readonly newParameter: Percent;
-    } & Struct;
-    readonly isDecreaseCouncilBudget: boolean;
-    readonly asDecreaseCouncilBudget: {
-      readonly reductionAmount: u128;
-    } & Struct;
     readonly isFundingRequest: boolean;
     readonly asFundingRequest: {
       readonly fundingRequests: Vec<PalletCommonFundingRequestParameters>;
@@ -3171,7 +3163,15 @@ declare module '@polkadot/types/lookup' {
       readonly candidateId: u64;
       readonly msg: Bytes;
     } & Struct;
-    readonly type: 'AnnounceCandidacy' | 'ReleaseCandidacyStake' | 'WithdrawCandidacy' | 'SetCandidacyNote' | 'SetBudget' | 'PlanBudgetRefill' | 'SetBudgetIncrement' | 'SetCouncilorReward' | 'SetEraPayoutDampingFactor' | 'DecreaseCouncilBudget' | 'FundingRequest' | 'FundCouncilBudget' | 'CouncilorRemark' | 'CandidateRemark';
+    readonly isSetEraPayoutDampingFactor: boolean;
+    readonly asSetEraPayoutDampingFactor: {
+      readonly newParameter: Percent;
+    } & Struct;
+    readonly isDecreaseCouncilBudget: boolean;
+    readonly asDecreaseCouncilBudget: {
+      readonly reductionAmount: u128;
+    } & Struct;
+    readonly type: 'AnnounceCandidacy' | 'ReleaseCandidacyStake' | 'WithdrawCandidacy' | 'SetCandidacyNote' | 'SetBudget' | 'PlanBudgetRefill' | 'SetBudgetIncrement' | 'SetCouncilorReward' | 'FundingRequest' | 'FundCouncilBudget' | 'CouncilorRemark' | 'CandidateRemark' | 'SetEraPayoutDampingFactor' | 'DecreaseCouncilBudget';
   }
 
   /** @name PalletReferendumCall (385) */
@@ -4109,10 +4109,6 @@ declare module '@polkadot/types/lookup' {
 
   /** @name PalletProjectTokenCall (404) */
   interface PalletProjectTokenCall extends Enum {
-    readonly isUpdateTokenConstraints: boolean;
-    readonly asUpdateTokenConstraints: {
-      readonly parameters: PalletProjectTokenTokenConstraints;
-    } & Struct;
     readonly isTransfer: boolean;
     readonly asTransfer: {
       readonly srcMemberId: u64;
@@ -4172,7 +4168,11 @@ declare module '@polkadot/types/lookup' {
     readonly asSetFrozenStatus: {
       readonly freeze: bool;
     } & Struct;
-    readonly type: 'UpdateTokenConstraints' | 'Transfer' | 'Burn' | 'DustAccount' | 'JoinWhitelist' | 'PurchaseTokensOnSale' | 'ParticipateInSplit' | 'ExitRevenueSplit' | 'BuyOnAmm' | 'SellOnAmm' | 'SetFrozenStatus';
+    readonly isUpdateTokenConstraints: boolean;
+    readonly asUpdateTokenConstraints: {
+      readonly parameters: PalletProjectTokenTokenConstraints;
+    } & Struct;
+    readonly type: 'Transfer' | 'Burn' | 'DustAccount' | 'JoinWhitelist' | 'PurchaseTokensOnSale' | 'ParticipateInSplit' | 'ExitRevenueSplit' | 'BuyOnAmm' | 'SellOnAmm' | 'SetFrozenStatus' | 'UpdateTokenConstraints';
   }
 
   /** @name PalletProjectTokenMerkleProof (408) */

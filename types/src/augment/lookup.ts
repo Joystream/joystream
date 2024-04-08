@@ -2702,12 +2702,6 @@ export default {
       set_councilor_reward: {
         councilorReward: 'u128',
       },
-      set_era_payout_damping_factor: {
-        newParameter: 'Percent',
-      },
-      decrease_council_budget: {
-        reductionAmount: 'u128',
-      },
       funding_request: {
         fundingRequests: 'Vec<PalletCommonFundingRequestParameters>',
       },
@@ -2722,7 +2716,13 @@ export default {
       },
       candidate_remark: {
         candidateId: 'u64',
-        msg: 'Bytes'
+        msg: 'Bytes',
+      },
+      set_era_payout_damping_factor: {
+        newParameter: 'Percent',
+      },
+      decrease_council_budget: {
+        reductionAmount: 'u128'
       }
     }
   },
@@ -3535,9 +3535,6 @@ export default {
    **/
   PalletProjectTokenCall: {
     _enum: {
-      update_token_constraints: {
-        parameters: 'PalletProjectTokenTokenConstraints',
-      },
       transfer: {
         srcMemberId: 'u64',
         tokenId: 'u64',
@@ -3585,7 +3582,10 @@ export default {
         slippageTolerance: 'Option<(Permill,u128)>',
       },
       set_frozen_status: {
-        freeze: 'bool'
+        freeze: 'bool',
+      },
+      update_token_constraints: {
+        parameters: 'PalletProjectTokenTokenConstraints'
       }
     }
   },
