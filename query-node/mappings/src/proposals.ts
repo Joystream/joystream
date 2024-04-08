@@ -61,6 +61,7 @@ import {
   UpdateWorkingGroupBudgetProposalDetails,
   VetoProposalDetails,
   DecreaseCouncilBudgetProposalDetails,
+  UpdateTokenPalletTokenConstraintsProposalDetails,
 } from 'query-node/dist/model'
 import {
   INT32MAX,
@@ -83,7 +84,6 @@ import {
   ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
   ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
 } from '../generated/types'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2002 } from '../generated/types/2002/types-lookup'
 import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2003 } from '../generated/types/2003/types-lookup'
 
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
@@ -320,7 +320,7 @@ async function parseProposalDetails(
   // RuntimeProposalDetails
   else if (proposalDetails.isSetPalletFozenStatus) {
     const details = new UpdatePalletFrozenStatusProposalDetails()
-    const [frozen, pallet] = (proposalDetails as RuntimeProposalDetails_V2002).asSetPalletFozenStatus
+    const [frozen, pallet] = proposalDetails.asSetPalletFozenStatus
     details.frozen = frozen.isTrue
     details.pallet = pallet.toString()
     return details
@@ -329,6 +329,23 @@ async function parseProposalDetails(
   else if (proposalDetails.isDecreaseCouncilBudget) {
     const details = new DecreaseCouncilBudgetProposalDetails()
     details.amount = new BN(proposalDetails.asDecreaseCouncilBudget.toString())
+    return details
+  }
+  // UpdateTokenPalletTokenConstraints
+  else if (proposalDetails.isUpdateTokenPalletTokenConstraints) {
+    const details = new UpdateTokenPalletTokenConstraintsProposalDetails()
+    const specificDetails = proposalDetails.asUpdateTokenPalletTokenConstraints
+
+    details.maxYearlyRate = unwrap(specificDetails.maxYearlyRate)?.toNumber()
+    details.minAmmSlope = whenDef(unwrap(specificDetails.minAmmSlope), asBN)
+    details.minSaleDuration = unwrap(specificDetails.minSaleDuration)?.toNumber()
+    details.minRevenueSplitDuration = unwrap(specificDetails.minRevenueSplitDuration)?.toNumber()
+    details.minRevenueSplitTimeToStart = unwrap(specificDetails.minRevenueSplitTimeToStart)?.toNumber()
+    details.salePlatformFee = unwrap(specificDetails.salePlatformFee)?.toNumber()
+    details.ammBuyTxFees = unwrap(specificDetails.ammBuyTxFees)?.toNumber()
+    details.ammSellTxFees = unwrap(specificDetails.ammSellTxFees)?.toNumber()
+    details.bloatBond = whenDef(unwrap(specificDetails.bloatBond), asBN)
+
     return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)

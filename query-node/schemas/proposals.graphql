@@ -352,6 +352,35 @@ type DecreaseCouncilBudgetProposalDetails @variant {
   amount: BigInt!
 }
 
+type UpdateTokenPalletTokenConstraintsProposalDetails @variant {
+  "Proposed maximum patronage yearly interest rate (in part per million)"
+  maxYearlyRate: Int
+
+  "Proposed minimum value of the slope amm parameter"
+  minAmmSlope: BigInt
+
+  "Proposed minimum block duration of sales"
+  minSaleDuration: Int
+
+  "Proposed minimum block duration for a revenue split"
+  minRevenueSplitDuration: Int
+
+  "Proposed minimum blocks between revenue share issuance block and actual revenue share starting block"
+  minRevenueSplitTimeToStart: Int
+
+  "Proposed platform fee ratio charged on top of each sale and burned (in part per million)"
+  salePlatformFee: Int
+
+  "Proposed ratio of fees charged on top of each token purchase from the AMM (in part per million)"
+  ammBuyTxFees: Int
+
+  "Proposed ratio of fees charged on top of each token sold to the AMM (in part per million)"
+  ammSellTxFees: Int
+
+  "Proposed	bloat bond value used during account creation"
+  bloatBond: BigInt
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -378,3 +407,4 @@ union ProposalDetails =
   | UpdatePalletFrozenStatusProposalDetails
   | UpdateGlobalNftLimitProposalDetails
   | DecreaseCouncilBudgetProposalDetails
+  | UpdateTokenPalletTokenConstraintsProposalDetails
