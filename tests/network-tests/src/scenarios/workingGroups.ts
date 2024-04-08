@@ -11,7 +11,7 @@ import electCouncil from '../flows/council/elect'
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Working groups', async ({ job }) => {
   const councilJob = job('electing council', electCouncil)
-  const hireLeads = job('hire leads', leadOpening()).after(councilJob)
+  const hireLeads = job('hire leads', leadOpening(true)).after(councilJob)
   job('terminate working-group leads', terminateLeads)
     .requires(job('openings and applications', openingsAndApplications).requires(hireLeads))
     .requires(job('upcoming openings', upcomingOpenings).requires(hireLeads))
