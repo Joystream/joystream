@@ -4018,6 +4018,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - user usable JOY balance must be enough for buying (+ existential deposit)
        * - slippage tolerance constraints respected if provided
        * - token total supply and amount value must be s.t. `eval` function doesn't overflow
+       * - token supply can be modified (there is no active revenue split)
        * 
        * Postconditions
        * - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
@@ -4193,6 +4194,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * - slippage tolerance constraints respected if provided
        * - token total supply and amount value must be s.t. `eval` function doesn't overflow
        * - amm treasury account must have sufficient JOYs for the operation
+       * - token supply can be modified (there is no active revenue split)
        * 
        * Postconditions
        * - `amount` burned from user account
