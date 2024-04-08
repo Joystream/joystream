@@ -1,7 +1,7 @@
 {
   "name": "@joystream/distributor-cli",
   "description": "Joystream distributor node CLI",
-  "version": "2.0.0",
+  "version": "2.1.1",
   "author": "Joystream contributors",
   "bin": {
     "joystream-distributor": "./bin/run"
@@ -13,7 +13,7 @@
     "@joystream/metadata-protobuf": "^2.15.0",
     "@joystream/opentelemetry": "1.0.0",
     "@joystream/storage-node-client": "^4.0.0",
-    "@joystream/types": "^4.0.0",
+    "@joystream/types": "^4.4.0",
     "@nerdwallet/apollo-cache-policies": "2.10.0",
     "@oclif/command": "^1",
     "@oclif/config": "^1",
@@ -69,7 +69,7 @@
     "@types/inquirer": "^8.1.1",
     "@types/mime": "^3.0.1",
     "@types/mocha": "^5",
-    "@types/node": "^14",
+    "@types/node": "^18.6.0",
     "@types/node-cache": "^4.2.5",
     "@types/node-cleanup": "^2.1.1",
     "@types/send": "^0.17.0",
