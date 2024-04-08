@@ -867,7 +867,6 @@ parameter_types! {
         DefaultStorageDepositCleanupProfit::get()
     );
 
-    // TODO: Adjust those?
     pub const MaxNumberOfAssetsPerChannel: MaxNumber = 10;
     pub const MaxNumberOfAssetsPerVideo: MaxNumber = 20;
     pub const MaxNumberOfCollaboratorsPerChannel: MaxNumber = 10;
@@ -1121,11 +1120,11 @@ parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 1_000;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 20;
-    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage");
     pub const MinDistributionBucketsPerBag: u32 = 1;
     pub const MaxDistributionBucketsPerBag: u32 = 51;
     pub const MaxDataObjectSize: u64 = giga_bytes!(60);
-    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20; // TODO: adjust value
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20;
 
     // Data object bloat bond related:
     // To calculate the cost of removing a data object we substract the cost of removing a video
@@ -1281,9 +1280,9 @@ parameter_types! {
         FroumPostCleanupTxFee::get(),
         DefaultStorageDepositCleanupProfit::get()
     );
-    pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
+    pub const ForumModuleId: PalletId = PalletId(*b"mo:forum");
     pub const PostLifeTime: BlockNumber = days!(30);
-    pub const MaxStickiedThreads: u32 = 20; // TODO: adjust
+    pub const MaxStickiedThreads: u32 = 20;
 }
 
 pub struct MapLimits;
@@ -1365,7 +1364,6 @@ parameter_types! {
     pub const MinimumApplicationStake: Balance = dollars!(20);
     // This should be more costly than `add_opening` fee
     pub const LeaderOpeningStake: Balance = dollars!(100);
-    pub const WorkingGroupModuleId: PalletId = PalletId(*b"mworking"); // module storage
 }
 
 // Make sure that one cannot leave before a slashing proposal for lead can go through.

@@ -171,7 +171,6 @@ pub(crate) fn terminate_working_group_lead_proposal() -> ProposalParameters<Bloc
 }
 
 // Proposal parameters for the 'Amend Constitution' proposal
-// TODO: To be removed
 pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: 72200,
@@ -373,7 +372,6 @@ pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balanc
     }
 }
 
-// TODO (luxor/reward-curve-proposal): adjust parameters
 // Proposal parameters for the 'Set Era Payout Damping Factor' proposal
 pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {

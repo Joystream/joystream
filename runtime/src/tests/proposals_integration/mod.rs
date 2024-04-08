@@ -696,7 +696,6 @@ fn veto_proposal_proposal_execution_succeeds() {
     });
 }
 
-// TODO:
 // We ignore this test because it needs to be re-written to take into account
 // that constitutionality > 1
 #[ignore]
@@ -983,7 +982,6 @@ fn set_referral_cut_proposal_succeeds() {
     });
 }
 
-// TODO:
 // We ignore this test because it needs to be re-written to take into account
 // that constitutionality > 1
 #[ignore]
@@ -1025,7 +1023,6 @@ fn set_budget_increment_proposal_succeds() {
     });
 }
 
-// TODO:
 // We ignore this test because it needs to be re-written to take into account
 // that constitutionality > 1
 #[ignore]
