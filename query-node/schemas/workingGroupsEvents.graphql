@@ -671,8 +671,8 @@ type BudgetSpendingEvent implements Event @entity {
   "Related group"
   group: WorkingGroup!
 
-  "Receiver account address"
-  receiver: String!
+  "Reciever account address"
+  reciever: String!
 
   "Amount beeing spent"
   amount: BigInt!
