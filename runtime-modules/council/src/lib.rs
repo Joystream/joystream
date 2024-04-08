@@ -859,66 +859,6 @@ decl_module! {
             Ok(())
         }
 
-        /// Set the era payout damping factor
-        ///
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = CouncilWeightInfo::<T>::set_era_payout_damping_factor()] // TODO: adjust
-        pub fn set_era_payout_damping_factor(origin, new_parameter: Percent) -> Result<(), Error<T>> {
-            // ensure action can be started
-            EnsureChecks::<T>::can_set_era_payout_damping_factor(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T>::set_era_payout_damping_factor(new_parameter);
-
-            // emit event
-            Self::deposit_event(RawEvent::EraPayoutDampingFactorSet(new_parameter));
-
-            Ok(())
-        }
-
-        /// Decrease the council total budget
-        ///
-        /// # <weight>
-        ///
-        /// ## weight
-        /// `O (1)`
-        /// - db:
-        ///    - `O(1)` doesn't depend on the state or parameters
-        /// # </weight>
-        #[weight = CouncilWeightInfo::<T>::decrease_council_budget()]
-        pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
-            // ensure action can be started
-            EnsureChecks::<T>::can_decrease_council_budget(origin)?;
-
-            // ensure reduction amount is not too large
-            ensure!(
-                reduction_amount <= Self::budget(),
-                Error::<T>::ReductionAmountTooLarge
-            );
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T>::decrease_budget(reduction_amount);
-
-            // emit event
-            Self::deposit_event(RawEvent::CouncilBudgetDecreased(reduction_amount));
-
-            Ok(())
-        }
-
         /// Transfers funds from council budget to account
         ///
         /// # <weight>
@@ -1076,6 +1016,66 @@ decl_module! {
             //
 
             Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
+        }
+
+        /// Set the era payout damping factor
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_era_payout_damping_factor()] // TODO: adjust
+        pub fn set_era_payout_damping_factor(origin, new_parameter: Percent) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_era_payout_damping_factor(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_era_payout_damping_factor(new_parameter);
+
+            // emit event
+            Self::deposit_event(RawEvent::EraPayoutDampingFactorSet(new_parameter));
+
+            Ok(())
+        }
+
+        /// Decrease the council total budget
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::decrease_council_budget()]
+        pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_decrease_council_budget(origin)?;
+
+            // ensure reduction amount is not too large
+            ensure!(
+                reduction_amount <= Self::budget(),
+                Error::<T>::ReductionAmountTooLarge
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::decrease_budget(reduction_amount);
+
+            // emit event
+            Self::deposit_event(RawEvent::CouncilBudgetDecreased(reduction_amount));
+
+            Ok(())
         }
     }
 }
