@@ -381,6 +381,11 @@ type UpdateTokenPalletTokenConstraintsProposalDetails @variant {
   bloatBond: BigInt
 }
 
+type SetEraPayoutDampingFactorProposalDetails @variant {
+  "Proposed validator payout damping factor"
+  dampingFactor: Int!
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -408,3 +413,4 @@ union ProposalDetails =
   | UpdateGlobalNftLimitProposalDetails
   | DecreaseCouncilBudgetProposalDetails
   | UpdateTokenPalletTokenConstraintsProposalDetails
+  | SetEraPayoutDampingFactorProposalDetails

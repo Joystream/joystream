@@ -62,6 +62,7 @@ import {
   VetoProposalDetails,
   DecreaseCouncilBudgetProposalDetails,
   UpdateTokenPalletTokenConstraintsProposalDetails,
+  SetEraPayoutDampingFactorProposalDetails,
 } from 'query-node/dist/model'
 import {
   INT32MAX,
@@ -345,7 +346,12 @@ async function parseProposalDetails(
     details.ammBuyTxFees = unwrap(specificDetails.ammBuyTxFees)?.toNumber()
     details.ammSellTxFees = unwrap(specificDetails.ammSellTxFees)?.toNumber()
     details.bloatBond = whenDef(unwrap(specificDetails.bloatBond), asBN)
-
+    return details
+  }
+  // SetEraPayoutDampingFactorProposalDetails
+  else if (proposalDetails.isSetEraPayoutDampingFactor) {
+    const details = new SetEraPayoutDampingFactorProposalDetails()
+    details.dampingFactor = proposalDetails.asSetEraPayoutDampingFactor.toNumber()
     return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
