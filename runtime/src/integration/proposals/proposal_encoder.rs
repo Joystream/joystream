@@ -166,11 +166,22 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     uploader_account: member_controller_account,
                 })
             }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(parameters) => {
+                RuntimeCall::ProjectToken(project_token::Call::update_token_constraints {
+                    parameters,
+                })
+            }
             ProposalDetails::SetPalletFozenStatus(freeze, pallet) => match pallet {
                 FreezablePallet::ProjectToken => {
                     RuntimeCall::ProjectToken(project_token::Call::set_frozen_status { freeze })
                 }
             },
+            ProposalDetails::SetEraPayoutDampingFactor(new_parameter) => {
+                RuntimeCall::Council(council::Call::set_era_payout_damping_factor { new_parameter })
+            }
+            ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
+                RuntimeCall::Council(council::Call::decrease_council_budget { reduction_amount })
+            }
         };
 
         call.encode()

@@ -163,6 +163,11 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
         SetPalletFozenStatus: [false, 'ProjectToken'],
       }),
     },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        DecreaseCouncilBudget: 100,
+      }),
+    },
   ]
 
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)

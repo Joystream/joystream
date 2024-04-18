@@ -152,6 +152,34 @@ fn amm_buy_succeeds_with_existing_user() {
 }
 
 #[test]
+fn amm_buy_fails_with_revenue_split() {
+    let (user_member_id, user_account_id) = member!(1);
+    build_default_test_externalities_with_balances(vec![(
+        user_account_id,
+        DEFAULT_SPLIT_REVENUE
+            + amm_function_buy_values_with_tx_fees(DEFAULT_AMM_BUY_AMOUNT, Zero::zero())
+            + ed(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+
+        let result = AmmBuyFixture::default()
+            .with_sender(user_account_id)
+            .with_amount(DEFAULT_AMM_BUY_AMOUNT)
+            .with_member_id(user_member_id)
+            .execute_call();
+
+        assert_err!(
+            result,
+            Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive
+        );
+    })
+}
+
+#[test]
 fn amm_buy_failed_with_slippage_constraint_violated() {
     let slippage_tolerance = (Permill::zero(), Balance::zero());
     amm_function_buy_values_with_tx_fees(DEFAULT_AMM_BUY_AMOUNT, Zero::zero());
@@ -872,6 +900,29 @@ fn amm_sell_ok_with_event_deposited() {
             DEFAULT_AMM_SELL_AMOUNT,
             sell_price,
         ));
+    })
+}
+
+#[test]
+fn amm_sell_fails_with_revenue_split() {
+    build_default_test_externalities_with_balances(vec![(
+        member!(1).1,
+        DEFAULT_AMM_BUY_AMOUNT + DEFAULT_SPLIT_REVENUE + ExistentialDeposit::get(),
+    )])
+    .execute_with(|| {
+        IssueTokenFixture::default().execute_call().unwrap();
+        TransferFixture::default().execute_call().unwrap();
+        IssueRevenueSplitFixture::default().execute_call().unwrap();
+        ActivateAmmFixture::default().execute_call().unwrap();
+
+        let result = AmmSellFixture::default()
+            .with_amount(DEFAULT_AMM_BUY_AMOUNT)
+            .execute_call();
+
+        assert_err!(
+            result,
+            Error::<Test>::CannotModifySupplyWhenRevenueSplitsAreActive
+        );
     })
 }
 

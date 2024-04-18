@@ -3351,7 +3351,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "8.5.0"
+version = "8.6.0"
 dependencies = [
  "assert_cmd",
  "async-std",
@@ -3446,7 +3446,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "12.2002.0"
+version = "12.2003.0"
 dependencies = [
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -3488,6 +3488,7 @@ dependencies = [
  "pallet-proposals-codex",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
+ "pallet-proxy",
  "pallet-referendum",
  "pallet-session",
  "pallet-session-benchmarking",
@@ -5259,6 +5260,7 @@ dependencies = [
  "pallet-staking-handler",
  "pallet-storage",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5345,6 +5347,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5427,6 +5430,7 @@ dependencies = [
  "pallet-referendum",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5580,7 +5584,9 @@ dependencies = [
  "pallet-staking",
  "pallet-staking-handler",
  "pallet-staking-reward-curve",
+ "pallet-storage",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5637,6 +5643,21 @@ dependencies = [
  "serde",
  "sp-arithmetic",
  "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-proxy"
+version = "4.0.0-dev"
+source = "git+https://github.com/joystream/substrate.git?rev=1d0eefca86ef31b9e7727df01a6ed23ad65491e9#1d0eefca86ef31b9e7727df01a6ed23ad65491e9"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
  "sp-io",
  "sp-runtime",
  "sp-std",
@@ -5779,6 +5800,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "pallet-working-group",
  "parity-scale-codec",
  "scale-info",
@@ -5913,6 +5935,7 @@ dependencies = [
  "pallet-membership",
  "pallet-staking-handler",
  "pallet-timestamp",
+ "pallet-vesting",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -6442,9 +6465,9 @@ checksum = "dc375e1527247fe1a97d8b7156678dfe7c1af2fc075c9a4db3690ecd2a148068"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.52"
+version = "1.0.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d0e1ae9e836cc3beddd63db0df682593d7e2d3d891ae8c9083d2113e1744224"
+checksum = "dec2b086b7a862cf4de201096214fa870344cf922b2b30c167badb3af3195406"
 dependencies = [
  "unicode-ident",
 ]

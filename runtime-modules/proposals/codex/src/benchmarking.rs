@@ -20,10 +20,11 @@ use frame_system::RawOrigin;
 use membership::Module as Membership;
 use proposals_engine::Module as Engine;
 use sp_core::Hasher;
-use sp_runtime::traits::One;
+use sp_runtime::{traits::One, Percent, Permill};
 use sp_std::convert::TryInto;
 use sp_std::iter::FromIterator;
 use sp_std::prelude::*;
+use token::types::YearlyRate;
 use working_group::{
     ApplicationById, ApplicationId, ApplyOnOpeningParameters, OpeningById, OpeningId, OpeningType,
     StakeParameters, StakePolicy, WorkerById,
@@ -31,6 +32,8 @@ use working_group::{
 
 const SEED: u32 = 0;
 const MAX_KILOBYTES_METADATA: u32 = 100;
+
+pub type BalanceOf<T> = <T as balances::Config>::Balance;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
@@ -65,7 +68,7 @@ fn member_funded_account<T: Config + membership::Config>() -> (T::AccountId, T::
     let handle = handle_from_id(member_id.saturated_into());
 
     // Give balance for buying membership
-    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     let params = membership::BuyMembershipParameters {
         root_account: account_id.clone(),
@@ -77,7 +80,7 @@ fn member_funded_account<T: Config + membership::Config>() -> (T::AccountId, T::
 
     Membership::<T>::buy_membership(RawOrigin::Signed(account_id.clone()).into(), params).unwrap();
 
-    let _ = Balances::<T>::make_free_balance_be(&account_id, T::Balance::max_value());
+    let _ = Balances::<T>::make_free_balance_be(&account_id, BalanceOf::<T>::max_value());
 
     Membership::<T>::add_staking_account_candidate(
         RawOrigin::Signed(account_id.clone()).into(),
@@ -872,15 +875,15 @@ benchmarks! {
                 size: u64::MAX,
                 ipfs_content_id: Vec::from_iter((0..(i * 1000)).map(|v| u8::MAX))
             },
-            expected_data_size_fee: u128::MAX.saturated_into::<T::Balance>(),
-            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<T::Balance>()
+            expected_data_size_fee: u128::MAX.saturated_into::<BalanceOf::<T>>(),
+            expected_data_object_state_bloat_bond: u128::MAX.saturated_into::<BalanceOf::<T>>()
         };
         let proposal_details = ProposalDetails::UpdateChannelPayouts(
             content::UpdateChannelPayoutsParameters::<T> {
                 commitment: Some(commitment),
                 payload: Some(payload),
-                min_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
-                max_cashout_allowed: Some(u128::MAX.saturated_into::<T::Balance>()),
+                min_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf::<T>>()),
+                max_cashout_allowed: Some(u128::MAX.saturated_into::<BalanceOf::<T>>()),
                 channel_cashouts_enabled: Some(true),
             }
         );
@@ -906,6 +909,84 @@ benchmarks! {
             create_proposal_parameters::<T>(t, d);
 
         let proposal_details = ProposalDetails::SetPalletFozenStatus(true, FreezablePallet::ProjectToken);
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_update_token_pallet_token_constraints {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::UpdateTokenPalletTokenConstraints(
+            token::types::TokenConstraints {
+                max_yearly_rate: Some(YearlyRate(Permill::from_percent(15))),
+                min_amm_slope: Some(100u32.into()),
+                min_sale_duration: Some(10u32.into()),
+                min_revenue_split_duration: Some(10u32.into()),
+                min_revenue_split_time_to_start: Some(10u32.into()),
+                sale_platform_fee: Some(Permill::from_percent(1)),
+                amm_buy_tx_fees: Some(Permill::from_percent(1)),
+                amm_sell_tx_fees: Some(Permill::from_percent(1)),
+                bloat_bond: Some(1000u32.into()),
+            }
+        );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_set_era_payout_damping_factor {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::SetEraPayoutDampingFactor(Percent::from_percent(33));
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_decrease_council_budget {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let proposal_details = ProposalDetails::DecreaseCouncilBudget(BalanceOf::<T>::one());
     }: create_proposal(
         RawOrigin::Signed(account_id.clone()),
         general_proposal_paramters.clone(),
@@ -1099,6 +1180,29 @@ mod tests {
     fn test_update_channel_payouts_proposal() {
         initial_test_ext().execute_with(|| {
             assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_channel_payouts());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_update_token_pallet_token_constraints() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_update_token_pallet_token_constraints());
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_set_era_payout_damping_factor() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(
+                ProposalsCodex::test_benchmark_create_proposal_set_era_payout_damping_factor()
+            );
+        });
+    }
+
+    #[test]
+    fn test_create_proposal_decrease_council_budget() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(ProposalsCodex::test_benchmark_create_proposal_decrease_council_budget());
         });
     }
 }

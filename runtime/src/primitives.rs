@@ -109,6 +109,14 @@ pub struct BlockNumberToBalance;
 
 impl Convert<BlockNumber, Balance> for BlockNumberToBalance {
     fn convert(block: BlockNumber) -> Balance {
-        block as Balance
+        block as Balance // u64 to u128
+    }
+}
+
+/// Needed in the runtime-modules/working-group in order to silence compiler errors
+pub struct BalanceConverter;
+impl Convert<Balance, Balance> for BalanceConverter {
+    fn convert(balance: Balance) -> Balance {
+        balance as Balance
     }
 }
