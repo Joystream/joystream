@@ -7,23 +7,29 @@ import { BaseWorkingGroupFixture } from './BaseWorkingGroupFixture'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { Utils } from '../../utils'
-import { BudgetSpendingEventFieldsFragment, WorkingGroupFieldsFragment } from '../../graphql/generated/queries'
+import { VestedBudgetSpendingEventFieldsFragment, WorkingGroupFieldsFragment } from '../../graphql/generated/queries'
 
 export type VestingSchedule = {
   locked: BN
   perBlock: BN
-  startingBlock?: BN
+  startingBlock: number
 }
 
-export class SpendBudgetFixture extends BaseWorkingGroupFixture {
-  protected recievers: string[]
-  protected amounts: BN[]
+export class VestedSpendFromBudgetFixture extends BaseWorkingGroupFixture {
+  protected receivers: string[]
+  protected vestingSchedules: VestingSchedule[]
   protected preExecuteBudget?: BN
 
-  public constructor(api: Api, query: QueryNodeApi, group: WorkingGroupModuleName, recievers: string[], amounts: BN[]) {
+  public constructor(
+    api: Api,
+    query: QueryNodeApi,
+    group: WorkingGroupModuleName,
+    receivers: string[],
+    vestingSchedules: VestingSchedule[]
+  ) {
     super(api, query, group)
-    this.recievers = recievers
-    this.amounts = amounts
+    this.receivers = receivers
+    this.vestingSchedules = vestingSchedules
   }
 
   protected async getSignerAccountOrAccounts(): Promise<string> {
@@ -31,17 +37,17 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
   }
 
   protected async getExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return this.recievers.map((reciever, i) =>
-      this.api.tx[this.group].spendFromBudget(reciever, this.amounts[i], this.getRationale(reciever))
+    return this.receivers.map((reciever, i) =>
+      this.api.tx[this.group].vestedSpendFromBudget(reciever, this.vestingSchedules[i], this.getRationale(reciever))
     )
   }
 
   protected getEventFromResult(result: ISubmittableResult): Promise<EventDetails> {
-    return this.api.getEventDetails(result, this.group, 'BudgetSpending')
+    return this.api.getEventDetails(result, this.group, 'VestedBudgetSpending')
   }
 
-  protected getRationale(reciever: string): string {
-    return `Budget spending to ${reciever} rationale`
+  protected getRationale(receiver: string): string {
+    return `Vested budget spending to ${receiver} rationale`
   }
 
   public async execute(): Promise<void> {
@@ -49,16 +55,21 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
     await super.execute()
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: BudgetSpendingEventFieldsFragment, i: number): void {
+  protected assertQueryNodeEventIsValid(qEvent: VestedBudgetSpendingEventFieldsFragment, i: number): void {
     assert.equal(qEvent.group.name, this.group)
-    assert.equal(qEvent.amount, this.amounts[i].toString())
-    assert.equal(qEvent.reciever, this.recievers[i])
-    assert.equal(qEvent.rationale, this.getRationale(this.recievers[i]))
+    assert.equal(qEvent.amount, this.vestingSchedules[i].locked.toString())
+    assert.equal(qEvent.perBlock, this.vestingSchedules[i].perBlock.toString())
+    assert.equal(qEvent.startingBlock, this.vestingSchedules[i].startingBlock)
+    assert.equal(qEvent.receiver, this.receivers[i])
+    assert.equal(qEvent.rationale, this.getRationale(this.receivers[i]))
   }
 
   protected assertQueriedGroupIsValid(qGroup: WorkingGroupFieldsFragment | null): void {
     Utils.assert(qGroup, 'Query node: Working group not found!')
-    assert.equal(qGroup.budget, this.preExecuteBudget!.sub(this.amounts.reduce((a, b) => a.add(b), new BN(0))))
+    assert.equal(
+      qGroup.budget,
+      this.preExecuteBudget!.sub(this.vestingSchedules.reduce((a, b) => a.add(b.locked), new BN(0)))
+    )
   }
 
   async runQueryNodeChecks(): Promise<void> {
@@ -66,7 +77,7 @@ export class SpendBudgetFixture extends BaseWorkingGroupFixture {
 
     // Query and check the events
     await this.query.tryQueryWithTimeout(
-      () => this.query.getBudgetSpendingEvents(this.events),
+      () => this.query.getVestedBudgetSpendingEvents(this.events),
       (qEvents) => this.assertQueryNodeEventsAreValid(qEvents)
     )
 

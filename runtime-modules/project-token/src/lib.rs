@@ -65,6 +65,7 @@ use traits::PalletToken;
 use types::*;
 
 pub mod weights;
+pub use types::TokenConstraintsOf;
 pub use weights::WeightInfo;
 
 type WeightInfoToken<T> = <T as Config>::WeightInfo;
@@ -829,6 +830,7 @@ decl_module! {
         /// - user usable JOY balance must be enough for buying (+ existential deposit)
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
+        /// - token supply can be modified (there is no active revenue split)
         ///
         /// Postconditions
         /// - `amount` CRT minted into account (which is created if necessary with existential deposit transferred to it)
@@ -850,6 +852,8 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
+            token_data.ensure_can_modify_supply::<T>()?;
+
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
 
             let user_account_data_exists = AccountInfoByTokenAndMember::<T>::contains_key(token_id, member_id);
@@ -914,6 +918,7 @@ decl_module! {
         /// - slippage tolerance constraints respected if provided
         /// - token total supply and amount value must be s.t. `eval` function doesn't overflow
         /// - amm treasury account must have sufficient JOYs for the operation
+        /// - token supply can be modified (there is no active revenue split)
         ///
         /// Postconditions
         /// - `amount` burned from user account
@@ -936,6 +941,8 @@ decl_module! {
             )?;
 
             let token_data = Self::ensure_token_exists(token_id)?;
+            token_data.ensure_can_modify_supply::<T>()?;
+
             let curve = token_data.amm_curve.ok_or(Error::<T>::NotInAmmState)?;
             let user_acc_data = Self::ensure_account_data_exists(token_id, &member_id)?;
 
@@ -999,6 +1006,66 @@ decl_module! {
 
             PalletFrozen::put(freeze);
             Self::deposit_event(RawEvent::FrozenStatusUpdated(freeze));
+        }
+
+        /// Allow Governance to Set constraints
+        /// Preconditions:
+        /// - origin is signed by `root`
+        /// PostConditions:
+        /// - governance parameters storage value set to the provided values
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// # </weight>
+        #[weight = WeightInfoToken::<T>::update_token_constraints()]
+        pub fn update_token_constraints(
+            origin,
+            parameters: TokenConstraintsOf<T>
+        ) {
+            // update parameters via proposal
+            ensure_root(origin)?;
+
+            // == MUTATION SAFE ==
+
+            if let Some(new_max_yearly_rate) = parameters.max_yearly_rate {
+                MaxYearlyPatronageRate::put(new_max_yearly_rate);
+            }
+
+            if let Some(new_min_amm_slope) = parameters.min_amm_slope {
+                MinAmmSlopeParameter::<T>::put(new_min_amm_slope);
+            }
+
+            if let Some(new_min_sale_duration) = parameters.min_sale_duration {
+                MinSaleDuration::<T>::put(new_min_sale_duration);
+            }
+
+            if let Some(new_min_revenue_split_duration) = parameters.min_revenue_split_duration {
+                MinRevenueSplitDuration::<T>::put(new_min_revenue_split_duration);
+            }
+
+            if let Some(new_min_revenue_split_time_to_start) = parameters.min_revenue_split_time_to_start {
+                MinRevenueSplitTimeToStart::<T>::put(new_min_revenue_split_time_to_start);
+            }
+
+            if let Some(new_sale_platform_fee) = parameters.sale_platform_fee {
+                SalePlatformFee::put(new_sale_platform_fee);
+            }
+
+            if let Some(new_amm_buy_tx_fee) = parameters.amm_buy_tx_fees {
+                AmmBuyTxFees::put(new_amm_buy_tx_fee);
+            }
+
+            if let Some(new_amm_sell_tx_fee) = parameters.amm_sell_tx_fees {
+                AmmSellTxFees::put(new_amm_sell_tx_fee);
+            }
+
+            if let Some(new_bloat_bond) = parameters.bloat_bond {
+                BloatBond::<T>::put(new_bloat_bond);
+            }
+
+            Self::deposit_event(RawEvent::TokenConstraintsUpdated(parameters));
+
         }
     }
 }

@@ -3,9 +3,15 @@ import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
 import { FixtureRunner } from '../../Fixture'
 import { workingGroups } from '../../consts'
-import { SpendBudgetFixture, FundWorkingGroupBudgetFixture } from '../../fixtures/workingGroups'
+import {
+  SpendBudgetFixture,
+  FundWorkingGroupBudgetFixture,
+  VestedSpendFromBudgetFixture,
+} from '../../fixtures/workingGroups'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membership'
 import { Resource } from '../../Resources'
+
+const ONEJOY = new BN(10 ** 10)
 
 export default async function groupBudget({ api, query, lock }: FlowProps): Promise<void> {
   await Promise.all(
@@ -15,26 +21,40 @@ export default async function groupBudget({ api, query, lock }: FlowProps): Prom
       api.enableDebugTxLogs()
 
       const funderAccounts = (await api.createKeyPairs(3)).map(({ key }) => key.address)
+      await Promise.all(funderAccounts.map((address) => api.treasuryTransferBalance(address, ONEJOY.muln(1000))))
       const buyMembershipFixture = new BuyMembershipHappyCaseFixture(api, query, funderAccounts)
       await new FixtureRunner(buyMembershipFixture).run()
       const funderMembers = buyMembershipFixture.getCreatedMembers()
 
+      // The vested amount of the vestedSpendFromBudget call has to be high enough for the call to succeed.
+      // Otherwise it fails with "Dispatch Error: AmountLow" (I'm not sure what the minimum value is).
       const fundWorkingGroupBudgetFixture = new FundWorkingGroupBudgetFixture(api, query, group, [
-        { memberId: funderMembers[0], amount: new BN(110_000) },
-        { memberId: funderMembers[1], amount: new BN(5_000) },
-        { memberId: funderMembers[2], amount: new BN(35_000) },
+        { memberId: funderMembers[0], amount: ONEJOY.muln(200) },
+        { memberId: funderMembers[1], amount: ONEJOY.muln(300) },
+        { memberId: funderMembers[2], amount: ONEJOY.muln(500) },
       ])
       await new FixtureRunner(fundWorkingGroupBudgetFixture).runWithQueryNodeChecks()
 
-      const recievers = (await api.createKeyPairs(5)).map(({ key }) => key.address)
-      const amounts = recievers.map((reciever, i) => new BN(10000 * (i + 1)))
-
+      const receivers = (await api.createKeyPairs(5)).map(({ key }) => key.address)
+      const amounts = receivers.map((receiver, i) => new BN(10_000 * (i + 1)))
       let unlockMembershipBudget
       if (group === 'membershipWorkingGroup') {
         unlockMembershipBudget = await lock(Resource.MembershipWgBudget)
       }
-      const spendGroupBudgetFixture = new SpendBudgetFixture(api, query, group, recievers, amounts)
+      const spendGroupBudgetFixture = new SpendBudgetFixture(api, query, group, receivers, amounts)
       await new FixtureRunner(spendGroupBudgetFixture).runWithQueryNodeChecks()
+
+      const vestingAmount = ONEJOY.muln(900)
+      const vestingSchedule = {
+        locked: vestingAmount,
+        startingBlock: 10_000,
+        perBlock: vestingAmount.divn(10),
+      }
+      const vestedSpendGroupBudgetFixture = new VestedSpendFromBudgetFixture(api, query, group, receivers.slice(0, 1), [
+        vestingSchedule,
+      ])
+      await new FixtureRunner(vestedSpendGroupBudgetFixture).runWithQueryNodeChecks()
+
       if (unlockMembershipBudget !== undefined) {
         unlockMembershipBudget()
       }

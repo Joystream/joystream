@@ -79,6 +79,7 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
+use sp_runtime::Percent;
 use sp_std::convert::TryInto;
 use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
@@ -367,6 +368,10 @@ decl_storage! { generate_storage_info
 
         /// Councilor reward per block
         pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
+
+        /// Era payou damping factor: a parameter in [0,1] that can be used to reduce the era
+        /// payout without changing the reward curve directly
+        pub EraPayoutDampingFactor get(fn era_payout_damping_factor) config(): Percent = Percent::from_percent(100);
     }
 }
 
@@ -423,6 +428,11 @@ decl_event! {
         /// Councilor reward has been updated.
         CouncilorRewardUpdated(Balance),
 
+        /// Councilor budget has been decreased
+        /// Params:
+        /// - Reduction amount
+        CouncilBudgetDecreased(Balance),
+
         /// Request has been funded
         RequestFunded(AccountId, Balance),
 
@@ -438,6 +448,9 @@ decl_event! {
 
         /// Candidate remark message
         CandidateRemarked(MemberId, Vec<u8>),
+
+        /// Era payou damping factor set
+        EraPayoutDampingFactorSet(Percent),
     }
 }
 
@@ -518,6 +531,9 @@ decl_error! {
 
         /// Cannot withdraw: insufficient budget balance.
         InsufficientBalanceForTransfer,
+
+        /// Cannot reduce the budget by the given amount.
+        ReductionAmountTooLarge
     }
 }
 
@@ -843,7 +859,6 @@ decl_module! {
             Ok(())
         }
 
-
         /// Transfers funds from council budget to account
         ///
         /// # <weight>
@@ -1001,6 +1016,66 @@ decl_module! {
             //
 
             Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
+        }
+
+        /// Set the era payout damping factor
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_era_payout_damping_factor()] // TODO: adjust
+        pub fn set_era_payout_damping_factor(origin, new_parameter: Percent) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_era_payout_damping_factor(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_era_payout_damping_factor(new_parameter);
+
+            // emit event
+            Self::deposit_event(RawEvent::EraPayoutDampingFactorSet(new_parameter));
+
+            Ok(())
+        }
+
+        /// Decrease the council total budget
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::decrease_council_budget()]
+        pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_decrease_council_budget(origin)?;
+
+            // ensure reduction amount is not too large
+            ensure!(
+                reduction_amount <= Self::budget(),
+                Error::<T>::ReductionAmountTooLarge
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::decrease_budget(reduction_amount);
+
+            // emit event
+            Self::deposit_event(RawEvent::CouncilBudgetDecreased(reduction_amount));
+
+            Ok(())
         }
     }
 }
@@ -1613,6 +1688,10 @@ impl<T: Config> Mutations<T> {
         let next_reward_block = now + T::ElectedMemberRewardPeriod::get();
         NextRewardPayments::<T>::put(next_reward_block);
     }
+
+    fn set_era_payout_damping_factor(new_parameter: Percent) {
+        EraPayoutDampingFactor::put(new_parameter);
+    }
 }
 
 /////////////////// Ensure checks //////////////////////////////////////////////
@@ -1784,6 +1863,19 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in setting the councilor reward.
     fn can_set_councilor_reward(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in decreasing the council budget
+    fn can_decrease_council_budget(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    fn can_set_era_payout_damping_factor(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())

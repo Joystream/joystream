@@ -52,16 +52,17 @@ mod weights;
 #[macro_use]
 extern crate lazy_static; // for proposals_configuration module
 
-use codec::Decode;
+use codec::{Decode, Encode, MaxEncodedLen};
+use core::ops::Div;
 use frame_election_provider_support::{
     onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
 };
 use frame_support::traits::{
-    ConstU16, ConstU32, Contains, Currency, EitherOfDiverse, Imbalance, KeyOwnerProofSystem,
-    LockIdentifier, OnUnbalanced, WithdrawReasons,
+    ConstU16, ConstU32, Contains, Currency, EitherOfDiverse, Imbalance, InstanceFilter,
+    KeyOwnerProofSystem, LockIdentifier, OnUnbalanced, WithdrawReasons,
 };
 use frame_support::weights::{constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, Weight};
-use frame_support::{dispatch::DispatchClass, pallet_prelude::Get};
+use frame_support::{dispatch::DispatchClass, pallet_prelude::Get, RuntimeDebug};
 pub use weights::{
     block_weights::BlockExecutionWeight, extrinsic_weights::ExtrinsicBaseWeight,
     rocksdb_weights::constants::RocksDbWeight,
@@ -144,7 +145,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 2002,
+    spec_version: 2003,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 2,
@@ -536,11 +537,21 @@ impl EraPayout<Balance> for NoInflationIfNoEras {
             // PoA mode: no inflation.
             (0, 0)
         } else {
-            <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
-                total_staked,
-                total_issuance,
-                era_duration_millis,
-            )
+            // rescale the era payout according to the damping factor while keeping the invariant
+            // era_payou + rest = max_payout
+            let (era_payout_unscaled, rest_unscaled) =
+                <pallet_staking::ConvertCurve<RewardCurve> as EraPayout<Balance>>::era_payout(
+                    total_staked,
+                    total_issuance,
+                    era_duration_millis,
+                );
+            let max_payout = era_payout_unscaled.saturating_add(rest_unscaled);
+            let damping_factor_parts = Council::era_payout_damping_factor().deconstruct();
+            let era_payout_scaled = era_payout_unscaled
+                .saturating_mul(damping_factor_parts.into())
+                .div(100u128);
+            let rest_scaled = max_payout.saturating_sub(era_payout_scaled);
+            (era_payout_scaled, rest_scaled)
         }
     }
 }
@@ -584,7 +595,6 @@ impl pallet_staking::Config for Runtime {
     type ElectionProvider = ElectionProviderMultiPhase;
     type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type VoterList = VoterList;
-    // type VoterList = VoterList; // not renaming for now
     type TargetList = pallet_staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type HistoryDepth = HistoryDepth;
@@ -857,7 +867,6 @@ parameter_types! {
         DefaultStorageDepositCleanupProfit::get()
     );
 
-    // TODO: Adjust those?
     pub const MaxNumberOfAssetsPerChannel: MaxNumber = 10;
     pub const MaxNumberOfAssetsPerVideo: MaxNumber = 20;
     pub const MaxNumberOfCollaboratorsPerChannel: MaxNumber = 10;
@@ -1111,11 +1120,11 @@ parameter_types! {
     pub const MaxDistributionBucketFamilyNumber: u64 = 200;
     pub const BlacklistSizeLimit: u64 = 1_000;
     pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 20;
-    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage");
     pub const MinDistributionBucketsPerBag: u32 = 1;
     pub const MaxDistributionBucketsPerBag: u32 = 51;
     pub const MaxDataObjectSize: u64 = giga_bytes!(60);
-    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20; // TODO: adjust value
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 20;
 
     // Data object bloat bond related:
     // To calculate the cost of removing a data object we substract the cost of removing a video
@@ -1271,9 +1280,9 @@ parameter_types! {
         FroumPostCleanupTxFee::get(),
         DefaultStorageDepositCleanupProfit::get()
     );
-    pub const ForumModuleId: PalletId = PalletId(*b"mo:forum"); // module : forum
+    pub const ForumModuleId: PalletId = PalletId(*b"mo:forum");
     pub const PostLifeTime: BlockNumber = days!(30);
-    pub const MaxStickiedThreads: u32 = 20; // TODO: adjust
+    pub const MaxStickiedThreads: u32 = 20;
 }
 
 pub struct MapLimits;
@@ -1428,6 +1437,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
@@ -1441,6 +1451,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
@@ -1454,6 +1465,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
@@ -1467,6 +1479,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
@@ -1480,6 +1493,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Runtime {
@@ -1493,6 +1507,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
@@ -1506,6 +1521,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
@@ -1519,6 +1535,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
@@ -1532,6 +1549,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Runtime {
     type WeightInfo = working_group::weights::SubstrateWeight<Runtime>;
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = BalanceConverter;
 }
 
 parameter_types! {
@@ -1694,10 +1712,13 @@ impl proposals_codex::Config for Runtime {
     type VetoProposalProposalParameters = VetoProposalProposalParameters;
     type UpdateGlobalNftLimitProposalParameters = UpdateGlobalNftLimitProposalParameters;
     type UpdateChannelPayoutsProposalParameters = UpdateChannelPayoutsProposalParameters;
+    type DecreaseCouncilBudgetProposalParameters = DecreaseCouncilBudgetProposalParameters;
     type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
+    type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
+    type SetEraPayoutDampingFactorProposalParameters = SetEraPayoutDampingFactorProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1811,6 +1832,97 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const ProxyDepositBase: Balance = dollars!(1);
+    pub const ProxyDepositFactor: Balance = dollars!(1);
+    pub const AnnouncementDepositBase: Balance = dollars!(1);
+    pub const AnnouncementDepositFactor: Balance = dollars!(1);
+}
+
+/// The type used to represent the kinds of proxying allowed.
+#[derive(
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Encode,
+    Decode,
+    RuntimeDebug,
+    MaxEncodedLen,
+    scale_info::TypeInfo,
+)]
+pub enum ProxyType {
+    Any,
+    NonTransfer,
+    Governance,
+    Referendum,
+    Staking,
+    StorageTransactor,
+}
+impl Default for ProxyType {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+impl InstanceFilter<RuntimeCall> for ProxyType {
+    fn filter(&self, c: &RuntimeCall) -> bool {
+        match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => !matches!(
+                c,
+                RuntimeCall::Balances(..)
+                    | RuntimeCall::Vesting(pallet_vesting::Call::vested_transfer { .. })
+                    | RuntimeCall::Content(content::Call::initialize_channel_transfer { .. })
+                    | RuntimeCall::Content(content::Call::buy_nft { .. })
+                    | RuntimeCall::ProjectToken(project_token::Call::transfer { .. })
+            ),
+            ProxyType::Governance => matches!(
+                c,
+                RuntimeCall::Council(..)
+                    | RuntimeCall::Referendum(..)
+                    | RuntimeCall::ProposalsEngine(..)
+            ),
+            ProxyType::Referendum => matches!(
+                c,
+                RuntimeCall::Referendum(referendum::Call::vote { .. })
+                    | RuntimeCall::Referendum(referendum::Call::reveal_vote { .. })
+                    | RuntimeCall::Referendum(referendum::Call::release_vote_stake { .. })
+            ),
+            ProxyType::Staking => matches!(c, RuntimeCall::Staking(..)),
+            ProxyType::StorageTransactor => matches!(
+                c,
+                RuntimeCall::Storage(storage::Call::accept_pending_data_objects { .. })
+            ),
+        }
+    }
+    fn is_superset(&self, o: &Self) -> bool {
+        match (self, o) {
+            (x, y) if x == y => true,
+            (ProxyType::Any, _) => true,
+            (_, ProxyType::Any) => false,
+            (ProxyType::NonTransfer, _) => true,
+            _ => false,
+        }
+    }
+}
+
+impl pallet_proxy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type ProxyType = ProxyType;
+    type ProxyDepositBase = ProxyDepositBase;
+    type ProxyDepositFactor = ProxyDepositFactor;
+    type MaxProxies = ConstU32<32>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type MaxPending = ConstU32<32>;
+    type CallHasher = BlakeTwo256;
+    type AnnouncementDepositBase = AnnouncementDepositBase;
+    type AnnouncementDepositFactor = AnnouncementDepositFactor;
+}
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -1881,6 +1993,7 @@ construct_runtime!(
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
+        Proxy: pallet_proxy,
     }
 );
 

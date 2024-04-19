@@ -6,10 +6,10 @@
 import '@polkadot/api-base/types/events';
 
 import type { ApiTypes, AugmentedEvent } from '@polkadot/api-base/types';
-import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
+import type { BTreeMap, BTreeSet, Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
-import type { AccountId32, H256, Perbill, Permill } from '@polkadot/types/interfaces/runtime';
-import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceStatus, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletElectionProviderMultiPhasePhase, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenAmmCurve, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenTransfers, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingForcing, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpConsensusGrandpaAppPublic, SpNposElectionsElectionScore, SpRuntimeDispatchError } from '@polkadot/types/lookup';
+import type { AccountId32, H256, Perbill, Percent, Permill } from '@polkadot/types/interfaces/runtime';
+import type { FrameSupportDispatchDispatchInfo, FrameSupportTokensMiscBalanceStatus, JoystreamNodeRuntimeProxyType, PalletBountyBountyActor, PalletBountyBountyParametersBTreeSet, PalletBountyOracleWorkEntryJudgment, PalletCommonBalanceKind, PalletCommonWorkingGroupIterableEnumsWorkingGroup, PalletContentChannelCreationParametersRecord, PalletContentChannelFundsDestination, PalletContentChannelRecord, PalletContentChannelUpdateParametersRecord, PalletContentIterableEnumsChannelActionPermission, PalletContentNftLimitPeriod, PalletContentNftTypesEnglishAuctionParamsRecord, PalletContentNftTypesNftIssuanceParametersRecord, PalletContentNftTypesOpenAuctionParamsRecord, PalletContentPendingTransfer, PalletContentPermissionsContentActor, PalletContentPermissionsCuratorGroupIterableEnumsContentModerationAction, PalletContentPermissionsCuratorGroupIterableEnumsPausableChannelFeature, PalletContentTransferCommitmentParametersBTreeMap, PalletContentUpdateChannelPayoutsParametersRecord, PalletContentVideoCreationParametersRecord, PalletContentVideoUpdateParametersRecord, PalletElectionProviderMultiPhaseElectionCompute, PalletElectionProviderMultiPhasePhase, PalletForumExtendedPostIdObject, PalletForumPrivilegedActor, PalletImOnlineSr25519AppSr25519Public, PalletMembershipBuyMembershipParameters, PalletMembershipCreateMemberParameters, PalletMembershipGiftMembershipParameters, PalletMembershipInviteMembershipParameters, PalletMultisigTimepoint, PalletProjectTokenAmmCurve, PalletProjectTokenTokenConstraints, PalletProjectTokenTokenIssuanceParameters, PalletProjectTokenTokenSale, PalletProjectTokenTransferPolicy, PalletProjectTokenTransfers, PalletProposalsCodexGeneralProposalParams, PalletProposalsCodexProposalDetails, PalletProposalsDiscussionThreadModeBTreeSet, PalletProposalsEngineProposalStatusesExecutionStatus, PalletProposalsEngineProposalStatusesProposalDecision, PalletProposalsEngineProposalStatusesProposalStatus, PalletProposalsEngineVoteKind, PalletReferendumOptionResult, PalletStakingExposure, PalletStakingForcing, PalletStakingValidatorPrefs, PalletStorageBagIdType, PalletStorageDistributionBucketIdRecord, PalletStorageDynBagCreationParametersRecord, PalletStorageDynamicBagIdType, PalletStorageDynamicBagType, PalletStorageUploadParametersRecord, PalletStorageVoucher, PalletVestingVestingInfo, PalletWorkingGroupApplyOnOpeningParams, PalletWorkingGroupOpeningType, PalletWorkingGroupRewardPaymentType, PalletWorkingGroupStakePolicy, SpConsensusGrandpaAppPublic, SpNposElectionsElectionScore, SpRuntimeDispatchError } from '@polkadot/types/lookup';
 
 export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>;
 
@@ -39,7 +39,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -145,6 +145,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -517,7 +525,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -623,6 +631,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -712,6 +728,12 @@ declare module '@polkadot/api-base/types/events' {
        **/
       CandidateRemarked: AugmentedEvent<ApiType, [u64, Bytes]>;
       /**
+       * Councilor budget has been decreased
+       * Params:
+       * - Reduction amount
+       **/
+      CouncilBudgetDecreased: AugmentedEvent<ApiType, [u128]>;
+      /**
        * Fund the council budget.
        * Params:
        * - Member ID
@@ -727,6 +749,10 @@ declare module '@polkadot/api-base/types/events' {
        * Councilor reward has been updated.
        **/
       CouncilorRewardUpdated: AugmentedEvent<ApiType, [u128]>;
+      /**
+       * Era payou damping factor set
+       **/
+      EraPayoutDampingFactorSet: AugmentedEvent<ApiType, [Percent]>;
       /**
        * New candidate announced
        **/
@@ -780,7 +806,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -886,6 +912,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1071,7 +1105,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -1177,6 +1211,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1329,7 +1371,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -1435,6 +1477,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1536,7 +1586,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -1642,6 +1692,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1717,7 +1775,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -1823,6 +1881,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -1898,7 +1964,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -2004,6 +2070,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:
@@ -2155,6 +2229,12 @@ declare module '@polkadot/api-base/types/events' {
        * - transfer's metadata
        **/
       TokenAmountTransferredByIssuer: AugmentedEvent<ApiType, [u64, u64, PalletProjectTokenTransfers, Bytes]>;
+      /**
+       * Governance parameters updated
+       * Params:
+       * - governance parameters
+       **/
+      TokenConstraintsUpdated: AugmentedEvent<ApiType, [PalletProjectTokenTokenConstraints]>;
       /**
        * Token Deissued
        * Params:
@@ -2325,6 +2405,29 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       Voted: AugmentedEvent<ApiType, [u64, u32, PalletProposalsEngineVoteKind, Bytes]>;
+    };
+    proxy: {
+      /**
+       * An announcement was placed to make a call in the future.
+       **/
+      Announced: AugmentedEvent<ApiType, [real: AccountId32, proxy: AccountId32, callHash: H256], { real: AccountId32, proxy: AccountId32, callHash: H256 }>;
+      /**
+       * A proxy was added.
+       **/
+      ProxyAdded: AugmentedEvent<ApiType, [delegator: AccountId32, delegatee: AccountId32, proxyType: JoystreamNodeRuntimeProxyType, delay: u32], { delegator: AccountId32, delegatee: AccountId32, proxyType: JoystreamNodeRuntimeProxyType, delay: u32 }>;
+      /**
+       * A proxy was executed correctly, with the given.
+       **/
+      ProxyExecuted: AugmentedEvent<ApiType, [result: Result<Null, SpRuntimeDispatchError>], { result: Result<Null, SpRuntimeDispatchError> }>;
+      /**
+       * A proxy was removed.
+       **/
+      ProxyRemoved: AugmentedEvent<ApiType, [delegator: AccountId32, delegatee: AccountId32, proxyType: JoystreamNodeRuntimeProxyType, delay: u32], { delegator: AccountId32, delegatee: AccountId32, proxyType: JoystreamNodeRuntimeProxyType, delay: u32 }>;
+      /**
+       * A pure account has been created by new proxy with given
+       * disambiguation index and proxy type.
+       **/
+      PureCreated: AugmentedEvent<ApiType, [pure: AccountId32, who: AccountId32, proxyType: JoystreamNodeRuntimeProxyType, disambiguationIndex: u16], { pure: AccountId32, who: AccountId32, proxyType: JoystreamNodeRuntimeProxyType, disambiguationIndex: u16 }>;
     };
     referendum: {
       /**
@@ -2762,7 +2865,7 @@ declare module '@polkadot/api-base/types/events' {
        * Emits on budget from the working group being spent
        * Params:
        * - Receiver Account Id.
-       * - Balance spent.
+       * - Amount to spend
        * - Rationale.
        **/
       BudgetSpending: AugmentedEvent<ApiType, [AccountId32, u128, Option<Bytes>]>;
@@ -2868,6 +2971,14 @@ declare module '@polkadot/api-base/types/events' {
        * - Rationale.
        **/
       TerminatedWorker: AugmentedEvent<ApiType, [u64, Option<u128>, Option<Bytes>]>;
+      /**
+       * Emits on budget from the working group being spent
+       * Params:
+       * - Receiver Account Id.
+       * - Vesting scheduled
+       * - Rationale.
+       **/
+      VestedBudgetSpending: AugmentedEvent<ApiType, [AccountId32, PalletVestingVestingInfo, Option<Bytes>]>;
       /**
        * Emits on exiting the worker.
        * Params:

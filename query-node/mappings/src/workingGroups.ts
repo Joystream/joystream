@@ -34,6 +34,7 @@ import {
   BudgetFundedEvent,
   BudgetSetEvent,
   BudgetSpendingEvent,
+  VestedBudgetSpendingEvent,
   ForumPost,
   InvalidActionMetadata,
   LeaderSetEvent,
@@ -83,6 +84,7 @@ import {
   StorageWorkingGroup_ApplicationWithdrawnEvent_V1001 as WorkingGroup_ApplicationWithdrawnEvent_V1001,
   StorageWorkingGroup_AppliedOnOpeningEvent_V1001 as WorkingGroup_AppliedOnOpeningEvent_V1001,
   StorageWorkingGroup_BudgetSpendingEvent_V1001 as WorkingGroup_BudgetSpendingEvent_V1001,
+  StorageWorkingGroup_VestedBudgetSpendingEvent_V2003 as WorkingGroup_VestedBudgetSpendingEvent_V2003,
   StorageWorkingGroup_LeadRemarkedEvent_V1001 as WorkingGroup_LeadRemarkedEvent_V1001,
   StorageWorkingGroup_NewMissedRewardLevelReachedEvent_V1001 as WorkingGroup_NewMissedRewardLevelReachedEvent_V1001,
   StorageWorkingGroup_OpeningAddedEvent_V1001 as WorkingGroup_OpeningAddedEvent_V1001,
@@ -1032,6 +1034,28 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   })
 
   await store.save<BudgetSpendingEvent>(budgetSpendingEvent)
+
+  group.budget = group.budget.sub(amount)
+
+  await store.save<WorkingGroup>(group)
+}
+
+export async function workingGroups_VestedBudgetSpending({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [receiver, vestingSchedule, rationale] = new WorkingGroup_VestedBudgetSpendingEvent_V2003(event).params
+  const amount = vestingSchedule.locked
+  const group = await getWorkingGroupOrFail(store, event)
+
+  const vestedBudgetSpendingEvent = new VestedBudgetSpendingEvent({
+    ...genericEventFields(event),
+    group,
+    amount,
+    perBlock: vestingSchedule.perBlock,
+    startingBlock: vestingSchedule.startingBlock.toNumber(),
+    receiver: receiver.toString(),
+    rationale: rationale.isSome ? bytesToString(rationale.unwrap()) : undefined,
+  })
+
+  await store.save<VestedBudgetSpendingEvent>(vestedBudgetSpendingEvent)
 
   group.budget = group.budget.sub(amount)
 

@@ -120,6 +120,7 @@ substrate_pallet_benchmark pallet_election_provider_multi_phase
 substrate_pallet_benchmark pallet_staking
 substrate_pallet_benchmark pallet_balances
 substrate_pallet_benchmark pallet_im_online
+substrate_pallet_benchmark pallet_proxy
 
 # Joystrem benchmarks
 joystream_pallet_benchmark proposals_discussion proposals/discussion

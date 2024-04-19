@@ -554,6 +554,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       createWorkingGroupLeadOpeningProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Decrease Council budget parameters
+       **/
+      decreaseCouncilBudgetProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
        * Exports 'Decrease Working Group Lead Stake' proposal parameters.
        **/
       decreaseWorkingGroupLeadStakeProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
@@ -586,6 +590,10 @@ declare module '@polkadot/api-base/types/consts' {
        **/
       setCouncilorRewardProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
+       * Era payout damping factor
+       **/
+      setEraPayoutDampingFactorProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
        * Exports `Set Initial Invitation Balance` proposal parameters.
        **/
       setInitialInvitationBalanceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
@@ -603,6 +611,9 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Set Membership Price' proposal parameters.
        **/
       setMembershipPriceProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Set Pallet Frozen status
+       **/
       setPalletFozenStatusProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       setReferralCutProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
@@ -623,6 +634,10 @@ declare module '@polkadot/api-base/types/consts' {
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * pallet token governance parameters proposal
+       **/
+      updateTokenPalletTokenConstraints: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**
        * Exports 'Update Working Group Budget' proposal parameters.
        **/
@@ -669,6 +684,45 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports const -  max allowed proposal title length.
        **/
       titleMaxLength: u32 & AugmentedConst<ApiType>;
+    };
+    proxy: {
+      /**
+       * The base amount of currency needed to reserve for creating an announcement.
+       * 
+       * This is held when a new storage item holding a `Balance` is created (typically 16
+       * bytes).
+       **/
+      announcementDepositBase: u128 & AugmentedConst<ApiType>;
+      /**
+       * The amount of currency needed per announcement made.
+       * 
+       * This is held for adding an `AccountId`, `Hash` and `BlockNumber` (typically 68 bytes)
+       * into a pre-existing storage value.
+       **/
+      announcementDepositFactor: u128 & AugmentedConst<ApiType>;
+      /**
+       * The maximum amount of time-delayed announcements that are allowed to be pending.
+       **/
+      maxPending: u32 & AugmentedConst<ApiType>;
+      /**
+       * The maximum amount of proxies allowed for a single account.
+       **/
+      maxProxies: u32 & AugmentedConst<ApiType>;
+      /**
+       * The base amount of currency needed to reserve for creating a proxy.
+       * 
+       * This is held for an additional storage item whose value size is
+       * `sizeof(Balance)` bytes and whose key size is `sizeof(AccountId)` bytes.
+       **/
+      proxyDepositBase: u128 & AugmentedConst<ApiType>;
+      /**
+       * The amount of currency needed per proxy added.
+       * 
+       * This is held for adding 32 bytes plus an instance of `ProxyType` more into a
+       * pre-existing storage value. Thus, when configuring `ProxyDepositFactor` one should take
+       * into account `32 + proxy_type.encode().len()` bytes of data.
+       **/
+      proxyDepositFactor: u128 & AugmentedConst<ApiType>;
     };
     referendum: {
       /**

@@ -446,6 +446,29 @@ query getBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
   }
 }
 
+fragment VestedBudgetSpendingEventFields on VestedBudgetSpendingEvent {
+  id
+  createdAt
+  inBlock
+  network
+  inExtrinsic
+  indexInBlock
+  group {
+    name
+  }
+  receiver
+  amount
+  perBlock
+  startingBlock
+  rationale
+}
+
+query getVestedBudgetSpendingEventsByEventIds($eventIds: [ID!]) {
+  vestedBudgetSpendingEvents(where: { id_in: $eventIds }) {
+    ...VestedBudgetSpendingEventFields
+  }
+}
+
 fragment BudgetFundedEventFields on BudgetFundedEvent {
   id
   createdAt

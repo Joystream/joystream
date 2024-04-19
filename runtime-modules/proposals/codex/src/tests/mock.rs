@@ -3,6 +3,7 @@
 #![allow(non_fmt_panics)]
 
 use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
+use frame_support::traits::WithdrawReasons;
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
@@ -17,6 +18,7 @@ pub use frame_system;
 use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::{Header, TestXt, UintAuthorityId},
     traits::{IdentityLookup, Zero},
@@ -48,6 +50,7 @@ pub(crate) type AccountId = u64;
 pub(crate) type AccountIndex = u64;
 pub(crate) type BlockNumber = u64;
 pub(crate) type Balance = u64;
+pub(crate) type VestingBalance = u64;
 
 /// Another session handler struct to test on_disabled.
 pub struct OtherSessionHandler;
@@ -89,11 +92,11 @@ frame_support::construct_runtime!(
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
 
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
-        Council: council::{Pallet, Call, Storage, Event<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
@@ -105,6 +108,9 @@ frame_support::construct_runtime!(
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Token: token::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -146,6 +152,7 @@ impl frame_system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
+
 impl balances::Config for Test {
     type MaxLocks = frame_support::traits::ConstU32<1024>;
     type MaxReserves = ();
@@ -316,6 +323,76 @@ impl membership::Config for Test {
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
+}
+
+parameter_types! {
+    // constants for token::Config
+    pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
+    // constants for storage::Config
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    pub const DataObjectDeletionPrize: u64 = 15;
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const BlacklistSizeLimit: u64 = 1;
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
+    pub const MaxRandomIterationNumber: u64 = 3;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
+    pub const MaxDataObjectSize: u64 = 1_000_000_000;
+    pub const MinStorageBucketsPerBag: u32 = 3;
+    pub const MaxStorageBucketsPerBag: u32 = 10;
+    pub const MinDistributionBucketsPerBag: u32 = 3;
+    pub const MaxDistributionBucketsPerBag: u32 = 10;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
+}
+
+impl storage::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type DataObjectId = u64;
+    type StorageBucketId = u64;
+    type DistributionBucketIndex = u64;
+    type DistributionBucketFamilyId = u64;
+    type DistributionBucketOperatorId = u64;
+    type ChannelId = u64;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
+    type ModuleId = StorageModuleId;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
+    type ContentId = u64;
+    type MaxDataObjectSize = MaxDataObjectSize;
+    type StorageWorkingGroup = Wg;
+    type DistributionWorkingGroup = Wg;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
+    type WeightInfo = ();
+}
+
+impl token::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = u64;
+    type TokenId = u64;
+    type DataObjectStorage = storage::Module<Self>;
+    type ModuleId = TokenModuleId;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type BlocksPerYear = BlocksPerYear;
+    type WeightInfo = ();
+    type MemberOriginValidator = membership::Module<Self>;
+    type MembershipInfoProvider = membership::Module<Self>;
+    type MaxOutputs = MaxOutputs;
 }
 
 pub struct Wg;
@@ -489,6 +566,35 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> Balance {
+        block as u64
+    }
+}
+pub struct VestingBalanceToBalance();
+impl Convert<Balance, VestingBalance> for VestingBalanceToBalance {
+    fn convert(balance: Balance) -> VestingBalance {
+        balance as u64
+    }
+}
+
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
@@ -515,6 +621,7 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
@@ -528,6 +635,7 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
@@ -541,6 +649,7 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
@@ -554,6 +663,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Test {
@@ -567,6 +677,7 @@ impl working_group::Config<AppWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
@@ -580,6 +691,7 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
@@ -593,6 +705,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
@@ -606,6 +719,7 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
@@ -619,6 +733,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 parameter_types! {
@@ -670,6 +785,9 @@ impl crate::Config for Test {
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type SetPalletFozenStatusProposalParameters = DefaultProposalParameters;
+    type UpdateTokenPalletTokenConstraints = DefaultProposalParameters;
+    type SetEraPayoutDampingFactorProposalParameters = DefaultProposalParameters;
+    type DecreaseCouncilBudgetProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
