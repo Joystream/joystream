@@ -17,7 +17,7 @@ import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
-import { FuseS3FileModel } from '../models/fileModel'
+import { RemoteFileModelFactory } from '../models/fileModel'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -56,9 +56,9 @@ export async function getFile(
   const fileIsOnLocalVolume = fs.existsSync(fullPath)
 
   if (!fileIsOnLocalVolume) {
-    const fileModel = new FuseS3FileModel()
+    const fileModel = await RemoteFileModelFactory.createAndConnect()
     try {
-      await fileModel.getFileFromS3(dataObjectId)
+      await fileModel.getFileFromRemoteBucket(dataObjectId)
     } catch (err) {
       sendResponseWithError(res, next, err, 'files')
       unpin()

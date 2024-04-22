@@ -74,6 +74,10 @@ export class AcceptPendingObjectsService {
       .catch(() => false)
   }
 
+  /**
+   * Retrieves the list of pending objects from the specified folder.
+   * @returns A promise that resolves to an array of strings representing the names of the pending objects.
+   */
   private async getPendingObjectsFromFolder(): Promise<string[]> {
     const dirEntries = await fsPromises.readdir(this.pendingDataObjectsDir, { withFileTypes: true })
     return dirEntries.filter((entry) => entry.isFile()).map((entry) => entry.name)
@@ -90,6 +94,13 @@ export class AcceptPendingObjectsService {
     run()
   }
 
+  /**
+   * Processes the pending objects with the given IDs:
+   * - deletes pending objects that have been already deleted
+   * - moves pending objects to the uploads directory only if their ipfs hash is verified and they are assigned to one of the upload buckets
+   * @param pendingIds - An array of string IDs representing the pending objects.
+   * @returns A Promise that resolves to an array of PendingObjectDetails, containing objects that need to be accepted by a storage bucket
+   */
   private async processPendingObjects(pendingIds: string[]): Promise<PendingObjectDetails> {
     const pendingDataObjects = await this.qnApi.getDataObjectDetails(pendingIds)
 
