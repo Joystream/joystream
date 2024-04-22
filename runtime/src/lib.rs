@@ -139,6 +139,8 @@ pub use content;
 pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
+pub use argo_bridge;
+
 /// This runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -935,6 +937,18 @@ impl project_token::Config for Runtime {
     type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MaxPauserAccounts: u32 = 10;
+    pub const DefaultBridgingFee: Balance = dollars!(1_000);
+}
+
+impl argo_bridge::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxPauserAccounts = MaxPauserAccounts;
+    type WeightInfo = argo_bridge::weights::SubstrateWeight<Runtime>;
+    type DefaultBridgingFee = DefaultBridgingFee;
+}
+
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
@@ -1717,6 +1731,7 @@ impl proposals_codex::Config for Runtime {
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
+    type UpdateArgoBridgeConstraints = UpdateArgoBridgeConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
     type SetEraPayoutDampingFactorProposalParameters = SetEraPayoutDampingFactorProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
@@ -1979,6 +1994,7 @@ construct_runtime!(
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
+        ArgoBridge: argo_bridge::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>, Config},

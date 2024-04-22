@@ -34,6 +34,7 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     <T as proposals_engine::Config>::ProposalId,
     content::UpdateChannelPayoutsParameters<T>,
     token::TokenConstraintsOf<T>,
+    argo_bridge::types::BridgeConstraintsOf<T>,
 >;
 
 /// Proposal details provide voters the information required for the perceived voting.
@@ -48,6 +49,7 @@ pub enum ProposalDetails<
     ProposalId,
     UpdateChannelPayoutsParameters,
     TokenConstraints,
+    ArgoBridgeConstraints,
 > {
     /// The signal of the `Signal` proposal
     Signal(Vec<u8>),
@@ -129,6 +131,9 @@ pub enum ProposalDetails<
     /// Update token constraints
     UpdateTokenPalletTokenConstraints(TokenConstraints),
 
+    /// Update Argo Bridge contraints
+    UpdateArgoBridgeConstraints(ArgoBridgeConstraints),
+
     /// `SetEraPayoutDampingFactor` proposal
     SetEraPayoutDampingFactor(Percent),
 
@@ -145,6 +150,7 @@ impl<
         ProposalId,
         UpdateChannelPayoutsParameters,
         TokenConstraints,
+        ArgoBridgeConstraints,
     > Default
     for ProposalDetails<
         Balance,
@@ -155,6 +161,7 @@ impl<
         ProposalId,
         UpdateChannelPayoutsParameters,
         TokenConstraints,
+        ArgoBridgeConstraints,
     >
 {
     fn default() -> Self {

@@ -957,6 +957,38 @@ benchmarks! {
         );
     }
 
+    create_proposal_argo_bridge_constraints {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        // let member_id = Membership::<T>::members_created();
+
+        let proposal_details = ProposalDetails::UpdateArgoBridgeConstraints(
+            argo_bridge::types::BridgeConstraints {
+                operator_account: Some(account::<T::AccountId>("operator", 0, SEED)),
+                pauser_accounts: Some(vec![account::<T::AccountId>("pauser", 0, SEED), account::<T::AccountId>("pauser", 1, SEED)] ),
+                bridging_fee: Some(100u32.into()),
+                thawn_duration: None,
+                remote_chains: None
+            }
+        );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
     create_proposal_set_era_payout_damping_factor {
         let t in 1 .. to_kb(T::TitleMaxLength::get());
         let d in 1 .. to_kb(T::DescriptionMaxLength::get());
