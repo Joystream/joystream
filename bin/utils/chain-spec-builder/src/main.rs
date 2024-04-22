@@ -24,9 +24,9 @@ use std::{
 };
 
 use joystream_node::chain_spec::{
-    self, content_config, initial_balances, joy_chain_spec_properties, project_token_config,
-    storage_config, AccountId, AuthorityDiscoveryId, BabeId, GrandpaId, ImOnlineId,
-    JOY_ADDRESS_PREFIX,
+    self, argo_bridge_config, content_config, initial_balances, joy_chain_spec_properties,
+    project_token_config, storage_config, AccountId, AuthorityDiscoveryId, BabeId, GrandpaId,
+    ImOnlineId, JOY_ADDRESS_PREFIX,
 };
 
 use sc_chain_spec::ChainType;
@@ -267,6 +267,11 @@ fn genesis_constructor(
         _ => project_token_config::testing_config(),
     };
 
+    let argo_bridge_cfg = match deployment {
+        ChainDeployment::mainnet => argo_bridge_config::production_config(),
+        _ => argo_bridge_config::testing_config(),
+    };
+
     chain_spec::testnet_genesis(
         fund_accounts,
         authorities,
@@ -277,6 +282,7 @@ fn genesis_constructor(
         content_cfg,
         storage_cfg,
         project_token_cfg,
+        argo_bridge_cfg,
     )
 }
 

@@ -786,6 +786,7 @@ impl crate::Config for Test {
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type SetPalletFozenStatusProposalParameters = DefaultProposalParameters;
     type UpdateTokenPalletTokenConstraints = DefaultProposalParameters;
+    type UpdateArgoBridgeConstraints = DefaultProposalParameters;
     type SetEraPayoutDampingFactorProposalParameters = DefaultProposalParameters;
     type DecreaseCouncilBudgetProposalParameters = DefaultProposalParameters;
 }
