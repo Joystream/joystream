@@ -22,6 +22,7 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
+import { parseConfigOptionAndBuildConnection } from './util/connectionSetup'
 const fsPromises = fs.promises
 
 /**
@@ -327,6 +328,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
+      const connectionHandler = await parseConfigOptionAndBuildConnection()
 
       const app = await createApp({
         api,
@@ -349,6 +351,7 @@ Supported values: warn, error, debug, info. Default:debug`,
           minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
         },
         x_host_id: X_HOST_ID,
+        connectionHandler,
       })
       const server = app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
 
