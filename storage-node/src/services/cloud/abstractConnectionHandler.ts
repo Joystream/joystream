@@ -1,47 +1,60 @@
-export type BucketUploadParameters = {
-  bucketName: string
-  key: string
-  file: string
-}
-
-export type AwsConnectionHandlerParams = {
-  awsKey: string
-  awsSecret: string
-  s3bucketId: string
-}
 /**
  * Abstract class representing a connection handler.
+ * Connection handlers are responsible for connecting to a remote server and uploading or retrieving files.
+ * Implementations of this class should provide the necessary methods in order to read and write files to a specified cloud provider (AWS, Azure, Google, ...)
  */
 export abstract class AbstractConnectionHandler {
-  protected _ready = false
-
   /**
    * Gets the readiness status of the connection handler.
    */
-  get isReady(): boolean {
-    return this._ready
-  }
+  abstract get isReady(): boolean
 
   /**
    * Connects to the remote server and set the readiness status to true.
    */
-  abstract connect(): void
+  abstract connect(): Promise<void>
+
+  /**
+   * Uploads a file to the remote bucket, given an initialized connection.
+   * @param opts - The upload parameters.
+   * @param cb - The callback function to be called when the upload is complete or encounters an error.
+   */
+  abstract doUploadFileToRemoteBucket(key: string, cb: (err: any, data: any) => void): void
+
+  /**
+   * Retrieves a file from the remote bucket, given an initialized connection
+   * @param key - The key of the file to retrieve.
+   * @param cb - The callback function to be called when the retrieval is complete or encounters an error.
+   */
+  abstract doGetFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void
+
+  /**
+   * Checks if a file exists on the remote bucket, given an initialized connection
+   * @param key - The key of the file to check.
+   * @param cb - The callback function to be called when the check is complete or encounters an error.
+   */
+  abstract doCheckFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void
 
   /**
    * Uploads a file to the remote bucket.
    * @param opts - The upload parameters.
    * @param cb - The callback function to be called when the upload is complete or encounters an error.
    */
-  abstract uploadFileToRemoteBucket(opts: BucketUploadParameters, cb: (err: any, data: any) => void): void
+  uploadFileToRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+    if (!this.isReady) {
+      throw new Error('Connection handler is not ready')
+    }
+    this.doUploadFileToRemoteBucket(key, cb)
+  }
 
   /**
    * Asynchronously uploads a file to the remote bucket.
    * @param opts - The upload parameters.
    * @returns A promise that resolves when the upload is complete or rejects with an error.
    */
-  async uploadFileToRemoteBucketAsync(opts: BucketUploadParameters): Promise<any> {
+  async uploadFileToRemoteBucketAsync(key: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.uploadFileToRemoteBucket(opts, (err, data) => {
+      this.uploadFileToRemoteBucket(key, (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -52,12 +65,16 @@ export abstract class AbstractConnectionHandler {
   }
 
   /**
-   * Retrieves a file from the remote bucket.
+   * Retrieves a file from the remote bucket, given an initialized connection
    * @param key - The key of the file to retrieve.
    * @param cb - The callback function to be called when the retrieval is complete or encounters an error.
    */
-  abstract getFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void
-
+  getFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+    if (!this.isReady) {
+      throw new Error('Connection handler is not ready')
+    }
+    this.doGetFileFromRemoteBucket(key, cb)
+  }
   /**
    * Asynchronously retrieves a file from the remote bucket.
    * @param key - The key of the file to retrieve.
@@ -80,7 +97,12 @@ export abstract class AbstractConnectionHandler {
    * @param key - The key of the file to check.
    * @param cb - The callback function to be called when the check is complete or encounters an error.
    */
-  abstract isFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void
+  isFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+    if (!this.isReady) {
+      throw new Error('Connection handler is not ready')
+    }
+    this.doCheckFileOnRemoteBucket(key, cb)
+  }
 
   /**
    * Asynchronously checks if a file exists on the remote bucket.
@@ -97,30 +119,5 @@ export abstract class AbstractConnectionHandler {
         }
       })
     })
-  }
-}
-
-export class AwsConnectionHandler extends AbstractConnectionHandler {
-  connectionParams: AwsConnectionHandlerParams
-
-  constructor(opts: AwsConnectionHandlerParams) {
-    super()
-    this.connectionParams = opts
-  }
-
-  connect(): void {
-    // Implement connect method here
-  }
-
-  uploadFileToRemoteBucket(opts: BucketUploadParameters, cb: (err: any, data: any) => void): void {
-    // Implement uploadFileToRemoteBucket method here
-  }
-
-  getFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
-    // Implement getFileFromRemoteBucket method here
-  }
-
-  isFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
-    // Implement isFileOnRemoteBucket method here
   }
 }

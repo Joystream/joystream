@@ -1,1 +1,3 @@
-export * from './connectionHandler'
+export * from './abstractConnectionHandler'
+export * from './awsConnectionHandler'
+export * from './azureConnectionHandler'

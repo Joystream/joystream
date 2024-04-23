@@ -22,7 +22,7 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-import { parseConfigOptionAndBuildConnection } from './util/connectionSetup'
+import { parseConfigOptionAndBuildConnection } from './util/fileStorageSetup'
 const fsPromises = fs.promises
 
 /**

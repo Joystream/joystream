@@ -5,13 +5,7 @@ import crypto from 'crypto'
 import mkdirp from 'mkdirp'
 import { Request } from 'express'
 import { DiskStorageOptions, StorageEngine } from 'multer'
-import {
-  AbstractConnectionHandler,
-  AwsConnectionHandler,
-  AwsConnectionHandlerParams,
-  BucketUploadParameters,
-  IConnectionHandler,
-} from '../cloud'
+import { AbstractConnectionHandler } from '../cloud'
 
 export type StorageEngineOptions = DiskStorageOptions
 
@@ -130,7 +124,7 @@ class DiskStorage implements StorageEngine {
 }
 
 class CloudStorage implements StorageEngine {
-  connectionHandler: IConnectionHandler
+  connectionHandler: AbstractConnectionHandler
   protected getFilename
   protected getDestination: (
     req: Request,
@@ -150,7 +144,7 @@ class CloudStorage implements StorageEngine {
       })
     })
   }
-  constructor(opts: StorageEngineOptions, connectionHandler: IConnectionHandler) {
+  constructor(opts: StorageEngineOptions, connectionHandler: AbstractConnectionHandler) {
     this.connectionHandler = connectionHandler
     this.getFilename = opts.filename || getFilename
 
@@ -187,14 +181,10 @@ class CloudStorage implements StorageEngine {
         if (err) return cb(err)
         if (!filename) return cb(new Error('Blank filename'))
 
-        const params: BucketUploadParameters = {
-          bucketName: 'your-bucket-name',
-          key: filename,
-          file: '', // @todo : fill this in
-        }
         let aborted = false
 
-        that.connectionHandler.uploadFileToRemoteBucket(params, function (err: Error | null, data: { Location: any }) {
+        // @todo: implement uploadFileToRemoteBucket method
+        that.connectionHandler.uploadFileToRemoteBucket('', function (err: Error | null, data: { Location: any }) {
           if (err) {
             return cb(err)
           }
@@ -238,12 +228,9 @@ export function diskStorage(opts: DiskStorageOptions): StorageEngine {
 /**
  * Creates a cloud storage engine instance.
  * @param opts - The options for the storage engine.
- * @param connection - The connection handler for the storage engine, e.g. AWS. connection.isRead should resolve to true
+ * @param connection - The connection handler for the storage engine, e.g. AWS. connection.isReady must be true
  * @returns A promise that resolves to a cloud storage engine instance.
  */
-export async function cloudStorage(
-  opts: StorageEngineOptions,
-  connection: AbstractConnectionHandler
-): Promise<StorageEngine> {
+export function cloudStorage(opts: DiskStorageOptions, connection: AbstractConnectionHandler): StorageEngine {
   return new CloudStorage(opts, connection)
 }

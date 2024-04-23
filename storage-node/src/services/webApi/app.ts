@@ -14,7 +14,7 @@ import {
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
-import { diskStorage } from '../multer-storage/disk'
+import { diskStorage } from '../multer-storage/storageEngines'
 import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 import asyncHandler from 'express-async-handler'
 import { RouteMetadata } from 'express-openapi-validator/dist/framework/openapi.spec.loader'

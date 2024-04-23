@@ -17,7 +17,6 @@ import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
-import { RemoteFileModelFactory } from '../models/fileModel'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -53,42 +52,32 @@ export async function getFile(
 
   const uploadsDir = res.locals.uploadsDir
   const fullPath = path.resolve(uploadsDir, dataObjectId)
-  const fileIsOnLocalVolume = fs.existsSync(fullPath)
+  // const fileIsOnLocalVolume = fs.existsSync(fullPath)
 
-  if (!fileIsOnLocalVolume) {
-    const fileModel = await RemoteFileModelFactory.createAndConnect()
-    try {
-      await fileModel.getFileFromRemoteBucket(dataObjectId)
-    } catch (err) {
+  try {
+    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
+    const stream = send(req, fullPath)
+
+    stream.on('headers', (res) => {
+      // serve all files for download
+      res.setHeader('Content-Disposition', 'inline')
+      res.setHeader('Content-Type', fileInfo.mimeType)
+      res.setHeader('Content-Length', fileInfo.size)
+    })
+
+    stream.on('error', (err) => {
       sendResponseWithError(res, next, err, 'files')
       unpin()
-    }
-  } else {
-    try {
-      const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
-      const stream = send(req, fullPath)
+    })
 
-      stream.on('headers', (res) => {
-        // serve all files for download
-        res.setHeader('Content-Disposition', 'inline')
-        res.setHeader('Content-Type', fileInfo.mimeType)
-        res.setHeader('Content-Length', fileInfo.size)
-      })
-
-      stream.on('error', (err) => {
-        sendResponseWithError(res, next, err, 'files')
-        unpin()
-      })
-
-      stream.on('end', () => {
-        unpin()
-      })
-
-      stream.pipe(res)
-    } catch (err) {
-      sendResponseWithError(res, next, err, 'files')
+    stream.on('end', () => {
       unpin()
-    }
+    })
+
+    stream.pipe(res)
+  } catch (err) {
+    sendResponseWithError(res, next, err, 'files')
+    unpin()
   }
 }
 
