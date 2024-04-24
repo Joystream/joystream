@@ -7,6 +7,7 @@ import { ExtrinsicFailedError } from '../../runtime/api'
 import { AcceptPendingObjectsService } from '../../sync/acceptPendingObjects'
 import { ErrorResponse } from '../types'
 import { AbstractConnectionHandler } from 'src/services/cloud'
+import { LocalDataObjects } from 'src/services/caching/localDataObjects'
 
 /**
  * Dedicated error for the web api requests.
@@ -204,8 +205,13 @@ export type AppConfig = {
    */
   x_host_id: string
 
-  /*
+  /**
    * Connection Handler For the Storage Cloud Provider API, null value means that Cloud Storage is not supported by the operator
    */
   connectionHandler: AbstractConnectionHandler | null
+
+  /**
+   * Data Object Id used for storing information about data objects
+   */
+  dataObjectCache: LocalDataObjects
 }

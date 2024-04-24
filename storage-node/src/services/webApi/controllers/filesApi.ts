@@ -8,7 +8,6 @@ import _ from 'lodash'
 import path from 'path'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { parseBagId } from '../../helpers/bagTypes'
 import { getFileInfo, FileInfo } from '../../helpers/fileInfo'
 import { hashFile } from '../../helpers/hashing'
@@ -17,6 +16,7 @@ import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
+import { UploadLocation } from 'src/services/caching/localDataObjects'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -39,42 +39,55 @@ export async function getFile(
   next: express.NextFunction
 ): Promise<void> {
   const { id: dataObjectId } = req.params
+  const { dataObjectCache } = res.locals
   try {
-    pinDataObjectIdToCache(dataObjectId)
+    await dataObjectCache.pinDataObjectIdToCache(dataObjectId)
   } catch (err) {
     res.status(404).send()
     return
   }
 
-  const unpin = _.once(() => {
-    unpinDataObjectIdFromCache(dataObjectId)
+  const unpin = _.once(async () => {
+    await dataObjectCache.unpinDataObjectIdFromCache(dataObjectId)
   })
 
   const uploadsDir = res.locals.uploadsDir
   const fullPath = path.resolve(uploadsDir, dataObjectId)
-  // const fileIsOnLocalVolume = fs.existsSync(fullPath)
+  const maybeEntryWithKey = await dataObjectCache.getDataObjectIdFromCache(dataObjectId)
 
   try {
     const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
-    const stream = send(req, fullPath)
+    if (maybeEntryWithKey === undefined) {
+      throw new WebApiError(`File ${dataObjectId} not found`, 404)
+    }
+    const { dataObjectEntry } = maybeEntryWithKey!
+    if (!dataObjectEntry.accepted) {
+      throw new WebApiError(`File ${dataObjectId} found but not accepted into any bucket`, 404)
+    }
+    if (dataObjectEntry.isOnLocalVolume) {
+      const stream = send(req, fullPath)
 
-    stream.on('headers', (res) => {
-      // serve all files for download
-      res.setHeader('Content-Disposition', 'inline')
-      res.setHeader('Content-Type', fileInfo.mimeType)
-      res.setHeader('Content-Length', fileInfo.size)
-    })
+      stream.on('headers', (res) => {
+        // serve all files for download
+        res.setHeader('Content-Disposition', 'inline')
+        res.setHeader('Content-Type', fileInfo.mimeType)
+        res.setHeader('Content-Length', fileInfo.size)
+      })
 
-    stream.on('error', (err) => {
-      sendResponseWithError(res, next, err, 'files')
-      unpin()
-    })
+      stream.on('error', (err) => {
+        sendResponseWithError(res, next, err, 'files')
+        unpin()
+      })
 
-    stream.on('end', () => {
-      unpin()
-    })
+      stream.on('end', () => {
+        unpin()
+      })
 
-    stream.pipe(res)
+      stream.pipe(res)
+    } else {
+      const { connectionHandler } = res.locals
+      // connectionHandler?.getFileFromRemoteBucketAsync('') @todo : complete here in order to get file / file link from remote bucket
+    }
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
     unpin()
@@ -89,8 +102,9 @@ export async function getFileHeaders(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   const { id: dataObjectId } = req.params
+  const { dataObjectCache } = res.locals
   try {
-    pinDataObjectIdToCache(dataObjectId)
+    await dataObjectCache.pinDataObjectIdToCache(dataObjectId)
   } catch (err) {
     res.status(404).send()
     return
@@ -109,7 +123,7 @@ export async function getFileHeaders(
     res.status(getHttpStatusCodeByError(err)).send()
   }
 
-  unpinDataObjectIdFromCache(dataObjectId)
+  await dataObjectCache.unpinDataObjectIdFromCache(dataObjectId)
 }
 
 /**

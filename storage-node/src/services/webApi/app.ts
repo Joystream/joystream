@@ -14,10 +14,9 @@ import {
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
-import { diskStorage } from '../multer-storage/storageEngines'
-import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 import asyncHandler from 'express-async-handler'
 import { RouteMetadata } from 'express-openapi-validator/dist/framework/openapi.spec.loader'
+import { createFileUploader } from 'src/commands/util/fileStorageSetup'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -82,18 +81,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
         resolver: (basePath: string, route: RouteMetadata, apiDoc: OpenAPIV3.Document) =>
           asyncHandler(OpenApiValidator.resolvers.modulePathResolver(basePath, route, apiDoc)),
       },
-      fileUploader: {
-        storage: diskStorage({
-          destination: config.tempFileUploadingDir,
-        }),
-        // Busboy library settings
-        limits: {
-          // For multipart forms, the max number of file fields (Default: Infinity)
-          files: 1,
-          // For multipart forms, the max file size (in bytes) (Default: Infinity)
-          fileSize: config.maxFileSize,
-        },
-      },
+      fileUploader: createFileUploader(config, null),
     })
   ) // Required signature.
 
@@ -154,7 +142,8 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
     throw new WebApiError(`Data object ${dataObjectId} already exists (pending)`, 400)
   }
 
-  const isInStorage = getDataObjectIdFromCache(dataObjectId.toString())
+  const { dataObjectCache } = res.locals
+  const isInStorage = await dataObjectCache.getDataObjectIdFromCache(dataObjectId.toString())
   if (isInStorage) {
     throw new WebApiError(`Data object ${dataObjectId} already exists (in storage)`, 400)
   }

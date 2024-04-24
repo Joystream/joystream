@@ -9,7 +9,7 @@ import sleep from 'sleep-promise'
 import { v4 as uuidv4 } from 'uuid'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import { customFlags } from '../command-base/CustomFlags'
-import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
+import { DataObjectIdCacheMap, LocalDataObjects } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
 import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
@@ -259,7 +259,21 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     await createDirectory(flags.uploads)
-    await loadDataObjectIdCache(flags.uploads)
+    let dataObjectCache: LocalDataObjects
+
+    try {
+      const cacheBackend = new DataObjectIdCacheMap()
+      await cacheBackend.init()
+      if (!cacheBackend.isReady) {
+        logger.error(`Cache backend is not ready. Exiting.`)
+        throw new Error('Cache backend is not ready. Exiting.')
+      }
+      dataObjectCache = new LocalDataObjects(cacheBackend)
+      await dataObjectCache.loadDataObjectIdCache(flags.uploads)
+    } catch (error) {
+      logger.error(`Error initializing cache backend: ${error}`)
+      this.exit(ExitCodes.CacheInitError)
+    }
 
     await createDirectory(tempFolder)
     await createDirectory(pendingFolder)
@@ -328,6 +342,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
+
       const connectionHandler = await parseConfigOptionAndBuildConnection()
 
       const app = await createApp({
@@ -352,6 +367,7 @@ Supported values: warn, error, debug, info. Default:debug`,
         },
         x_host_id: X_HOST_ID,
         connectionHandler,
+        dataObjectCache,
       })
       const server = app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
 
