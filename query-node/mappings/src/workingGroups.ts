@@ -865,7 +865,7 @@ export async function workingGroups_NewMissedRewardLevelReached({
   await store.save<NewMissedRewardLevelReachedEvent>(newMissedRewardLevelReachedEvent)
 
   // Update worker
-  worker.missingRewardAmount = newMissedRewardAmountOpt.unwrapOr(undefined)
+  worker.missingRewardAmount = newMissedRewardAmountOpt.unwrapOr(new BN(0))
 
   await store.save<Worker>(worker)
 }
