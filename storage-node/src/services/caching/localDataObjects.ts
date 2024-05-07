@@ -99,6 +99,7 @@ export class DataObjectIdCacheMap implements IDataObjectIdCache {
   }
 }
 
+// @todo : turn this into a singleton
 /**
  * Represents a class that manages local data objects and their caching.
  */

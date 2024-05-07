@@ -7,14 +7,12 @@ import urljoin from 'url-join'
 import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../services/logger'
-import {
-  addDataObjectIdToCache,
-  deleteDataObjectIdFromCache,
-  getDataObjectIdFromCache,
-} from '../caching/localDataObjects'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
 import { moveFile } from '../helpers/moveFile'
+import { ServerConfig } from 'src/commands/server'
+import { LocalDataObjects } from '../caching/localDataObjects'
+import { AbstractConnectionHandler } from '../cloud'
 const fsPromises = fs.promises
 
 /**
@@ -37,11 +35,13 @@ export interface SyncTask {
  */
 export class DeleteLocalFileTask implements SyncTask {
   uploadsDirectory: string
+  localCache: LocalDataObjects // by ref
   filename: string
 
-  constructor(uploadsDirectory: string, filename: string) {
-    this.uploadsDirectory = uploadsDirectory
+  constructor(serverConfig: ServerConfig, filename: string) {
+    this.uploadsDirectory = serverConfig.localPaths!.uploads
     this.filename = filename
+    this.localCache = serverConfig.dataObjectCache
   }
 
   description(): string {
@@ -55,8 +55,8 @@ export class DeleteLocalFileTask implements SyncTask {
       return
     }
 
-    const cachedDataObjectId = getDataObjectIdFromCache(dataObjectId)
-    if (cachedDataObjectId && cachedDataObjectId.pinnedCount) {
+    const cachedDataObjectId = await this.localCache.getDataObjectIdFromCache(dataObjectId)
+    if (cachedDataObjectId && cachedDataObjectId.dataObjectEntry.pinCount) {
       logger.warn(
         `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
       )
@@ -65,7 +65,7 @@ export class DeleteLocalFileTask implements SyncTask {
     const fullPath = path.join(this.uploadsDirectory, this.filename)
     await fsPromises.unlink(fullPath)
 
-    deleteDataObjectIdFromCache(dataObjectId)
+    this.localCache.deleteDataObjectIdFromCache(dataObjectId)
   }
 }
 
@@ -74,17 +74,22 @@ export class DeleteLocalFileTask implements SyncTask {
  */
 export class DownloadFileTask implements SyncTask {
   operatorUrls: string[]
+  localCache: LocalDataObjects // by ref
+  uploadsDirectory: string
+  tempDirectory: string
 
   constructor(
+    serverConfig: ServerConfig,
     baseUrls: string[],
     private dataObjectId: string,
     private expectedHash: string,
-    private uploadsDirectory: string,
-    private tempDirectory: string,
     private downloadTimeout: number,
     private hostId: string
   ) {
     this.operatorUrls = baseUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', dataObjectId))
+    this.localCache = serverConfig.dataObjectCache
+    this.uploadsDirectory = serverConfig.localPaths!.uploads
+    this.tempDirectory = serverConfig.localPaths!.tempFolder
   }
 
   description(): string {
@@ -92,33 +97,20 @@ export class DownloadFileTask implements SyncTask {
   }
 
   async execute(): Promise<void> {
-    const operatorUrlIndices: number[] = _.shuffle(_.range(this.operatorUrls.length))
-
-    if (operatorUrlIndices.length === 0) {
-      logger.warn(`Sync - No operator URLs for ${this.dataObjectId}`)
-      return
-    }
-
-    for (const randomUrlIndex of operatorUrlIndices) {
-      const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
-      logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
-
+    await withRandomUrls(this.operatorUrls, async (chosenBaseUrl) => {
       const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
       try {
         // Try downloading file
         await this.tryDownload(chosenBaseUrl, filepath)
 
         // if download succeeds, break the loop
-        try {
-          await fsPromises.access(filepath, fs.constants.F_OK)
-          return
-        } catch (err) {
-          continue
-        }
+        await fsPromises.access(filepath, fs.constants.F_OK)
+        return
       } catch (err) {
         logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
       }
-    }
+      await this.tryDownload(chosenBaseUrl, filepath)
+    })
 
     logger.warn(`Sync - Failed to download ${this.dataObjectId}`)
   }
@@ -157,7 +149,7 @@ export class DownloadFileTask implements SyncTask {
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await moveFile(tempFilePath, filepath)
-      addDataObjectIdToCache(this.dataObjectId)
+      this.localCache.addDataObjectIdToCache(this.dataObjectId)
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {
@@ -180,4 +172,53 @@ export class DownloadFileTask implements SyncTask {
       throw new Error(`Invalid file hash. Expected: ${this.expectedHash} - real: ${hash}`)
     }
   }
+}
+
+// create a similar UploadFileTask
+export class UploadFileTask {
+  private connection: AbstractConnectionHandler
+
+  constructor(serverConfig: ServerConfig, private baseUrls: string[], private dataObjectId: string) {
+    this.connection = serverConfig.connection!
+  }
+
+  description(): string {
+    return `Sync - Trying for upload object ${this.dataObjectId} to cloud storage of object...`
+  }
+
+  async execute(): Promise<void> {
+    const operatorUrls = this.baseUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', this.dataObjectId))
+    await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
+      await this.connection.uploadFileToRemoteBucketAsync(this.dataObjectId)
+    })
+  }
+
+  // ...
+}
+
+async function withRandomUrls(
+  operatorUrls: string[],
+  callback: (chosenBaseUrl: string) => Promise<void>
+): Promise<void> {
+  const operatorUrlIndices: number[] = _.shuffle(_.range(operatorUrls.length))
+
+  if (operatorUrlIndices.length === 0) {
+    logger.warn(`Sync - No operator URLs provided`)
+    return Promise.resolve()
+  }
+
+  for (const randomUrlIndex of operatorUrlIndices) {
+    const randomUrl = operatorUrls[randomUrlIndex]
+    logger.debug(`Sync - random storage node URL was chosen ${randomUrl}`)
+
+    try {
+      await callback(randomUrl)
+      return
+    } catch (err) {
+      continue
+    }
+  }
+
+  logger.warn(`Sync - Failed to execute callback with random URLs`)
+  return Promise.resolve()
 }

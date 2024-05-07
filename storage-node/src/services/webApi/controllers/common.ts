@@ -6,7 +6,6 @@ import { BagIdValidationError } from '../../helpers/bagTypes'
 import { ExtrinsicFailedError } from '../../runtime/api'
 import { AcceptPendingObjectsService } from '../../sync/acceptPendingObjects'
 import { ErrorResponse } from '../types'
-import { AbstractConnectionHandler } from 'src/services/cloud'
 import { LocalDataObjects } from 'src/services/caching/localDataObjects'
 
 /**
@@ -204,11 +203,6 @@ export type AppConfig = {
    * Random unique host id used sent in http request headers to identify the host
    */
   x_host_id: string
-
-  /**
-   * Connection Handler For the Storage Cloud Provider API, null value means that Cloud Storage is not supported by the operator
-   */
-  connectionHandler: AbstractConnectionHandler | null
 
   /**
    * Data Object Id used for storing information about data objects

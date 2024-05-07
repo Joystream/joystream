@@ -22,8 +22,63 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-import { parseConfigOptionAndBuildConnection } from './util/fileStorageSetup'
+import { AbstractConnectionHandler, parseConfigOptionAndBuildConnection } from 'src/services/cloud'
 const fsPromises = fs.promises
+
+/**
+ * Local data volume configuration, case: local storage.
+ */
+export type LocalDataVolumeConfig = {
+  uploads: string
+  tempFolder: string
+  pendingFolder: string
+}
+
+// @todo: create builder class for this with a fromApp method and withConnection to set this up faster
+/**
+ * Represents the server global variables configured at startup
+ */
+export class ServerConfig {
+  private connection_: AbstractConnectionHandler | null
+  private dataObjectCache_: LocalDataObjects
+  private localPaths_: LocalDataVolumeConfig | null
+  private buckets_: string[]
+
+  constructor(
+    connection: AbstractConnectionHandler | null,
+    dataObjectCache: LocalDataObjects,
+    localPaths: LocalDataVolumeConfig | null,
+    buckets: string[]
+  ) {
+    this.connection_ = connection
+    this.dataObjectCache_ = dataObjectCache
+    this.localPaths_ = localPaths
+    this.buckets_ = buckets
+  }
+
+  // Getters (notice that the state is immutable)
+  get connection(): AbstractConnectionHandler | null {
+    return this.connection_
+  }
+  get dataObjectCache(): LocalDataObjects {
+    return this.dataObjectCache_
+  }
+  get localPaths(): LocalDataVolumeConfig | null {
+    return this.localPaths_
+  }
+  get cloudEnabled(): boolean {
+    return this.connection_ !== null && this.localPaths_ === null
+  }
+  get localStorageEnabled(): boolean {
+    return this.connection === null && this.localPaths_ !== null
+  }
+  get noStorageEnabled(): boolean {
+    return !this.cloudEnabled && !this.localStorageEnabled
+  }
+  get buckets(): string[] {
+    return this.buckets_
+  }
+}
 
 /**
  * CLI command:
@@ -161,6 +216,9 @@ Supported values: warn, error, debug, info. Default:debug`,
     }),
     ...ApiCommandBase.flags,
   }
+
+  // variable that encapsulate the various global services and variables used by the server
+  private serverConfig_: ServerConfig | null = null
 
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
@@ -300,10 +358,8 @@ Supported values: warn, error, debug, info. Default:debug`,
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
           runSyncWithInterval(
-            selectedBuckets,
+            this.serverConfig,
             qnApi,
-            flags.uploads,
-            tempFolder,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
             flags.syncInterval,
@@ -343,8 +399,6 @@ Supported values: warn, error, debug, info. Default:debug`,
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
       logger.debug(`Max file size runtime parameter: ${maxFileSize}`)
 
-      const connectionHandler = await parseConfigOptionAndBuildConnection()
-
       const app = await createApp({
         api,
         qnApi,
@@ -366,14 +420,25 @@ Supported values: warn, error, debug, info. Default:debug`,
           minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
         },
         x_host_id: X_HOST_ID,
-        connectionHandler,
         dataObjectCache,
       })
+      const connection = await parseConfigOptionAndBuildConnection()
       const server = app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
 
       // INFO: https://nodejs.org/dist/latest-v18.x/docs/api/http.html#serverrequesttimeout
       // Set the server request timeout to 0 to disable it. This was default behaviour pre Node.js 18.x
       server.requestTimeout = 0
+
+      this.serverConfig_ = new ServerConfig(
+        connection,
+        dataObjectCache,
+        {
+          uploads: flags.uploads,
+          tempFolder,
+          pendingFolder,
+        },
+        selectedBuckets
+      )
     } catch (err) {
       logger.error(`Server error: ${err}`)
       this.exit(ExitCodes.ServerError)
@@ -383,6 +448,13 @@ Supported values: warn, error, debug, info. Default:debug`,
   // Override exiting.
   /* eslint-disable @typescript-eslint/no-empty-function */
   async finally(): Promise<void> {}
+
+  get serverConfig(): ServerConfig {
+    if (!this.serverConfig_) {
+      throw new Error('Server state is not initialized')
+    }
+    return this.serverConfig_
+  }
 }
 
 /**
@@ -402,10 +474,8 @@ Supported values: warn, error, debug, info. Default:debug`,
  * @returns void promise.
  */
 async function runSyncWithInterval(
-  buckets: string[],
+  serverConfig: ServerConfig,
   qnApi: QueryNodeApi,
-  uploadsDirectory: string,
-  tempDirectory: string,
   syncWorkersNumber: number,
   syncWorkersTimeout: number,
   syncIntervalMinutes: number,
@@ -417,7 +487,7 @@ async function runSyncWithInterval(
   while (true) {
     try {
       logger.info(`Resume syncing....`)
-      await performSync(buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory, hostId)
+      await performSync(serverConfig, syncWorkersNumber, syncWorkersTimeout, qnApi, hostId)
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
       await sleep(sleepInterval)
     } catch (err) {

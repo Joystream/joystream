@@ -1,11 +1,5 @@
 import multer from 'multer'
-import {
-  AbstractConnectionHandler,
-  AwsConnectionHandler,
-  AwsConnectionHandlerParams,
-  AzureConnectionHandler,
-  AzureConnectionHandlerParams,
-} from 'src/services/cloud'
+import { AbstractConnectionHandler } from 'src/services/cloud'
 import { cloudStorage } from 'src/services/multer-storage/storageEngines'
 import { AppConfig } from 'src/services/webApi/controllers/common'
 
@@ -24,35 +18,4 @@ export function createFileUploader(config: AppConfig, connection: AbstractConnec
     },
   }
   return fileUploader
-}
-
-export async function parseConfigOptionAndBuildConnection(): Promise<AbstractConnectionHandler | null> {
-  // Implement parseConfigOptionAndBuildConnection method here
-  // parse spec from .env configuration and build connection, in case of error return null
-  let connection: AbstractConnectionHandler
-  if (process.env.CLOUD_CONNECTION_TYPE === 'aws') {
-    const params: AwsConnectionHandlerParams = {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-      region: process.env.AWS_REGION!,
-      bucketName: process.env.AWS_BUCKET_NAME!,
-    }
-    connection = createAwsConnectionHandler(params)
-  } else if (process.env.CLOUD_CONNECTION_TYPE === 'azure') {
-    connection = createAzureConnectionHandler({})
-  } else {
-    return null
-  }
-  await connection!.connect()
-  return connection!
-}
-
-function createAwsConnectionHandler(opts: AwsConnectionHandlerParams): AwsConnectionHandler {
-  const connection = new AwsConnectionHandler(opts)
-  return connection
-}
-
-function createAzureConnectionHandler(opts: AzureConnectionHandlerParams): AzureConnectionHandler {
-  const connection = new AzureConnectionHandler(opts)
-  return connection
 }

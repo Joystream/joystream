@@ -16,7 +16,6 @@ import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
-import { UploadLocation } from 'src/services/caching/localDataObjects'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -85,7 +84,6 @@ export async function getFile(
 
       stream.pipe(res)
     } else {
-      const { connectionHandler } = res.locals
       // connectionHandler?.getFileFromRemoteBucketAsync('') @todo : complete here in order to get file / file link from remote bucket
     }
   } catch (err) {

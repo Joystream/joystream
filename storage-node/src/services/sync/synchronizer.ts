@@ -1,9 +1,9 @@
-import { getDataObjectIDs, isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
-import { DownloadFileTask } from './tasks'
+import { DownloadFileTask, UploadFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
+import { ServerConfig } from 'src/commands/server'
 import _ from 'lodash'
 
 /**
@@ -35,23 +35,22 @@ export const PendingDirName = 'pending'
  * Node information about the storage providers.
  */
 export async function performSync(
-  buckets: string[],
+  serverConfig: ServerConfig,
   asyncWorkersNumber: number,
   asyncWorkersTimeout: number,
   qnApi: QueryNodeApi,
-  uploadDirectory: string,
-  tempDirectory: string,
   hostId: string,
   selectedOperatorUrl?: string
 ): Promise<void> {
   logger.info('Started syncing...')
-  const model = await getStorageObligationsFromRuntime(qnApi, buckets)
-  const storedObjectIds = getDataObjectIDs()
+  const model = await getStorageObligationsFromRuntime(qnApi, serverConfig.buckets)
+  const { dataObjectCache } = serverConfig
+  const storedObjectIds = await dataObjectCache.getDataObjectIDs()
 
   const assignedObjects = model.dataObjects
   const assignedObjectIds = assignedObjects.map((obj) => obj.id)
 
-  const added = assignedObjects.filter((obj) => !isDataObjectIdInCache(obj.id))
+  const added = assignedObjects.filter((obj) => !dataObjectCache.isDataObjectIdInCache(obj.id))
   const removed = _.difference(storedObjectIds, assignedObjectIds)
 
   logger.debug(`Sync - new objects: ${added.length}`)
@@ -59,21 +58,11 @@ export async function performSync(
 
   const workingStack = new WorkingStack()
 
-  const addedTasks = await getDownloadTasks(
-    model,
-    buckets,
-    added,
-    uploadDirectory,
-    tempDirectory,
-    asyncWorkersTimeout,
-    hostId,
-    selectedOperatorUrl
-  )
-
   logger.debug(`Sync - started processing...`)
 
   const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
+  const addedTasks = await getSyncTasks(serverConfig, model, added, asyncWorkersTimeout, hostId, selectedOperatorUrl)
   await workingStack.add(addedTasks)
 
   await processSpawner.process()
@@ -93,16 +82,19 @@ export async function performSync(
  * @param hostId - Random host UUID assigned to each node during bootstrap
  * @param selectedOperatorUrl - operator URL selected for syncing objects
  */
-async function getDownloadTasks(
+async function getSyncTasks(
+  serverConfig: ServerConfig,
   dataObligations: DataObligations,
-  ownBuckets: string[],
   added: DataObligations['dataObjects'],
-  uploadDirectory: string,
-  tempDirectory: string,
   asyncWorkersTimeout: number,
   hostId: string,
   selectedOperatorUrl?: string
-): Promise<DownloadFileTask[]> {
+): Promise<(DownloadFileTask | UploadFileTask)[]> {
+  if (serverConfig.noStorageEnabled) {
+    return []
+  }
+
+  const { buckets: ownBuckets } = serverConfig
   const bagIdByDataObjectId = new Map()
   for (const entry of dataObligations.dataObjects) {
     bagIdByDataObjectId.set(entry.id, entry.bagId)
@@ -142,26 +134,35 @@ async function getDownloadTasks(
     bagOperatorsUrlsById.set(entry.id, operatorUrls)
   }
 
-  const tasks = added.map((dataObject) => {
-    let operatorUrls: string[] = [] // can be empty after look up
-    let bagId = null
-    if (bagIdByDataObjectId.has(dataObject.id)) {
-      bagId = bagIdByDataObjectId.get(dataObject.id)
-      if (bagOperatorsUrlsById.has(bagId)) {
-        operatorUrls = bagOperatorsUrlsById.get(bagId)
+  const tasks = await Promise.all(
+    added.map(async (dataObject) => {
+      let operatorUrls: string[] = [] // can be empty after look up
+      let bagId = null
+      if (bagIdByDataObjectId.has(dataObject.id)) {
+        bagId = bagIdByDataObjectId.get(dataObject.id)
+        if (bagOperatorsUrlsById.has(bagId)) {
+          operatorUrls = bagOperatorsUrlsById.get(bagId)
+        }
       }
-    }
 
-    return new DownloadFileTask(
-      selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
-      dataObject.id,
-      dataObject.ipfsHash,
-      uploadDirectory,
-      tempDirectory,
-      asyncWorkersTimeout,
-      hostId
-    )
-  })
+      if (serverConfig.cloudEnabled) {
+        return new UploadFileTask(
+          serverConfig,
+          selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
+          dataObject.id
+        )
+      } else {
+        return new DownloadFileTask(
+          serverConfig,
+          selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
+          dataObject.id,
+          dataObject.ipfsHash,
+          asyncWorkersTimeout,
+          hostId
+        )
+      }
+    })
+  )
 
   return tasks
 }
