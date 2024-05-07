@@ -1,6 +1,5 @@
-import * as AWS from 'aws-sdk'
-import * as fs from 'fs'
-import { AbstractConnectionHandler } from './abstractConnectionHandler'
+import AWS from 'aws-sdk'
+import { AbstractConnectionHandler, ColossusFileStream } from './abstractConnectionHandler'
 
 export type AwsConnectionHandlerParams = {
   accessKeyId: string
@@ -11,73 +10,108 @@ export type AwsConnectionHandlerParams = {
 
 export class AwsConnectionHandler extends AbstractConnectionHandler {
   s3: AWS.S3
-  private bucketName: string
+  private bucket: string
 
   constructor(opts: AwsConnectionHandlerParams) {
     super()
     AWS.config.update({ accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey })
     this.s3 = new AWS.S3()
-    this.bucketName = opts.bucketName
+    this.bucket = opts.bucketName
   }
 
-  async connect(): Promise<void> {
-    // Implement connect method here
-  }
+  // no extra connection setup needed for aws
+  async connect(): Promise<void> {}
 
   get isReady(): boolean {
     // Implement isReady method here
     return false
   }
 
-  doUploadFileToRemoteBucket(key: string, cb: (err: Error | null, data: any) => void): void {
-    // Read content from the file
-    const fileContent = fs.readFileSync(key)
-
+  doUploadFileToRemoteBucket(
+    key: string,
+    filestream: ColossusFileStream,
+    cb: (err: Error | null, data: any) => void
+  ): void {
     // Setting up S3 upload parameters
-    const params = {
-      Bucket: this.bucketName,
+
+    const input = {
+      Bucket: this.bucket,
       Key: key, // File name you want to save as in S3
-      Body: fileContent,
+      Body: filestream,
     }
 
     // Uploading files to the bucket
-    try {
-      // const command = new AWS.S3.PutObjectCommand(params)
-      // const response = await this.s3.send(command)
-      // console.log(`File uploaded successfully. ${data.Location}`)
-    } catch (err) {
-      cb(err, null)
-    }
+    const command = this.s3.putObject(input, (err, data) => {
+      if (err) {
+        console.log(`File ${key} uploaded successfully to ${this.bucket} bucket`)
+        cb(err, null)
+      } else {
+        cb(null, data)
+      }
+    })
+    command.send()
   }
 
-  doGetFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+  doGetFileFromRemoteBucket(key: string, cb: (err: Error | null, data: ColossusFileStream | null) => void): void {
     // Implement getFileFromRemoteBucket method here
     const input = {
-      'Bucket': 'examplebucket',
-      'Key': 'SampleFile.txt',
+      'Bucket': this.bucket,
+      'Key': key,
     }
 
     // Uploading files to the bucket
-    try {
-      // const command = new GetObjectCommand(input)
-      // const response = await client.send(command)
-      // response contains a stream object with the file content
-    } catch (err) {
-      cb(err, null)
-    }
+    const command = this.s3.getObject(input, (err, data) => {
+      if (err) {
+        console.log(`File ${key} downloaded successfully from ${this.bucket} bucket`)
+        cb(err, null)
+      } else {
+        if (data.Body === undefined) {
+          cb(Error('No data found'), null)
+        } else {
+          cb(null, data.Body! as ColossusFileStream)
+        }
+      }
+    })
+    command.send()
   }
 
-  doCheckFileOnRemoteBucket(key: string, cb: (err: Error | null, data: any) => void): void {
+  doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void {
     const input = {
-      'Bucket': 'examplebucket',
-      'MaxKeys': '2',
+      'Bucket': this.bucket,
     }
-    try {
-      // const command = new ListObjectsCommand(input);
-      // const response = await client.send(command);
-    } catch (err) {
-      cb(err, null)
+
+    this.s3.listObjects(input, (err, data) => {
+      if (err) {
+        cb(err, null)
+      } else {
+        if (data.Contents === undefined) {
+          cb(Error('No data found'), null)
+        } else {
+          const keys = data.Contents.map((content) => content.Key)
+            .filter((k) => k !== undefined)
+            .map((k) => k!)
+          cb(null, keys)
+        }
+      }
+    })
+  }
+
+  doCheckFileOnRemoteBucket(key: string, cb: (err: Error | null, objectPresent: boolean) => void): void {
+    const input = {
+      'Bucket': this.bucket,
+      'Key': key,
     }
-    // Implement isFileOnRemoteBucket method here
+
+    this.s3.headObject(input, (err, data) => {
+      if (err) {
+        cb(err, false)
+      } else {
+        if (data === undefined) {
+          cb(null, false)
+        } else {
+          cb(null, true)
+        }
+      }
+    })
   }
 }

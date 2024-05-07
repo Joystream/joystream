@@ -184,25 +184,29 @@ class CloudStorage implements StorageEngine {
         let aborted = false
 
         // @todo: implement uploadFileToRemoteBucket method
-        that.connectionHandler.uploadFileToRemoteBucket('', function (err: Error | null, data: { Location: any }) {
-          if (err) {
-            return cb(err)
+        that.connectionHandler.uploadFileToRemoteBucket(
+          file.filename,
+          file.stream,
+          function (err: Error | null, data: { Location: any }) {
+            if (err) {
+              return cb(err)
+            }
+
+            cb(null, {
+              destination: destination,
+              filename: filename,
+              path: data.Location,
+              size: file.size,
+            })
+
+            // Remove temp file on request aborted - due to timeout or reverse-proxy
+            // terminating request because of its own policy such as max size of request
+            req.on('aborted', function () {
+              aborted = true
+              return cb(new Error('Request aborted'))
+            })
           }
-
-          cb(null, {
-            destination: destination,
-            filename: filename,
-            path: data.Location,
-            size: file.size,
-          })
-
-          // Remove temp file on request aborted - due to timeout or reverse-proxy
-          // terminating request because of its own policy such as max size of request
-          req.on('aborted', function () {
-            aborted = true
-            return cb(new Error('Request aborted'))
-          })
-        })
+        )
       })
     })
   }

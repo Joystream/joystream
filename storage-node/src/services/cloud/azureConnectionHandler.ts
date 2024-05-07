@@ -1,4 +1,4 @@
-import { AbstractConnectionHandler } from './abstractConnectionHandler'
+import { AbstractConnectionHandler, ColossusFileStream } from './abstractConnectionHandler'
 
 export type AzureConnectionHandlerParams = {
   // Implement Azure connection handler parameters here
@@ -11,16 +11,7 @@ export class AzureConnectionHandler extends AbstractConnectionHandler {
     this.connectionParams = opts
   }
 
-  get isReady(): boolean {
-    // Implement isReady method here
-    return false
-  }
-
-  async connect(): Promise<void> {
-    // Implement connect method here
-  }
-
-  doUploadFileToRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+  doUploadFileToRemoteBucket(key: string, filestream: ColossusFileStream, cb: (err: any, data: any) => void): void {
     // Implement uploadFileToRemoteBucket method here
   }
 
@@ -30,5 +21,18 @@ export class AzureConnectionHandler extends AbstractConnectionHandler {
 
   doCheckFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
     // Implement isFileOnRemoteBucket method here
+  }
+
+  doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void {
+    // Implement listFilesOnRemoteBucket method here
+  }
+
+  get isReady(): boolean {
+    // Implement isReady method here
+    return true
+  }
+
+  async connect(): Promise<void> {
+    // Implement connect method here
   }
 }
