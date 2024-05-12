@@ -8,10 +8,9 @@ import urljoin from 'url-join'
 import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
 import { addDataObjectIdToCache } from '../../caching/localDataObjects'
-import { hashFile } from '../../helpers/hashing'
 import { moveFile } from '../../helpers/moveFile'
 import { SyncTask } from './ISyncTask'
-import { withRandomUrls } from './utils'
+import { withRandomUrls, verifyFileHash } from './utils'
 const fsPromises = fs.promises
 
 /**
@@ -78,7 +77,7 @@ export class DownloadFileTask implements SyncTask {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
     })
     await streamPipeline(request, fileStream)
-    await this.verifyDownloadedFile(tempFilePath)
+    await verifyFileHash(tempFilePath, this.expectedHash)
   }
 
   async tryDownload(url: string, filepath: string): Promise<void> {
@@ -97,18 +96,6 @@ export class DownloadFileTask implements SyncTask {
         throw err
       }
       throw err
-    }
-  }
-
-  /** Compares expected and real IPFS hashes
-   *
-   * @param filePath downloaded file path
-   */
-  async verifyDownloadedFile(filePath: string): Promise<void> {
-    const hash = await hashFile(filePath)
-
-    if (hash !== this.expectedHash) {
-      throw new Error(`Invalid file hash. Expected: ${this.expectedHash} - real: ${hash}`)
     }
   }
 }

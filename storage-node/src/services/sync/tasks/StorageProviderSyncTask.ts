@@ -34,9 +34,9 @@ export class ProviderSyncTask extends DownloadFileTask {
     const operatorUrls = this.operatorUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', this.dataObjectId))
     const tempFilePath = path.join(this.tempDirectory, uuidv4())
     try {
+      // TODO: I have added a HashFileVerificationError to the utils file, but it is not used here, we should establish what to do in case the file is corrupted
       await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
         await this.tryDownloadTemp(chosenBaseUrl, this.dataObjectId)
-        // at this point the file is downloaded to the temp filepath, create a file stream and upload it to storage
         const fileStream = fs.createReadStream(tempFilePath)
         await this.connection.uploadFileToRemoteBucketAsync(this.dataObjectId, fileStream)
       })
