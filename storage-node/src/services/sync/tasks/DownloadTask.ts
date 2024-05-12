@@ -36,6 +36,7 @@ export class DownloadFileTask implements SyncTask {
     return `Sync - Trying for download of object: ${this.dataObjectId} ...`
   }
 
+  // internal error handling
   async execute(): Promise<void> {
     const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
     try {
@@ -93,7 +94,9 @@ export class DownloadFileTask implements SyncTask {
         await fsPromises.unlink(tempFilePath)
       } catch (err) {
         logger.error(`Sync - cannot cleanup file ${tempFilePath}: ${err}`, { err })
+        throw err
       }
+      throw err
     }
   }
 

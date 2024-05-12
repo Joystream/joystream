@@ -29,6 +29,7 @@ export class UploadFileTask extends DownloadFileTask {
     return `Sync - Trying for upload object ${this.dataObjectId} to cloud storage of object...`
   }
 
+  // internal error handling
   async execute(): Promise<void> {
     const operatorUrls = this.operatorUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', this.dataObjectId))
     const tempFilePath = path.join(this.tempDirectory, uuidv4())

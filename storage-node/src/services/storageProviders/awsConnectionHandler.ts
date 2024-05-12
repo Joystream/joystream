@@ -4,7 +4,7 @@ import { BUCKET_ACCEPTED_PREFIX, cloudAcceptedPathForFile, cloudPendingPathForFi
 
 export type AwsConnectionHandlerParams = {
   accessKeyId: string
-  secretAccessfilename: string
+  secretAccessKey: string
   region: string
   bucketName: string
 }
