@@ -9,7 +9,7 @@ import { getStorageProviderConnection } from 'src/commands/server'
 import path from 'path'
 import { withRandomUrls } from './utils'
 
-export class UploadFileTask extends DownloadFileTask {
+export class ProviderSyncTask extends DownloadFileTask {
   private connection: AbstractConnectionHandler
 
   constructor(
@@ -22,7 +22,7 @@ export class UploadFileTask extends DownloadFileTask {
     hostId: string
   ) {
     super(baseUrls, dataObjectId, expectedHash, uploadsDirectory, tempDirectory, downloadTimeout, hostId)
-    this.connection = getStorageProviderConnection()!
+    this.connection = getStorageProviderConnection()! // rightfully panic here if connection is not set
   }
 
   description(): string {

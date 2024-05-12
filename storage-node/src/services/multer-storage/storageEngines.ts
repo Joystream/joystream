@@ -5,7 +5,7 @@ import crypto from 'crypto'
 import mkdirp from 'mkdirp'
 import { Request } from 'express'
 import { DiskStorageOptions, StorageEngine } from 'multer'
-import { AbstractConnectionHandler } from '../cloud'
+import { AbstractConnectionHandler } from '../storageProviders'
 
 export type StorageEngineOptions = DiskStorageOptions
 

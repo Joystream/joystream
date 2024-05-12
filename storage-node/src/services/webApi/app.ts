@@ -17,6 +17,7 @@ import BN from 'bn.js'
 import asyncHandler from 'express-async-handler'
 import { RouteMetadata } from 'express-openapi-validator/dist/framework/openapi.spec.loader'
 import { createFileUploader } from 'src/commands/util/fileStorageSetup'
+import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -142,8 +143,7 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
     throw new WebApiError(`Data object ${dataObjectId} already exists (pending)`, 400)
   }
 
-  const { dataObjectCache } = res.locals
-  const isInStorage = await dataObjectCache.getDataObjectIdFromCache(dataObjectId.toString())
+  const isInStorage = await getDataObjectIdFromCache(dataObjectId.toString())
   if (isInStorage) {
     throw new WebApiError(`Data object ${dataObjectId} already exists (in storage)`, 400)
   }

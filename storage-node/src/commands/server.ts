@@ -3,13 +3,13 @@ import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import fs from 'fs'
-import _ from 'lodash'
+import _, { get } from 'lodash'
 import path from 'path'
 import sleep from 'sleep-promise'
 import { v4 as uuidv4 } from 'uuid'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import { customFlags } from '../command-base/CustomFlags'
-import { DataObjectIdCacheMap, LocalDataObjects } from '../services/caching/localDataObjects'
+import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
 import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
@@ -22,63 +22,13 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-import { AbstractConnectionHandler, parseConfigOptionAndBuildConnection } from 'src/services/cloud'
+import { AbstractConnectionHandler, parseConfigOptionAndBuildConnection } from 'src/services/storageProviders'
 const fsPromises = fs.promises
 
-/**
- * Local data volume configuration, case: local storage.
- */
-export type LocalDataVolumeConfig = {
-  uploads: string
-  tempFolder: string
-  pendingFolder: string
-}
-
-// @todo: create builder class for this with a fromApp method and withConnection to set this up faster
-/**
- * Represents the server global variables configured at startup
- */
-export class ServerConfig {
-  private connection_: AbstractConnectionHandler | null
-  private dataObjectCache_: LocalDataObjects
-  private localPaths_: LocalDataVolumeConfig | null
-  private buckets_: string[]
-
-  constructor(
-    connection: AbstractConnectionHandler | null,
-    dataObjectCache: LocalDataObjects,
-    localPaths: LocalDataVolumeConfig | null,
-    buckets: string[]
-  ) {
-    this.connection_ = connection
-    this.dataObjectCache_ = dataObjectCache
-    this.localPaths_ = localPaths
-    this.buckets_ = buckets
-  }
-
-  // Getters (notice that the state is immutable)
-  get connection(): AbstractConnectionHandler | null {
-    return this.connection_
-  }
-  get dataObjectCache(): LocalDataObjects {
-    return this.dataObjectCache_
-  }
-  get localPaths(): LocalDataVolumeConfig | null {
-    return this.localPaths_
-  }
-  get cloudEnabled(): boolean {
-    return this.connection_ !== null && this.localPaths_ === null
-  }
-  get localStorageEnabled(): boolean {
-    return this.connection === null && this.localPaths_ !== null
-  }
-  get noStorageEnabled(): boolean {
-    return !this.cloudEnabled && !this.localStorageEnabled
-  }
-  get buckets(): string[] {
-    return this.buckets_
-  }
-}
+// Global variable for storage provider connection, initialised by server, then readonly
+let storageProviderConnection: AbstractConnectionHandler | undefined
+export const getStorageProviderConnection = () => storageProviderConnection
+export const isStorageProviderConnectionEnabled = () => storageProviderConnection !== undefined
 
 /**
  * CLI command:
@@ -167,23 +117,26 @@ export default class Server extends ApiCommandBase {
       required: false,
       env: 'ELASTIC_ENDPOINT',
       description: `Elasticsearch endpoint (e.g.: http://some.com:8081).
-Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
+Log level could be set using the ELASTIC_LOG_LEVEL environment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
     elasticSearchIndexPrefix: flags.string({
       required: false,
       env: 'ELASTIC_INDEX_PREFIX',
-      description: 'Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus',
+      description:
+        'Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus. Can be passed through ELASTIC_INDEX_PREFIX environment variable.',
     }),
     elasticSearchUser: flags.string({
       dependsOn: ['elasticSearchEndpoint', 'elasticSearchPassword'],
       env: 'ELASTIC_USER',
-      description: 'Elasticsearch user for basic authentication.',
+      description:
+        'Elasticsearch user for basic authentication. Can be passed through ELASTIC_USER environment variable.',
     }),
     elasticSearchPassword: flags.string({
       dependsOn: ['elasticSearchEndpoint', 'elasticSearchUser'],
       env: 'ELASTIC_PASSWORD',
-      description: 'Elasticsearch password for basic authentication.',
+      description:
+        'Elasticsearch password for basic authentication. Can be passed through ELASTIC_PASSWORD environment variable.',
     }),
     logFilePath: flags.string({
       char: 'l',
@@ -214,11 +167,13 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 20,
       required: false,
     }),
+    enableStorageProvider: flags.boolean({
+      description: 'Enable storage provider connection to cloud storage provider.',
+      default: false,
+      required: true, // required to be explicit
+    }),
     ...ApiCommandBase.flags,
   }
-
-  // variable that encapsulate the various global services and variables used by the server
-  private serverConfig_: ServerConfig | null = null
 
   async run(): Promise<void> {
     const { flags } = this.parse(Server)
@@ -317,21 +272,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     await createDirectory(flags.uploads)
-    let dataObjectCache: LocalDataObjects
-
-    try {
-      const cacheBackend = new DataObjectIdCacheMap()
-      await cacheBackend.init()
-      if (!cacheBackend.isReady) {
-        logger.error(`Cache backend is not ready. Exiting.`)
-        throw new Error('Cache backend is not ready. Exiting.')
-      }
-      dataObjectCache = new LocalDataObjects(cacheBackend)
-      await dataObjectCache.loadDataObjectIdCache(flags.uploads)
-    } catch (error) {
-      logger.error(`Error initializing cache backend: ${error}`)
-      this.exit(ExitCodes.CacheInitError)
-    }
+    await loadDataObjectIdCache(flags.uploads)
 
     await createDirectory(tempFolder)
     await createDirectory(pendingFolder)
@@ -358,8 +299,10 @@ Supported values: warn, error, debug, info. Default:debug`,
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
           runSyncWithInterval(
-            this.serverConfig,
+            selectedBuckets,
             qnApi,
+            flags.uploads,
+            tempFolder,
             flags.syncWorkersNumber,
             flags.syncWorkersTimeout,
             flags.syncInterval,
@@ -394,6 +337,9 @@ Supported values: warn, error, debug, info. Default:debug`,
       logger.warn(`Cleanup service is Disabled.`)
     }
 
+    // initialise storage provider connection: undefined if not enabled
+    storageProviderConnection = await parseConfigOptionAndBuildConnection(flags.enableStorageProvider)
+
     try {
       const port = flags.port
       const maxFileSize = await api.consts.storage.maxDataObjectSize.toNumber()
@@ -420,25 +366,12 @@ Supported values: warn, error, debug, info. Default:debug`,
           minReplicationThresholdForPruning: MINIMUM_REPLICATION_THRESHOLD,
         },
         x_host_id: X_HOST_ID,
-        dataObjectCache,
       })
-      const connection = await parseConfigOptionAndBuildConnection()
       const server = app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
 
       // INFO: https://nodejs.org/dist/latest-v18.x/docs/api/http.html#serverrequesttimeout
       // Set the server request timeout to 0 to disable it. This was default behaviour pre Node.js 18.x
       server.requestTimeout = 0
-
-      this.serverConfig_ = new ServerConfig(
-        connection,
-        dataObjectCache,
-        {
-          uploads: flags.uploads,
-          tempFolder,
-          pendingFolder,
-        },
-        selectedBuckets
-      )
     } catch (err) {
       logger.error(`Server error: ${err}`)
       this.exit(ExitCodes.ServerError)
@@ -448,13 +381,6 @@ Supported values: warn, error, debug, info. Default:debug`,
   // Override exiting.
   /* eslint-disable @typescript-eslint/no-empty-function */
   async finally(): Promise<void> {}
-
-  get serverConfig(): ServerConfig {
-    if (!this.serverConfig_) {
-      throw new Error('Server state is not initialized')
-    }
-    return this.serverConfig_
-  }
 }
 
 /**
@@ -474,8 +400,10 @@ Supported values: warn, error, debug, info. Default:debug`,
  * @returns void promise.
  */
 async function runSyncWithInterval(
-  serverConfig: ServerConfig,
+  buckets: string[],
   qnApi: QueryNodeApi,
+  uploadsDirectory: string,
+  tempDirectory: string,
   syncWorkersNumber: number,
   syncWorkersTimeout: number,
   syncIntervalMinutes: number,
@@ -487,7 +415,7 @@ async function runSyncWithInterval(
   while (true) {
     try {
       logger.info(`Resume syncing....`)
-      await performSync(serverConfig, syncWorkersNumber, syncWorkersTimeout, qnApi, hostId)
+      await performSync(buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory, hostId)
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
       await sleep(sleepInterval)
     } catch (err) {

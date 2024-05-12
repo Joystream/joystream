@@ -1,5 +1,5 @@
 import multer from 'multer'
-import { AbstractConnectionHandler } from 'src/services/cloud'
+import { AbstractConnectionHandler } from 'src/services/storageProviders'
 import { cloudStorage } from 'src/services/multer-storage/storageEngines'
 import { AppConfig } from 'src/services/webApi/controllers/common'
 

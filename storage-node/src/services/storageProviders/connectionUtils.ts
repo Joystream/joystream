@@ -5,19 +5,23 @@
 
 import { AbstractConnectionHandler } from './abstractConnectionHandler'
 import { AwsConnectionHandlerParams, AwsConnectionHandler } from './awsConnectionHandler'
-import { AzureConnectionHandlerParams, AzureConnectionHandler } from './azureConnectionHandler'
 
 function createAwsConnectionHandler(opts: AwsConnectionHandlerParams): AwsConnectionHandler {
   const connection = new AwsConnectionHandler(opts)
   return connection
 }
 
-function createAzureConnectionHandler(opts: AzureConnectionHandlerParams): AzureConnectionHandler {
-  const connection = new AzureConnectionHandler(opts)
-  return connection
-}
+// function createAzureConnectionHandler(opts: AzureConnectionHandlerParams): AzureConnectionHandler {
+//   const connection = new AzureConnectionHandler(opts)
+//   return connection
+// }
 
-export async function parseConfigOptionAndBuildConnection(): Promise<AbstractConnectionHandler | null> {
+export async function parseConfigOptionAndBuildConnection(
+  enableProvider: boolean
+): Promise<AbstractConnectionHandler | undefined> {
+  if (!enableProvider) {
+    return undefined
+  }
   // Implement parseConfigOptionAndBuildConnection method here
   // parse spec from .env configuration and build connection, in case of error return null
   let connection: AbstractConnectionHandler
@@ -29,10 +33,8 @@ export async function parseConfigOptionAndBuildConnection(): Promise<AbstractCon
       bucketName: process.env.AWS_BUCKET_NAME!,
     }
     connection = createAwsConnectionHandler(params)
-  } else if (process.env.CLOUD_CONNECTION_TYPE === 'azure') {
-    connection = createAzureConnectionHandler({})
   } else {
-    return null
+    throw new Error('Invalid storage cloud provider type or unsupported provider type.')
   }
   return connection
 }
