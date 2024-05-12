@@ -7,6 +7,7 @@ import { ExtrinsicFailedError } from '../../runtime/api'
 import { AcceptPendingObjectsService } from '../../sync/acceptPendingObjects'
 import { ErrorResponse } from '../types'
 import { LocalDataObjects } from 'src/services/caching/localDataObjects'
+import { AbstractConnectionHandler } from 'src/services/cloud'
 
 /**
  * Dedicated error for the web api requests.
@@ -204,6 +205,10 @@ export type AppConfig = {
    */
   x_host_id: string
 
+  /**
+   * Connection handler for the cloud storage provider
+   */
+  connection: AbstractConnectionHandler | null
   /**
    * Data Object Id used for storing information about data objects
    */

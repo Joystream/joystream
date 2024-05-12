@@ -10,7 +10,6 @@ import logger from '../../services/logger'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
 import { moveFile } from '../helpers/moveFile'
-import { ServerConfig } from 'src/commands/server'
 import { LocalDataObjects } from '../caching/localDataObjects'
 import { AbstractConnectionHandler } from '../cloud'
 const fsPromises = fs.promises
@@ -81,10 +80,10 @@ export class DownloadFileTask implements SyncTask {
   constructor(
     serverConfig: ServerConfig,
     baseUrls: string[],
-    private dataObjectId: string,
-    private expectedHash: string,
-    private downloadTimeout: number,
-    private hostId: string
+    protected dataObjectId: string,
+    protected expectedHash: string,
+    protected downloadTimeout: number,
+    protected hostId: string
   ) {
     this.operatorUrls = baseUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', dataObjectId))
     this.localCache = serverConfig.dataObjectCache
@@ -116,6 +115,13 @@ export class DownloadFileTask implements SyncTask {
   }
 
   async tryDownload(url: string, filepath: string): Promise<void> {
+    const tempFilePath = await this.tryDownloadToTemp(url, filepath)
+    if (!tempFilePath) {
+      await moveFile(tempFilePath!, filepath)
+      this.localCache.addDataObjectIdToCache(this.dataObjectId)
+    }
+  }
+  async tryDownloadToTemp(url: string, filepath: string): Promise<string | null> {
     const streamPipeline = promisify(pipeline)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
@@ -148,8 +154,7 @@ export class DownloadFileTask implements SyncTask {
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
-      await moveFile(tempFilePath, filepath)
-      this.localCache.addDataObjectIdToCache(this.dataObjectId)
+      return tempFilePath
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {
@@ -159,6 +164,7 @@ export class DownloadFileTask implements SyncTask {
         logger.error(`Sync - cannot cleanup file ${tempFilePath}: ${err}`, { err })
       }
     }
+    return null
   }
 
   /** Compares expected and real IPFS hashes
@@ -175,10 +181,18 @@ export class DownloadFileTask implements SyncTask {
 }
 
 // create a similar UploadFileTask
-export class UploadFileTask {
+export class UploadFileTask extends DownloadFileTask {
   private connection: AbstractConnectionHandler
 
-  constructor(serverConfig: ServerConfig, private baseUrls: string[], private dataObjectId: string) {
+  constructor(
+    serverConfig: ServerConfig,
+    baseUrls: string[],
+    dataObjectId: string,
+    expectedHash: string,
+    downloadTimeout: number,
+    hostId: string
+  ) {
+    super(serverConfig, baseUrls, dataObjectId, expectedHash, downloadTimeout, hostId)
     this.connection = serverConfig.connection!
   }
 
@@ -187,13 +201,19 @@ export class UploadFileTask {
   }
 
   async execute(): Promise<void> {
-    const operatorUrls = this.baseUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', this.dataObjectId))
+    const operatorUrls = this.operatorUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', this.dataObjectId))
     await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
-      await this.connection.uploadFileToRemoteBucketAsync(this.dataObjectId)
+      const tempFilePath = await this.tryDownloadToTemp(chosenBaseUrl, this.dataObjectId)
+      // if download fails, break the loop
+      if (!tempFilePath) {
+        return
+      } else {
+        // else create a readable stream from the file and upload it using conection
+        const fileStream = fs.createReadStream(tempFilePath)
+        await this.connection.uploadFileToRemoteBucketAsync(this.dataObjectId, fileStream)
+      }
     })
   }
-
-  // ...
 }
 
 async function withRandomUrls(

@@ -12,6 +12,9 @@ import { Readable } from 'stream'
 /**
  * Represents an abstract connection handler for interacting with a remote server.
  */
+/**
+ * Represents an abstract connection handler for interacting with a remote server and performing file operations.
+ */
 export abstract class AbstractConnectionHandler {
   /**
    * Gets the readiness status of the connection handler.
@@ -25,32 +28,32 @@ export abstract class AbstractConnectionHandler {
 
   /**
    * Uploads a file to the remote bucket, given an initialized connection.
-   * @param key - The key of the file in the remote bucket.
+   * @param filename - The key of the file in the remote bucket.
    * @param filestream - The file stream to upload.
    * @param cb - The callback function to be called when the upload is complete or encounters an error.
    */
   abstract doUploadFileToRemoteBucket(
-    key: string,
+    filename: string,
     filestream: ColossusFileStream,
     cb: (err: Error | null, data: any) => void
   ): void
 
   /**
    * Retrieves a file from the remote bucket, given an initialized connection.
-   * @param key - The key of the file to retrieve from the remote bucket.
+   * @param filename - The key of the file to retrieve from the remote bucket.
    * @param cb - The callback function to be called when the retrieval is complete or encounters an error.
    */
   abstract doGetFileFromRemoteBucket(
-    key: string,
+    filename: string,
     cb: (err: Error | null, data: ColossusFileStream | null) => void
   ): void
 
   /**
    * Checks if a file exists on the remote bucket, given an initialized connection.
-   * @param key - The key of the file to check in the remote bucket.
+   * @param filename - The key of the file to check in the remote bucket.
    * @param cb - The callback function to be called when the check is complete or encounters an error.
    */
-  abstract doCheckFileOnRemoteBucket(key: string, cb: (err: Error | null, data: boolean) => void): void
+  abstract doCheckFileOnRemoteBucket(filename: string, cb: (err: Error | null, data: boolean) => void): void
 
   /**
    * Lists files in the remote bucket, given an initialized connection.
@@ -59,31 +62,40 @@ export abstract class AbstractConnectionHandler {
   abstract doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void
 
   /**
+   * Asynchronously move a file in the same bucket accross prefixes, given an initialized connection.
+   * @param srcKey - The source key of the file.
+   * @param dstKey - The destination key of the file.
+   * @param cb - The callback function to be called when the file is marked as accepted or encounters an error.
+   * @returns A promise that resolves when the file is marked as accepted or rejects with an error.
+   */
+  abstract doMoveFile(srcKey: string, dstKey: string, cb: (err: Error | null, data: any) => void): void
+
+  /**
    * Uploads a file to the remote bucket.
-   * @param key - The key of the file in the remote bucket.
+   * @param filename - The key of the file in the remote bucket.
    * @param filestream - The file stream to upload.
    * @param cb - The callback function to be called when the upload is complete or encounters an error.
    */
   uploadFileToRemoteBucket(
-    key: string,
+    filename: string,
     filestream: ColossusFileStream,
     cb: (err: Error | null, data: any) => void
   ): void {
     if (!this.isReady) {
       throw new Error('Connection handler is not ready')
     }
-    this.doUploadFileToRemoteBucket(key, filestream, cb)
+    this.doUploadFileToRemoteBucket(filename, filestream, cb)
   }
 
   /**
    * Asynchronously uploads a file to the remote bucket.
-   * @param key - The key of the file in the remote bucket.
+   * @param filename - The key of the file in the remote bucket.
    * @param filestream - The file stream to upload.
    * @returns A promise that resolves when the upload is complete or rejects with an error.
    */
-  async uploadFileToRemoteBucketAsync(key: string, filestream: ColossusFileStream): Promise<any> {
+  async uploadFileToRemoteBucketAsync(filename: string, filestream: ColossusFileStream): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.uploadFileToRemoteBucket(key, filestream, (err, data) => {
+      this.uploadFileToRemoteBucket(filename, filestream, (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -95,24 +107,24 @@ export abstract class AbstractConnectionHandler {
 
   /**
    * Retrieves a file from the remote bucket.
-   * @param key - The key of the file to retrieve from the remote bucket.
+   * @param filename - The key of the file to retrieve from the remote bucket.
    * @param cb - The callback function to be called when the retrieval is complete or encounters an error.
    */
-  getFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+  getFileFromRemoteBucket(filename: string, cb: (err: any, data: any) => void): void {
     if (!this.isReady) {
       throw new Error('Connection handler is not ready')
     }
-    this.doGetFileFromRemoteBucket(key, cb)
+    this.doGetFileFromRemoteBucket(filename, cb)
   }
 
   /**
    * Asynchronously retrieves a file from the remote bucket.
-   * @param key - The key of the file to retrieve from the remote bucket.
+   * @param filename - The key of the file to retrieve from the remote bucket.
    * @returns A promise that resolves with the retrieved file data or rejects with an error.
    */
-  async getFileFromRemoteBucketAsync(key: string): Promise<any> {
+  async getFileFromRemoteBucketAsync(filename: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.getFileFromRemoteBucket(key, (err, data) => {
+      this.getFileFromRemoteBucket(filename, (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -124,24 +136,24 @@ export abstract class AbstractConnectionHandler {
 
   /**
    * Checks if a file exists on the remote bucket.
-   * @param key - The key of the file to check in the remote bucket.
+   * @param filename - The key of the file to check in the remote bucket.
    * @param cb - The callback function to be called when the check is complete or encounters an error.
    */
-  isFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
+  isFileOnRemoteBucket(filename: string, cb: (err: any, data: any) => void): void {
     if (!this.isReady) {
       throw new Error('Connection handler is not ready')
     }
-    this.doCheckFileOnRemoteBucket(key, cb)
+    this.doCheckFileOnRemoteBucket(filename, cb)
   }
 
   /**
    * Asynchronously checks if a file exists on the remote bucket.
-   * @param key - The key of the file to check in the remote bucket.
+   * @param filename - The key of the file to check in the remote bucket.
    * @returns A promise that resolves with a boolean indicating if the file exists or rejects with an error.
    */
-  async isFileOnRemoteBucketAsync(key: string): Promise<any> {
+  async isFileOnRemoteBucketAsync(filename: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.isFileOnRemoteBucket(key, (err, data) => {
+      this.isFileOnRemoteBucket(filename, (err, data) => {
         if (err) {
           reject(err)
         } else {
@@ -177,7 +189,39 @@ export abstract class AbstractConnectionHandler {
       })
     })
   }
+
+  /**
+   * Asynchronously move a file in the same bucket accross prefixes
+   * @param srcKey - The source key of the file.
+   * @param dstKey - The destination key of the file.
+   * @param cb - The callback function to be called when the file is marked as accepted or encounters an error.
+   * @returns A promise that resolves when the file is marked as accepted or rejects with an error.
+   */
+  moveFile(srcKey: string, dstKey: string, cb: (err: Error | null, data: any) => void): void {
+    if (!this.isReady) {
+      throw new Error('Connection handler is not ready')
+    }
+    this.doMoveFile(srcKey, dstKey, cb)
+  }
+
+  /**
+   * Asynchronously move a file in the same bucket accross prefixes
+   * @param srcKey - The source key of the file.
+   * @param dstKey - The destination key of the file.
+   * @returns A promise that resolves when the file is marked as accepted or rejects with an error.
+   */
+  async moveFileAsync(srcKey: string, dstKey: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.moveFile(srcKey, dstKey, (err, data) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve(data)
+        }
+      })
+    })
+  }
 }
 
 // @todo : refactor this according to some pattern
-export type ColossusFileStream = NodeJS.ReadableStream | Buffer | string | Uint8Array | ReadableStream | Readable
+export type ColossusFileStream = Readable

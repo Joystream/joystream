@@ -1,7 +1,7 @@
 import fs from 'fs'
 import logger from '../logger'
 import assert from 'assert'
-import { Maybe } from 'src/commands/util/types'
+import { ServerConfig, isCloudEnabled } from 'src/commands/server'
 
 const fsPromises = fs.promises
 
@@ -37,7 +37,7 @@ export interface IDataObjectIdCache {
    * @param id - The data object ID to retrieve the entry for.
    * @returns The entry associated with the ID, or `undefined` if the ID is not found in the cache.
    */
-  get(id: DataObjectId): Promise<Maybe<DataObjectEntry>>
+  get(id: DataObjectId): Promise<DataObjectEntry | undefined>
 
   /**
    * Sets the entry for the specified data object ID in the cache.
@@ -77,7 +77,7 @@ export class DataObjectIdCacheMap implements IDataObjectIdCache {
     return this.cache.has(id)
   }
 
-  public get(id: DataObjectId): Promise<Maybe<DataObjectEntry>> {
+  public get(id: DataObjectId): Promise<DataObjectEntry | undefined> {
     return Promise.resolve(this.cache.get(id))
   }
 
@@ -128,8 +128,8 @@ export class LocalDataObjects {
    *
    * @param uploadDir - uploading directory
    */
-  public async loadDataObjectIdCache(uploadDir: string): Promise<void> {
-    const names = await this.getLocalFileNames(uploadDir)
+  public async loadDataObjectIdCache(serverConfig: ServerConfig): Promise<void> {
+    const names = await this.getLocalFileNames(serverConfig.assetsFolder)
 
     names
       // Just incase the directory is polluted with other files,
@@ -137,11 +137,24 @@ export class LocalDataObjects {
       .filter((name) => Number.isInteger(Number(name)))
       .forEach((id) =>
         this.idCache.set(id, {
-          accepted: false,
+          accepted: true,
           isOnLocalVolume: true,
           pinCount: 0,
         })
       )
+
+    if (isCloudEnabled(serverConfig)) {
+      const cloudNames = await serverConfig.connection!.listFilesOnRemoteBucketAsync()
+      cloudNames
+        .filter((name) => Number.isInteger(Number(name)))
+        .forEach((id) =>
+          this.idCache.set(id, {
+            accepted: true,
+            isOnLocalVolume: false,
+            pinCount: 0,
+          })
+        )
+    }
 
     logger.debug(`Local ID cache loaded.`)
   }

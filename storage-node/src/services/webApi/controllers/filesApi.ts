@@ -84,7 +84,6 @@ export async function getFile(
 
       stream.pipe(res)
     } else {
-      // connectionHandler?.getFileFromRemoteBucketAsync('') @todo : complete here in order to get file / file link from remote bucket
     }
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')

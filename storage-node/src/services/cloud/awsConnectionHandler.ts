@@ -1,9 +1,10 @@
 import AWS from 'aws-sdk'
 import { AbstractConnectionHandler, ColossusFileStream } from './abstractConnectionHandler'
+import { BUCKET_ACCEPTED_PREFIX, cloudAcceptedPathForFile, cloudPendingPathForFile } from './const'
 
 export type AwsConnectionHandlerParams = {
   accessKeyId: string
-  secretAccessKey: string
+  secretAccessfilename: string
   region: string
   bucketName: string
 }
@@ -14,7 +15,7 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
 
   constructor(opts: AwsConnectionHandlerParams) {
     super()
-    AWS.config.update({ accessKeyId: opts.accessKeyId, secretAccessKey: opts.secretAccessKey })
+    AWS.config.update({ accessKeyId: opts.accessKeyId })
     this.s3 = new AWS.S3()
     this.bucket = opts.bucketName
   }
@@ -28,7 +29,7 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
   }
 
   doUploadFileToRemoteBucket(
-    key: string,
+    filename: string,
     filestream: ColossusFileStream,
     cb: (err: Error | null, data: any) => void
   ): void {
@@ -36,14 +37,14 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
 
     const input = {
       Bucket: this.bucket,
-      Key: key, // File name you want to save as in S3
+      Key: cloudPendingPathForFile(filename), // File name you want to save as in S3
       Body: filestream,
     }
 
     // Uploading files to the bucket
     const command = this.s3.putObject(input, (err, data) => {
       if (err) {
-        console.log(`File ${key} uploaded successfully to ${this.bucket} bucket`)
+        console.log(`File ${filename} uploaded successfully to ${this.bucket} bucket`)
         cb(err, null)
       } else {
         cb(null, data)
@@ -52,17 +53,17 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     command.send()
   }
 
-  doGetFileFromRemoteBucket(key: string, cb: (err: Error | null, data: ColossusFileStream | null) => void): void {
+  doGetFileFromRemoteBucket(filename: string, cb: (err: Error | null, data: ColossusFileStream | null) => void): void {
     // Implement getFileFromRemoteBucket method here
     const input = {
-      'Bucket': this.bucket,
-      'Key': key,
+      Bucket: this.bucket,
+      Key: cloudAcceptedPathForFile(filename),
     }
 
     // Uploading files to the bucket
     const command = this.s3.getObject(input, (err, data) => {
       if (err) {
-        console.log(`File ${key} downloaded successfully from ${this.bucket} bucket`)
+        console.log(`File ${filename} downloaded successfully from ${this.bucket} bucket`)
         cb(err, null)
       } else {
         if (data.Body === undefined) {
@@ -77,7 +78,8 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
 
   doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void {
     const input = {
-      'Bucket': this.bucket,
+      Bucket: this.bucket,
+      Prefix: BUCKET_ACCEPTED_PREFIX,
     }
 
     this.s3.listObjects(input, (err, data) => {
@@ -96,10 +98,10 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     })
   }
 
-  doCheckFileOnRemoteBucket(key: string, cb: (err: Error | null, objectPresent: boolean) => void): void {
+  doCheckFileOnRemoteBucket(filename: string, cb: (err: Error | null, objectPresent: boolean) => void): void {
     const input = {
-      'Bucket': this.bucket,
-      'Key': key,
+      Bucket: this.bucket,
+      Key: cloudAcceptedPathForFile(filename),
     }
 
     this.s3.headObject(input, (err, data) => {
