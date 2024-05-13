@@ -10,6 +10,7 @@ import { moveFile } from '../helpers/moveFile'
 import logger from '../logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { acceptPendingDataObjectsBatch } from '../runtime/extrinsics'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
 
 const fsPromises = fs.promises
 
@@ -145,7 +146,7 @@ export class AcceptPendingObjectsService {
         )
         if (storageBucket) {
           if (dataObject.isAccepted) {
-            await this.movePendingDataObjectToUploadsDir(dataObject.id)
+            await this.moveToAcceptedLocation(dataObject.id)
           } else {
             objectsToAccept.push([dataObject.id, [storageBucket.storageBucket.id, dataObject.storageBag.id]])
           }
@@ -153,14 +154,22 @@ export class AcceptPendingObjectsService {
           logger.debug(
             `Data object ${dataObject.id} in pending directory is no longer assigned to any of the upload buckets: ${this.uploadBuckets}. Moving it to the uploads directory.`
           )
-          await this.movePendingDataObjectToUploadsDir(dataObject.id)
+          await this.moveToAcceptedLocation(dataObject.id)
         }
       })
     )
     return objectsToAccept
   }
 
-  private async movePendingDataObjectToUploadsDir(dataObjectId: string): Promise<void> {
+  /**
+   * Moves a data object to the accepted location.
+   * If the file already exists in the uploads directory, it will be deleted before moving the new file.
+   * If the storage provider connection is enabled, the file will be uploaded to the remote bucket before moving.
+   * After the file is moved, the data object ID will be registered and added to the cache.
+   * @param dataObjectId - The ID of the data object to move.
+   * @returns A Promise that resolves when the operation is complete.
+   */
+  private async moveToAcceptedLocation(dataObjectId: string): Promise<void> {
     const currentPath = path.join(this.pendingDataObjectsDir, dataObjectId)
     const newPath = path.join(this.uploadsDir, dataObjectId)
 
@@ -172,11 +181,18 @@ export class AcceptPendingObjectsService {
         await fsPromises.unlink(currentPath)
       } catch {
         // If the file does not exist in the uploads directory, proceed with the rename
-        await moveFile(currentPath, newPath)
+        if (!isStorageProviderConnectionEnabled()) {
+          await moveFile(currentPath, newPath)
+        } else {
+          const connection = getStorageProviderConnection()!
+          await connection.uploadFileToRemoteBucketAsync(dataObjectId, fs.createReadStream(currentPath))
+          await fsPromises.unlink(currentPath) // delete the file from the local storage after successful upload
+        }
         registerNewDataObjectId(dataObjectId)
         addDataObjectIdToCache(dataObjectId)
       }
     } catch (err) {
+      // incluing error from cloud bucket uploads
       logger.error(`Error handling data object ${dataObjectId}: ${err}`)
     }
   }
@@ -239,7 +255,7 @@ export class AcceptPendingObjectsService {
 
     let moved = 0
     for (const dataObjectId of acceptedObjects) {
-      await this.movePendingDataObjectToUploadsDir(dataObjectId)
+      await this.moveToAcceptedLocation(dataObjectId)
       moved++
     }
 
