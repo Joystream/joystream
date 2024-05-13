@@ -14,10 +14,10 @@ import {
 } from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import BN from 'bn.js'
+import { diskStorage } from '../multer-storage/disk'
+import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 import asyncHandler from 'express-async-handler'
 import { RouteMetadata } from 'express-openapi-validator/dist/framework/openapi.spec.loader'
-import { createFileUploader } from 'src/commands/util/fileStorageSetup'
-import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 
 /**
  * Creates Express web application. Uses the OAS spec file for the API.
@@ -82,7 +82,19 @@ export async function createApp(config: AppConfig): Promise<Express> {
         resolver: (basePath: string, route: RouteMetadata, apiDoc: OpenAPIV3.Document) =>
           asyncHandler(OpenApiValidator.resolvers.modulePathResolver(basePath, route, apiDoc)),
       },
-      fileUploader: createFileUploader(config, null),
+      fileUploader: {
+        storage: diskStorage({
+          destination: config.tempFileUploadingDir, // every file will be uploaded to the temp directory first
+        }),
+        // Busboy library settings
+        limits: {
+          // For multipart forms, the max number of file fields (Default: Infinity)
+          files: 1,
+          // For multipart forms, the max file size (in bytes) (Default: Infinity)
+          // TODO CS3 : This should be set to the maximum file size allowed by the storage provider.
+          fileSize: config.maxFileSize,
+        },
+      },
     })
   ) // Required signature.
 
@@ -143,7 +155,7 @@ async function validateUploadFileParams(req: express.Request, res: express.Respo
     throw new WebApiError(`Data object ${dataObjectId} already exists (pending)`, 400)
   }
 
-  const isInStorage = await getDataObjectIdFromCache(dataObjectId.toString())
+  const isInStorage = getDataObjectIdFromCache(dataObjectId.toString())
   if (isInStorage) {
     throw new WebApiError(`Data object ${dataObjectId} already exists (in storage)`, 400)
   }

@@ -91,7 +91,7 @@ export async function getFile(
         throw new WebApiError('Storage provider connection not available for storage node', 500)
       }
       const connection = getStorageProviderConnection()!
-      // TODO add metadata info for header setup
+      // TODO(col s3) correctly get metadata and stream from getFromBuket return type
       const stream = await connection.getFileFromRemoteBucketAsync(dataObjectId)
 
       stream.on('headers', (res: any) => {
