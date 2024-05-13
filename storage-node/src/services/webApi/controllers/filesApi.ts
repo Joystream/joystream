@@ -16,6 +16,12 @@ import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
+import {
+  pinDataObjectIdToCache,
+  unpinDataObjectIdFromCache,
+  getDataObjectIdFromCache,
+} from '../../caching/localDataObjects'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -38,32 +44,29 @@ export async function getFile(
   next: express.NextFunction
 ): Promise<void> {
   const { id: dataObjectId } = req.params
-  const { dataObjectCache } = res.locals
   try {
-    await dataObjectCache.pinDataObjectIdToCache(dataObjectId)
+    pinDataObjectIdToCache(dataObjectId)
   } catch (err) {
     res.status(404).send()
     return
   }
 
   const unpin = _.once(async () => {
-    await dataObjectCache.unpinDataObjectIdFromCache(dataObjectId)
+    unpinDataObjectIdFromCache(dataObjectId)
   })
 
   const uploadsDir = res.locals.uploadsDir
   const fullPath = path.resolve(uploadsDir, dataObjectId)
-  const maybeEntryWithKey = await dataObjectCache.getDataObjectIdFromCache(dataObjectId)
+  const dataObjectEntry = getDataObjectIdFromCache(dataObjectId)
 
   try {
     const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
-    if (maybeEntryWithKey === undefined) {
+    if (dataObjectEntry === undefined) {
       throw new WebApiError(`File ${dataObjectId} not found`, 404)
     }
-    const { dataObjectEntry } = maybeEntryWithKey!
-    if (!dataObjectEntry.accepted) {
-      throw new WebApiError(`File ${dataObjectId} found but not accepted into any bucket`, 404)
-    }
-    if (dataObjectEntry.isOnLocalVolume) {
+
+    const { entry } = dataObjectEntry
+    if (entry.onLocalVolume) {
       const stream = send(req, fullPath)
 
       stream.on('headers', (res) => {
@@ -84,6 +87,30 @@ export async function getFile(
 
       stream.pipe(res)
     } else {
+      if (!isStorageProviderConnectionEnabled()) {
+        throw new WebApiError('Storage provider connection not available for storage node', 500)
+      }
+      const connection = getStorageProviderConnection()!
+      // TODO add metadata info for header setup
+      const stream = await connection.getFileFromRemoteBucketAsync(dataObjectId)
+
+      stream.on('headers', (res: any) => {
+        // serve all files for download
+        res.setHeader('Content-Disposition', 'inline')
+        res.setHeader('Content-Type', fileInfo.mimeType)
+        res.setHeader('Content-Length', fileInfo.size)
+      })
+
+      stream.on('error', (err: any) => {
+        sendResponseWithError(res, next, err, 'files')
+        unpin()
+      })
+
+      stream.on('end', () => {
+        unpin()
+      })
+
+      stream.pipe(res)
     }
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
@@ -99,9 +126,8 @@ export async function getFileHeaders(
   res: express.Response<unknown, AppConfig>
 ): Promise<void> {
   const { id: dataObjectId } = req.params
-  const { dataObjectCache } = res.locals
   try {
-    await dataObjectCache.pinDataObjectIdToCache(dataObjectId)
+    pinDataObjectIdToCache(dataObjectId)
   } catch (err) {
     res.status(404).send()
     return
@@ -120,7 +146,7 @@ export async function getFileHeaders(
     res.status(getHttpStatusCodeByError(err)).send()
   }
 
-  await dataObjectCache.unpinDataObjectIdFromCache(dataObjectId)
+  unpinDataObjectIdFromCache(dataObjectId)
 }
 
 /**
