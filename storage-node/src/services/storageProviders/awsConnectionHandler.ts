@@ -24,6 +24,11 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     this.bucket = opts.bucketName
   }
 
+  private isSuccessfulResponse(response: any): boolean {
+    // Response status code info: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
+    return response.$metadata.httpStatusCode === 200
+  }
+
   // no extra connection setup needed for aws
   async connect(): Promise<void> {}
 
@@ -44,7 +49,7 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     // Uploading files to the bucket
     const command = new PutObjectCommand(input)
     const response = await this.client.send(command)
-    if (response.$metadata.httpStatusCode !== 200) {
+    if (!this.isSuccessfulResponse(response)) {
       throw new Error('Failed to upload file to S3')
     }
   }
@@ -95,6 +100,6 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     }
     const command = new HeadObjectCommand(input)
     const response = await this.client.send(command)
-    return response.$metadata.httpStatusCode === 200
+    return this.isSuccessfulResponse(response)
   }
 }
