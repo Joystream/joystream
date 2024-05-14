@@ -46,21 +46,13 @@ export abstract class AbstractConnectionHandler {
    * @param filename - The key of the file to check in the remote bucket.
    * @returns A promise that resolves with a boolean indicating if the file exists or rejects with an error.
    */
-  abstract isFileOnRemoteBucket(filename: string): Promise<any>
+  abstract isFileOnRemoteBucket(filename: string): Promise<boolean>
 
   /**
    * Asynchronously lists files in the remote bucket.
    * @returns A promise that resolves with an array of file keys or rejects with an error.
    */
-  abstract listFilesOnRemoteBucketAsync(): Promise<string[]>
-
-  /**
-   * Asynchronously move a file in the same bucket accross prefixes
-   * @param srcKey - The source key of the file.
-   * @param dstKey - The destination key of the file.
-   * @returns A promise that resolves when the file is marked as accepted or rejects with an error.
-   */
-  abstract moveFileAsync(srcKey: string, dstKey: string): Promise<void>
+  abstract listFilesOnRemoteBucket(): Promise<string[]>
 }
 
 export type ColossusFileStream = Readable

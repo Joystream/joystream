@@ -1,11 +1,10 @@
-import AWS from 'aws-sdk'
 import {
   AbstractConnectionHandler,
   ColossusFileStream,
   StorageProviderGetObjectResponse,
 } from './abstractConnectionHandler'
-import { BUCKET_ACCEPTED_PREFIX, cloudAcceptedPathForFile, cloudPendingPathForFile } from './const'
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { cloudAcceptedPathForFile, cloudPendingPathForFile } from './const'
+import { GetObjectCommand, HeadObjectCommand, ListObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
 
 export type AwsConnectionHandlerParams = {
@@ -45,7 +44,9 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     // Uploading files to the bucket
     const command = new PutObjectCommand(input)
     const response = await this.client.send(command)
-    return response.$metadata
+    if (response.$metadata.httpStatusCode !== 200) {
+      throw new Error('Failed to upload file to S3')
+    }
   }
 
   async getFileFromRemoteBucket(filename: string): Promise<StorageProviderGetObjectResponse> {
@@ -74,44 +75,26 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     }
   }
 
-  doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void {
+  async listFilesOnRemoteBucket(): Promise<string[]> {
     const input = {
       Bucket: this.bucket,
-      Prefix: BUCKET_ACCEPTED_PREFIX,
     }
-
-    this.s3.listObjects(input, (err, data) => {
-      if (err) {
-        cb(err, null)
-      } else {
-        if (data.Contents === undefined) {
-          cb(Error('No data found'), null)
-        } else {
-          const keys = data.Contents.map((content) => content.Key)
-            .filter((k) => k !== undefined)
-            .map((k) => k!)
-          cb(null, keys)
-        }
-      }
-    })
+    const command = new ListObjectsCommand(input)
+    const response = await this.client.send(command)
+    if (!response.Contents) {
+      throw new Error('Response contents is undefined')
+    }
+    const files = response.Contents.filter((f) => f.Key).map((file) => file.Key!)
+    return files
   }
 
-  doCheckFileOnRemoteBucket(filename: string, cb: (err: Error | null, objectPresent: boolean) => void): void {
+  async isFileOnRemoteBucket(filename: string): Promise<boolean> {
     const input = {
       Bucket: this.bucket,
-      Key: cloudAcceptedPathForFile(filename),
+      Key: filename,
     }
-
-    this.s3.headObject(input, (err, data) => {
-      if (err) {
-        cb(err, false)
-      } else {
-        if (data === undefined) {
-          cb(null, false)
-        } else {
-          cb(null, true)
-        }
-      }
-    })
+    const command = new HeadObjectCommand(input)
+    const response = await this.client.send(command)
+    return response.$metadata.httpStatusCode === 200
   }
 }
