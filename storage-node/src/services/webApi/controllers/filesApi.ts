@@ -22,6 +22,8 @@ import {
   getDataObjectIdFromCache,
 } from '../../caching/localDataObjects'
 import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { Readable, Writable } from 'stream'
+import { stream } from 'winston'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -91,17 +93,16 @@ export async function getFile(
         throw new WebApiError('Storage provider connection not available for storage node', 500)
       }
       const connection = getStorageProviderConnection()!
-      // TODO(col s3) correctly get metadata and stream from getFromBuket return type
-      const stream = await connection.getFileFromRemoteBucketAsync(dataObjectId)
 
-      stream.on('headers', (res: any) => {
+      const { Body: stream, ContentType, ContentLength } = await connection.getFileFromRemoteBucket(dataObjectId)
+      stream.on('headers', (res) => {
         // serve all files for download
         res.setHeader('Content-Disposition', 'inline')
-        res.setHeader('Content-Type', fileInfo.mimeType)
-        res.setHeader('Content-Length', fileInfo.size)
+        res.setHeader('Content-Type', ContentType)
+        res.setHeader('Content-Length', ContentLength)
       })
 
-      stream.on('error', (err: any) => {
+      stream.on('error', (err) => {
         sendResponseWithError(res, next, err, 'files')
         unpin()
       })
@@ -109,7 +110,6 @@ export async function getFile(
       stream.on('end', () => {
         unpin()
       })
-
       stream.pipe(res)
     }
   } catch (err) {

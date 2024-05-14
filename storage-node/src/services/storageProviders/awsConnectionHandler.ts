@@ -1,6 +1,12 @@
 import AWS from 'aws-sdk'
-import { AbstractConnectionHandler, ColossusFileStream } from './abstractConnectionHandler'
+import {
+  AbstractConnectionHandler,
+  ColossusFileStream,
+  StorageProviderGetObjectResponse,
+} from './abstractConnectionHandler'
 import { BUCKET_ACCEPTED_PREFIX, cloudAcceptedPathForFile, cloudPendingPathForFile } from './const'
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { Readable } from 'stream'
 
 export type AwsConnectionHandlerParams = {
   accessKeyId: string
@@ -10,13 +16,12 @@ export type AwsConnectionHandlerParams = {
 }
 
 export class AwsConnectionHandler extends AbstractConnectionHandler {
-  s3: AWS.S3
+  private client: S3Client
   private bucket: string
 
   constructor(opts: AwsConnectionHandlerParams) {
     super()
-    AWS.config.update({ accessKeyId: opts.accessKeyId })
-    this.s3 = new AWS.S3()
+    this.client = new S3Client({ region: opts.region })
     this.bucket = opts.bucketName
   }
 
@@ -28,11 +33,7 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     return false
   }
 
-  doUploadFileToRemoteBucket(
-    filename: string,
-    filestream: ColossusFileStream,
-    cb: (err: Error | null, data: any) => void
-  ): void {
+  async uploadFileToRemoteBucket(filename: string, filestream: ColossusFileStream): Promise<any> {
     // Setting up S3 upload parameters
 
     const input = {
@@ -42,38 +43,35 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     }
 
     // Uploading files to the bucket
-    const command = this.s3.putObject(input, (err, data) => {
-      if (err) {
-        console.log(`File ${filename} uploaded successfully to ${this.bucket} bucket`)
-        cb(err, null)
-      } else {
-        cb(null, data)
-      }
-    })
-    command.send()
+    const command = new PutObjectCommand(input)
+    const response = await this.client.send(command)
+    return response.$metadata
   }
 
-  doGetFileFromRemoteBucket(filename: string, cb: (err: Error | null, data: ColossusFileStream | null) => void): void {
+  async getFileFromRemoteBucket(filename: string): Promise<StorageProviderGetObjectResponse> {
     // Implement getFileFromRemoteBucket method here
     const input = {
       Bucket: this.bucket,
       Key: cloudAcceptedPathForFile(filename),
     }
 
-    // Uploading files to the bucket
-    const command = this.s3.getObject(input, (err, data) => {
-      if (err) {
-        console.log(`File ${filename} downloaded successfully from ${this.bucket} bucket`)
-        cb(err, null)
-      } else {
-        if (data.Body === undefined) {
-          cb(Error('No data found'), null)
-        } else {
-          cb(null, data.Body! as ColossusFileStream)
-        }
-      }
-    })
-    command.send()
+    const command = new GetObjectCommand(input)
+    const response = await this.client.send(command)
+
+    if (!response.Body || !response.ContentType || !response.ContentLength) {
+      throw new Error('Response body, content type, or content length is undefined')
+    }
+
+    return {
+      Body: new Readable({
+        read() {
+          this.push(response.Body)
+          this.push(null)
+        },
+      }),
+      ContentType: response.ContentType!,
+      ContentLength: response.ContentLength!,
+    }
   }
 
   doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void {
