@@ -1,38 +1,25 @@
-import { AbstractConnectionHandler, ColossusFileStream } from './abstractConnectionHandler'
+import { Readable } from 'stream'
+import { AbstractConnectionHandler, StorageProviderGetObjectResponse } from './abstractConnectionHandler'
 
 export type AzureConnectionHandlerParams = {
   // Implement Azure connection handler parameters here
 }
+
+// NOTE: Showcase on how the Abstract connection handler module works
 export class AzureConnectionHandler extends AbstractConnectionHandler {
-  connectionParams: AzureConnectionHandlerParams
-
-  constructor(opts: AzureConnectionHandlerParams) {
-    super()
-    this.connectionParams = opts
-  }
-
-  doUploadFileToRemoteBucket(key: string, filestream: ColossusFileStream, cb: (err: any, data: any) => void): void {
-    // Implement uploadFileToRemoteBucket method here
-  }
-
-  doGetFileFromRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
-    // Implement getFileFromRemoteBucket method here
-  }
-
-  doCheckFileOnRemoteBucket(key: string, cb: (err: any, data: any) => void): void {
-    // Implement isFileOnRemoteBucket method here
-  }
-
-  doListFilesOnRemoteBucket(cb: (err: Error | null, data: string[] | null) => void): void {
-    // Implement listFilesOnRemoteBucket method here
-  }
-
   get isReady(): boolean {
-    // Implement isReady method here
-    return true
+    throw new Error('Method not implemented.')
   }
-
-  async connect(): Promise<void> {
-    // Implement connect method here
+  connect(): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  uploadFileToRemoteBucket(filename: string, filestream: Readable): Promise<any> {
+    throw new Error('Method not implemented.')
+  }
+  getFileFromRemoteBucket(filename: string): Promise<StorageProviderGetObjectResponse> {
+    throw new Error('Method not implemented.')
+  }
+  listFilesOnRemoteBucket(): Promise<string[]> {
+    throw new Error('Method not implemented.')
   }
 }

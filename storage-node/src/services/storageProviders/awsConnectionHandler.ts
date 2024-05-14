@@ -4,7 +4,13 @@ import {
   StorageProviderGetObjectResponse,
 } from './abstractConnectionHandler'
 import { cloudAcceptedPathForFile, cloudPendingPathForFile } from './const'
-import { GetObjectCommand, HeadObjectCommand, ListObjectsCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  GetObjectCommand,
+  ListObjectsCommand,
+  ListObjectsCommandInput,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
 
 export type AwsConnectionHandlerParams = {
@@ -81,25 +87,30 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
   }
 
   async listFilesOnRemoteBucket(): Promise<string[]> {
-    const input = {
+    let listingComplete = false
+    let input: ListObjectsCommandInput = {
       Bucket: this.bucket,
     }
-    const command = new ListObjectsCommand(input)
-    const response = await this.client.send(command)
-    if (!response.Contents) {
-      throw new Error('Response contents is undefined')
-    }
-    const files = response.Contents.filter((f) => f.Key).map((file) => file.Key!)
-    return files
-  }
 
-  async isFileOnRemoteBucket(filename: string): Promise<boolean> {
-    const input = {
-      Bucket: this.bucket,
-      Key: filename,
+    let files = []
+
+    // the listing is paginated so we need to keep track of the marker
+    while (!listingComplete) {
+      const response = await this.client.send(new ListObjectsCommand(input))
+      if (!this.isSuccessfulResponse(response)) {
+        throw new Error('Response unsuccessful when listing files in S3 bucket')
+      }
+      if (!response.Contents) {
+        throw new Error('Response contents are undefined when listing files in S3 bucket, bucket possibly empty')
+      }
+      files.push(...response.Contents.filter((file) => file.Key).map((file) => file.Key!))
+      listingComplete = !response.IsTruncated
+      input = {
+        Bucket: this.bucket,
+        Marker: files[files.length - 1], // https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-client-s3/Interface/ListObjectsCommandOutput/
+      }
     }
-    const command = new HeadObjectCommand(input)
-    const response = await this.client.send(command)
-    return this.isSuccessfulResponse(response)
+
+    return files
   }
 }

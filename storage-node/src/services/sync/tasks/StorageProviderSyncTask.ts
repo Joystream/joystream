@@ -38,7 +38,7 @@ export class ProviderSyncTask extends DownloadFileTask {
       await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
         await this.tryDownloadTemp(chosenBaseUrl, this.dataObjectId)
         const fileStream = fs.createReadStream(tempFilePath)
-        await this.connection.uploadFileToRemoteBucketAsync(this.dataObjectId, fileStream)
+        await this.connection.uploadFileToRemoteBucket(this.dataObjectId, fileStream)
       })
     } catch (err) {
       logger.error(`Sync - error when synching asset ${this.dataObjectId} with remote storage provider: ${err}`, {

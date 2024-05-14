@@ -49,7 +49,7 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
     return
   }
   const connection = getStorageProviderConnection()!
-  const namesOnCloud = await connection.listFilesOnRemoteBucketAsync()
+  const namesOnCloud = await connection.listFilesOnRemoteBucket()
   namesOnCloud
     .filter((name) => Number.isInteger(Number(name)))
     .forEach((id) =>
