@@ -3,7 +3,6 @@ import {
   ColossusFileStream,
   StorageProviderGetObjectResponse,
 } from './abstractConnectionHandler'
-import { cloudAcceptedPathForFile, cloudPendingPathForFile } from './const'
 import {
   GetObjectCommand,
   ListObjectsCommand,
@@ -48,7 +47,7 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
 
     const input = {
       Bucket: this.bucket,
-      Key: cloudPendingPathForFile(filename), // File name you want to save as in S3
+      Key: filename, // File name you want to save as in S3
       Body: filestream,
     }
 
@@ -64,11 +63,15 @@ export class AwsConnectionHandler extends AbstractConnectionHandler {
     // Implement getFileFromRemoteBucket method here
     const input = {
       Bucket: this.bucket,
-      Key: cloudAcceptedPathForFile(filename),
+      Key: filename,
     }
 
     const command = new GetObjectCommand(input)
     const response = await this.client.send(command)
+
+    if (!this.isSuccessfulResponse(response)) {
+      throw new Error('Failed to get file from S3')
+    }
 
     if (!response.Body || !response.ContentType || !response.ContentLength) {
       throw new Error('Response body, content type, or content length is undefined')
