@@ -1,12 +1,12 @@
 import { Readable } from 'stream'
-import { AbstractConnectionHandler, StorageProviderGetObjectResponse } from './abstractConnectionHandler'
+import { IConnectionHandler, StorageProviderGetObjectResponse } from './IConnectionHandler'
 
 export type AzureConnectionHandlerParams = {
   // Implement Azure connection handler parameters here
 }
 
 // NOTE: Showcase on how the Abstract connection handler module works
-export class AzureConnectionHandler extends AbstractConnectionHandler {
+export class AzureConnectionHandler extends IConnectionHandler {
   get isReady(): boolean {
     throw new Error('Method not implemented.')
   }

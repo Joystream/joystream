@@ -1,4 +1,4 @@
-export * from './abstractConnectionHandler'
+export * from './IConnectionHandler'
 export * from './awsConnectionHandler'
 export * from './azureConnectionHandler'
-export * from './connectionUtils'
+export * from './utils'

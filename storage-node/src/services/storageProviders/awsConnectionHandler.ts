@@ -1,8 +1,4 @@
-import {
-  AbstractConnectionHandler,
-  ColossusFileStream,
-  StorageProviderGetObjectResponse,
-} from './abstractConnectionHandler'
+import { IConnectionHandler, ColossusFileStream, StorageProviderGetObjectResponse } from './IConnectionHandler'
 import {
   GetObjectCommand,
   ListObjectsCommand,
@@ -19,13 +15,18 @@ export type AwsConnectionHandlerParams = {
   bucketName: string
 }
 
-export class AwsConnectionHandler extends AbstractConnectionHandler {
+export class AwsConnectionHandler implements IConnectionHandler {
   private client: S3Client
   private bucket: string
 
   constructor(opts: AwsConnectionHandlerParams) {
-    super()
-    this.client = new S3Client({ region: opts.region })
+    this.client = new S3Client({
+      credentials: {
+        accessKeyId: opts.accessKeyId,
+        secretAccessKey: opts.secretAccessKey,
+      },
+      region: opts.region,
+    })
     this.bucket = opts.bucketName
   }
 

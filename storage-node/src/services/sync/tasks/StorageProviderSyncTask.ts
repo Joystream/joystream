@@ -2,7 +2,7 @@ import fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../logger'
 import _ from 'lodash'
-import { AbstractConnectionHandler } from 'src/services/storageProviders'
+import { IConnectionHandler } from 'src/services/storageProviders'
 import urljoin from 'url-join'
 import { DownloadFileTask } from './DownloadTask'
 import { getStorageProviderConnection } from 'src/commands/server'
@@ -10,7 +10,7 @@ import path from 'path'
 import { withRandomUrls } from './utils'
 
 export class ProviderSyncTask extends DownloadFileTask {
-  private connection: AbstractConnectionHandler
+  private connection: IConnectionHandler
 
   constructor(
     baseUrls: string[],
@@ -38,7 +38,7 @@ export class ProviderSyncTask extends DownloadFileTask {
       await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
         await this.tryDownloadTemp(chosenBaseUrl, this.dataObjectId)
         const fileStream = fs.createReadStream(tempFilePath)
-        await this.connection.uploadFileToRemoteBucket(this.dataObjectId, fileStream)
+        await this.connection.uploadFileToRemoteBucket(this.dataObjectId, fileStream) // NOTE: consider converting to non blocking promise
       })
     } catch (err) {
       logger.error(`Sync - error when synching asset ${this.dataObjectId} with remote storage provider: ${err}`, {

@@ -1,9 +1,9 @@
 import multer from 'multer'
-import { AbstractConnectionHandler } from 'src/services/storageProviders'
+import { IConnectionHandler } from 'src/services/storageProviders'
 import { cloudStorage } from 'src/services/multer-storage/storageEngines'
 import { AppConfig } from 'src/services/webApi/controllers/common'
 
-export function createFileUploader(config: AppConfig, connection: AbstractConnectionHandler | null): multer.Options {
+export function createFileUploader(config: AppConfig, connection: IConnectionHandler | null): multer.Options {
   const storage = connection
     ? cloudStorage({}, connection)
     : multer.diskStorage({ destination: config.tempFileUploadingDir })

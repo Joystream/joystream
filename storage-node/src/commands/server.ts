@@ -22,11 +22,11 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-import { AbstractConnectionHandler, parseConfigOptionAndBuildConnection } from 'src/services/storageProviders'
+import { IConnectionHandler, parseConfigOptionAndBuildConnection } from 'src/services/storageProviders'
 const fsPromises = fs.promises
 
 // Global variable for storage provider connection, initialised by server, then readonly
-let storageProviderConnection: AbstractConnectionHandler | undefined
+let storageProviderConnection: IConnectionHandler | undefined
 export const getStorageProviderConnection = () => storageProviderConnection
 export const isStorageProviderConnectionEnabled = () => storageProviderConnection !== undefined
 

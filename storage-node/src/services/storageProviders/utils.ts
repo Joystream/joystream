@@ -1,31 +1,23 @@
-// The following class should
-// 1. Distinguish between several types of connection handlers: one for AWS, one for Azure, and one for Google.
-// 2. It should initialize the connection handler based on the type of cloud provider and return the appropriate instance connected
-// 3. It should be such that the connection happens just once and the same instance is returned for subsequent calls.
-
-import { AbstractConnectionHandler } from './abstractConnectionHandler'
+import { IConnectionHandler } from './IConnectionHandler'
 import { AwsConnectionHandlerParams, AwsConnectionHandler } from './awsConnectionHandler'
+import dotenv from 'dotenv'
+dotenv.config()
 
-function createAwsConnectionHandler(opts: AwsConnectionHandlerParams): AwsConnectionHandler {
-  const connection = new AwsConnectionHandler(opts)
-  return connection
-}
-
-// function createAzureConnectionHandler(opts: AzureConnectionHandlerParams): AzureConnectionHandler {
-//   const connection = new AzureConnectionHandler(opts)
-//   return connection
-// }
-
+/**
+ * Parses the configuration options and builds a connection handler for the storage provider.
+ *
+ * @param enableProvider - A boolean indicating whether a provider is expected to be enabled.
+ * @returns A promise that resolves to an instance of IConnectionHandler if the provider is enabled, otherwise undefined.
+ * @throws An error if the storage cloud provider type is invalid or unsupported.
+ */
 export async function parseConfigOptionAndBuildConnection(
   enableProvider: boolean
-): Promise<AbstractConnectionHandler | undefined> {
+): Promise<IConnectionHandler | undefined> {
   if (!enableProvider) {
     return undefined
   }
-  // Implement parseConfigOptionAndBuildConnection method here
-  // parse spec from .env configuration and build connection, in case of error return null
-  let connection: AbstractConnectionHandler
-  if (process.env.CLOUD_CONNECTION_TYPE === 'aws') {
+  let connection: IConnectionHandler
+  if (process.env.CLOUD_STORAGE_PROVIDER_NAME === 'aws') {
     const params: AwsConnectionHandlerParams = {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
@@ -36,5 +28,10 @@ export async function parseConfigOptionAndBuildConnection(
   } else {
     throw new Error('Invalid storage cloud provider type or unsupported provider type.')
   }
+  return connection
+}
+
+function createAwsConnectionHandler(opts: AwsConnectionHandlerParams): AwsConnectionHandler {
+  const connection = new AwsConnectionHandler(opts)
   return connection
 }

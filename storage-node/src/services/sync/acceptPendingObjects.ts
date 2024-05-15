@@ -185,7 +185,7 @@ export class AcceptPendingObjectsService {
           await moveFile(currentPath, newPath)
         } else {
           const connection = getStorageProviderConnection()!
-          await connection.uploadFileToRemoteBucket(dataObjectId, fs.createReadStream(currentPath))
+          await connection.uploadFileToRemoteBucket(dataObjectId, fs.createReadStream(currentPath)) // NOTE: consider converting to non blocking promise
           await fsPromises.unlink(currentPath) // delete the file from the local storage after successful upload
         }
         registerNewDataObjectId(dataObjectId)
