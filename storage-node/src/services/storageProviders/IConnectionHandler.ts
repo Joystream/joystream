@@ -7,10 +7,10 @@ export interface IConnectionHandler {
   /**
    * Asynchronously uploads a file to the remote bucket.
    * @param filename - The key of the file in the remote bucket.
-   * @param filestream - The file stream to upload.
+   * @param filePath - The file path of the file to upload.
    * @returns A promise that resolves when the upload is complete or rejects with an error.
    */
-  uploadFileToRemoteBucket(filename: string, filestream: ColossusFileStream): Promise<any>
+  uploadFileToRemoteBucket(filename: string, filePath: string): Promise<any>
 
   /**
    * Asynchronously retrieves a file from the remote bucket.

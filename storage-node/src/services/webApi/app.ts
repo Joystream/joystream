@@ -91,7 +91,6 @@ export async function createApp(config: AppConfig): Promise<Express> {
           // For multipart forms, the max number of file fields (Default: Infinity)
           files: 1,
           // For multipart forms, the max file size (in bytes) (Default: Infinity)
-          // TODO CS3 : This should be set to the maximum file size allowed by the storage provider.
           fileSize: config.maxFileSize,
         },
       },

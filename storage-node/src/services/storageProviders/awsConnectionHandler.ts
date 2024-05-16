@@ -1,5 +1,6 @@
 import { IConnectionHandler, ColossusFileStream } from './IConnectionHandler'
 import {
+  CreateMultipartUploadCommand,
   GetObjectCommand,
   ListObjectsCommand,
   ListObjectsCommandInput,
@@ -7,6 +8,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import fs from 'fs'
 
 export type AwsConnectionHandlerParams = {
   accessKeyId: string
@@ -18,6 +20,9 @@ export type AwsConnectionHandlerParams = {
 export class AwsConnectionHandler implements IConnectionHandler {
   private client: S3Client
   private bucket: string
+
+  // Official doc at https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html: Upload an object in a single operation by using the AWS SDKs, REST API, or AWS CLI – With a single PUT operation, you can upload a single object up to 5 GB in size.
+  private multiPartThresholdGB = 5
 
   constructor(opts: AwsConnectionHandlerParams) {
     this.client = new S3Client({
@@ -34,18 +39,24 @@ export class AwsConnectionHandler implements IConnectionHandler {
     // Response status code info: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
     return response.$metadata.httpStatusCode === 200
   }
+  private isMultiPartNeeded(filePath: string): boolean {
+    const stats = fs.statSync(filePath)
+    const fileSizeInBytes = stats.size
+    const fileSizeInGigabytes = fileSizeInBytes / (1024 * 1024 * 1024)
+    return fileSizeInGigabytes > this.multiPartThresholdGB
+  }
 
-  async uploadFileToRemoteBucket(filename: string, filestream: ColossusFileStream): Promise<any> {
-    // Setting up S3 upload parameters
-
+  async uploadFileToRemoteBucket(filename: string, filePath: string): Promise<any> {
     const input = {
       Bucket: this.bucket,
-      Key: filename, // File name you want to save as in S3
-      Body: filestream,
+      Key: filename,
+      Body: filePath,
     }
 
-    // Uploading files to the bucket
-    const command = new PutObjectCommand(input)
+    // Uploading files to the bucket: multipart
+    const command = this.isMultiPartNeeded(filePath)
+      ? new CreateMultipartUploadCommand(input)
+      : new PutObjectCommand(input)
     const response = await this.client.send(command)
     if (!this.isSuccessfulResponse(response)) {
       throw new Error('Failed to upload file to S3')

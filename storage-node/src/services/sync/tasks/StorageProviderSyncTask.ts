@@ -37,8 +37,7 @@ export class ProviderSyncTask extends DownloadFileTask {
       // TODO: I have added a HashFileVerificationError to the utils file, but it is not used here, we should establish what to do in case the file is corrupted
       await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
         await this.tryDownloadTemp(chosenBaseUrl, this.dataObjectId)
-        const fileStream = fs.createReadStream(tempFilePath)
-        await this.connection.uploadFileToRemoteBucket(this.dataObjectId, fileStream) // NOTE: consider converting to non blocking promise
+        await this.connection.uploadFileToRemoteBucket(this.dataObjectId, tempFilePath) // NOTE: consider converting to non blocking promise
       })
     } catch (err) {
       logger.error(`Sync - error when synching asset ${this.dataObjectId} with remote storage provider: ${err}`, {
