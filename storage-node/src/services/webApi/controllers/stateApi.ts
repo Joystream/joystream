@@ -16,6 +16,7 @@ import {
   VersionResponse,
 } from '../types'
 import { AppConfig, sendResponseWithError } from './common'
+import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
@@ -35,9 +36,8 @@ export async function getAllLocalDataObjects(
   res: express.Response<DataObjectResponse, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
-  const { dataObjectCache } = res.locals
   try {
-    const ids = await dataObjectCache.getDataObjectIDs()
+    const ids = getDataObjectIDs()
 
     res.status(200).json(ids)
   } catch (err) {
@@ -111,13 +111,10 @@ export async function getLocalDataObjectsByBagId(
   next: express.NextFunction
 ): Promise<void> {
   try {
-    const { qnApi, dataObjectCache } = res.locals
+    const { qnApi } = res.locals
     const { bagId } = req.params
 
-    const [ids, requiredIds] = await Promise.all([
-      dataObjectCache.getDataObjectIDs(),
-      getCachedDataObjectsObligations(qnApi, bagId),
-    ])
+    const [ids, requiredIds] = await Promise.all([getDataObjectIDs(), getCachedDataObjectsObligations(qnApi, bagId)])
 
     const localDataForBag = _.intersection(ids, requiredIds)
 

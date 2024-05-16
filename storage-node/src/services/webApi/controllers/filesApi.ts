@@ -22,8 +22,6 @@ import {
   getDataObjectIdFromCache,
 } from '../../caching/localDataObjects'
 import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
-import { Readable, Writable } from 'stream'
-import { stream } from 'winston'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
