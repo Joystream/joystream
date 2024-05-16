@@ -1,5 +1,3 @@
-import { Readable } from 'stream'
-
 /**
  * Represents an abstract connection handler for a storage provider.
  */
@@ -25,5 +23,3 @@ export interface IConnectionHandler {
    */
   listFilesOnRemoteBucket(): Promise<string[]>
 }
-
-export type ColossusFileStream = Readable

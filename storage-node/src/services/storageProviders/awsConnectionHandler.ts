@@ -1,4 +1,4 @@
-import { IConnectionHandler, ColossusFileStream } from './IConnectionHandler'
+import { IConnectionHandler } from './IConnectionHandler'
 import {
   CreateMultipartUploadCommand,
   GetObjectCommand,
@@ -21,7 +21,8 @@ export class AwsConnectionHandler implements IConnectionHandler {
   private client: S3Client
   private bucket: string
 
-  // Official doc at https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html: Upload an object in a single operation by using the AWS SDKs, REST API, or AWS CLI – With a single PUT operation, you can upload a single object up to 5 GB in size.
+  // Official doc at https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html:
+  // Upload an object in a single operation by using the AWS SDKs, REST API, or AWS CLI – With a single PUT operation, you can upload a single object up to 5 GB in size.
   private multiPartThresholdGB = 5
 
   constructor(opts: AwsConnectionHandlerParams) {
@@ -64,7 +65,6 @@ export class AwsConnectionHandler implements IConnectionHandler {
   }
 
   async getRedirectUrlForObject(filename: string): Promise<string> {
-    // Implement getRedirectUrlForObject method here
     const input = {
       Bucket: this.bucket,
       Key: filename,
