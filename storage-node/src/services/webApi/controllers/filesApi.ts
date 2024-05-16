@@ -92,23 +92,10 @@ export async function getFile(
       }
       const connection = getStorageProviderConnection()!
 
-      const { Body: stream, ContentType, ContentLength } = await connection.getFileFromRemoteBucket(dataObjectId)
-      stream.on('headers', (res) => {
-        // serve all files for download
-        res.setHeader('Content-Disposition', 'inline')
-        res.setHeader('Content-Type', ContentType)
-        res.setHeader('Content-Length', ContentLength)
-      })
+      const url = await connection.getRedirectUrlForObject(dataObjectId)
 
-      stream.on('error', (err) => {
-        sendResponseWithError(res, next, err, 'files')
-        unpin()
-      })
-
-      stream.on('end', () => {
-        unpin()
-      })
-      stream.pipe(res)
+      // Redirect to the remote file
+      res.redirect(url)
     }
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')

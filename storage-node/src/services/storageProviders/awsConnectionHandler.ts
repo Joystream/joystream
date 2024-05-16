@@ -1,4 +1,4 @@
-import { IConnectionHandler, ColossusFileStream, StorageProviderGetObjectResponse } from './IConnectionHandler'
+import { IConnectionHandler, ColossusFileStream } from './IConnectionHandler'
 import {
   GetObjectCommand,
   ListObjectsCommand,
@@ -6,7 +6,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import { Readable } from 'stream'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 export type AwsConnectionHandlerParams = {
   accessKeyId: string
@@ -35,14 +35,6 @@ export class AwsConnectionHandler implements IConnectionHandler {
     return response.$metadata.httpStatusCode === 200
   }
 
-  // no extra connection setup needed for aws
-  async connect(): Promise<void> {}
-
-  get isReady(): boolean {
-    // Implement isReady method here
-    return false
-  }
-
   async uploadFileToRemoteBucket(filename: string, filestream: ColossusFileStream): Promise<any> {
     // Setting up S3 upload parameters
 
@@ -60,34 +52,15 @@ export class AwsConnectionHandler implements IConnectionHandler {
     }
   }
 
-  async getFileFromRemoteBucket(filename: string): Promise<StorageProviderGetObjectResponse> {
-    // Implement getFileFromRemoteBucket method here
+  async getRedirectUrlForObject(filename: string): Promise<string> {
+    // Implement getRedirectUrlForObject method here
     const input = {
       Bucket: this.bucket,
       Key: filename,
     }
 
     const command = new GetObjectCommand(input)
-    const response = await this.client.send(command)
-
-    if (!this.isSuccessfulResponse(response)) {
-      throw new Error('Failed to get file from S3')
-    }
-
-    if (!response.Body || !response.ContentType || !response.ContentLength) {
-      throw new Error('Response body, content type, or content length is undefined')
-    }
-
-    return {
-      Body: new Readable({
-        read() {
-          this.push(response.Body)
-          this.push(null)
-        },
-      }),
-      ContentType: response.ContentType!,
-      ContentLength: response.ContentLength!,
-    }
+    return await getSignedUrl(this.client, command, { expiresIn: 60 * 60 })
   }
 
   async listFilesOnRemoteBucket(): Promise<string[]> {

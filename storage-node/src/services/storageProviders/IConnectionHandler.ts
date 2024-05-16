@@ -15,9 +15,9 @@ export interface IConnectionHandler {
   /**
    * Asynchronously retrieves a file from the remote bucket.
    * @param filename - The key of the file to retrieve from the remote bucket.
-   * @returns A promise that resolves with the retrieved file data or rejects with an error.
+   * @returns A promise that resolves in the presigned URL of the file or rejects with an error, 1h expiry
    */
-  getFileFromRemoteBucket(filename: string): Promise<StorageProviderGetObjectResponse>
+  getRedirectUrlForObject(filename: string): Promise<string>
 
   /**
    * Asynchronously lists ALL files in the remote bucket, to be used during cache initialization only as it can be very slow.
@@ -27,9 +27,3 @@ export interface IConnectionHandler {
 }
 
 export type ColossusFileStream = Readable
-
-export type StorageProviderGetObjectResponse = {
-  Body: ColossusFileStream
-  ContentType: string
-  ContentLength: number
-}
