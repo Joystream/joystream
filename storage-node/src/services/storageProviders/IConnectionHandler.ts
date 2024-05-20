@@ -1,6 +1,9 @@
 /**
  * Represents an abstract connection handler for a storage provider.
  */
+/**
+ * Represents a connection handler for interacting with a remote storage bucket.
+ */
 export interface IConnectionHandler {
   /**
    * Asynchronously uploads a file to the remote bucket.
@@ -22,4 +25,11 @@ export interface IConnectionHandler {
    * @returns A promise that resolves with an array of file keys or rejects with an error.
    */
   listFilesOnRemoteBucket(): Promise<string[]>
+
+  /**
+   * Asynchronously removes a file from the remote bucket.
+   * @param filename - The key of the file to remove from the remote bucket.
+   * @returns A promise that resolves when the removal is complete or rejects with an error.
+   */
+  removeObject(filename: string): Promise<void>
 }

@@ -1,6 +1,7 @@
 import { IConnectionHandler } from './IConnectionHandler'
 import {
   CreateMultipartUploadCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   ListObjectsCommand,
   ListObjectsCommandInput,
@@ -100,5 +101,14 @@ export class AwsConnectionHandler implements IConnectionHandler {
     }
 
     return files
+  }
+
+  async removeObject(filename: string): Promise<void> {
+    const input = {
+      Bucket: this.bucket,
+      Key: filename,
+    }
+
+    await this.client.send(new DeleteObjectCommand(input))
   }
 }

@@ -48,3 +48,6 @@ runtime-inputs/
 devops/infrastructure
 
 joystream.tar.gz
+
+# localstack for s3 backend colossus testing
+localstack/localstack_init

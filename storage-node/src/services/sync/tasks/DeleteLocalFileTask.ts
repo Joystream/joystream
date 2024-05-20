@@ -4,6 +4,7 @@ import { getDataObjectIdFromCache, deleteDataObjectIdFromCache } from 'src/servi
 import { isNewDataObject } from 'src/services/caching/newUploads'
 import { SyncTask } from './ISyncTask'
 import fs from 'fs'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
 const fsPromises = fs.promises
 
 export class DeleteLocalFileTask implements SyncTask {
@@ -26,16 +27,28 @@ export class DeleteLocalFileTask implements SyncTask {
       return
     }
 
-    const cachedDataObjectId = getDataObjectIdFromCache(dataObjectId)
-    if (cachedDataObjectId && cachedDataObjectId.pinnedCount) {
-      logger.warn(
-        `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
-      )
+    const maybeObject = getDataObjectIdFromCache(dataObjectId)
+    if (maybeObject === undefined) {
       return
-    }
-    const fullPath = path.join(this.uploadsDirectory, this.filename)
-    await fsPromises.unlink(fullPath)
+    } else {
+      const { dataObjectId: cachedDataObjectId, entry } = maybeObject
+      if (cachedDataObjectId && entry.pinCount) {
+        logger.warn(
+          `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
+        )
+        return
+      }
+      if (entry.onLocalVolume) {
+        const fullPath = path.join(this.uploadsDirectory, this.filename)
+        await fsPromises.unlink(fullPath)
+      } else {
+        if (isStorageProviderConnectionEnabled()) {
+          const connection = getStorageProviderConnection()!
+          connection.removeObject(this.filename)
+        }
+      }
 
-    deleteDataObjectIdFromCache(dataObjectId)
+      deleteDataObjectIdFromCache(dataObjectId)
+    }
   }
 }
