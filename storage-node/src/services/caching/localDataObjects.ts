@@ -1,7 +1,7 @@
 import fs from 'fs'
 import logger from '../logger'
 import assert from 'assert'
-import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../commands/server'
 
 const fsPromises = fs.promises
 

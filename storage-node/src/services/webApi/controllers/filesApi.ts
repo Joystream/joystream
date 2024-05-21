@@ -21,7 +21,7 @@ import {
   unpinDataObjectIdFromCache,
   getDataObjectIdFromCache,
 } from '../../caching/localDataObjects'
-import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../../commands/server'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()

@@ -1,6 +1,6 @@
 import _ from 'lodash'
-import { hashFile } from 'src/services/helpers/hashing'
-import logger from 'src/services/logger'
+import { hashFile } from '../../../services/helpers/hashing'
+import logger from '../../../services/logger'
 
 export async function withRandomUrls(
   operatorUrls: string[],

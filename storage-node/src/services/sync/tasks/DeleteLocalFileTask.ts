@@ -1,10 +1,10 @@
 import logger from '../../logger'
 import path from 'path'
-import { getDataObjectIdFromCache, deleteDataObjectIdFromCache } from 'src/services/caching/localDataObjects'
-import { isNewDataObject } from 'src/services/caching/newUploads'
+import { getDataObjectIdFromCache, deleteDataObjectIdFromCache } from '../../../services/caching/localDataObjects'
+import { isNewDataObject } from '../../../services/caching/newUploads'
 import { SyncTask } from './ISyncTask'
 import fs from 'fs'
-import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../../commands/server'
 const fsPromises = fs.promises
 
 export class DeleteLocalFileTask implements SyncTask {

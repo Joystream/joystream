@@ -10,7 +10,7 @@ import { moveFile } from '../helpers/moveFile'
 import logger from '../logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { acceptPendingDataObjectsBatch } from '../runtime/extrinsics'
-import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../commands/server'
 
 const fsPromises = fs.promises
 
@@ -84,7 +84,8 @@ export class AcceptPendingObjectsService {
     return dirEntries.filter((entry) => entry.isFile()).map((entry) => entry.name)
   }
 
-  private runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
+  // making it public just for testing
+  public runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
     const run = () => {
       this.getPendingObjectsFromFolder()
         .then((ids) => this.processPendingObjects(ids))
@@ -166,10 +167,11 @@ export class AcceptPendingObjectsService {
    * If the file already exists in the uploads directory, it will be deleted before moving the new file.
    * If the storage provider connection is enabled, the file will be uploaded to the remote bucket before moving.
    * After the file is moved, the data object ID will be registered and added to the cache.
+   * Setting it to public just for testing
    * @param dataObjectId - The ID of the data object to move.
    * @returns A Promise that resolves when the operation is complete.
    */
-  private async moveToAcceptedLocation(dataObjectId: string): Promise<void> {
+  public async moveToAcceptedLocation(dataObjectId: string): Promise<void> {
     const currentPath = path.join(this.pendingDataObjectsDir, dataObjectId)
     const newPath = path.join(this.uploadsDir, dataObjectId)
 

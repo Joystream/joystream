@@ -1,4 +1,4 @@
-import { isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { isStorageProviderConnectionEnabled } from '../../commands/server'
 import { getDataObjectIDs, isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'

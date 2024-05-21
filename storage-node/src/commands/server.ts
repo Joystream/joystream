@@ -3,7 +3,7 @@ import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 import fs from 'fs'
-import _, { get } from 'lodash'
+import _ from 'lodash'
 import path from 'path'
 import sleep from 'sleep-promise'
 import { v4 as uuidv4 } from 'uuid'
@@ -22,7 +22,7 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-import { IConnectionHandler, parseConfigOptionAndBuildConnection } from 'src/services/storageProviders'
+import { IConnectionHandler, parseConfigOptionAndBuildConnection } from '../services/storageProviders'
 const fsPromises = fs.promises
 
 // Global variable for storage provider connection, initialised by server, then readonly

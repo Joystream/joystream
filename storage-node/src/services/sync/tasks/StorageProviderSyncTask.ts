@@ -1,11 +1,10 @@
-import fs from 'fs'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../logger'
 import _ from 'lodash'
-import { IConnectionHandler } from 'src/services/storageProviders'
+import { IConnectionHandler } from '../../../services/storageProviders'
 import urljoin from 'url-join'
 import { DownloadFileTask } from './DownloadTask'
-import { getStorageProviderConnection } from 'src/commands/server'
+import { getStorageProviderConnection } from '../../../commands/server'
 import path from 'path'
 import { withRandomUrls } from './utils'
 
