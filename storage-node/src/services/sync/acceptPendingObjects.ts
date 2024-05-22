@@ -183,7 +183,8 @@ export class AcceptPendingObjectsService {
         await fsPromises.unlink(currentPath)
       } catch {
         // If the file does not exist in the uploads directory, proceed with the rename
-        if (!isStorageProviderConnectionEnabled()) {
+        const isFileDestinedToLocalVolume = isStorageProviderConnectionEnabled()
+        if (!isFileDestinedToLocalVolume) {
           await moveFile(currentPath, newPath)
         } else {
           const connection = getStorageProviderConnection()!
@@ -191,7 +192,7 @@ export class AcceptPendingObjectsService {
           await fsPromises.unlink(currentPath) // delete the file from the local storage after successful upload
         }
         registerNewDataObjectId(dataObjectId)
-        addDataObjectIdToCache(dataObjectId)
+        addDataObjectIdToCache(dataObjectId, isFileDestinedToLocalVolume)
       }
     } catch (err) {
       // incluing error from cloud bucket uploads
