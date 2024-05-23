@@ -9,6 +9,7 @@ import { acceptObject } from '../helpers/acceptObject'
 import logger from '../logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { acceptPendingDataObjectsBatch } from '../runtime/extrinsics'
+import { getDataObjectIdFromCache } from '../caching/localDataObjects'
 
 const fsPromises = fs.promises
 
@@ -78,13 +79,18 @@ export class AcceptPendingObjectsService {
     return dirEntries.filter((entry) => entry.isFile()).map((entry) => entry.name)
   }
 
-  private runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
+  // public in order to test it
+  public runWithInterval(api: ApiPromise, workerId: number, maxTxBatchSize: number, intervalMs: number) {
     const run = () => {
       this.getPendingObjectsFromFolder()
         .then((ids) => this.processPendingObjects(ids))
         .then((objectsToAccept) => this.acceptPendingDataObjects(api, workerId, objectsToAccept, maxTxBatchSize))
-        .catch((err) => logger.error(`Error processing pending objects: ${err}`))
-        .finally(() => setTimeout(run, intervalMs))
+        .catch((err) => {
+          logger.error(`Error processing pending objects: ${err}`)
+        })
+        .finally(() => {
+          setTimeout(run, intervalMs)
+        })
     }
     run()
   }
@@ -153,12 +159,11 @@ export class AcceptPendingObjectsService {
     const newPath = path.join(this.uploadsDir, dataObjectId)
 
     try {
-      // Check if the file already exists in the uploads directory (i.e. synced from other operators)
-      try {
-        await fsPromises.access(newPath, fs.constants.F_OK)
+      // Check if the file already exists in the file cache (i.e. synced from other operators)
+      if (getDataObjectIdFromCache(dataObjectId) !== undefined) {
         logger.warn(`File ${dataObjectId} already exists in uploads directory. Deleting current file.`)
         await fsPromises.unlink(currentPath)
-      } catch {
+      } else {
         // If the file does not exist in the uploads directory, proceed with the rename
         await acceptObject(dataObjectId, currentPath, newPath)
         registerNewDataObjectId(dataObjectId)
@@ -210,7 +215,8 @@ export class AcceptPendingObjectsService {
     return params
   }
 
-  private async acceptPendingDataObjects(
+  // public in order to test it
+  public async acceptPendingDataObjects(
     api: ApiPromise,
     workerId: number,
     objectsToAccept: PendingObjectDetails,
@@ -219,9 +225,13 @@ export class AcceptPendingObjectsService {
     const acceptedObjects: string[] = []
 
     for (const batch of _.chunk(objectsToAccept, maxTxBatchSize)) {
-      const params = await this.createAcceptPendingObjectsParams(batch)
-      const accepted = await acceptPendingDataObjectsBatch(api, workerId, params)
-      acceptedObjects.push(...accepted)
+      try {
+        const params = await this.createAcceptPendingObjectsParams(batch)
+        const accepted = await acceptPendingDataObjectsBatch(api, workerId, params)
+        acceptedObjects.push(...accepted)
+      } catch (err) {
+        logger.error(`Error accepting pending objects: ${err}`)
+      }
     }
 
     let moved = 0
