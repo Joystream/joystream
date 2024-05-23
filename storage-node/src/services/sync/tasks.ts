@@ -10,7 +10,7 @@ import logger from '../../services/logger'
 import { deleteDataObjectIdFromCache, getDataObjectIdFromCache } from '../caching/localDataObjects'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
-import { acceptObject } from '../helpers/moveFile'
+import { acceptObject } from '../helpers/acceptObject'
 const fsPromises = fs.promises
 
 /**
