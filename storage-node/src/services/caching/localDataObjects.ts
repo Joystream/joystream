@@ -1,9 +1,7 @@
-import fs from 'fs'
 import logger from '../logger'
 import assert from 'assert'
 import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../commands/server'
-
-const fsPromises = fs.promises
+import { getLocalFileNames } from './localFileNames'
 
 type DataObjectId = string
 type DataObjectEntry = {
@@ -32,32 +30,40 @@ export function getDataObjectIDs(): string[] {
  * @param uploadDir - uploading directory
  */
 export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
-  const names = await getLocalFileNames(uploadDir)
+  try {
+    const names = await getLocalFileNames(uploadDir)
 
-  names
-    // Just incase the directory is polluted with other files,
-    // filter out filenames that do not match with an objectid (number)
-    .filter((name) => Number.isInteger(Number(name)))
-    .forEach((id) =>
-      idCache.set(id, {
-        pinCount: 0,
-        onLocalVolume: true,
-      })
-    )
+    names
+      // Just incase the directory is polluted with other files,
+      // filter out filenames that do not match with an objectid (number)
+      .filter((name) => Number.isInteger(Number(name)))
+      .forEach((id) =>
+        idCache.set(id, {
+          pinCount: 0,
+          onLocalVolume: true,
+        })
+      )
+  } catch (e) {
+    logger.error(`Error loading local ID cache: ${e}`)
+  }
 
-  if (isStorageProviderConnectionEnabled()) {
+  if (!isStorageProviderConnectionEnabled()) {
     return
   }
   const connection = getStorageProviderConnection()!
-  const namesOnCloud = await connection.listFilesOnRemoteBucket()
-  namesOnCloud
-    .filter((name) => Number.isInteger(Number(name)))
-    .forEach((id) =>
-      idCache.set(id, {
-        pinCount: 0,
-        onLocalVolume: false,
-      })
-    )
+  try {
+    const namesOnCloud = await connection.listFilesOnRemoteBucket()
+    namesOnCloud
+      .filter((name) => Number.isInteger(Number(name)))
+      .forEach((id) =>
+        idCache.set(id, {
+          pinCount: 0,
+          onLocalVolume: false,
+        })
+      )
+  } catch (e) {
+    logger.error(`Error loading remote ID cache: ${e}`)
+  }
 
   logger.debug(`Local ID cache loaded.`)
 }
@@ -153,14 +159,4 @@ export function getDataObjectIdFromCache(
  */
 export function isDataObjectIdInCache(dataObjectId: string): boolean {
   return idCache.has(dataObjectId)
-}
-
-/**
- * Returns file names from the local directory, ignoring subfolders.
- *
- * @param directory - local directory to get file names from
- */
-async function getLocalFileNames(directory: string): Promise<string[]> {
-  const result = await fsPromises.readdir(directory, { withFileTypes: true })
-  return result.filter((entry) => entry.isFile()).map((entry) => entry.name)
 }
