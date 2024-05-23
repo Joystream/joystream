@@ -30,12 +30,13 @@ export async function acceptObject(
   const toBeAcceptedOnLocalVolume = isStorageProviderConnectionEnabled()
   if (toBeAcceptedOnLocalVolume) {
     if (dest === undefined) {
-      throw new Error('Destination path is required when moving to local volume')
+      throw new Error('Destination path is undefined')
     }
     await moveFile(src, dest)
   } else {
     const connection = getStorageProviderConnection()!
     await connection.uploadFileToRemoteBucket(filename, src.toString())
+    await fsPromises.unlink(src)
   }
   addDataObjectIdToCache(filename)
 }

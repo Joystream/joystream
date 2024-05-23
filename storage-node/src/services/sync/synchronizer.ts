@@ -1,9 +1,8 @@
-import { isStorageProviderConnectionEnabled } from '../../commands/server'
 import { getDataObjectIDs, isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
-import { DownloadFileTask, ProviderSyncTask } from './tasks'
+import { DownloadFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
 import _ from 'lodash'
 
@@ -153,27 +152,15 @@ async function getDownloadTasks(
       }
     }
 
-    if (isStorageProviderConnectionEnabled()) {
-      return new ProviderSyncTask(
-        selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
-        dataObject.id,
-        dataObject.ipfsHash,
-        uploadDirectory,
-        tempDirectory,
-        asyncWorkersTimeout,
-        hostId
-      )
-    } else {
-      return new DownloadFileTask(
-        selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
-        dataObject.id,
-        dataObject.ipfsHash,
-        uploadDirectory,
-        tempDirectory,
-        asyncWorkersTimeout,
-        hostId
-      )
-    }
+    return new DownloadFileTask(
+      selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
+      dataObject.id,
+      dataObject.ipfsHash,
+      uploadDirectory,
+      tempDirectory,
+      asyncWorkersTimeout,
+      hostId
+    )
   })
 
   return tasks
