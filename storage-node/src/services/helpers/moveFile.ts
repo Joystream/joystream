@@ -1,4 +1,6 @@
 import fs from 'fs'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../commands/server'
+import { addDataObjectIdToCache } from '../caching/localDataObjects'
 const fsPromises = fs.promises
 
 /**
@@ -18,4 +20,22 @@ export async function moveFile(src: fs.PathLike, dest: fs.PathLike): Promise<voi
 
   // Only if copy operation succeeds we delete the source file
   await fsPromises.unlink(src)
+}
+
+export async function acceptObject(
+  filename: string,
+  src: fs.PathLike,
+  dest: fs.PathLike | undefined = undefined
+): Promise<void> {
+  const toBeAcceptedOnLocalVolume = isStorageProviderConnectionEnabled()
+  if (toBeAcceptedOnLocalVolume) {
+    if (dest === undefined) {
+      throw new Error('Destination path is required when moving to local volume')
+    }
+    await moveFile(src, dest)
+  } else {
+    const connection = getStorageProviderConnection()!
+    await connection.uploadFileToRemoteBucket(filename, src.toString())
+  }
+  addDataObjectIdToCache(filename)
 }

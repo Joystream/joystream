@@ -2,11 +2,11 @@ import { v4 as uuidv4 } from 'uuid'
 import logger from '../../logger'
 import _ from 'lodash'
 import { IConnectionHandler } from '../../../services/storageProviders'
-import urljoin from 'url-join'
 import { DownloadFileTask } from './DownloadTask'
 import { getStorageProviderConnection } from '../../../commands/server'
 import path from 'path'
 import { withRandomUrls } from './utils'
+import { addDataObjectIdToCache } from '../../../services/caching/localDataObjects'
 
 export class ProviderSyncTask extends DownloadFileTask {
   private connection: IConnectionHandler
@@ -30,13 +30,13 @@ export class ProviderSyncTask extends DownloadFileTask {
 
   // internal error handling
   async execute(): Promise<void> {
-    const operatorUrls = this.operatorUrls.map((baseUrl) => urljoin(baseUrl, 'api/v1/files', this.dataObjectId))
     const tempFilePath = path.join(this.tempDirectory, uuidv4())
     try {
       // TODO: I have added a HashFileVerificationError to the utils file, but it is not used here, we should establish what to do in case the file is corrupted
-      await withRandomUrls(operatorUrls, async (chosenBaseUrl) => {
+      await withRandomUrls(this.operatorUrls, async (chosenBaseUrl) => {
         await this.tryDownloadTemp(chosenBaseUrl, this.dataObjectId)
         await this.connection.uploadFileToRemoteBucket(this.dataObjectId, tempFilePath) // NOTE: consider converting to non blocking promise
+        addDataObjectIdToCache(this.dataObjectId)
       })
     } catch (err) {
       logger.error(`Sync - error when synching asset ${this.dataObjectId} with remote storage provider: ${err}`, {

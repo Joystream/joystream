@@ -11,6 +11,7 @@ import { addDataObjectIdToCache } from '../../caching/localDataObjects'
 import { moveFile } from '../../helpers/moveFile'
 import { SyncTask } from './ISyncTask'
 import { withRandomUrls, verifyFileHash } from './utils'
+import { isStorageProviderConnectionEnabled } from '../../../commands/server'
 const fsPromises = fs.promises
 
 /**
@@ -47,7 +48,8 @@ export class DownloadFileTask implements SyncTask {
     }
   }
 
-  protected async tryDownloadTemp(url: string, tempFilePath: string): Promise<void> {
+  // public for testing puroposes
+  public async tryDownloadTemp(url: string, tempFilePath: string): Promise<void> {
     const streamPipeline = promisify(pipeline)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
@@ -85,7 +87,7 @@ export class DownloadFileTask implements SyncTask {
     try {
       await this.tryDownloadTemp(url, tempFilePath)
       await moveFile(tempFilePath, filepath)
-      addDataObjectIdToCache(this.dataObjectId)
+      addDataObjectIdToCache(this.dataObjectId, isStorageProviderConnectionEnabled())
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {

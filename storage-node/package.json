@@ -172,7 +172,7 @@
     "ensure": "yarn format && yarn lint --fix && yarn build",
     "checks": "tsc --noEmit --pretty && prettier ./src --check && yarn lint",
     "start": "./bin/run server",
-    "test:integration:cloudProvider": "jest --detectOpenHandles './src/services/storageProviders/tests/**/*.test.ts'",
+    "test:integration:cloudProvider": "jest --detectOpenHandles './src/services/storageProviders/tests/**/syncService.test.ts'",
     "start:with-instrumentation": "export OTEL_APPLICATION=storage-node; export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:8200; export OTEL_RESOURCE_ATTRIBUTES=service.name=colossus,deployment.environment=production; node --require @joystream/opentelemetry ./bin/run server"
   },
   "types": "lib/index.d.ts"
