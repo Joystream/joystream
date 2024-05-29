@@ -69,7 +69,7 @@ decl_storage! { generate_storage_info
         pub PauserAccounts get(fn pauser_accounts): BoundedVec<T::AccountId, T::MaxPauserAccounts>;
 
         /// Number of tokens that the bridge pallet is able to mint
-        pub MintAllowance get(fn mint_allowance) config(): BalanceOf<T>;
+        pub MintAllowance get(fn mint_allowance) config(): BalanceOf<T> = 0u32.into();
 
         /// Amount of JOY burned as a fee for each transfer
         pub BridgingFee get(fn bridging_fee) config(): BalanceOf<T>;
@@ -154,8 +154,9 @@ decl_module! {
             ensure!(Self::pauser_accounts().contains(&caller), Error::<T>::NotPauserAccount);
 
             let current_block = <frame_system::Pallet<T>>::block_number();
-            <Status<T>>::put(BridgeStatus::Thawn { thawn_ends_at: current_block + Self::thawn_duration()});
-            Self::deposit_event(RawEvent::BridgeThawnStarted(caller));
+            let thawn_end_block = current_block + Self::thawn_duration();
+            <Status<T>>::put(BridgeStatus::Thawn { thawn_ends_at: thawn_end_block});
+            Self::deposit_event(RawEvent::BridgeThawnStarted(caller, thawn_end_block));
 
             Ok(())
         }
@@ -163,7 +164,7 @@ decl_module! {
         #[weight = WeightInfoArgo::<T>::finish_unpause_bridge()]
         pub fn finish_unpause_bridge(origin) -> DispatchResult {
             let caller = ensure_signed(origin)?;
-            ensure!(!Self::operator_account().is_none(), Error::<T>::NotOperatorAccount);
+            ensure!(!Self::operator_account().is_none(), Error::<T>::OperatorAccountNotSet);
             ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
 
             let current_block = <frame_system::Pallet<T>>::block_number();

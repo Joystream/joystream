@@ -31,7 +31,7 @@ pub type BridgeConstraintsOf<T> = BridgeConstraints<
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct RemoteAccount {
-    // Ethereum addresses only need 20 bytes but we use 32 bytes to enable compatibility with other chains
+    // EVM-based addresses only need 20 bytes but we use 32 bytes to enable compatibility with other chains
     // When using Ethereum addresses, the last 12 bytes should be zero
     pub account: [u8; 32],
     pub chain_id: ChainId,
