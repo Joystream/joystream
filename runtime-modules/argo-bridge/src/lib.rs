@@ -116,18 +116,18 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::finalize_inbound_transfer()]
         pub fn finalize_inbound_transfer(origin, remote_transfer: RemoteTransfer, dest_account: T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-            ensure!(!Self::operator_account().is_none(), Error::<T>::NotOperatorAccount);
+            ensure!(!Self::operator_account().is_none(), Error::<T>::OperatorAccountNotSet);
             let caller = ensure_signed(origin)?;
             ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
 
             ensure!(Self::status() == BridgeStatus::Active, Error::<T>::BridgeNotActive);
-            ensure!(amount < Self::mint_allowance(), Error::<T>::InsufficienBridgMintAllowance);
+            ensure!(amount <= Self::mint_allowance(), Error::<T>::InsufficientBridgeMintAllowance);
 
             ensure!(RemoteChains::get().contains(&remote_transfer.chain_id), Error::<T>::NotSupportedRemoteChainId);
 
             <MintAllowance<T>>::put(Self::mint_allowance() - amount);
             let _ = balances::Pallet::<T>::deposit_creating(
-                &caller,
+                &dest_account,
                 amount
             );
 
