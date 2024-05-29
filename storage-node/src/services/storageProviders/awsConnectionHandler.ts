@@ -33,6 +33,12 @@ export class AwsConnectionHandler implements IConnectionHandler {
         secretAccessKey: opts.secretAccessKey,
       },
       region: opts.region,
+      endpoint:
+        process.env.LOCALSTACK_ENABLED === 'true'
+          ? `http://localhost:${process.env.LOCALSTACK_PORT || 4566}/`
+          : undefined,
+      tls: process.env.LOCALSTACK_ENABLED === 'true' ? false : undefined,
+      forcePathStyle: process.env.LOCALSTACK_ENABLED === 'true',
     })
     this.bucket = opts.bucketName
   }

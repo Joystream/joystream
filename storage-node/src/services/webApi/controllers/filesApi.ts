@@ -55,18 +55,19 @@ export async function getFile(
     unpinDataObjectIdFromCache(dataObjectId)
   })
 
-  const uploadsDir = res.locals.uploadsDir
-  const fullPath = path.resolve(uploadsDir, dataObjectId)
   const dataObjectEntry = getDataObjectIdFromCache(dataObjectId)
 
   try {
-    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
     if (dataObjectEntry === undefined) {
       throw new WebApiError(`File ${dataObjectId} not found`, 404)
     }
-
     const { entry } = dataObjectEntry
+
     if (entry.onLocalVolume) {
+      const uploadsDir = res.locals.uploadsDir
+      const fullPath = path.resolve(uploadsDir, dataObjectId)
+      const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
+
       const stream = send(req, fullPath)
 
       stream.on('headers', (res) => {
