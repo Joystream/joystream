@@ -63,6 +63,12 @@ export interface DataStatsResponse {
      * @memberof DataStatsResponse
      */
     'pendingObjects'?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof DataStatsResponse
+     */
+    'cloudProvider'?: string;
 }
 /**
  * 

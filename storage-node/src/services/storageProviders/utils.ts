@@ -10,9 +10,8 @@ dotenv.config()
  * @returns A promise that resolves to an instance of IConnectionHandler if the provider is enabled, otherwise undefined.
  * @throws An error if the storage cloud provider type is invalid or unsupported.
  */
-export async function parseConfigOptionAndBuildConnection(
-  enableProvider: boolean
-): Promise<IConnectionHandler | undefined> {
+export async function parseConfigOptionAndBuildConnection(): Promise<IConnectionHandler | undefined> {
+  const enableProvider = process.env.ENABLE_STORAGE_PROVIDER === 'true'
   if (!enableProvider) {
     return undefined
   }

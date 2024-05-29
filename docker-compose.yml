@@ -51,7 +51,6 @@ services:
         '--logFilePath=/logs',
         '--tempFolder=/data/temp/',
         '--pendingFolder=/data/pending/',
-        '--enableStorageProvider=${ENABLE_STORAGE_PROVIDER}',
       ]
 
   distributor-1:
@@ -129,7 +128,6 @@ services:
         '--logFilePath=/logs',
         '--tempFolder=/data/temp/',
         '--pendingFolder=/data/pending/',
-        '--enableStorageProvider=${ENABLE_STORAGE_PROVIDER}',
       ]
 
   distributor-2:
@@ -488,9 +486,8 @@ services:
       - DEFAULT_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - LOCAL_STACK_PORT=${LOCAL_STACK_PORT}
     ports:
-      - LOCALSTACK_PORT:4566
+      - ${LOCALSTACK_PORT}:4566
     volumes:
       - localstack-data:/var/lib/localstack'
 

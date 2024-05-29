@@ -167,11 +167,6 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 20,
       required: false,
     }),
-    enableStorageProvider: flags.boolean({
-      description: 'Enable storage provider connection to cloud storage provider.',
-      default: false,
-      required: true, // required to be explicit
-    }),
     ...ApiCommandBase.flags,
   }
 
@@ -338,7 +333,7 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     // initialise storage provider connection: undefined if not enabled
-    storageProviderConnection = await parseConfigOptionAndBuildConnection(flags.enableStorageProvider)
+    storageProviderConnection = await parseConfigOptionAndBuildConnection()
 
     try {
       const port = flags.port
