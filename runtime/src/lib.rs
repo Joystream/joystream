@@ -939,7 +939,7 @@ impl project_token::Config for Runtime {
 
 parameter_types! {
     pub const MaxPauserAccounts: u32 = 10;
-    pub const DefaultBridgingFee: Balance = dollars!(1_000);
+    pub const DefaultBridgingFee: Balance = dollars!(1);
 }
 
 impl argo_bridge::Config for Runtime {

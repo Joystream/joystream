@@ -363,7 +363,7 @@ pub(crate) fn update_argo_bridge_parameters() -> ProposalParameters<BlockNumber,
     ProposalParameters {
         voting_period: days!(7),
         grace_period: days!(1),
-        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_quorum_percentage: ALL,
         approval_threshold_percentage: ALL,
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
