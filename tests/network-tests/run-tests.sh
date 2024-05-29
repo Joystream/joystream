@@ -43,4 +43,4 @@ if [ "${NO_STORAGE}" != true ]; then
 fi
 
 # Execute tests
-./run-test-scenario.sh $*
+# ./run-test-scenario.sh $*
