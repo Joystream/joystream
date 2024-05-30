@@ -14,14 +14,14 @@ jobs:
       matrix:
         node-version: [18.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: checks
-      run: |
-        yarn build
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: checks
+        run: |
+          yarn build
 
   tests_build_osx:
     name: MacOS Checks
@@ -30,14 +30,14 @@ jobs:
       matrix:
         node-version: [18.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: checks
-      run: |
-        yarn build
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: checks
+        run: |
+          yarn build
 
   build_images:
     name: Build joystream/node
@@ -54,8 +54,8 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
@@ -159,8 +159,8 @@ jobs:
           - scenario: 'setupNewChainMultiStorage'
             no_storage: 'true'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
       - name: Get artifacts
@@ -194,7 +194,7 @@ jobs:
     steps:
       # Checkout master branch
       - name: check out master repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: Joystream/joystream
           ref: master
@@ -222,8 +222,8 @@ jobs:
 
       # Checkout workflow's branch/tag/commit
       - name: checkout workflow branch
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v4
+
       # Look only for changes that would indicate possible change in runtime version
       # This is not the best way to check. Ideally the script "run-runtime-upgrade-tests.sh" should
       # look for the change of `spec_version`, and exit gracefully.
@@ -236,7 +236,7 @@ jobs:
           SUFFIX_FILTER: |
             .rs
       - name: setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18.x'
       - name: Install packages and dependencies
