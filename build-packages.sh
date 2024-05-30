@@ -6,8 +6,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     if ! command -v python3 &>/dev/null; then
         brew install python@3.12
     fi
-    python3.12 -m ensurepip --upgrade
-    python3.12 -m pip install --upgrade setuptools
+    brew install python-setuptools
 fi
 yarn --frozen-lockfile
 yarn workspace @joystream/types build
