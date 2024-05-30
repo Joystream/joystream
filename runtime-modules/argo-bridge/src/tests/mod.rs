@@ -18,7 +18,7 @@ use self::mock::{
 };
 use crate::Error;
 
-mod mock;
+pub mod mock;
 
 #[test]
 fn request_outbound_transfer_success() {
@@ -36,9 +36,9 @@ fn request_outbound_transfer_success() {
             RuntimeOrigin::root(),
             parameters
         ));
-        let inital_balance = joy!(1020);
+        let initial_balance = joy!(1020);
         let sender = account!(1);
-        Balances::set_balance(RuntimeOrigin::root(), sender, inital_balance, joy!(0)).unwrap();
+        Balances::set_balance(RuntimeOrigin::root(), sender, initial_balance, joy!(0)).unwrap();
 
         let remote_account = RemoteAccount {
             account: [0; 32],
@@ -57,7 +57,7 @@ fn request_outbound_transfer_success() {
         assert_eq!(ArgoBridge::mint_allowance(), transfer_amount);
         assert_eq!(
             Balances::free_balance(sender),
-            inital_balance - transfer_amount - fee
+            initial_balance - transfer_amount - fee
         );
         last_event_eq!(RawEvent::OutboundTransferRequested(
             transfer_id,
@@ -335,6 +335,7 @@ fn pause_bridge_success() {
         assert_ok!(ArgoBridge::pause_bridge(RuntimeOrigin::signed(
             pauser_account
         )));
+        assert_eq!(ArgoBridge::status(), BridgeStatus::Paused);
         last_event_eq!(RawEvent::BridgePaused(pauser_account));
     });
 }

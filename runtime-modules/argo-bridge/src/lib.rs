@@ -49,6 +49,7 @@ pub trait Config: frame_system::Config + balances::Config {
     // /// Events
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
+    /// Max number of accounts allow to pause the bridge
     type MaxPauserAccounts: Get<u32>;
 
     /// Weight information for extrinsics in this pallet.
@@ -178,6 +179,16 @@ decl_module! {
             Ok(())
         }
 
+        /// Allow Governance to Set constraints
+        /// Preconditions:
+        /// - origin is signed by `root`
+        /// PostConditions:
+        /// - governance parameters storage value set to the provided values
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// # </weight>
         #[weight = WeightInfoArgo::<T>::update_bridge_constrains()]
         pub fn update_bridge_constrains(origin, parameters: BridgeConstraintsOf<T>) -> DispatchResult {
             ensure_root(origin)?;
