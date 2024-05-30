@@ -2,12 +2,6 @@
 
 set -e
 
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    if ! command -v python3 &>/dev/null; then
-        brew install python@3.12
-    fi
-    brew install python-setuptools
-fi
 yarn --frozen-lockfile
 yarn workspace @joystream/types build
 yarn workspace @joystream/metadata-protobuf build
