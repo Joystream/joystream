@@ -35,6 +35,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      - name: python setuptools
+        run: brew install python-setuptools
       - name: checks
         run: |
           yarn build
