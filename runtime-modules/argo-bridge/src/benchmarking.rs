@@ -1,7 +1,5 @@
 #![cfg(feature = "runtime-benchmarks")]
 
-use frame_support::{assert_err, assert_ok};
-
 use super::*;
 use crate::types::*;
 use crate::vec::Vec;
@@ -11,8 +9,6 @@ use core::convert::TryFrom;
 use frame_benchmarking::v1::{account, benchmarks};
 use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};
-use sp_runtime::traits::{One, StaticLookup};
-use sp_std::convert::TryInto;
 
 use crate::{BridgeConstraints, BridgeStatus, RemoteAccount, RemoteTransfer};
 
@@ -58,10 +54,39 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     assert_eq!(event, &system_event);
 }
 
+fn activate_bridge<T: Config>(pauser_acount: &T::AccountId, operator_acount: &T::AccountId) {
+    let pauser_origin = RawOrigin::Signed(pauser_acount.clone());
+    ArgoBridge::<T>::init_unpause_bridge(pauser_origin.clone().into()).unwrap();
+    System::<T>::set_block_number(3u32.into());
+    ArgoBridge::<T>::finish_unpause_bridge(RawOrigin::Signed(operator_acount.clone()).into())
+        .unwrap();
+}
+
+fn set_bridge_mint_allowance<T: Config>(amount: BalanceOf<T>, fee: BalanceOf<T>)
+where
+    T::AccountId: CreateAccountId,
+{
+    let sender = T::AccountId::create_account_id(1u32.into());
+    let _ = Balances::<T>::deposit_creating(
+        &sender,
+        T::ExistentialDeposit::get() + amount.into() + fee + 10u32.into(),
+    );
+    let remote_account = RemoteAccount {
+        account: [0; 32],
+        chain_id: MAX_REMOTE_CHAINS - 1,
+    };
+    ArgoBridge::<T>::request_outbound_transfer(
+        RawOrigin::Signed(sender.clone()).into(),
+        remote_account,
+        amount + fee,
+        fee,
+    )
+    .unwrap();
+}
+
 benchmarks! {
     where_clause {
         where
-        T: balances::Config,
         T::AccountId: CreateAccountId
     }
 
@@ -70,25 +95,26 @@ benchmarks! {
     // - using the last chain
     request_outbound_transfer{
         let fee: BalanceOf<T> = 10u32.into();
-       let remote_chains: Vec<u32> = (0..MAX_REMOTE_CHAINS).collect();
+        let remote_chains: Vec<u32> = (0..MAX_REMOTE_CHAINS).collect();
+        let pauser_acount = T::AccountId::create_account_id(1);
+        let operator_account = T::AccountId::create_account_id(1u32.into());
         let parameters = BridgeConstraints {
-            operator_account: Some(T::AccountId::create_account_id(1u32.into())),
-            pauser_accounts: None,
+            operator_account: Some(operator_account.clone()),
+            pauser_accounts: Some(vec![pauser_acount.clone().into()]),
             bridging_fee: Some(fee),
             thawn_duration: None::<T::BlockNumber>,
             remote_chains: Some(BoundedVec::try_from(remote_chains).unwrap())
         };
 
-        assert_ok!(ArgoBridge::<T>::update_bridge_constrains(
+        ArgoBridge::<T>::update_bridge_constrains(
             RawOrigin::Root.into(),
             parameters
-        ));
+        ).unwrap();
+        activate_bridge::<T>(&pauser_acount, &operator_account);
 
-        let initial_balance: u32 = 1020u32.into();
+        let initial_balance: u32 = 1030u32.into();
         let sender = T::AccountId::create_account_id(1u32.into());
-        let lookup_sender = T::Lookup::unlookup(sender.clone());
-        Balances::<T>::set_balance(RawOrigin::Root.into(), lookup_sender,
-            initial_balance.into(), 0u32.into()).unwrap();
+        let _ = Balances::<T>::deposit_creating(&sender, T::ExistentialDeposit::get() + initial_balance.into());
 
         let dest_account = RemoteAccount {
             account: [0; 32],
@@ -96,7 +122,7 @@ benchmarks! {
         };
         let origin = RawOrigin::Signed(sender);
         let transfer_id = ArgoBridge::<T>::next_transfer_id();
-        let transfer_amount = 1000u32.into();
+        let transfer_amount = 100u32.into();
     }: _(origin, dest_account, transfer_amount, fee)
     verify {
         let sender = T::AccountId::create_account_id(1u32.into());
@@ -111,25 +137,28 @@ benchmarks! {
     finalize_inbound_transfer{
         let fee: BalanceOf<T> = 10u32.into();
         let remote_chains: Vec<u32> = (0..MAX_REMOTE_CHAINS).collect();
+        let pauser_acount = T::AccountId::create_account_id(1);
+        let operator_account = T::AccountId::create_account_id(1u32.into());
         let parameters = BridgeConstraints {
-            operator_account: Some(T::AccountId::create_account_id(1u32.into())),
-            pauser_accounts: None,
+            operator_account: Some(operator_account.clone()),
+            pauser_accounts: Some(vec![pauser_acount.clone().into()]),
             bridging_fee: Some(fee),
-            thawn_duration: None::<T::BlockNumber>,
+            thawn_duration: Some(1u32.into()),
             remote_chains: Some(BoundedVec::try_from(remote_chains).unwrap())
         };
-
-        assert_ok!(ArgoBridge::<T>::update_bridge_constrains(
+        ArgoBridge::<T>::update_bridge_constrains(
             RawOrigin::Root.into(),
             parameters
-        ));
-
-        let sender = T::AccountId::create_account_id(1u32.into());
-        let dest_account = T::AccountId::create_account_id(1u32.into());
+        ).unwrap();
+        activate_bridge::<T>(&pauser_acount, &operator_account);
 
         let transfer_amount = 100u32.into();
+        set_bridge_mint_allowance::<T>(1030u32.into(), fee);
+
+        let operator = T::AccountId::create_account_id(1u32.into());
+        let dest_account = T::AccountId::create_account_id(1u32.into());
         let remote_transfer = RemoteTransfer { id: 0, chain_id: MAX_REMOTE_CHAINS - 1 };
-    }: _(RawOrigin::Signed(sender), remote_transfer.clone(), dest_account.clone(), transfer_amount)
+    }: _(RawOrigin::Signed(operator), remote_transfer.clone(), dest_account.clone(), transfer_amount)
     verify {
         assert_last_event::<T>(
             RawEvent::InboundTransferFinalized(remote_transfer, dest_account, transfer_amount).into());
@@ -143,18 +172,19 @@ benchmarks! {
         for i in 0u32..T::MaxPauserAccounts::get() {
             pauser_accounts.push(T::AccountId::create_account_id(i));
         }
+        let operator_account = T::AccountId::create_account_id(1u32.into());
         let parameters = BridgeConstraints {
-            operator_account: None,
-            pauser_accounts: Some(pauser_accounts),
+            operator_account: Some(operator_account.clone()),
+            pauser_accounts: Some(pauser_accounts.clone()),
             bridging_fee: None,
             thawn_duration: None::<T::BlockNumber>,
             remote_chains: None
         };
-
-        assert_ok!(ArgoBridge::<T>::update_bridge_constrains(
+        ArgoBridge::<T>::update_bridge_constrains(
             RawOrigin::Root.into(),
             parameters
-        ));
+        ).unwrap();
+        activate_bridge::<T>(&pauser_accounts[0], &operator_account);
 
         let pauser_acount = T::AccountId::create_account_id((T::MaxPauserAccounts::get() - 1).into());
     }: _(RawOrigin::Signed(pauser_acount.clone()))
@@ -171,18 +201,19 @@ benchmarks! {
         let pauser_accounts: Vec<T::AccountId> = (0..T::MaxPauserAccounts::get())
         .map(|i| T::AccountId::create_account_id(i))
         .collect();
+        let operator_account = T::AccountId::create_account_id(1u32.into());
         let parameters = BridgeConstraints {
-            operator_account: None,
-            pauser_accounts: Some(pauser_accounts),
+            operator_account: Some(operator_account.clone()),
+            pauser_accounts: Some(pauser_accounts.clone()),
             bridging_fee: None,
             thawn_duration: Some(1u32.into()),
             remote_chains: None
         };
-
-        assert_ok!(ArgoBridge::<T>::update_bridge_constrains(
+        ArgoBridge::<T>::update_bridge_constrains(
             RawOrigin::Root.into(),
             parameters
-        ));
+        ).unwrap();
+        activate_bridge::<T>(&pauser_accounts[0], &operator_account);
 
         let pauser_acount = T::AccountId::create_account_id((T::MaxPauserAccounts::get() - 1) .into());
         ArgoBridge::<T>::pause_bridge(RawOrigin::Signed(pauser_acount.clone()).into()).unwrap();
@@ -202,23 +233,23 @@ benchmarks! {
         .collect();
         let operator_account = T::AccountId::create_account_id(1u32.into());
         let parameters = BridgeConstraints {
-            operator_account: Some(operator_account.clone().into()),
-            pauser_accounts: Some(pauser_accounts),
+            operator_account: Some(operator_account.clone()),
+            pauser_accounts: Some(pauser_accounts.clone()),
             bridging_fee: None,
             thawn_duration: Some(1u32.into()),
             remote_chains: None
         };
-
-        assert_ok!(ArgoBridge::<T>::update_bridge_constrains(
+        ArgoBridge::<T>::update_bridge_constrains(
             RawOrigin::Root.into(),
             parameters
-        ));
+        ).unwrap();
+        activate_bridge::<T>(&pauser_accounts[0], &operator_account);
 
         let pauser_acount = T::AccountId::create_account_id((T::MaxPauserAccounts::get() - 1) .into());
         let origin = RawOrigin::Signed(pauser_acount.clone());
         ArgoBridge::<T>::pause_bridge(origin.clone().into()).unwrap();
         ArgoBridge::<T>::init_unpause_bridge(origin.into()).unwrap();
-        System::<T>::set_block_number(3u32.into());
+        System::<T>::set_block_number(System::<T>::block_number() + 3u32.into());
     }: _(RawOrigin::Signed(operator_account))
     verify {
         let current_block = System::<T>::block_number();
@@ -233,10 +264,11 @@ benchmarks! {
         let pauser_accounts: Vec<T::AccountId> = (0..T::MaxPauserAccounts::get())
         .map(|i| T::AccountId::create_account_id(i))
         .collect();
+        let operator_account = T::AccountId::create_account_id(1u32.into());
         let remote_chains: Vec<u32> = (0..MAX_REMOTE_CHAINS).collect();
 
         let parameters = BridgeConstraints {
-            operator_account: Some(T::AccountId::create_account_id(1u32.into())),
+            operator_account: Some(operator_account),
             pauser_accounts: Some(pauser_accounts),
             bridging_fee: Some(fee),
             thawn_duration: Some(1u32.into()),
@@ -252,9 +284,7 @@ benchmarks! {
 
 #[cfg(test)]
 mod tests {
-    use crate::tests::mock::{
-        with_test_externalities, with_test_externalities_custom_mint_allowance, Test,
-    };
+    use crate::tests::mock::{with_test_externalities, Test};
     use frame_support::assert_ok;
 
     type ArgoBridge = crate::Module<Test>;
@@ -268,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_finalize_inbound_transfer() {
-        with_test_externalities_custom_mint_allowance(1000u32.into(), || {
+        with_test_externalities(|| {
             assert_ok!(ArgoBridge::test_benchmark_finalize_inbound_transfer());
         });
     }
