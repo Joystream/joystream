@@ -49,6 +49,7 @@ pub trait Config: frame_system::Config + balances::Config {
     // /// Events
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
+    /// Max number of accounts allow to pause the bridge
     type MaxPauserAccounts: Get<u32>;
 
     /// Weight information for extrinsics in this pallet.
@@ -69,7 +70,7 @@ decl_storage! { generate_storage_info
         pub PauserAccounts get(fn pauser_accounts): BoundedVec<T::AccountId, T::MaxPauserAccounts>;
 
         /// Number of tokens that the bridge pallet is able to mint
-        pub MintAllowance get(fn mint_allowance) config(): BalanceOf<T>;
+        pub MintAllowance get(fn mint_allowance) config(): BalanceOf<T> = 0u32.into();
 
         /// Amount of JOY burned as a fee for each transfer
         pub BridgingFee get(fn bridging_fee) config(): BalanceOf<T>;
@@ -116,18 +117,18 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::finalize_inbound_transfer()]
         pub fn finalize_inbound_transfer(origin, remote_transfer: RemoteTransfer, dest_account: T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-            ensure!(!Self::operator_account().is_none(), Error::<T>::NotOperatorAccount);
+            ensure!(!Self::operator_account().is_none(), Error::<T>::OperatorAccountNotSet);
             let caller = ensure_signed(origin)?;
             ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
 
             ensure!(Self::status() == BridgeStatus::Active, Error::<T>::BridgeNotActive);
-            ensure!(amount < Self::mint_allowance(), Error::<T>::InsufficienBridgMintAllowance);
+            ensure!(amount <= Self::mint_allowance(), Error::<T>::InsufficientBridgeMintAllowance);
 
             ensure!(RemoteChains::get().contains(&remote_transfer.chain_id), Error::<T>::NotSupportedRemoteChainId);
 
             <MintAllowance<T>>::put(Self::mint_allowance() - amount);
             let _ = balances::Pallet::<T>::deposit_creating(
-                &caller,
+                &dest_account,
                 amount
             );
 
@@ -154,8 +155,9 @@ decl_module! {
             ensure!(Self::pauser_accounts().contains(&caller), Error::<T>::NotPauserAccount);
 
             let current_block = <frame_system::Pallet<T>>::block_number();
-            <Status<T>>::put(BridgeStatus::Thawn { thawn_ends_at: current_block + Self::thawn_duration()});
-            Self::deposit_event(RawEvent::BridgeThawnStarted(caller));
+            let thawn_end_block = current_block + Self::thawn_duration();
+            <Status<T>>::put(BridgeStatus::Thawn { thawn_ends_at: thawn_end_block});
+            Self::deposit_event(RawEvent::BridgeThawnStarted(caller, thawn_end_block));
 
             Ok(())
         }
@@ -163,7 +165,7 @@ decl_module! {
         #[weight = WeightInfoArgo::<T>::finish_unpause_bridge()]
         pub fn finish_unpause_bridge(origin) -> DispatchResult {
             let caller = ensure_signed(origin)?;
-            ensure!(!Self::operator_account().is_none(), Error::<T>::NotOperatorAccount);
+            ensure!(!Self::operator_account().is_none(), Error::<T>::OperatorAccountNotSet);
             ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
 
             let current_block = <frame_system::Pallet<T>>::block_number();
@@ -177,6 +179,16 @@ decl_module! {
             Ok(())
         }
 
+        /// Allow Governance to Set constraints
+        /// Preconditions:
+        /// - origin is signed by `root`
+        /// PostConditions:
+        /// - governance parameters storage value set to the provided values
+        /// <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// # </weight>
         #[weight = WeightInfoArgo::<T>::update_bridge_constrains()]
         pub fn update_bridge_constrains(origin, parameters: BridgeConstraintsOf<T>) -> DispatchResult {
             ensure_root(origin)?;

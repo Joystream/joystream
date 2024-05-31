@@ -147,7 +147,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 2003,
+    spec_version: 2004,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 2,
@@ -939,7 +939,7 @@ impl project_token::Config for Runtime {
 
 parameter_types! {
     pub const MaxPauserAccounts: u32 = 10;
-    pub const DefaultBridgingFee: Balance = dollars!(1_000);
+    pub const DefaultBridgingFee: Balance = dollars!(1);
 }
 
 impl argo_bridge::Config for Runtime {
@@ -1994,7 +1994,6 @@ construct_runtime!(
         Content: content::{Pallet, Call, Storage, Event<T>, Config<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>, Config<T>},
         ProjectToken: project_token::{Pallet, Call, Storage, Event<T>, Config<T>},
-        ArgoBridge: argo_bridge::{Pallet, Call, Storage, Event<T>, Config<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>, Config},
@@ -2010,6 +2009,7 @@ construct_runtime!(
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
         Proxy: pallet_proxy,
+        ArgoBridge: argo_bridge::{Pallet, Call, Storage, Event<T>, Config<T>},
     }
 );
 

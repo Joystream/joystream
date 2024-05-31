@@ -15,11 +15,12 @@ decl_event!(
         AccountId = <T as frame_system::Config>::AccountId,
         Balance = BalanceOf<T>,
         BridgeConstraints = BridgeConstraintsOf<T>,
+        BlockNumber = <T as frame_system::Config>::BlockNumber,
     {
         OutboundTransferRequested(TransferId, AccountId, RemoteAccount, Balance, Balance),
         InboundTransferFinalized(RemoteTransfer, AccountId, Balance),
         BridgePaused(AccountId),
-        BridgeThawnStarted(AccountId),
+        BridgeThawnStarted(AccountId, BlockNumber),
         BridgeThawnFinished(),
         BridgeConfigUpdated(BridgeConstraints),
     }

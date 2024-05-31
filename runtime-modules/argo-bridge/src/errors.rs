@@ -15,10 +15,13 @@ decl_error! {
         FeeDifferentThanExpected,
 
         /// Not enough mint allowance for transaction
-        InsufficienBridgMintAllowance,
+        InsufficientBridgeMintAllowance,
 
         /// Operator account required
         NotOperatorAccount,
+
+        /// Operator was not yet set
+        OperatorAccountNotSet,
 
         /// Pauser account required
         NotPauserAccount,
@@ -26,7 +29,7 @@ decl_error! {
         /// Number of pauser accounts over the maximum allowed
         InvalidNumberOfPauserAccounts,
 
-        /// Current block is lower than thawn_started_at + thawn_duration
+        /// Current block is lower than thawn_ends_at
         ThawnNotFinished,
 
         /// ChainId is not on the list of the supported chains

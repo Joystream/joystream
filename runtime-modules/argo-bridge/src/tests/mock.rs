@@ -5,30 +5,16 @@ use crate::*;
 
 use frame_support::{
     parameter_types,
-    traits::{Currency, OnFinalize, OnInitialize},
+    traits::{OnFinalize, OnInitialize},
 };
 
-use common::{
-    council,
-    membership::{MemberOriginValidator, MembershipInfoProvider},
-};
-use common::{
-    locks::{BoundStakingAccountLockId, InvitedMemberLockId},
-    numerical::one_plus_interest_pow_fixed,
-};
 use frame_support::{
-    ensure,
-    traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons},
+    traits::{ConstU16, ConstU32, ConstU64},
     PalletId,
 };
-use frame_system::ensure_signed;
-use sp_arithmetic::{FixedPointNumber, Perbill};
-use sp_io::TestExternalities;
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
-use sp_runtime::{DispatchError, DispatchResult, PerThing, Permill};
 use sp_std::convert::{TryFrom, TryInto};
-use staking_handler::{LockComparator, StakingHandler};
 
 // Crate aliases
 type BalanceOf<T> = <T as balances::Config>::Balance;
@@ -50,7 +36,17 @@ parameter_types! {
 // Config constants
 parameter_types! {
     pub const MaxPauserAccounts: u32 = 10;
-    pub const DefaultBridgingFee: Balance = 1000;
+    pub const DefaultBridgingFee: Balance = 1;
+}
+
+#[macro_export]
+macro_rules! last_event_eq {
+    ($e:expr) => {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            RuntimeEvent::ArgoBridge($e)
+        )
+    };
 }
 
 frame_support::construct_runtime!(

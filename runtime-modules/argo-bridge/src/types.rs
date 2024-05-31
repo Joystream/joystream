@@ -12,6 +12,8 @@ pub type BalanceOf<T> = <T as balances::Config>::Balance;
 pub type ChainId = u32;
 pub type TransferId = u64;
 
+pub const MAX_REMOTE_CHAINS: u32 = 10;
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct BridgeConstraints<AccountId, Balance, BlockNumber> {
@@ -19,7 +21,7 @@ pub struct BridgeConstraints<AccountId, Balance, BlockNumber> {
     pub pauser_accounts: Option<Vec<AccountId>>,
     pub bridging_fee: Option<Balance>,
     pub thawn_duration: Option<BlockNumber>,
-    pub remote_chains: Option<BoundedVec<ChainId, ConstU32<10>>>,
+    pub remote_chains: Option<BoundedVec<ChainId, ConstU32<MAX_REMOTE_CHAINS>>>,
 }
 
 pub type BridgeConstraintsOf<T> = BridgeConstraints<
@@ -32,7 +34,7 @@ pub type BridgeConstraintsOf<T> = BridgeConstraints<
 #[derive(Encode, Decode, Copy, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct RemoteAccount {
     // Ethereum addresses only need 20 bytes but we use 32 bytes to enable compatibility with other chains
-    // When using Ethereum addresses, the last 12 bytes should be zero
+    // When using EVM addresses, the 12 most-significant bytes should be zero
     pub account: [u8; 32],
     pub chain_id: ChainId,
 }
