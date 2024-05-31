@@ -274,6 +274,14 @@ export class CreateProposalsFixture extends StandardizedFixture {
         break
       }
     }
+    /**
+     * TODO(petra): missing proposals:
+     * - set pallet frozen status
+     * - update pallet token constraints
+     * - update argo bridge constraints
+     * - set era payout damping factor
+     * - decrease council budget
+     */
   }
 
   protected assertQueriedProposalsAreValid(qProposals: ProposalFieldsFragment[]): void {
