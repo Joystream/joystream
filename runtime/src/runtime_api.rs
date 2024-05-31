@@ -127,6 +127,7 @@ mod benches {
         [content, Content]
         [project_token, ProjectToken]
         [pallet_proxy, Proxy]
+        [argo_bridge, ArgoBridge]
     );
 }
 
