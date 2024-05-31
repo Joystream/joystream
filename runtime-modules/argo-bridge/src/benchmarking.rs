@@ -102,7 +102,7 @@ benchmarks! {
             operator_account: Some(operator_account.clone()),
             pauser_accounts: Some(vec![pauser_acount.clone().into()]),
             bridging_fee: Some(fee),
-            thawn_duration: None::<T::BlockNumber>,
+            thawn_duration: Some(1u32.into()),
             remote_chains: Some(BoundedVec::try_from(remote_chains).unwrap())
         };
 
@@ -168,16 +168,15 @@ benchmarks! {
     // - max number of pauser accounts being use
     // - using the last pauser account
     pause_bridge{
-        let mut pauser_accounts :Vec<T::AccountId> = Vec::new();
-        for i in 0u32..T::MaxPauserAccounts::get() {
-            pauser_accounts.push(T::AccountId::create_account_id(i));
-        }
+        let pauser_accounts: Vec<T::AccountId> = (0..T::MaxPauserAccounts::get())
+        .map(|i| T::AccountId::create_account_id(i))
+        .collect();
         let operator_account = T::AccountId::create_account_id(1u32.into());
         let parameters = BridgeConstraints {
             operator_account: Some(operator_account.clone()),
             pauser_accounts: Some(pauser_accounts.clone()),
             bridging_fee: None,
-            thawn_duration: None::<T::BlockNumber>,
+            thawn_duration: Some(1u32.into()),
             remote_chains: None
         };
         ArgoBridge::<T>::update_bridge_constrains(
