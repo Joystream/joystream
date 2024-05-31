@@ -286,7 +286,8 @@ benchmarks! {
     where_clause {
         where T: membership::Config,
         T: council::Config,
-        T: working_group::Config<working_group::Instance1>
+        T: working_group::Config<working_group::Instance1>,
+        T: argo_bridge::Config
     }
 
     create_proposal_signal {
@@ -964,15 +965,17 @@ benchmarks! {
         let (account_id, member_id, general_proposal_paramters) =
             create_proposal_parameters::<T>(t, d);
 
-        // let member_id = Membership::<T>::members_created();
-
+        let pauser_accounts: Vec<T::AccountId> = (0..T::MaxPauserAccounts::get())
+        .map(|i| account::<T::AccountId>("pauser", 0, SEED))
+        .collect();
+        let chains: Vec<argo_bridge::types::ChainId> = (0u32..argo_bridge::types::MAX_REMOTE_CHAINS).collect();
         let proposal_details = ProposalDetails::UpdateArgoBridgeConstraints(
             argo_bridge::types::BridgeConstraints {
                 operator_account: Some(account::<T::AccountId>("operator", 0, SEED)),
-                pauser_accounts: Some(vec![account::<T::AccountId>("pauser", 0, SEED), account::<T::AccountId>("pauser", 1, SEED)] ),
+                pauser_accounts: Some(pauser_accounts),
                 bridging_fee: Some(100u32.into()),
-                thawn_duration: None,
-                remote_chains: None
+                thawn_duration: Some(1u32.into()),
+                remote_chains: Some(chains.try_into().unwrap())
             }
         );
     }: create_proposal(

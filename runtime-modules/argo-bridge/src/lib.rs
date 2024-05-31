@@ -80,7 +80,7 @@ decl_storage! { generate_storage_info
 
         pub NextTransferId get(fn next_transfer_id): TransferId;
 
-        pub RemoteChains get(fn remote_chains): BoundedVec<ChainId, ConstU32<10>>;
+        pub RemoteChains get(fn remote_chains): BoundedVec<ChainId, ConstU32<MAX_REMOTE_CHAINS>>;
     }
 }
 
