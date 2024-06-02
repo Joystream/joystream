@@ -273,12 +273,25 @@ export class CreateProposalsFixture extends StandardizedFixture {
         assert.equal(qProposal.details.proposal?.id, details.toString())
         break
       }
-      // case 'SetPalletFozenStatus': {
-      //   Utils.assert(qProposal.details.__typename === 'SetPalletFozenStatusProposalDetails')
-      //   const details = proposalDetails.asSetPalletFozenStatus
-      //   assert.equal(qProposal.details.newFrozenStatus, details[0])
-      //   break
-      // }
+      case 'SetPalletFozenStatus': {
+        Utils.assert(qProposal.details.__typename === 'UpdatePalletFrozenStatusProposalDetails')
+        const details = proposalDetails.asSetPalletFozenStatus
+        assert.equal(qProposal.details.frozen, details[0].isTrue)
+        assert.equal(qProposal.details.pallet, details[1].toString())
+        break
+      }
+      case 'DecreaseCouncilBudget': {
+        Utils.assert(qProposal.details.__typename === 'DecreaseCouncilBudgetProposalDetails')
+        const details = proposalDetails.asDecreaseCouncilBudget
+        assert.equal(qProposal.details.amount.toString(), details.toString())
+        break
+      }
+      case 'SetEraPayoutDampingFactor': {
+        Utils.assert(qProposal.details.__typename === 'SetEraPayoutDampingFactorProposalDetails')
+        const details = proposalDetails.asSetEraPayoutDampingFactor
+        assert.equal(qProposal.details.dampingFactor.toString(), details.toString())
+        break
+      }
     }
     // TODO(petra): missing proposals:
     /**

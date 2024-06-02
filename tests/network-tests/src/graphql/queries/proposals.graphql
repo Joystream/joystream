@@ -222,6 +222,19 @@ fragment ProposalDetailsFields on ProposalDetails {
     maxCashoutAllowed
     channelCashoutsEnabled
   }
+
+  ... on UpdatePalletFrozenStatusProposalDetails {
+    frozen
+    pallet
+  }
+
+  ... on DecreaseCouncilBudgetProposalDetails {
+    amount
+  }
+
+  ... on SetEraPayoutDampingFactorProposalDetails {
+    dampingFactor
+  }
 }
 
 fragment ProposalFields on Proposal {
