@@ -235,6 +235,18 @@ fragment ProposalDetailsFields on ProposalDetails {
   ... on SetEraPayoutDampingFactorProposalDetails {
     dampingFactor
   }
+
+  ... on UpdateTokenPalletTokenConstraintsProposalDetails {
+    maxYearlyRate
+    minAmmSlope
+    minSaleDuration
+    minRevenueSplitDuration
+    minRevenueSplitTimeToStart
+    salePlatformFee
+    ammBuyTxFees
+    ammSellTxFees
+    bloatBond
+  }
 }
 
 fragment ProposalFields on Proposal {
