@@ -137,6 +137,33 @@ decl_module! {
             Ok(())
         }
 
+        // TODO: add weight for revert_outbound_transfer
+        #[weight = WeightInfoArgo::<T>::finalize_inbound_transfer()]
+        pub fn revert_outbound_transfer(
+            origin,
+            transfer_id: TransferId,
+            revert_account: T::AccountId,
+            revert_amount: BalanceOf<T>,
+            rationale: vec::Vec<u8>,
+        ) -> DispatchResult {
+            ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
+            let caller = ensure_signed(origin)?;
+            ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
+
+            ensure!(Self::status() == BridgeStatus::Active, Error::<T>::BridgeNotActive);
+            ensure!(revert_amount <= Self::mint_allowance(), Error::<T>::InsufficientBridgeMintAllowance);
+
+            <MintAllowance<T>>::put(Self::mint_allowance() - revert_amount);
+            let _ = balances::Pallet::<T>::deposit_creating(
+                &revert_account,
+                revert_amount
+            );
+
+            Self::deposit_event(RawEvent::OutboundTransferReverted(transfer_id, revert_account, revert_amount, rationale));
+
+            Ok(())
+        }
+
         #[weight = WeightInfoArgo::<T>::pause_bridge()]
         pub fn pause_bridge(origin) -> DispatchResult {
             let caller = ensure_signed(origin)?;
