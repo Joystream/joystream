@@ -6,7 +6,6 @@ pub fn production_config() -> ArgoBridgeConfig {
         mint_allowance: 0,
         bridging_fee: DefaultBridgingFee::get(),
         thawn_duration: 1,
-        ..Default::default()
     }
 }
 
@@ -16,6 +15,5 @@ pub fn testing_config() -> ArgoBridgeConfig {
         mint_allowance: 0,
         bridging_fee: DefaultBridgingFee::get(),
         thawn_duration: 1,
-        ..Default::default()
     }
 }

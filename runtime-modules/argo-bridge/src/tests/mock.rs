@@ -8,10 +8,7 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
-use frame_support::{
-    traits::{ConstU16, ConstU32, ConstU64},
-    PalletId,
-};
+use frame_support::traits::{ConstU16, ConstU32, ConstU64};
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_std::convert::{TryFrom, TryInto};
