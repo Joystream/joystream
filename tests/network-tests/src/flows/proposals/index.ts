@@ -168,6 +168,11 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
         DecreaseCouncilBudget: 100,
       }),
     },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        SetEraPayoutDampingFactor: 100,
+      }),
+    },
   ]
 
   const testAllOutcomesFixture = new AllProposalsOutcomesFixture(api, query, lock, proposalsToTest)

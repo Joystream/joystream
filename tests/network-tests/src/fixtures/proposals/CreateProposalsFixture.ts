@@ -273,14 +273,20 @@ export class CreateProposalsFixture extends StandardizedFixture {
         assert.equal(qProposal.details.proposal?.id, details.toString())
         break
       }
+      // case 'SetPalletFozenStatus': {
+      //   Utils.assert(qProposal.details.__typename === 'SetPalletFozenStatusProposalDetails')
+      //   const details = proposalDetails.asSetPalletFozenStatus
+      //   assert.equal(qProposal.details.newFrozenStatus, details[0])
+      //   break
+      // }
     }
+    // TODO(petra): missing proposals:
     /**
-     * TODO(petra): missing proposals:
-     * - set pallet frozen status
-     * - update pallet token constraints
-     * - update argo bridge constraints
-     * - set era payout damping factor
-     * - decrease council budget
+     * - [X] set pallet frozen status
+     * - [ ] update pallet token constraints
+     * - [ ] update argo bridge constraints
+     * - [X] set era payout damping factor
+     * - [X] decrease council budget
      */
   }
 
@@ -306,9 +312,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: ProposalCreatedEventFieldsFragment, i: number): void {
-    // TODO: https://github.com/Joystream/joystream/issues/2457
-  }
+  protected assertQueryNodeEventIsValid(qEvent: ProposalCreatedEventFieldsFragment, i: number): void {}
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
