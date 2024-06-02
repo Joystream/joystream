@@ -371,7 +371,9 @@ export class CreateProposalsFixture extends StandardizedFixture {
     })
   }
 
-  protected assertQueryNodeEventIsValid(qEvent: ProposalCreatedEventFieldsFragment, i: number): void {}
+  protected assertQueryNodeEventIsValid(qEvent: ProposalCreatedEventFieldsFragment, i: number): void {
+    // Inetntionally left blank
+  }
 
   async runQueryNodeChecks(): Promise<void> {
     await super.runQueryNodeChecks()
