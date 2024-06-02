@@ -117,7 +117,7 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::finalize_inbound_transfer()]
         pub fn finalize_inbound_transfer(origin, remote_transfer: RemoteTransfer, dest_account: T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-            ensure!(!Self::operator_account().is_none(), Error::<T>::OperatorAccountNotSet);
+            ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
             let caller = ensure_signed(origin)?;
             ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
 
@@ -165,7 +165,7 @@ decl_module! {
         #[weight = WeightInfoArgo::<T>::finish_unpause_bridge()]
         pub fn finish_unpause_bridge(origin) -> DispatchResult {
             let caller = ensure_signed(origin)?;
-            ensure!(!Self::operator_account().is_none(), Error::<T>::OperatorAccountNotSet);
+            ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
             ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
 
             let current_block = <frame_system::Pallet<T>>::block_number();
