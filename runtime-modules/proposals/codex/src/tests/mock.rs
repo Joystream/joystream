@@ -111,6 +111,7 @@ frame_support::construct_runtime!(
         Council: council::{Pallet, Call, Storage, Event<T>},
         Storage: storage::{Pallet, Call, Storage, Event<T>},
         Token: token::{Pallet, Call, Storage, Event<T>},
+        ArgoBridge: argo_bridge::{Pallet, Call, Storage, Event<T>}
     }
 );
 
@@ -348,6 +349,9 @@ parameter_types! {
     pub const MinDistributionBucketsPerBag: u32 = 3;
     pub const MaxDistributionBucketsPerBag: u32 = 10;
     pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
+    /// constants for argo_bridge::config
+    pub const MaxPauserAccounts: u32 = 10;
+    pub const DefaultBridgingFee: Balance = 1;
 }
 
 impl storage::Config for Test {
@@ -393,6 +397,13 @@ impl token::Config for Test {
     type MemberOriginValidator = membership::Module<Self>;
     type MembershipInfoProvider = membership::Module<Self>;
     type MaxOutputs = MaxOutputs;
+}
+
+impl argo_bridge::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxPauserAccounts = MaxPauserAccounts;
+    type WeightInfo = argo_bridge::weights::SubstrateWeight<Test>;
+    type DefaultBridgingFee = DefaultBridgingFee;
 }
 
 pub struct Wg;
