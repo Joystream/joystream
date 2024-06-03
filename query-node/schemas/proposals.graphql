@@ -386,6 +386,14 @@ type SetEraPayoutDampingFactorProposalDetails @variant {
   dampingFactor: Int!
 }
 
+type UpdateArgoBridgeConstraintsProposalDetails @variant {
+  operatorAccount: String
+  pauserAccounts: [String]
+  bridgingFee: BigInt
+  thawnDuration: Int
+  remoteChains: [Int]
+}
+
 union ProposalDetails =
     SignalProposalDetails
   | RuntimeUpgradeProposalDetails
@@ -414,3 +422,4 @@ union ProposalDetails =
   | DecreaseCouncilBudgetProposalDetails
   | UpdateTokenPalletTokenConstraintsProposalDetails
   | SetEraPayoutDampingFactorProposalDetails
+  | UpdateArgoBridgeConstraintsProposalDetails
