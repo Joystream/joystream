@@ -3,9 +3,11 @@
 use frame_support::decl_event;
 
 use crate::{RemoteAccount, RemoteTransfer, TransferId};
-use sp_std::vec::Vec;
 
 use crate::types::*;
+
+use frame_support::storage::bounded_vec::BoundedVec;
+use frame_support::traits::ConstU32;
 
 // Balance type alias
 type BalanceOf<T> = <T as balances::Config>::Balance;
@@ -20,7 +22,12 @@ decl_event!(
     {
         OutboundTransferRequested(TransferId, AccountId, RemoteAccount, Balance, Balance),
         InboundTransferFinalized(RemoteTransfer, AccountId, Balance),
-        OutboundTransferReverted(TransferId, AccountId, Balance, Vec<u8>),
+        OutboundTransferReverted(
+            TransferId,
+            AccountId,
+            Balance,
+            BoundedVec<u8, ConstU32<MAX_BYTES_RATIONALE>>,
+        ),
         BridgePaused(AccountId),
         BridgeThawnStarted(AccountId, BlockNumber),
         BridgeThawnFinished(),

@@ -130,6 +130,39 @@ benchmarks! {
             RawEvent::OutboundTransferRequested(transfer_id, sender, dest_account, transfer_amount, fee).into());
     }
 
+    // Worse case scenario
+    // - rationale of the maximum size
+    revert_outbound_transfer{
+        let fee: BalanceOf<T> = 10u32.into();
+        let pauser_acount = T::AccountId::create_account_id(1u32);
+        let operator_account = T::AccountId::create_account_id(1u32);
+        let remote_chains: Vec<u32> = (0..MAX_REMOTE_CHAINS).collect();
+        let parameters = BridgeConstraints {
+            operator_account: Some(operator_account.clone()),
+            pauser_accounts: Some(vec![pauser_acount.clone()]),
+            bridging_fee: Some(fee),
+            thawn_duration: Some(1u32.into()),
+            remote_chains: Some(BoundedVec::try_from(remote_chains).unwrap())
+        };
+
+        ArgoBridge::<T>::update_bridge_constrains(
+            RawOrigin::Root.into(),
+            parameters
+        ).unwrap();
+        activate_bridge::<T>(&pauser_acount, &operator_account);
+
+        let revert_amount: u32 = 1030u32;
+        set_bridge_mint_allowance::<T>(revert_amount.into(), fee);
+
+        let transfer_id = 1u64;
+        let rationale = vec![0u8; (MAX_BYTES_RATIONALE) as usize];
+        let revert_account = T::AccountId::create_account_id(2u32);
+    }: _(RawOrigin::Signed(operator_account), transfer_id, revert_account.clone(), revert_amount.into(), rationale.clone().try_into().unwrap())
+    verify {
+        assert_last_event::<T>(
+            RawEvent::OutboundTransferReverted(transfer_id, revert_account, revert_amount.into(), rationale.try_into().unwrap()).into());
+    }
+
 
     // Worst case scenario:
     // - max number of remote chains being use
@@ -292,6 +325,13 @@ mod tests {
     fn test_request_outbound_transfer() {
         with_test_externalities(|| {
             assert_ok!(ArgoBridge::test_benchmark_request_outbound_transfer());
+        });
+    }
+
+    #[test]
+    fn test_revert_outbound_transfer() {
+        with_test_externalities(|| {
+            assert_ok!(ArgoBridge::test_benchmark_revert_outbound_transfer());
         });
     }
 

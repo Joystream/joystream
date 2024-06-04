@@ -14,6 +14,8 @@ pub type TransferId = u64;
 
 pub const MAX_REMOTE_CHAINS: u32 = 10;
 
+pub const MAX_BYTES_RATIONALE: u32 = 200;
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug, TypeInfo, MaxEncodedLen)]
 pub struct BridgeConstraints<AccountId, Balance, BlockNumber> {

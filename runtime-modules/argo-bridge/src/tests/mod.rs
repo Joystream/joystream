@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use core::convert::TryFrom;
+use core::convert::{TryFrom, TryInto};
 
 use crate::tests::mock::*;
 use frame_support::{assert_err, assert_ok};
@@ -338,7 +338,7 @@ fn revert_outbound_transfer_success() {
             transfer_id,
             revert_account,
             revert_amount,
-            rationale.clone(),
+            rationale.clone().try_into().unwrap(),
         );
         assert_ok!(result);
         assert_eq!(Balances::free_balance(revert_account), revert_amount);
@@ -346,7 +346,7 @@ fn revert_outbound_transfer_success() {
             transfer_id,
             revert_account,
             revert_amount,
-            rationale,
+            rationale.try_into().unwrap(),
         ));
     });
 }
@@ -359,7 +359,7 @@ fn revert_outbound_transfer_with_no_operator_account() {
             1u64,
             account!(2),
             joy!(123),
-            vec![],
+            vec![].try_into().unwrap(),
         );
         assert_err!(result, Error::<Test>::OperatorAccountNotSet);
     });
@@ -386,7 +386,7 @@ fn revert_outbound_transfer_with_unauthorized_account() {
             1u64,
             account!(2),
             joy!(123),
-            vec![],
+            vec![].try_into().unwrap(),
         );
         assert_err!(result, Error::<Test>::NotOperatorAccount);
     });
@@ -413,7 +413,7 @@ fn revert_outbound_transfer_with_insufficient_bridge_mint() {
             1u64,
             account!(2),
             joy!(100),
-            vec![],
+            vec![].try_into().unwrap(),
         );
         assert_err!(result, Error::<Test>::InsufficientBridgeMintAllowance);
     });
