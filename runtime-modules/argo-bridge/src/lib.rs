@@ -26,6 +26,7 @@ use frame_support::{
     traits::{ConstU32, Currency, Get},
 };
 use frame_system::{ensure_root, ensure_signed};
+use sp_runtime::traits::CheckedAdd;
 use sp_runtime::DispatchError;
 
 use sp_std::vec;
@@ -103,8 +104,7 @@ decl_module! {
             let fee = Self::bridging_fee();
             ensure!(fee == expected_fee, Error::<T>::FeeDifferentThanExpected);
 
-            // TODO: add overflow check
-            let amount_with_fees = fee + amount;
+            let amount_with_fees = amount.checked_add(&fee).ok_or(Error::<T>::ArithmeticError)?;
             let sender = ensure_signed(origin)?;
             ensure!(has_sufficient_balance_for_payment::<T>(&sender, amount_with_fees), Error::<T>::InsufficientJoyBalance);
 

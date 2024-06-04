@@ -4,6 +4,9 @@ use sp_std::convert::TryInto;
 
 decl_error! {
     pub enum Error for Module<T: crate::Config> {
+        /// Unexpected arithmetic error (overflow / underflow)
+        ArithmeticError,
+
         /// Bridge not in active state
         BridgeNotActive,
 

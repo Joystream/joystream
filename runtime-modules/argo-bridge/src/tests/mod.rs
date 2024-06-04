@@ -222,6 +222,41 @@ fn request_outbound_transfer_with_not_supported_remote_chain() {
 }
 
 #[test]
+fn request_outbound_transfer_with_overflow() {
+    with_test_externalities(|| {
+        let fee = joy!(10);
+        let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
+        let parameters = BridgeConstraints {
+            operator_account: Some(account!(1)),
+            pauser_accounts: Some(vec![account!(2), account!(3)]),
+            bridging_fee: Some(fee),
+            thawn_duration: None,
+            remote_chains: Some(remote_chains),
+        };
+        assert_ok!(ArgoBridge::update_bridge_constrains(
+            RuntimeOrigin::root(),
+            parameters
+        ));
+        assert_ok!(activate_bridge(account!(2), account!(1)));
+
+        let transfer_amount = Balance::MAX;
+        let sender = account!(1);
+
+        let remote_account = RemoteAccount {
+            account: [0; 32],
+            chain_id: 1,
+        };
+        let result = ArgoBridge::request_outbound_transfer(
+            RuntimeOrigin::signed(sender),
+            remote_account,
+            transfer_amount,
+            fee,
+        );
+        assert_err!(result, Error::<Test>::ArithmeticError);
+    });
+}
+
+#[test]
 fn finalize_inbound_transfer_success() {
     with_test_externalities_custom_mint_allowance(joy!(1000), || {
         let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
