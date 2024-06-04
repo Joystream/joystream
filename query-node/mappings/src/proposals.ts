@@ -365,8 +365,7 @@ async function parseProposalDetails(
     details.thawnDuration = unwrap(bridgeConstraints.thawnDuration)?.toNumber()
     details.remoteChains = unwrap(bridgeConstraints.remoteChains)?.map((a) => a.toNumber())
     return details
-  }
-  else {
+  } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
 }
