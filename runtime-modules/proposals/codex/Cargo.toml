@@ -30,6 +30,7 @@ content = { package = 'pallet-content', default-features = false, path = '../../
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9', optional = true }
 council = { package = 'pallet-council', default-features = false, path = '../../council' }
 token = { package = 'pallet-project-token', default-features = false, path = '../../project-token' }
+argo-bridge = { package = 'pallet-argo-bridge', default-features = false, path = '../../argo-bridge' }
 
 # Benchmarking dependencies
 frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9', optional = true }
@@ -76,6 +77,7 @@ std = [
     'membership/std',
     'content/std',
     'token/std',
+    'argo-bridge/std',
     'storage/std',
     'staking/std',
     'scale-info/std',

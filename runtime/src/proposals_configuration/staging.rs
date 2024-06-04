@@ -371,6 +371,20 @@ pub(crate) fn update_token_pallet_token_governance_parameters(
     }
 }
 
+// Proposal parameters for the 'Update Argo Bridge Parameters' proposal
+pub(crate) fn update_argo_bridge_parameters() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: 0,
+        approval_quorum_percentage: ALL,
+        approval_threshold_percentage: ALL,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}
+
 // Proposal parameters for the 'Set Era Payout Damping Factor' proposal
 pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {

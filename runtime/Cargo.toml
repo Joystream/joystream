@@ -99,6 +99,7 @@ bounty = { package = 'pallet-bounty', default-features = false, path = '../runti
 content = { package = 'pallet-content', default-features = false, path = '../runtime-modules/content' }
 joystream-utility = { package = 'pallet-joystream-utility', default-features = false, path = '../runtime-modules/utility' }
 project-token = { package = 'pallet-project-token', default-features = false, path = '../runtime-modules/project-token' }
+argo-bridge = { package = 'pallet-argo-bridge', default-features = false, path = '../runtime-modules/argo-bridge' }
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
@@ -189,6 +190,7 @@ std = [
     'joystream-utility/std',
     'content/std',
     'project-token/std',
+    'argo-bridge/std',
     'log/std',
 ]
 runtime-benchmarks = [
@@ -233,6 +235,7 @@ runtime-benchmarks = [
     'storage/runtime-benchmarks',
     'content/runtime-benchmarks',
     "project-token/runtime-benchmarks",
+    "argo-bridge/runtime-benchmarks"
 ]
 
 # Configuration suitable for staging networks and playground
@@ -290,4 +293,5 @@ try-runtime = [
     'joystream-utility/try-runtime',
     'content/try-runtime',
     'project-token/try-runtime',
+    'argo-bridge/try-runtime'
 ]

@@ -139,13 +139,15 @@ pub use content;
 pub use content::LimitPerPeriod;
 pub use content::MaxNumber;
 
+pub use argo_bridge;
+
 /// This runtime version.
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 12,
-    spec_version: 2003,
+    spec_version: 2004,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 2,
@@ -935,6 +937,18 @@ impl project_token::Config for Runtime {
     type WeightInfo = project_token::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MaxPauserAccounts: u32 = 10;
+    pub const DefaultBridgingFee: Balance = dollars!(1);
+}
+
+impl argo_bridge::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxPauserAccounts = MaxPauserAccounts;
+    type WeightInfo = argo_bridge::weights::SubstrateWeight<Runtime>;
+    type DefaultBridgingFee = DefaultBridgingFee;
+}
+
 // The referendum instance alias.
 pub type ReferendumInstance = referendum::Instance1;
 pub type ReferendumModule = referendum::Module<Runtime, ReferendumInstance>;
@@ -1717,6 +1731,7 @@ impl proposals_codex::Config for Runtime {
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
     type UpdateTokenPalletTokenConstraints = UpdateTokenPalletTokenConstraints;
+    type UpdateArgoBridgeConstraints = UpdateArgoBridgeConstraints;
     type SetPalletFozenStatusProposalParameters = SetPalletFozenStatusProposalParameters;
     type SetEraPayoutDampingFactorProposalParameters = SetEraPayoutDampingFactorProposalParameters;
     type WeightInfo = proposals_codex::weights::SubstrateWeight<Runtime>;
@@ -1994,6 +2009,7 @@ construct_runtime!(
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
         Proxy: pallet_proxy,
+        ArgoBridge: argo_bridge::{Pallet, Call, Storage, Event<T>, Config<T>},
     }
 );
 
