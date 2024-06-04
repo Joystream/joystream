@@ -1,7 +1,7 @@
 //! This module contains default "production" parameters configuration for the runtime codex proposals.
 
 use crate::{
-    currency, days, dollars, hours, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,
+    currency, days, dollars, hours, joy, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,
     ProposalParameters,
 };
 use static_assertions::const_assert;
@@ -65,7 +65,7 @@ pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Bala
         approval_threshold_percentage: TWO_OUT_OF_THREE,
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
-        required_stake: Some(350_000_000_000.into()), // 3500 JOY
+        required_stake: Some(joy!(3500)),
         constitutionality: 1,
     }
 }

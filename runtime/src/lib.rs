@@ -1682,7 +1682,7 @@ parameter_types! {
     // Make sure to stay below MAX_BLOCK_SIZE of substrate consensus of ~4MB
     // The new compressed wasm format is much smaller in size ~ 1MB
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = DispatchableCallCodeMaxLen::get();
-    pub const FundingRequestProposalMaxTotalAmount: Balance = 10_000_000_000_000_000.into(); // 1 million JOY
+    pub const FundingRequestProposalMaxTotalAmount: Balance = joy!(1_000_000);
     pub const FundingRequestProposalMaxAccounts: u32 = 20;
     pub const SetMaxValidatorCountProposalMaxValidators: u32 = 100;
 }

@@ -192,3 +192,10 @@ macro_rules! monthly_dollars_to_per_block {
         dollars!($a).saturating_div(Balance::from(days!(30)))
     }};
 }
+
+#[macro_export]
+macro_rules! joy {
+    ($a: expr) => {
+        currency::BASE_UNIT_PER_JOY.saturating_mul($a).into()
+    };
+}
