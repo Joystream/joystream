@@ -130,6 +130,8 @@ benchmarks! {
             RawEvent::OutboundTransferRequested(transfer_id, sender, dest_account, transfer_amount, fee).into());
     }
 
+    // Worse case scenario
+    // - rationale of the maximum size
     revert_outbound_transfer{
         let fee: BalanceOf<T> = 10u32.into();
         let pauser_acount = T::AccountId::create_account_id(1u32);
@@ -153,12 +155,12 @@ benchmarks! {
         set_bridge_mint_allowance::<T>(revert_amount.into(), fee);
 
         let transfer_id = 1u64;
-        let rationale = "test".as_bytes().to_vec();
+        let rationale = vec![0u8; (MAX_BYTES_RATIONALE) as usize];
         let revert_account = T::AccountId::create_account_id(2u32);
-    }: _(RawOrigin::Signed(operator_account), transfer_id, revert_account.clone(), revert_amount.into(), rationale.clone())
+    }: _(RawOrigin::Signed(operator_account), transfer_id, revert_account.clone(), revert_amount.into(), rationale.clone().try_into().unwrap())
     verify {
         assert_last_event::<T>(
-            RawEvent::OutboundTransferReverted(transfer_id, revert_account, revert_amount.into(), rationale).into());
+            RawEvent::OutboundTransferReverted(transfer_id, revert_account, revert_amount.into(), rationale.try_into().unwrap()).into());
     }
 
 

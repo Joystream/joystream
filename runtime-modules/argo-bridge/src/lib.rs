@@ -144,7 +144,7 @@ decl_module! {
             transfer_id: TransferId,
             revert_account: T::AccountId,
             revert_amount: BalanceOf<T>,
-            rationale: vec::Vec<u8>,
+            rationale: BoundedVec<u8, ConstU32<MAX_BYTES_RATIONALE>>,
         ) -> DispatchResult {
             ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
             let caller = ensure_signed(origin)?;
