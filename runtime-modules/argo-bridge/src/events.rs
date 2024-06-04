@@ -3,6 +3,7 @@
 use frame_support::decl_event;
 
 use crate::{RemoteAccount, RemoteTransfer, TransferId};
+use sp_std::vec::Vec;
 
 use crate::types::*;
 
@@ -19,6 +20,7 @@ decl_event!(
     {
         OutboundTransferRequested(TransferId, AccountId, RemoteAccount, Balance, Balance),
         InboundTransferFinalized(RemoteTransfer, AccountId, Balance),
+        OutboundTransferReverted(TransferId, AccountId, Balance, Vec<u8>),
         BridgePaused(AccountId),
         BridgeThawnStarted(AccountId, BlockNumber),
         BridgeThawnFinished(),

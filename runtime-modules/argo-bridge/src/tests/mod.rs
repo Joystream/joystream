@@ -317,6 +317,109 @@ fn finalize_inbound_transfer_with_insufficient_bridge_mint() {
 }
 
 #[test]
+fn revert_outbound_transfer_success() {
+    with_test_externalities_custom_mint_allowance(joy!(1000), || {
+        let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
+        let parameters = BridgeConstraints {
+            operator_account: Some(account!(1)),
+            pauser_accounts: None,
+            bridging_fee: None,
+            thawn_duration: None,
+            remote_chains: Some(remote_chains),
+        };
+        ArgoBridge::update_bridge_constrains(RuntimeOrigin::root(), parameters).unwrap();
+
+        let transfer_id = 1u64;
+        let revert_amount = joy!(123);
+        let revert_account = account!(2);
+        let rationale = "test".as_bytes().to_vec();
+        let result = ArgoBridge::revert_outbound_transfer(
+            RuntimeOrigin::signed(account!(1)),
+            transfer_id,
+            revert_account,
+            revert_amount,
+            rationale.clone(),
+        );
+        assert_ok!(result);
+        assert_eq!(Balances::free_balance(revert_account), revert_amount);
+        last_event_eq!(RawEvent::OutboundTransferReverted(
+            transfer_id,
+            revert_account,
+            revert_amount,
+            rationale,
+        ));
+    });
+}
+
+#[test]
+fn revert_outbound_transfer_with_no_operator_account() {
+    with_test_externalities(|| {
+        let result = ArgoBridge::revert_outbound_transfer(
+            RuntimeOrigin::signed(account!(1)),
+            1u64,
+            account!(2),
+            joy!(123),
+            vec![],
+        );
+        assert_err!(result, Error::<Test>::OperatorAccountNotSet);
+    });
+}
+
+#[test]
+fn revert_outbound_transfer_with_unauthorized_account() {
+    with_test_externalities(|| {
+        let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
+        let parameters = BridgeConstraints {
+            operator_account: Some(account!(1)),
+            pauser_accounts: None,
+            bridging_fee: None,
+            thawn_duration: None,
+            remote_chains: Some(remote_chains),
+        };
+        assert_ok!(ArgoBridge::update_bridge_constrains(
+            RuntimeOrigin::root(),
+            parameters
+        ));
+
+        let result = ArgoBridge::revert_outbound_transfer(
+            RuntimeOrigin::signed(account!(2)),
+            1u64,
+            account!(2),
+            joy!(123),
+            vec![],
+        );
+        assert_err!(result, Error::<Test>::NotOperatorAccount);
+    });
+}
+
+#[test]
+fn revert_outbound_transfer_with_insufficient_bridge_mint() {
+    with_test_externalities(|| {
+        let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
+        let parameters = BridgeConstraints {
+            operator_account: Some(account!(1)),
+            pauser_accounts: None,
+            bridging_fee: None,
+            thawn_duration: None,
+            remote_chains: Some(remote_chains),
+        };
+        assert_ok!(ArgoBridge::update_bridge_constrains(
+            RuntimeOrigin::root(),
+            parameters
+        ));
+
+        let result = ArgoBridge::revert_outbound_transfer(
+            RuntimeOrigin::signed(account!(1)),
+            1u64,
+            account!(2),
+            joy!(100),
+            vec![],
+        );
+        assert_err!(result, Error::<Test>::InsufficientBridgeMintAllowance);
+    });
+}
+
+#[test]
 fn pause_bridge_success() {
     with_test_externalities(|| {
         let pauser_account = account!(2);
