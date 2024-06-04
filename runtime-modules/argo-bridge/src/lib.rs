@@ -26,6 +26,8 @@ use frame_support::{
     traits::{ConstU32, Currency, Get},
 };
 use frame_system::{ensure_root, ensure_signed};
+use sp_runtime::traits::CheckedAdd;
+use sp_runtime::DispatchError;
 
 use sp_std::vec;
 
@@ -95,15 +97,20 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::request_outbound_transfer()]
         pub fn request_outbound_transfer(origin, dest_account: RemoteAccount, amount: BalanceOf<T>, expected_fee: BalanceOf<T>) -> DispatchResult {
-            ensure!(Self::status() == BridgeStatus::Active, Error::<T>::BridgeNotActive);
-            ensure!(RemoteChains::get().contains(&dest_account.chain_id), Error::<T>::NotSupportedRemoteChainId);
+            Self::ensure_bridge_active()?;
+
+            Self::ensure_chain_supported(dest_account.chain_id)?;
 
             let fee = Self::bridging_fee();
             ensure!(fee == expected_fee, Error::<T>::FeeDifferentThanExpected);
 
-            let amount_with_fees = fee + amount;
+            let amount_with_fees = amount.checked_add(&fee).ok_or(Error::<T>::ArithmeticError)?;
             let sender = ensure_signed(origin)?;
             ensure!(has_sufficient_balance_for_payment::<T>(&sender, amount_with_fees), Error::<T>::InsufficientJoyBalance);
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             burn_from_usable::<T>(&sender, amount_with_fees)?;
             <MintAllowance<T>>::put(Self::mint_allowance() + amount);
@@ -117,20 +124,19 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::finalize_inbound_transfer()]
         pub fn finalize_inbound_transfer(origin, remote_transfer: RemoteTransfer, dest_account: T::AccountId, amount: BalanceOf<T>) -> DispatchResult {
-            ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
-            let caller = ensure_signed(origin)?;
-            ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
+            Self::ensure_bridge_active()?;
 
-            ensure!(Self::status() == BridgeStatus::Active, Error::<T>::BridgeNotActive);
-            ensure!(amount <= Self::mint_allowance(), Error::<T>::InsufficientBridgeMintAllowance);
+            Self::ensure_operator_origin(origin)?;
 
-            ensure!(RemoteChains::get().contains(&remote_transfer.chain_id), Error::<T>::NotSupportedRemoteChainId);
+            Self::ensure_chain_supported(remote_transfer.chain_id)?;
 
-            <MintAllowance<T>>::put(Self::mint_allowance() - amount);
-            let _ = balances::Pallet::<T>::deposit_creating(
-                &dest_account,
-                amount
-            );
+            Self::ensure_mint_allowance(amount)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::mint_tokens(&dest_account, amount);
 
             Self::deposit_event(RawEvent::InboundTransferFinalized(remote_transfer, dest_account, amount));
 
@@ -145,18 +151,17 @@ decl_module! {
             revert_amount: BalanceOf<T>,
             rationale: BoundedVec<u8, ConstU32<MAX_BYTES_RATIONALE>>,
         ) -> DispatchResult {
-            ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
-            let caller = ensure_signed(origin)?;
-            ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
+            Self::ensure_bridge_active()?;
 
-            ensure!(Self::status() == BridgeStatus::Active, Error::<T>::BridgeNotActive);
-            ensure!(revert_amount <= Self::mint_allowance(), Error::<T>::InsufficientBridgeMintAllowance);
+            Self::ensure_operator_origin(origin)?;
 
-            <MintAllowance<T>>::put(Self::mint_allowance() - revert_amount);
-            let _ = balances::Pallet::<T>::deposit_creating(
-                &revert_account,
-                revert_amount
-            );
+            Self::ensure_mint_allowance(revert_amount)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::mint_tokens(&revert_account, revert_amount);
 
             Self::deposit_event(RawEvent::OutboundTransferReverted(transfer_id, revert_account, revert_amount, rationale));
 
@@ -165,24 +170,37 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::pause_bridge()]
         pub fn pause_bridge(origin) -> DispatchResult {
-            let caller = ensure_signed(origin)?;
-            let accounts = Self::pauser_accounts();
-            ensure!(accounts.contains(&caller), Error::<T>::NotPauserAccount);
+            let caller = Self::ensure_pauser_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             <Status<T>>::put(BridgeStatus::Paused);
+
             Self::deposit_event(RawEvent::BridgePaused(caller));
 
             Ok(())
         }
 
         #[weight = WeightInfoArgo::<T>::init_unpause_bridge()]
-        pub fn init_unpause_bridge(origin) -> DispatchResult{
-            let caller = ensure_signed(origin)?;
-            ensure!(Self::pauser_accounts().contains(&caller), Error::<T>::NotPauserAccount);
+        pub fn init_unpause_bridge(origin) -> DispatchResult {
+            ensure!(
+                Self::status() == BridgeStatus::Paused,
+                Error::<T>::BridgeNotPaused
+            );
+
+            let caller = Self::ensure_pauser_origin(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             let current_block = <frame_system::Pallet<T>>::block_number();
             let thawn_end_block = current_block + Self::thawn_duration();
-            <Status<T>>::put(BridgeStatus::Thawn { thawn_ends_at: thawn_end_block});
+
+            <Status<T>>::put(BridgeStatus::Thawn { thawn_ends_at: thawn_end_block });
+
             Self::deposit_event(RawEvent::BridgeThawnStarted(caller, thawn_end_block));
 
             Ok(())
@@ -190,16 +208,23 @@ decl_module! {
 
         #[weight = WeightInfoArgo::<T>::finish_unpause_bridge()]
         pub fn finish_unpause_bridge(origin) -> DispatchResult {
-            let caller = ensure_signed(origin)?;
-            ensure!(Self::operator_account().is_some(), Error::<T>::OperatorAccountNotSet);
-            ensure!(caller == Self::operator_account().unwrap(), Error::<T>::NotOperatorAccount);
+            Self::ensure_operator_origin(origin)?;
 
             let current_block = <frame_system::Pallet<T>>::block_number();
             ensure!(
-                matches!(Self::status(), BridgeStatus::Thawn { thawn_ends_at }
-                    if current_block >= thawn_ends_at), Error::<T>::ThawnNotFinished);
+                matches!(
+                    Self::status(),
+                    BridgeStatus::Thawn { thawn_ends_at } if current_block >= thawn_ends_at
+                ),
+                Error::<T>::ThawnNotFinished
+            );
+
+            //
+            // == MUTATION SAFE ==
+            ////
 
             <Status<T>>::put(BridgeStatus::Active);
+
             Self::deposit_event(RawEvent::BridgeThawnFinished());
 
             Ok(())
@@ -249,7 +274,56 @@ decl_module! {
 }
 
 /// Module implementation
-impl<T: Config> Module<T> {}
+impl<T: Config> Module<T> {
+    pub fn ensure_bridge_active() -> DispatchResult {
+        ensure!(
+            Self::status() == BridgeStatus::Active,
+            Error::<T>::BridgeNotActive
+        );
+        Ok(())
+    }
+
+    pub fn ensure_operator_origin(origin: T::RuntimeOrigin) -> Result<T::AccountId, DispatchError> {
+        let caller = ensure_signed(origin)?;
+        ensure!(
+            Self::operator_account().is_some(),
+            Error::<T>::OperatorAccountNotSet
+        );
+        ensure!(
+            caller == Self::operator_account().unwrap(),
+            Error::<T>::NotOperatorAccount
+        );
+        Ok(caller)
+    }
+
+    pub fn ensure_pauser_origin(origin: T::RuntimeOrigin) -> Result<T::AccountId, DispatchError> {
+        let caller = ensure_signed(origin)?;
+        let accounts = Self::pauser_accounts();
+        ensure!(accounts.contains(&caller), Error::<T>::NotPauserAccount);
+        Ok(caller)
+    }
+
+    pub fn ensure_mint_allowance(amount: BalanceOf<T>) -> DispatchResult {
+        ensure!(
+            amount <= Self::mint_allowance(),
+            Error::<T>::InsufficientBridgeMintAllowance
+        );
+        Ok(())
+    }
+
+    pub fn ensure_chain_supported(chain_id: ChainId) -> DispatchResult {
+        ensure!(
+            RemoteChains::get().contains(&chain_id),
+            Error::<T>::NotSupportedRemoteChainId
+        );
+        Ok(())
+    }
+
+    pub fn mint_tokens(dest_account: &T::AccountId, amount: BalanceOf<T>) {
+        <MintAllowance<T>>::put(Self::mint_allowance() - amount);
+        let _ = balances::Pallet::<T>::deposit_creating(dest_account, amount);
+    }
+}
 
 impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
     #[cfg(feature = "try-runtime")]

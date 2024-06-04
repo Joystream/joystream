@@ -114,7 +114,7 @@ impl Config for Test {
 
 pub fn default_genesis_config() -> argo_bridge::GenesisConfig<Test> {
     argo_bridge::GenesisConfig::<Test> {
-        status: BridgeStatus::Active,
+        status: BridgeStatus::Paused,
         mint_allowance: 0,
         bridging_fee: DefaultBridgingFee::get(),
         thawn_duration: 1,
