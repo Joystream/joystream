@@ -345,6 +345,30 @@ fn finalize_inbound_transfer_with_insufficient_bridge_mint() {
 }
 
 #[test]
+fn finalize_inbound_transfer_with_bridge_paused() {
+    with_test_externalities(|| {
+        let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
+        let parameters = BridgeConstraints {
+            operator_account: Some(account!(1)),
+            pauser_accounts: Some(vec![account!(2)]),
+            bridging_fee: None,
+            thawn_duration: None,
+            remote_chains: Some(remote_chains),
+        };
+        ArgoBridge::update_bridge_constrains(RuntimeOrigin::root(), parameters).unwrap();
+
+        let remote_transfer = RemoteTransfer { id: 0, chain_id: 1 };
+        let result = ArgoBridge::finalize_inbound_transfer(
+            RuntimeOrigin::signed(account!(1)),
+            remote_transfer,
+            account!(2),
+            1000,
+        );
+        assert_err!(result, Error::<Test>::BridgeNotActive);
+    });
+}
+
+#[test]
 fn revert_outbound_transfer_success() {
     with_test_externalities_custom_mint_allowance(joy!(1000), || {
         let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
@@ -433,6 +457,30 @@ fn revert_outbound_transfer_with_insufficient_bridge_mint() {
             vec![].try_into().unwrap(),
         );
         assert_err!(result, Error::<Test>::InsufficientBridgeMintAllowance);
+    });
+}
+
+#[test]
+fn revert_outbound_transfer_with_bridge_paused() {
+    with_test_externalities(|| {
+        let remote_chains = BoundedVec::try_from(vec![1u32]).unwrap();
+        let parameters = BridgeConstraints {
+            operator_account: Some(account!(1)),
+            pauser_accounts: Some(vec![account!(2)]),
+            bridging_fee: None,
+            thawn_duration: None,
+            remote_chains: Some(remote_chains),
+        };
+        ArgoBridge::update_bridge_constrains(RuntimeOrigin::root(), parameters).unwrap();
+
+        let result = ArgoBridge::revert_outbound_transfer(
+            RuntimeOrigin::signed(account!(1)),
+            1u64,
+            account!(2),
+            joy!(100),
+            vec![],
+        );
+        assert_err!(result, Error::<Test>::BridgeNotActive);
     });
 }
 
