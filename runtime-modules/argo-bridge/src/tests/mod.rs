@@ -478,7 +478,7 @@ fn revert_outbound_transfer_with_bridge_paused() {
             1u64,
             account!(2),
             joy!(100),
-            vec![],
+            vec![].try_into().unwrap(),
         );
         assert_err!(result, Error::<Test>::BridgeNotActive);
     });
