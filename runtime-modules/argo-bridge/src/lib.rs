@@ -137,8 +137,7 @@ decl_module! {
             Ok(())
         }
 
-        // TODO: add weight for revert_outbound_transfer
-        #[weight = WeightInfoArgo::<T>::finalize_inbound_transfer()]
+        #[weight = WeightInfoArgo::<T>::revert_outbound_transfer()]
         pub fn revert_outbound_transfer(
             origin,
             transfer_id: TransferId,
