@@ -4,9 +4,11 @@ use sp_std::convert::TryInto;
 
 decl_error! {
     pub enum Error for Module<T: crate::Config> {
-
-        /// Bridge not on active state
+        /// Bridge not in active state
         BridgeNotActive,
+
+        /// Bridge not in paused state
+        BridgeNotPaused,
 
         /// Insufficient JOY Balance to cover the transaction costs
         InsufficientJoyBalance,
