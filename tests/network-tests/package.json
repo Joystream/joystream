@@ -39,7 +39,7 @@
     "uuid": "^7.0.3"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "^1.21.4",
+    "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/import-types-preset": "^1.18.1",
     "@graphql-codegen/typescript": "^1.22.0",
     "@graphql-codegen/typescript-document-nodes": "^1.17.11",

@@ -165,7 +165,27 @@ export default async function creatingProposals({ api, query, lock }: FlowProps)
     },
     {
       details: createType('PalletProposalsCodexProposalDetails', {
-        DecreaseCouncilBudget: 100,
+        DecreaseCouncilBudget: 100, // 100 HAPI
+      }),
+    },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        SetEraPayoutDampingFactor: 95, // 95 %
+      }),
+    },
+    {
+      details: createType('PalletProposalsCodexProposalDetails', {
+        UpdateTokenPalletTokenConstraints: {
+          minSaleDuration: 10,
+          minRevenueSplitDuration: 10,
+          minRevenueSplitTimeToStart: 0,
+          maxYearlyRate: 15,
+          bloatBond: 0,
+          salePlatformFee: 10,
+          minAmmSlope: 100,
+          ammBuyTxFees: 1,
+          ammSellTxFees: 1,
+        },
       }),
     },
   ]

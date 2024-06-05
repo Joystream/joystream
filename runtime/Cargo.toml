@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '12.2003.0'
+version = '12.2004.0'
 
 [dependencies]
 # Third-party dependencies
@@ -72,7 +72,7 @@ substrate-utility = { package = 'pallet-utility', default-features = false, git 
 pallet-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-multisig = { package = 'pallet-multisig', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 pallet-staking-runtime-api = { package = 'pallet-staking-runtime-api', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-pallet-proxy = { package = 'pallet-proxy', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+pallet-proxy = { package = 'pallet-proxy', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9', default-features = false, optional = true }
@@ -235,7 +235,7 @@ runtime-benchmarks = [
     'storage/runtime-benchmarks',
     'content/runtime-benchmarks',
     "project-token/runtime-benchmarks",
-    "argo-bridge/runtime-benchmarks"
+    "argo-bridge/runtime-benchmarks",
 ]
 
 # Configuration suitable for staging networks and playground
@@ -293,5 +293,5 @@ try-runtime = [
     'joystream-utility/try-runtime',
     'content/try-runtime',
     'project-token/try-runtime',
-    'argo-bridge/try-runtime'
+    'argo-bridge/try-runtime',
 ]

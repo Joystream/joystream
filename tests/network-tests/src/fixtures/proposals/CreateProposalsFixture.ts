@@ -273,6 +273,79 @@ export class CreateProposalsFixture extends StandardizedFixture {
         assert.equal(qProposal.details.proposal?.id, details.toString())
         break
       }
+      case 'SetPalletFozenStatus': {
+        Utils.assert(qProposal.details.__typename === 'UpdatePalletFrozenStatusProposalDetails')
+        const details = proposalDetails.asSetPalletFozenStatus
+        assert.equal(qProposal.details.frozen, details[0].isTrue)
+        assert.equal(qProposal.details.pallet, details[1].toString())
+        break
+      }
+      case 'DecreaseCouncilBudget': {
+        Utils.assert(qProposal.details.__typename === 'DecreaseCouncilBudgetProposalDetails')
+        const details = proposalDetails.asDecreaseCouncilBudget
+        assert.equal(qProposal.details.amount.toString(), details.toString())
+        break
+      }
+      case 'SetEraPayoutDampingFactor': {
+        Utils.assert(qProposal.details.__typename === 'SetEraPayoutDampingFactorProposalDetails')
+        const details = proposalDetails.asSetEraPayoutDampingFactor
+        assert.equal(qProposal.details.dampingFactor.toString(), details.toString())
+        break
+      }
+      case 'UpdateTokenPalletTokenConstraints': {
+        Utils.assert(qProposal.details.__typename === 'UpdateTokenPalletTokenConstraintsProposalDetails')
+        const details = proposalDetails.asUpdateTokenPalletTokenConstraints
+        if (details.minAmmSlope.isSome) {
+          assert.equal(qProposal.details.minAmmSlope.toString(), details.minAmmSlope.unwrap().toString())
+        }
+        if (details.ammBuyTxFees.isSome) {
+          assert.isNotNull(qProposal.details.ammBuyTxFees)
+          assert.isDefined(qProposal.details.ammBuyTxFees)
+          assert.equal(qProposal.details.ammBuyTxFees!.toString(), details.ammBuyTxFees.unwrap().toString())
+        }
+        if (details.ammSellTxFees.isSome) {
+          assert.isNotNull(qProposal.details.ammSellTxFees)
+          assert.isDefined(qProposal.details.ammSellTxFees)
+          assert.equal(qProposal.details.ammSellTxFees!.toString(), details.ammSellTxFees.unwrap().toString())
+        }
+        if (details.maxYearlyRate.isSome) {
+          assert.isNotNull(qProposal.details.maxYearlyRate)
+          assert.isDefined(qProposal.details.maxYearlyRate)
+          assert.equal(qProposal.details.maxYearlyRate!.toString(), details.maxYearlyRate.unwrap().toString())
+        }
+        if (details.minSaleDuration.isSome) {
+          assert.isNotNull(qProposal.details.minSaleDuration)
+          assert.isDefined(qProposal.details.minSaleDuration)
+          assert.equal(qProposal.details.minSaleDuration!.toString(), details.minSaleDuration.unwrap().toString())
+        }
+        if (details.minRevenueSplitDuration.isSome) {
+          assert.isNotNull(qProposal.details.minRevenueSplitDuration)
+          assert.isDefined(qProposal.details.minRevenueSplitDuration)
+          assert.equal(
+            qProposal.details.minRevenueSplitDuration!.toString(),
+            details.minRevenueSplitDuration.unwrap().toString()
+          )
+        }
+        if (details.minRevenueSplitTimeToStart.isSome) {
+          assert.isNotNull(qProposal.details.minRevenueSplitTimeToStart)
+          assert.isDefined(qProposal.details.minRevenueSplitTimeToStart)
+          assert.equal(
+            qProposal.details.minRevenueSplitTimeToStart!.toString(),
+            details.minRevenueSplitTimeToStart.unwrap().toString()
+          )
+        }
+        if (details.salePlatformFee.isSome) {
+          assert.isNotNull(qProposal.details.salePlatformFee)
+          assert.isDefined(qProposal.details.salePlatformFee)
+          assert.equal(qProposal.details.salePlatformFee!.toString(), details.salePlatformFee.unwrap().toString())
+        }
+        if (details.bloatBond.isSome) {
+          assert.isNotNull(qProposal.details.bloatBond)
+          assert.isDefined(qProposal.details.bloatBond)
+          assert.equal(qProposal.details.bloatBond!.toString(), details.bloatBond.unwrap().toString())
+          break
+        }
+      }
     }
   }
 
@@ -299,7 +372,7 @@ export class CreateProposalsFixture extends StandardizedFixture {
   }
 
   protected assertQueryNodeEventIsValid(qEvent: ProposalCreatedEventFieldsFragment, i: number): void {
-    // TODO: https://github.com/Joystream/joystream/issues/2457
+    // Inetntionally left blank
   }
 
   async runQueryNodeChecks(): Promise<void> {
