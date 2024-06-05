@@ -1,3 +1,7 @@
+### 1.12.0
+
+- Bump @joystream/types to Petra version
+
 ### 1.7.0
 
 - Update dependency on metadata protobuf to v2.13.0

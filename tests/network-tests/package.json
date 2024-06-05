@@ -18,7 +18,7 @@
     "@apollo/client": "^3.2.5",
     "@babel/helper-get-function-arity": "^7.16.7",
     "@joystream/distributor-node-client": "^2.0.0",
-    "@joystream/js": "^1.6.0",
+    "@joystream/js": "^1.12.0",
     "@polkadot/api": "10.7.1",
     "@polkadot/keyring": "^12.6.2",
     "@types/async-lock": "^1.1.3",

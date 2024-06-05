@@ -211,6 +211,7 @@ declare module '@polkadot/api-base/types/events' {
       BridgeThawnStarted: AugmentedEvent<ApiType, [AccountId32, u32]>;
       InboundTransferFinalized: AugmentedEvent<ApiType, [PalletArgoBridgeRemoteTransfer, AccountId32, u128]>;
       OutboundTransferRequested: AugmentedEvent<ApiType, [u64, AccountId32, PalletArgoBridgeRemoteAccount, u128, u128]>;
+      OutboundTransferReverted: AugmentedEvent<ApiType, [u64, AccountId32, u128, Bytes]>;
     };
     balances: {
       /**

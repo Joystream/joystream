@@ -8,10 +8,7 @@ use frame_support::{
     traits::{OnFinalize, OnInitialize},
 };
 
-use frame_support::{
-    traits::{ConstU16, ConstU32, ConstU64},
-    PalletId,
-};
+use frame_support::traits::{ConstU16, ConstU32, ConstU64};
 use sp_runtime::testing::{Header, H256};
 use sp_runtime::traits::{BlakeTwo256, IdentityLookup};
 use sp_std::convert::{TryFrom, TryInto};
@@ -117,7 +114,7 @@ impl Config for Test {
 
 pub fn default_genesis_config() -> argo_bridge::GenesisConfig<Test> {
     argo_bridge::GenesisConfig::<Test> {
-        status: BridgeStatus::Active,
+        status: BridgeStatus::Paused,
         mint_allowance: 0,
         bridging_fee: DefaultBridgingFee::get(),
         thawn_duration: 1,
