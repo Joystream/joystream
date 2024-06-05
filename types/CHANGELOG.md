@@ -1,3 +1,7 @@
+### 2.3.0
+
+- Bump @joystream/types to Petra version
+
 ### 2.1.0
 
 - Bumped version for dependants version release to get the proper types version. [ref](https://github.com/Joystream/joystream/commit/f899922645013cd5aad6d8036aeae2180f123cf7)

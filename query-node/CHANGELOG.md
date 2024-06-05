@@ -1,3 +1,7 @@
+### 2.4.0
+
+- Bump @joystream/types to Petra version
+
 ### 2.2.1
 
 - Bump deps @polkadot/api v10.7.1

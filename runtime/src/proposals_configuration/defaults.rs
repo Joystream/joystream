@@ -65,7 +65,7 @@ pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Bala
         approval_threshold_percentage: TWO_OUT_OF_THREE,
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
-        required_stake: Some(joy!(3500)),
+        required_stake: Some(joy!(3_500)),
         constitutionality: 1,
     }
 }
