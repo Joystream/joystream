@@ -632,6 +632,10 @@ declare module '@polkadot/api-base/types/consts' {
        * Exports 'Terminate Working Group Lead' proposal parameters.
        **/
       terminateWorkingGroupLeadProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
+      /**
+       * Set Argo Bridge Constraints
+       **/
+      updateArgoBridgeConstraints: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateChannelPayoutsProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       updateGlobalNftLimitProposalParameters: PalletProposalsEngineProposalParameters & AugmentedConst<ApiType>;
       /**

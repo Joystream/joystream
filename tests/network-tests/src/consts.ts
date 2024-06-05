@@ -96,6 +96,7 @@ export const proposalTypeToProposalParamsKey = {
   'SetPalletFozenStatus': 'setPalletFozenStatusProposalParameters',
   'SetEraPayoutDampingFactor': 'setEraPayoutDampingFactorProposalParameters',
   'UpdateTokenPalletTokenConstraints': 'updateTokenPalletTokenConstraints',
+  'UpdateArgoBridgeConstraints': 'updateArgoBridgeConstraints',
 } as const
 
 type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }
