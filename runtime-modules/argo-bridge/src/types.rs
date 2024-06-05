@@ -58,8 +58,6 @@ pub enum BridgeStatus<BlockNumber> {
 
 impl<BlockNumber: Default> Default for BridgeStatus<BlockNumber> {
     fn default() -> Self {
-        BridgeStatus::Thawn {
-            thawn_ends_at: Default::default(),
-        }
+        BridgeStatus::Paused
     }
 }
