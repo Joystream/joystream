@@ -1,6 +1,0 @@
-
-
-for hash use
-keccak256(bytes memory) returns (bytes32) − computes the Keccak-256 hash of the input.
-ripemd160(bytes memory) returns (bytes20) − compute RIPEMD-160 hash of the input.
-sha256(bytes memory) returns (bytes32) − computes the SHA-256 hash of the input.
