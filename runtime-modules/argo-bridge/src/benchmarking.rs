@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::vec::Vec;
 use crate::Module as ArgoBridge;
 use balances::Pallet as Balances;
-use core::convert::TryFrom;
+use core::convert::{TryFrom, TryInto};
 use frame_benchmarking::v1::{account, benchmarks};
 use frame_system::Pallet as System;
 use frame_system::{EventRecord, RawOrigin};

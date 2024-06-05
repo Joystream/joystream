@@ -11,12 +11,7 @@
     deny(clippy::unreachable)
 )]
 
-#[cfg(not(any(test, feature = "runtime-benchmarks")))]
-#[allow(unused_imports)]
-#[macro_use]
-extern crate common;
-
-use core::{convert::TryInto, default::Default};
+use core::default::Default;
 use frame_support::{
     decl_module, decl_storage,
     dispatch::{marker::Copy, DispatchResult},
@@ -106,6 +101,8 @@ decl_module! {
             let amount_with_fees = amount.checked_add(&fee).ok_or(Error::<T>::ArithmeticError)?;
             let sender = ensure_signed(origin)?;
             ensure!(has_sufficient_balance_for_payment::<T>(&sender, amount_with_fees), Error::<T>::InsufficientJoyBalance);
+            let transfer_id = NextTransferId::get();
+            let next_transfer_id = transfer_id.checked_add(1).ok_or(Error::<T>::ArithmeticError)?;
 
             //
             // == MUTATION SAFE ==
@@ -114,9 +111,8 @@ decl_module! {
             burn_from_usable::<T>(&sender, amount_with_fees)?;
             <MintAllowance<T>>::put(Self::mint_allowance() + amount);
 
-            let transfer_id = NextTransferId::get();
             Self::deposit_event(RawEvent::OutboundTransferRequested(transfer_id, sender, dest_account, amount, fee));
-            NextTransferId::put(transfer_id + 1);
+            NextTransferId::put(next_transfer_id);
 
             Ok(())
         }
