@@ -4,7 +4,6 @@
     not(any(test, feature = "runtime-benchmarks")),
     deny(clippy::panic),
     deny(clippy::panic_in_result_fn),
-    deny(clippy::unwrap_used),
     deny(clippy::expect_used),
     deny(clippy::indexing_slicing),
     deny(clippy::integer_arithmetic),
@@ -26,8 +25,8 @@ use frame_support::{
     traits::{ConstU32, Currency, Get},
 };
 use frame_system::{ensure_root, ensure_signed};
-use sp_runtime::traits::CheckedAdd;
 use sp_runtime::DispatchError;
+use sp_runtime::{traits::CheckedAdd, SaturatedConversion};
 
 use sp_std::vec;
 
@@ -249,7 +248,8 @@ decl_module! {
             }
 
             if let Some(ref new_pauser_accounts) = parameters.pauser_accounts {
-                ensure!(new_pauser_accounts.len() <= T::MaxPauserAccounts::get().try_into().unwrap(), Error::<T>::InvalidNumberOfPauserAccounts);
+                // converts into range [0, u32::MAX], no risk as we might assume that the number of pausers is less than 100
+                ensure!(new_pauser_accounts.len().saturated_into::<u32>() <= T::MaxPauserAccounts::get(), Error::<T>::InvalidNumberOfPauserAccounts);
                 <PauserAccounts<T>>::put(BoundedVec::truncate_from(new_pauser_accounts.to_vec()));
             }
 
@@ -285,15 +285,12 @@ impl<T: Config> Module<T> {
 
     pub fn ensure_operator_origin(origin: T::RuntimeOrigin) -> Result<T::AccountId, DispatchError> {
         let caller = ensure_signed(origin)?;
-        ensure!(
-            Self::operator_account().is_some(),
-            Error::<T>::OperatorAccountNotSet
-        );
-        ensure!(
-            caller == Self::operator_account().unwrap(),
-            Error::<T>::NotOperatorAccount
-        );
-        Ok(caller)
+        if let Some(operator_account) = Self::operator_account() {
+            ensure!(caller == operator_account, Error::<T>::NotOperatorAccount);
+            Ok(caller)
+        } else {
+            Err(Error::<T>::OperatorAccountNotSet.into())
+        }
     }
 
     pub fn ensure_pauser_origin(origin: T::RuntimeOrigin) -> Result<T::AccountId, DispatchError> {
