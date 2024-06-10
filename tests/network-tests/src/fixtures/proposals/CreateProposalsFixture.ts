@@ -343,8 +343,45 @@ export class CreateProposalsFixture extends StandardizedFixture {
           assert.isNotNull(qProposal.details.bloatBond)
           assert.isDefined(qProposal.details.bloatBond)
           assert.equal(qProposal.details.bloatBond!.toString(), details.bloatBond.unwrap().toString())
-          break
         }
+        break
+      }
+      case 'UpdateArgoBridgeConstraints': {
+        Utils.assert(qProposal.details.__typename === 'UpdateArgoBridgeConstraintsProposalDetails')
+        const details = proposalDetails.asUpdateArgoBridgeConstraints
+        if (details.bridgingFee.isSome) {
+          assert.isNotNull(qProposal.details.bridgingFee)
+          assert.isDefined(qProposal.details.bridgingFee)
+          assert.equal(qProposal.details.bridgingFee!.toString(), details.bridgingFee.unwrap().toString())
+        }
+        // repeat the same if case with details: operatorAccount, pauserAccounts, thawnDuration, remoteChains
+        if (details.operatorAccount.isSome) {
+          assert.isNotNull(qProposal.details.operatorAccount)
+          assert.isDefined(qProposal.details.operatorAccount)
+          assert.equal(qProposal.details.operatorAccount!.toString(), details.operatorAccount.unwrap().toString())
+        }
+        if (details.pauserAccounts.isSome) {
+          assert.isNotNull(qProposal.details.pauserAccounts)
+          assert.isDefined(qProposal.details.pauserAccounts)
+          assert.sameDeepMembers(
+            qProposal.details.pauserAccounts!,
+            details.pauserAccounts.unwrap().map((a) => a.toString())
+          )
+        }
+        if (details.thawnDuration.isSome) {
+          assert.isNotNull(qProposal.details.thawnDuration)
+          assert.isDefined(qProposal.details.thawnDuration)
+          assert.equal(qProposal.details.thawnDuration!.toString(), details.thawnDuration.unwrap().toString())
+        }
+        if (details.remoteChains.isSome) {
+          assert.isNotNull(qProposal.details.remoteChains)
+          assert.isDefined(qProposal.details.remoteChains)
+          assert.sameDeepMembers(
+            qProposal.details.remoteChains!.map((a) => a.toString()),
+            details.remoteChains.unwrap().map((a) => a.toString())
+          )
+        }
+        break
       }
     }
   }
