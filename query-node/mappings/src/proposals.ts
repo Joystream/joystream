@@ -79,6 +79,7 @@ import {
 } from './common'
 import {
   ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsCodex_ProposalCreatedEvent_V2003 as ProposalCreatedEvent_V2003,
   ProposalsCodex_ProposalCreatedEvent_V2004 as ProposalCreatedEvent_V2004,
   ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
   ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
@@ -401,10 +402,12 @@ export async function proposalsCodex_ProposalCreated({
   event,
   block,
 }: EventContext & StoreContext): Promise<void> {
-  const specVersion = block.runtimeVersion.specVersion
+  const specVersion = Number(block.runtimeVersion.specVersion)
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    Number(specVersion) < 2001
+    specVersion < 2001
       ? new ProposalCreatedEvent_V1001(event).params
+      : specVersion < 2004
+      ? new ProposalCreatedEvent_V2003(event).params
       : new ProposalCreatedEvent_V2004(event).params
 
   const eventTime = new Date(event.blockTimestamp)
