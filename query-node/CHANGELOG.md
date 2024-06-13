@@ -1,3 +1,7 @@
+### 2.4.1
+
+- Fix handling of proposal details between spec versions 2003 and 2004
+
 ### 2.4.0
 
 - Bump @joystream/types to Petra version
