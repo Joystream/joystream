@@ -72,6 +72,7 @@ import {
   genericEventFields,
   getByIdOrFail,
   getWorkingGroupModuleName,
+  logger,
   toNumber,
   unimplementedError,
   unwrap,
@@ -367,7 +368,7 @@ async function parseProposalDetails(
     details.remoteChains = unwrap(bridgeConstraints.remoteChains)?.map((a) => a.toNumber())
     return details
   } else {
-    unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
+    logger.error(`Unsupported proposal details type: ${proposalDetails.type.toString()}`)
   }
 }
 

@@ -5,6 +5,7 @@
 ### 2.4.0
 
 - Bump @joystream/types to Petra version
+- Don't crash QN processor on unknown proposal type
 
 ### 2.2.1
 
