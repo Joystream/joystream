@@ -1,3 +1,7 @@
+### Unreleased
+
+- Fix mappings for `workingGroups_NewMissedRewardLevelReached` event to properly handle worker missing rewards updates
+
 ### 2.2.1
 
 - Bump deps @polkadot/api v10.7.1
