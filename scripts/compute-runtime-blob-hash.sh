@@ -6,7 +6,7 @@ set -e
 # for deterministic builds.
 # Assumes b2sum is already instally on the host machine.
 
-SCRIPT_PATH=`$(dirname "${BASH_SOURCE[0]}")`
+SCRIPT_PATH=`dirname "${BASH_SOURCE[0]}"`
 cd $SCRIPT_PATH
 
 CODE_SHASUM=`./runtime-code-shasum.sh`
