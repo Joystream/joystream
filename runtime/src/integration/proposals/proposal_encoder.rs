@@ -171,6 +171,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
                     parameters,
                 })
             }
+            ProposalDetails::UpdateArgoBridgeConstraints(parameters) => {
+                RuntimeCall::ArgoBridge(argo_bridge::Call::update_bridge_constrains { parameters })
+            }
             ProposalDetails::SetPalletFozenStatus(freeze, pallet) => match pallet {
                 FreezablePallet::ProjectToken => {
                     RuntimeCall::ProjectToken(project_token::Call::set_frozen_status { freeze })

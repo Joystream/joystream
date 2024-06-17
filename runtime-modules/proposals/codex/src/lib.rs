@@ -287,6 +287,9 @@ pub trait Config:
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
+    /// `Update pallet project token` proposal parameters
+    type UpdateArgoBridgeConstraints: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
     /// `Set Era Payout Damping Factor` proposal parameters
     type SetEraPayoutDampingFactorProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
@@ -534,6 +537,10 @@ decl_module! {
         /// pallet token governance parameters proposal
         const UpdateTokenPalletTokenConstraints:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateTokenPalletTokenConstraints::get();
+
+        /// Set Argo Bridge Constraints
+        const UpdateArgoBridgeConstraints:
+        ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateArgoBridgeConstraints::get();
 
         /// Era payout damping factor
         const SetEraPayoutDampingFactorProposalParameters:
@@ -919,6 +926,9 @@ impl<T: Config> Module<T> {
             ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::UpdateArgoBridgeConstraints(..) => {
+                // Note: No checks for this proposal for now
+            }
             ProposalDetails::SetEraPayoutDampingFactor(..) => {
                 // Note: No checks for this proposal for now
             }
@@ -997,6 +1007,9 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
                 T::UpdateTokenPalletTokenConstraints::get()
+            }
+            ProposalDetails::UpdateArgoBridgeConstraints(..) => {
+                T::UpdateArgoBridgeConstraints::get()
             }
             ProposalDetails::SetEraPayoutDampingFactor(..) => {
                 T::SetEraPayoutDampingFactorProposalParameters::get()
@@ -1176,6 +1189,12 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
                 WeightInfoCodex::<T>::create_proposal_update_token_pallet_token_constraints(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::UpdateArgoBridgeConstraints(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_argo_bridge_constraints(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

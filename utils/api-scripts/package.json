@@ -13,7 +13,7 @@
     "storage-dev-init": "./dev-init-storage.sh"
   },
   "dependencies": {
-    "@joystream/types": "^4.0.0",
+    "@joystream/types": "^4.6.0",
     "@mongodb-js/zstd": "^1.1.0",
     "@polkadot/api": "10.7.1",
     "@polkadot/keyring": "^12.6.2",

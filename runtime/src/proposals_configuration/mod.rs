@@ -113,6 +113,9 @@ parameter_types! {
     pub UpdateTokenPalletTokenConstraints: ProposalParameters<BlockNumber, Balance> =
         update_token_pallet_token_governance_parameters();
 
+    pub UpdateArgoBridgeConstraints: ProposalParameters<BlockNumber, Balance> =
+        update_argo_bridge_parameters();
+
     pub SetEraPayoutDampingFactorProposalParameters: ProposalParameters<BlockNumber, Balance> =
         set_era_payout_damping_factor();
 

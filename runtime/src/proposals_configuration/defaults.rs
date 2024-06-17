@@ -1,7 +1,7 @@
 //! This module contains default "production" parameters configuration for the runtime codex proposals.
 
 use crate::{
-    currency, days, dollars, hours, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,
+    currency, days, dollars, hours, joy, Balance, BlockNumber, CouncilSize, ExpectedBlockTime,
     ProposalParameters,
 };
 use static_assertions::const_assert;
@@ -65,7 +65,7 @@ pub(crate) fn funding_request_proposal() -> ProposalParameters<BlockNumber, Bala
         approval_threshold_percentage: TWO_OUT_OF_THREE,
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
-        required_stake: Some(dollars!(10)),
+        required_stake: Some(joy!(3_500)),
         constitutionality: 1,
     }
 }
@@ -350,6 +350,20 @@ pub(crate) fn update_token_pallet_token_governance_parameters(
         voting_period: days!(7),
         grace_period: days!(1),
         approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: ALL,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(100)),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Update Argo Bridge Parameters' proposal
+pub(crate) fn update_argo_bridge_parameters() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: days!(7),
+        grace_period: days!(1),
+        approval_quorum_percentage: ALL,
         approval_threshold_percentage: ALL,
         slashing_quorum_percentage: ALL,
         slashing_threshold_percentage: ALL,
