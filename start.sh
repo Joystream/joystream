@@ -42,11 +42,14 @@ fi
 ## Query Node Infrastructure
 ./query-node/start.sh
 
-## Orion
-./start-orion.sh
+if [ "${SKIP_ORION}" != true ]
+then
+  ## Orion
+  ./start-orion.sh
 
-## Storage Squid
-docker-compose -f ./docker-compose.storage-squid.yml up -d
+  ## Storage Squid
+  docker-compose -f ./docker-compose.storage-squid.yml up -d
+fi
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != true ]]; then
