@@ -55,6 +55,7 @@ import {
   SignalProposalDetails,
   SlashWorkingGroupLeadProposalDetails,
   TerminateWorkingGroupLeadProposalDetails,
+  UpdateArgoBridgeConstraintsProposalDetails,
   UpdateChannelPayoutsProposalDetails,
   UpdatePalletFrozenStatusProposalDetails,
   UpdateGlobalNftLimitProposalDetails,
@@ -79,13 +80,14 @@ import {
 import {
   ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
   ProposalsCodex_ProposalCreatedEvent_V2003 as ProposalCreatedEvent_V2003,
+  ProposalsCodex_ProposalCreatedEvent_V2004 as ProposalCreatedEvent_V2004,
   ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
   ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
   ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
   ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
   ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
 } from '../generated/types'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2003 } from '../generated/types/2003/types-lookup'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2004 } from '../generated/types/2004/types-lookup'
 
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 
@@ -109,7 +111,7 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
 async function parseProposalDetails(
   event: SubstrateEvent,
   store: DatabaseManager,
-  proposalDetails: RuntimeProposalDetails_V2003
+  proposalDetails: RuntimeProposalDetails_V2004
 ): Promise<typeof ProposalDetails> {
   const eventTime = new Date(event.blockTimestamp)
 
@@ -353,6 +355,17 @@ async function parseProposalDetails(
     const details = new SetEraPayoutDampingFactorProposalDetails()
     details.dampingFactor = proposalDetails.asSetEraPayoutDampingFactor.toNumber()
     return details
+  }
+  // UpdateArgoBridgeConstraintsProposalDetails
+  else if (proposalDetails.isUpdateArgoBridgeConstraints) {
+    const details = new UpdateArgoBridgeConstraintsProposalDetails()
+    const bridgeConstraints = proposalDetails.asUpdateArgoBridgeConstraints
+    details.operatorAccount = unwrap(bridgeConstraints.operatorAccount)?.toString()
+    details.pauserAccounts = unwrap(bridgeConstraints.pauserAccounts)?.map((a) => a.toString())
+    details.bridgingFee = whenDef(unwrap(bridgeConstraints.bridgingFee), asBN)
+    details.thawnDuration = unwrap(bridgeConstraints.thawnDuration)?.toNumber()
+    details.remoteChains = unwrap(bridgeConstraints.remoteChains)?.map((a) => a.toNumber())
+    return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
@@ -389,17 +402,19 @@ export async function proposalsCodex_ProposalCreated({
   event,
   block,
 }: EventContext & StoreContext): Promise<void> {
-  const specVersion = block.runtimeVersion.specVersion
+  const specVersion = Number(block.runtimeVersion.specVersion)
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    Number(specVersion) < 2001
+    specVersion < 2001
       ? new ProposalCreatedEvent_V1001(event).params
-      : new ProposalCreatedEvent_V2003(event).params
+      : specVersion < 2004
+      ? new ProposalCreatedEvent_V2003(event).params
+      : new ProposalCreatedEvent_V2004(event).params
 
   const eventTime = new Date(event.blockTimestamp)
   const proposalDetails = await parseProposalDetails(
     event,
     store,
-    runtimeProposalDetails as RuntimeProposalDetails_V2003
+    runtimeProposalDetails as RuntimeProposalDetails_V2004
   )
 
   const proposal = new Proposal({

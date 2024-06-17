@@ -69,6 +69,7 @@ pub trait WeightInfo {
 	fn create_proposal_update_channel_payouts(_t: u32, _d: u32, _i: u32, ) -> Weight;
 	fn create_proposal_freeze_pallet(_t: u32, _d: u32, ) -> Weight;
 	fn create_proposal_update_token_pallet_token_constraints(_t: u32, _d: u32, ) -> Weight;
+	fn create_proposal_update_argo_bridge_constraints(_t: u32, _d: u32, ) -> Weight;
 	fn create_proposal_set_era_payout_damping_factor(_t: u32, _d: u32, ) -> Weight;
 	fn create_proposal_decrease_council_budget(_t: u32, _d: u32, ) -> Weight;
 }
@@ -1060,6 +1061,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
+
+	fn create_proposal_update_argo_bridge_constraints(t: u32, d: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `651`
+		//  Estimated: `19940`
+		// Minimum execution time: 103_350 nanoseconds.
+		Weight::from_parts(82_522_075, 0u64)
+			.saturating_add(Weight::from_parts(0, 19940))
+			// Standard Error: 12_486
+			.saturating_add(Weight::from_parts(1_112_896, 0u64).saturating_mul(t.into()))
+			// Standard Error: 12_486
+			.saturating_add(Weight::from_parts(1_256_380, 0u64).saturating_mul(d.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(9_u64))
+	}
+
 	// Storage: Membership MembershipById (r:1 w:0)
 	// Proof: Membership MembershipById (max_values: None, max_size: Some(125), added: 2600, mode: MaxEncodedLen)
 	// Storage: ProposalEngine ActiveProposalCount (r:1 w:1)
@@ -1213,6 +1230,9 @@ impl WeightInfo for () {
 		Weight::from_parts(0, 0)
 	}
 	fn create_proposal_update_token_pallet_token_constraints(t: u32, d: u32, ) -> Weight {
+		Weight::from_parts(0, 0)
+	}
+	fn create_proposal_update_argo_bridge_constraints(t: u32, d: u32, ) -> Weight {
 		Weight::from_parts(0, 0)
 	}
 	fn create_proposal_set_era_payout_damping_factor(t: u32, d: u32, ) -> Weight {

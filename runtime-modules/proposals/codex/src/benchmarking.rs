@@ -286,7 +286,8 @@ benchmarks! {
     where_clause {
         where T: membership::Config,
         T: council::Config,
-        T: working_group::Config<working_group::Instance1>
+        T: working_group::Config<working_group::Instance1>,
+        T: argo_bridge::Config
     }
 
     create_proposal_signal {
@@ -941,6 +942,40 @@ benchmarks! {
                 amm_buy_tx_fees: Some(Permill::from_percent(1)),
                 amm_sell_tx_fees: Some(Permill::from_percent(1)),
                 bloat_bond: Some(1000u32.into()),
+            }
+        );
+    }: create_proposal(
+        RawOrigin::Signed(account_id.clone()),
+        general_proposal_paramters.clone(),
+        proposal_details.clone()
+    )
+    verify {
+        create_proposal_verify::<T>(
+            account_id,
+            member_id,
+            general_proposal_paramters,
+            proposal_details
+        );
+    }
+
+    create_proposal_argo_bridge_constraints {
+        let t in 1 .. to_kb(T::TitleMaxLength::get());
+        let d in 1 .. to_kb(T::DescriptionMaxLength::get());
+
+        let (account_id, member_id, general_proposal_paramters) =
+            create_proposal_parameters::<T>(t, d);
+
+        let pauser_accounts: Vec<T::AccountId> = (0..T::MaxPauserAccounts::get())
+        .map(|i| account::<T::AccountId>("pauser", 0, SEED))
+        .collect();
+        let chains: Vec<argo_bridge::types::ChainId> = (0u32..argo_bridge::types::MAX_REMOTE_CHAINS).collect();
+        let proposal_details = ProposalDetails::UpdateArgoBridgeConstraints(
+            argo_bridge::types::BridgeConstraints {
+                operator_account: Some(account::<T::AccountId>("operator", 0, SEED)),
+                pauser_accounts: Some(pauser_accounts),
+                bridging_fee: Some(100u32.into()),
+                thawn_duration: Some(1u32.into()),
+                remote_chains: Some(chains.try_into().unwrap())
             }
         );
     }: create_proposal(
