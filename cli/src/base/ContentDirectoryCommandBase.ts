@@ -23,10 +23,10 @@ const CATEGORIES_CONTEXTS = ['Lead', 'Curator'] as const
 const MODERATION_ACTION_CONTEXTS = ['Lead', 'Curator'] as const
 const CHANNEL_MANAGEMENT_CONTEXTS = ['Owner', 'Curator', 'Collaborator'] as const
 
-type ChannelManagementContext = typeof CHANNEL_MANAGEMENT_CONTEXTS[number]
-type ChannelCreationContext = typeof CHANNEL_CREATION_CONTEXTS[number]
-type CategoriesContext = typeof CATEGORIES_CONTEXTS[number]
-type ModerationActionContext = typeof MODERATION_ACTION_CONTEXTS[number]
+type ChannelManagementContext = (typeof CHANNEL_MANAGEMENT_CONTEXTS)[number]
+type ChannelCreationContext = (typeof CHANNEL_CREATION_CONTEXTS)[number]
+type CategoriesContext = (typeof CATEGORIES_CONTEXTS)[number]
+type ModerationActionContext = (typeof MODERATION_ACTION_CONTEXTS)[number]
 
 /**
  * Abstract base class for commands related to content directory

@@ -22,7 +22,7 @@ const TYPES_AVAILABLE = ['query', 'consts'] as const
 
 // String literals type based on TYPES_AVAILABLE const.
 // It works as if we specified: type ApiType = 'query' | 'consts'...;
-type ApiType = typeof TYPES_AVAILABLE[number]
+type ApiType = (typeof TYPES_AVAILABLE)[number]
 
 export default class ApiInspect extends ApiCommandBase {
   static description =

@@ -49,7 +49,7 @@ export function displayTable(rows: { [k: string]: string | number }[], cellHoriz
     }, columnName.length)
   const columnDef = (columnName: string) => ({
     header: columnName,
-    get: (row: typeof rows[number]) => chalk.magentaBright(`${row[columnName]}`),
+    get: (row: (typeof rows)[number]) => chalk.magentaBright(`${row[columnName]}`),
     minWidth: maxLength(columnName) + cellHorizontalPadding,
   })
   const columns: Table.table.Columns<{ [k: string]: string }> = {}

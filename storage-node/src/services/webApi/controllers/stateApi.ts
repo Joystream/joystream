@@ -17,7 +17,7 @@ import {
 } from '../types'
 import { AppConfig, sendResponseWithError } from './common'
 import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
-import { isStorageProviderConnectionEnabled } from 'src/commands/server'
+import { isStorageProviderConnectionEnabled } from '../../../commands/server'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.

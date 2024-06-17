@@ -9,6 +9,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import logger from '../logger'
 import fs from 'fs'
 
 export type AwsConnectionHandlerParams = {
@@ -41,6 +42,7 @@ export class AwsConnectionHandler implements IConnectionHandler {
       forcePathStyle: process.env.LOCALSTACK_ENABLED === 'true',
     })
     this.bucket = opts.bucketName
+    logger.info(`AWS connection handler initialized with bucket: ${this.bucket}`)
   }
 
   private isSuccessfulResponse(response: any): boolean {

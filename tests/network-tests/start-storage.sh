@@ -1,5 +1,7 @@
 set -e
 
+source ../../.env
+
 TMP=$0
 THIS_DIR=$(dirname $TMP)
 
@@ -23,6 +25,13 @@ docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-1
 docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-1
 docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-2
 docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-2
+
+# Start localstack if ENABLE_LOCALSTACK is set to true
+if [ "$LOCALSTACK_ENABLED" == "true" ]; then
+    docker-compose -f $THIS_DIR/../../docker-compose.yml up -d localstack
+    awslocal s3api create-bucket --bucket "$AWS_BUCKET_NAME"
+
+fi
 
 # allow a few seconds for nodes to startup and display first few log entries
 # to help debug tests
