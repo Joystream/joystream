@@ -19,7 +19,7 @@ import {
 import { AccountId } from '@polkadot/types/interfaces'
 const FORUM_MODERATION_CONTEXT = ['Leader', 'Moderator'] as const
 
-type ForumModerationContext = typeof FORUM_MODERATION_CONTEXT[number]
+type ForumModerationContext = (typeof FORUM_MODERATION_CONTEXT)[number]
 
 /**
  * Abstract base class for commands related to forum management

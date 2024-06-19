@@ -259,6 +259,8 @@ components:
         pendingObjects:
           type: integer
           format: int64
+        cloudProvider:
+          type: string 
     VersionResponse:
       type: object
       required:

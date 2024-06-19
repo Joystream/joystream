@@ -84,7 +84,7 @@ export async function createApp(config: AppConfig): Promise<Express> {
       },
       fileUploader: {
         storage: diskStorage({
-          destination: config.tempFileUploadingDir,
+          destination: config.tempFileUploadingDir, // every file will be uploaded to the temp directory first
         }),
         // Busboy library settings
         limits: {
