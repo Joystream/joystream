@@ -48,6 +48,7 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
   }
 
   if (!isStorageProviderConnectionEnabled()) {
+    logger.debug(`no storage provider connection enabled for cache loading`)
     return
   }
   const connection = getStorageProviderConnection()!

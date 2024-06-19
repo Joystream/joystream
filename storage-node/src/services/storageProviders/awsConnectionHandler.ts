@@ -28,21 +28,38 @@ export class AwsConnectionHandler implements IConnectionHandler {
   private multiPartThresholdGB = 5
 
   constructor(opts: AwsConnectionHandlerParams) {
-    this.client = new S3Client({
+    if (process.env.LOCALSTACK_ENABLED === 'true') {
+      this.client = this.constructWithLocalstack(opts)
+    } else {
+      this.client = this.constructProduction(opts)
+    }
+    this.bucket = opts.bucketName
+    logger.info(
+      `AWS connection handler initialized with bucket config ${
+        process.env.LOCALSTACK_ENABLED === 'true' ? 'LOCALSTACK' : 'PRODUCTION'
+      }`
+    )
+  }
+
+  private constructProduction(opts: AwsConnectionHandlerParams): S3Client {
+    return new S3Client({
       credentials: {
         accessKeyId: opts.accessKeyId,
         secretAccessKey: opts.secretAccessKey,
       },
       region: opts.region,
-      endpoint:
-        process.env.LOCALSTACK_ENABLED === 'true'
-          ? `http://localhost:${process.env.LOCALSTACK_PORT || 4566}/`
-          : undefined,
-      tls: process.env.LOCALSTACK_ENABLED === 'true' ? false : undefined,
-      forcePathStyle: process.env.LOCALSTACK_ENABLED === 'true',
     })
-    this.bucket = opts.bucketName
-    logger.info(`AWS connection handler initialized with bucket: ${this.bucket}`)
+  }
+  private constructWithLocalstack(opts: AwsConnectionHandlerParams): S3Client {
+    return new S3Client({
+      credentials: {
+        accessKeyId: opts.accessKeyId,
+        secretAccessKey: opts.secretAccessKey,
+      },
+      endpoint: process.env.LOCALSTACK_ENDPOINT!,
+      tls: false,
+      forcePathStyle: true,
+    })
   }
 
   private isSuccessfulResponse(response: any): boolean {

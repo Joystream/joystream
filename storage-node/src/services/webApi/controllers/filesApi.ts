@@ -47,6 +47,7 @@ export async function getFile(
   try {
     pinDataObjectIdToCache(dataObjectId)
   } catch (err) {
+    logger.error(`Error pinning file ${dataObjectId} to cache`)
     res.status(404).send()
     return
   }
@@ -94,6 +95,7 @@ export async function getFile(
       const connection = getStorageProviderConnection()!
 
       const url = await connection.getRedirectUrlForObject(dataObjectId)
+      logger.info(`Creating presigned url for remote file ${url}`)
 
       // Redirect to the remote file
       res.redirect(url)

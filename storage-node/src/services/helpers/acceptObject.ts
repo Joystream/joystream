@@ -1,4 +1,5 @@
 import fs from 'fs'
+import logger from '../logger'
 import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../commands/server'
 import { addDataObjectIdToCache } from '../caching/localDataObjects'
 import { moveFile } from './moveFile'
@@ -15,10 +16,13 @@ export async function acceptObject(
       throw new Error('Destination path is undefined')
     }
     await moveFile(src, dest)
+    logger.info(`File ${filename} accepted on local volume`)
   } else {
     const connection = getStorageProviderConnection()!
     await connection.uploadFileToRemoteBucket(filename, src.toString())
     await fsPromises.unlink(src)
+    logger.info(`File ${filename} accepted to remote storage`)
   }
   addDataObjectIdToCache(filename)
+  logger.info(`File ${filename} added to local cache`)
 }
