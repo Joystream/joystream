@@ -1,0 +1,26 @@
+version: '3.4'
+services:
+  localstack:
+    container_name: local_stack
+    image: localstack/localstack
+    network_mode: bridge
+    environment:
+      - SERVICES=s3 # we only need s3 bucket
+      - DEBUG=1
+      - DEFAULT_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LOCALSTACK_ENDPOINT=${LOCALSTACK_ENDPOINT}
+    ports:
+      - 4566:4566
+    volumes:
+      - localstack-data:/var/lib/localstack'
+
+networks:
+  joystream:
+    external: true
+    name: joystream_default
+
+volumes:
+  localstack-data:
+    driver: local

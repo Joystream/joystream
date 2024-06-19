@@ -29,7 +29,7 @@ docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-2
 docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-2
 
 # Start localstack if ENABLE_LOCALSTACK is set to true
-docker-compose -f $THIS_DIR/../../docker-compose.yml up -d localstack
+docker-compose -f $THIS_DIR/../../docker-compose.localstack.yml up -d localstack
 awslocal s3api create-bucket --bucket $AWS_BUCKET_NAME --endpoint http://localhost:4566
 
 # allow a few seconds for nodes to startup and display first few log entries

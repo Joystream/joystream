@@ -20,9 +20,10 @@ function cleanup() {
   fi
 
   docker-compose -f ../../docker-compose.yml down -v
+  docker-compose -f ../../docker-compose.localstack.yml down -v
 }
 
-# trap cleanup EXIT ERR SIGINT SIGTERM
+trap cleanup EXIT ERR SIGINT SIGTERM
 
 export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:-latest}
 RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh
