@@ -93,7 +93,7 @@ query getDistributionBucketsWithBagsByIds($ids: [String!]) {
   }
 }
 
-query getDistributionBucketsWithBagsByWorkerId($workerId: Int!) {
+query getDistributionBucketsWithBagsByWorkerId($workerId: BigInt!) {
   distributionBuckets(where: { operators_some: { workerId_eq: $workerId, status_eq: ACTIVE } }) {
     ...DistributionBucketWithBags
   }
@@ -103,6 +103,26 @@ fragment StorageBucketOperatorFields on StorageBucket {
   id
   operatorMetadata {
     nodeEndpoint
+    nodeOperationalStatus {
+      ... on NodeOperationalStatusNormal {
+        __typename
+      }
+      ... on NodeOperationalStatusNoService {
+        __typename
+        forced
+      }
+      ... on NodeOperationalStatusNoServiceFrom {
+        __typename
+        forced
+        from
+      }
+      ... on NodeOperationalStatusNoServiceUntil {
+        __typename
+        forced
+        from
+        until
+      }
+    }
   }
 }
 

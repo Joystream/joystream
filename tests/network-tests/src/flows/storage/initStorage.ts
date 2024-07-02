@@ -1,6 +1,10 @@
 import { FlowProps } from '../../Flow'
 import { extendDebug } from '../../Debugger'
-import { IStorageBucketOperatorMetadata, StorageBucketOperatorMetadata } from '@joystream/metadata-protobuf'
+import {
+  INodeOperationalStatus,
+  IStorageBucketOperatorMetadata,
+  StorageBucketOperatorMetadata,
+} from '@joystream/metadata-protobuf'
 import { CreateInterface, createType } from '@joystream/types'
 import {
   PalletStorageDynamicBagIdType as DynamicBagId,
@@ -11,6 +15,8 @@ import { Utils } from '../../utils'
 import BN from 'bn.js'
 import { FixtureRunner } from '../../Fixture'
 import { HireWorkersFixture } from '../../fixtures/workingGroups/HireWorkersFixture'
+import { assert } from 'chai'
+// import { setStorageNodeOperationalStatus } from ''
 
 type StorageBucketConfig = {
   metadata: IStorageBucketOperatorMetadata
@@ -158,6 +164,49 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     )
     await Promise.all(bucketSetupPromises)
 
-    debug('Done')
+    // toggle storage operator 0 in maintenance mode for bucket 0
+    const operatorMaintenanceActivationTx = api.tx.storage.setStorageOperatorMetadata(
+      operatorIds[0],
+      Array.from(bucketById.keys())[0],
+      '0x' +
+        Buffer.from(
+          StorageBucketOperatorMetadata.encode({
+            operationalStatus: {
+              noServiceUntil: {
+                rationale: 'test',
+                from: new Date().toISOString(), // date now to string
+                until: new Date(Date.now() + 10000).toISOString(),
+              },
+            },
+          }).finish()
+        ).toString('hex')
+    )
+    const operatorMaintenanceActivationResult = await api.sendExtrinsicsAndGetResults(
+      [operatorMaintenanceActivationTx],
+      operatorKeys[0]
+    )
+    assert(operatorMaintenanceActivationResult[0].isCompleted, 'setStorageOperatorMetadata failed')
+
+    const operatorMaintenanceDeactivationTx = api.tx.storage.setStorageOperatorMetadata(
+      operatorIds[0],
+      Array.from(bucketById.keys())[0],
+      '0x' +
+        Buffer.from(
+          StorageBucketOperatorMetadata.encode({
+            operationalStatus: {
+              normal: {
+                rationale: 'test',
+              },
+            },
+          }).finish()
+        ).toString('hex')
+    )
+    const operatorMaintenanceDeactivationResult = await api.sendExtrinsicsAndGetResults(
+      [operatorMaintenanceDeactivationTx],
+      operatorKeys[0]
+    )
+    assert(operatorMaintenanceDeactivationResult[0].isCompleted, 'setStorageOperatorMetadata failed')
   }
 }
+
+async function setStorageOperatorMetadataTest() {}

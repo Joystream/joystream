@@ -1,6 +1,7 @@
-### 2.1.2
+### 2.2.0
 
-- Bump @joystream/types to Petra version
+- Updates `operator:set-metadata` CLI command to set distributor-node's operational status along with other metadata.
+- Adds `leader:set-node-operational-status` CLI command to set operational status of any distributor-node by Lead.
 
 ### 2.1.1
 
