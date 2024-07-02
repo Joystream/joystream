@@ -21,6 +21,7 @@ import {
   BudgetFundedEventFieldsFragment,
   BudgetSetEventFieldsFragment,
   BudgetSpendingEventFieldsFragment,
+  VestedBudgetSpendingEventFieldsFragment,
   CandidateFieldsFragment,
   CategoryArchivalStatusUpdatedEventFieldsFragment,
   CategoryCreatedEventFieldsFragment,
@@ -82,6 +83,9 @@ import {
   GetBudgetSpendingEventsByEventIds,
   GetBudgetSpendingEventsByEventIdsQuery,
   GetBudgetSpendingEventsByEventIdsQueryVariables,
+  GetVestedBudgetSpendingEventsByEventIds,
+  GetVestedBudgetSpendingEventsByEventIdsQuery,
+  GetVestedBudgetSpendingEventsByEventIdsQueryVariables,
   GetCategoriesByIds,
   GetCategoriesByIdsQuery,
   GetCategoriesByIdsQueryVariables,
@@ -986,6 +990,16 @@ export class QueryNodeApi {
       GetBudgetSpendingEventsByEventIdsQuery,
       GetBudgetSpendingEventsByEventIdsQueryVariables
     >(GetBudgetSpendingEventsByEventIds, { eventIds }, 'budgetSpendingEvents')
+  }
+
+  public async getVestedBudgetSpendingEvents(
+    events: EventDetails[]
+  ): Promise<VestedBudgetSpendingEventFieldsFragment[]> {
+    const eventIds = events.map((e) => this.getQueryNodeEventId(e.blockNumber, e.indexInBlock))
+    return this.multipleEntitiesQuery<
+      GetVestedBudgetSpendingEventsByEventIdsQuery,
+      GetVestedBudgetSpendingEventsByEventIdsQueryVariables
+    >(GetVestedBudgetSpendingEventsByEventIds, { eventIds }, 'vestedBudgetSpendingEvents')
   }
 
   public async getLeaderSetEvent(event: EventDetails): Promise<LeaderSetEventFieldsFragment | null> {

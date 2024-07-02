@@ -171,7 +171,6 @@ pub(crate) fn terminate_working_group_lead_proposal() -> ProposalParameters<Bloc
 }
 
 // Proposal parameters for the 'Amend Constitution' proposal
-// TODO: To be removed
 pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: minutes!(20),
@@ -345,6 +344,63 @@ pub(crate) fn update_channel_payouts_proposal() -> ProposalParameters<BlockNumbe
 }
 // Proposal parameters for the 'Freeze Pallet' proposal
 pub(crate) fn freeze_pallet_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: 0,
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Update Pallet Token Governance Parameters' proposal
+pub(crate) fn update_token_pallet_token_governance_parameters(
+) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: 0,
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Update Argo Bridge Parameters' proposal
+pub(crate) fn update_argo_bridge_parameters() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: 0,
+        approval_quorum_percentage: ALL,
+        approval_threshold_percentage: ALL,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Set Era Payout Damping Factor' proposal
+pub(crate) fn set_era_payout_damping_factor() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: minutes!(20),
+        grace_period: 0,
+        approval_quorum_percentage: TWO_OUT_OF_THREE,
+        approval_threshold_percentage: TWO_OUT_OF_THREE,
+        slashing_quorum_percentage: ALL,
+        slashing_threshold_percentage: ALL,
+        required_stake: Some(dollars!(50)),
+        constitutionality: 1,
+    }
+}
+
+// Proposal parameters for the 'Decrease Council Budget' proposal
+pub(crate) fn decrease_council_budget() -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters {
         voting_period: minutes!(20),
         grace_period: 0,

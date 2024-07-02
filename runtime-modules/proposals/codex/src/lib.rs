@@ -128,6 +128,7 @@ pub trait Config:
     + proposals_discussion::Config
     + common::membership::MembershipTypes
     + staking::Config
+    + token::Config
     + proposals_engine::Config
     + working_group::Config<ForumWorkingGroupInstance>
     + working_group::Config<StorageWorkingGroupInstance>
@@ -138,6 +139,7 @@ pub trait Config:
     + working_group::Config<OperationsWorkingGroupInstanceBeta>
     + working_group::Config<OperationsWorkingGroupInstanceGamma>
     + working_group::Config<DistributionWorkingGroupInstance>
+    + council::Config
 {
     /// Proposal Codex module event type.
     type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
@@ -279,6 +281,24 @@ pub trait Config:
     type SetPalletFozenStatusProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// `Update pallet project token` proposal parameters
+    type UpdateTokenPalletTokenConstraints: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Update pallet project token` proposal parameters
+    type UpdateArgoBridgeConstraints: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
+
+    /// `Set Era Payout Damping Factor` proposal parameters
+    type SetEraPayoutDampingFactorProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// `Decrease Council Budget` proposal parameters
+    type DecreaseCouncilBudgetProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Specialized alias of GeneralProposalParams
@@ -385,6 +405,9 @@ decl_error! {
 
         /// Arithmeic Error
         ArithmeticError,
+
+        /// Reduction Amount Zero
+        ReductionAmountZero,
     }
 }
 
@@ -503,8 +526,25 @@ decl_module! {
         const SetMaxValidatorCountProposalMaxValidators: u32 =
             T::SetMaxValidatorCountProposalMaxValidators::get();
 
+        /// Decrease Council budget parameters
+        const DecreaseCouncilBudgetProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::DecreaseCouncilBudgetProposalParameters::get();
+
+        /// Set Pallet Frozen status
         const SetPalletFozenStatusProposalParameters:
             ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetPalletFozenStatusProposalParameters::get();
+
+        /// pallet token governance parameters proposal
+        const UpdateTokenPalletTokenConstraints:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateTokenPalletTokenConstraints::get();
+
+        /// Set Argo Bridge Constraints
+        const UpdateArgoBridgeConstraints:
+        ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::UpdateArgoBridgeConstraints::get();
+
+        /// Era payout damping factor
+        const SetEraPayoutDampingFactorProposalParameters:
+            ProposalParameters<T::BlockNumber, BalanceOf<T>> = T::SetEraPayoutDampingFactorProposalParameters::get();
 
 
         /// Create a proposal, the type of proposal depends on the `proposal_details` variant
@@ -877,6 +917,21 @@ impl<T: Config> Module<T> {
             ProposalDetails::SetPalletFozenStatus(..) => {
                 // Note: No checks for this proposal for now
             }
+            ProposalDetails::DecreaseCouncilBudget(reduction_amount) => {
+                ensure!(
+                    !(*reduction_amount).is_zero(),
+                    Error::<T>::ReductionAmountZero
+                );
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::UpdateArgoBridgeConstraints(..) => {
+                // Note: No checks for this proposal for now
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                // Note: No checks for this proposal for now
+            }
         }
 
         Ok(())
@@ -946,6 +1001,18 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetPalletFozenStatus(..) => {
                 T::SetPalletFozenStatusProposalParameters::get()
+            }
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                T::DecreaseCouncilBudgetProposalParameters::get()
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                T::UpdateTokenPalletTokenConstraints::get()
+            }
+            ProposalDetails::UpdateArgoBridgeConstraints(..) => {
+                T::UpdateArgoBridgeConstraints::get()
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                T::SetEraPayoutDampingFactorProposalParameters::get()
             }
         }
     }
@@ -1110,6 +1177,30 @@ impl<T: Config> Module<T> {
             }
             ProposalDetails::SetPalletFozenStatus(..) => {
                 WeightInfoCodex::<T>::create_proposal_freeze_pallet(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::DecreaseCouncilBudget(..) => {
+                WeightInfoCodex::<T>::create_proposal_decrease_council_budget(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::UpdateTokenPalletTokenConstraints(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_token_pallet_token_constraints(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::UpdateArgoBridgeConstraints(..) => {
+                WeightInfoCodex::<T>::create_proposal_update_argo_bridge_constraints(
+                    to_kb(title_length.saturated_into()),
+                    to_kb(description_length.saturated_into()),
+                )
+            }
+            ProposalDetails::SetEraPayoutDampingFactor(..) => {
+                WeightInfoCodex::<T>::create_proposal_set_era_payout_damping_factor(
                     to_kb(title_length.saturated_into()),
                     to_kb(description_length.saturated_into()),
                 )

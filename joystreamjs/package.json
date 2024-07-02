@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@joystream/metadata-protobuf": "^2.15.0",
-    "@joystream/types": "^4.4.0",
+    "@joystream/types": "^4.6.0",
     "@polkadot/util-crypto": "^12.6.2",
     "axios": "^1.2.1",
     "buffer": "^6.0.3",

@@ -773,7 +773,7 @@ OPTIONS
 
   -e, --elasticSearchEndpoint=elasticSearchEndpoint                Elasticsearch endpoint (e.g.: http://some.com:8081).
                                                                    Log level could be set using the ELASTIC_LOG_LEVEL
-                                                                   enviroment variable.
+                                                                   environment variable.
                                                                    Supported values: warn, error, debug, info.
                                                                    Default:debug
 
@@ -826,11 +826,15 @@ OPTIONS
   -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly|none)  [default: daily] Log files update frequency.
 
   --elasticSearchIndexPrefix=elasticSearchIndexPrefix              Elasticsearch index prefix. Node ID will be appended
-                                                                   to the prefix. Default: logs-colossus
+                                                                   to the prefix. Default: logs-colossus. Can be passed
+                                                                   through ELASTIC_INDEX_PREFIX environment variable.
 
-  --elasticSearchPassword=elasticSearchPassword                    Elasticsearch password for basic authentication.
+  --elasticSearchPassword=elasticSearchPassword                    Elasticsearch password for basic authentication. Can
+                                                                   be passed through ELASTIC_PASSWORD environment
+                                                                   variable.
 
-  --elasticSearchUser=elasticSearchUser                            Elasticsearch user for basic authentication.
+  --elasticSearchUser=elasticSearchUser                            Elasticsearch user for basic authentication. Can be
+                                                                   passed through ELASTIC_USER environment variable.
 
   --keyStore=keyStore                                              Path to a folder with multiple key files to load into
                                                                    keystore.

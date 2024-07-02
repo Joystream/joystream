@@ -72,6 +72,7 @@ export const proposalTypeToProposalParamsKey = {
   'AmendConstitution': 'amendConstitutionProposalParameters',
   'CancelWorkingGroupLeadOpening': 'cancelWorkingGroupLeadOpeningProposalParameters',
   'CreateWorkingGroupLeadOpening': 'createWorkingGroupLeadOpeningProposalParameters',
+  'DecreaseCouncilBudget': 'decreaseCouncilBudgetProposalParameters',
   'DecreaseWorkingGroupLeadStake': 'decreaseWorkingGroupLeadStakeProposalParameters',
   'FillWorkingGroupLeadOpening': 'fillWorkingGroupOpeningProposalParameters',
   'FundingRequest': 'fundingRequestProposalParameters',
@@ -93,6 +94,9 @@ export const proposalTypeToProposalParamsKey = {
   'UpdateGlobalNftLimit': 'updateGlobalNftLimitProposalParameters',
   'UpdateChannelPayouts': 'updateChannelPayoutsProposalParameters',
   'SetPalletFozenStatus': 'setPalletFozenStatusProposalParameters',
+  'SetEraPayoutDampingFactor': 'setEraPayoutDampingFactorProposalParameters',
+  'UpdateTokenPalletTokenConstraints': 'updateTokenPalletTokenConstraints',
+  'UpdateArgoBridgeConstraints': 'updateArgoBridgeConstraints',
 } as const
 
 type ProposalTypeToProposalParamsKeyMap = { [K in ProposalType]: keyof AugmentedConsts<'promise'>['proposalsCodex'] }
