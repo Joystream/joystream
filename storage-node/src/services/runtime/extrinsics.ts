@@ -1,8 +1,8 @@
 import {
   INodeOperationalStatus,
   ISetNodeOperationalStatus,
-  IStorageBucketOperatorMetadata, 
-  StorageBucketOperatorMetadata, 
+  IStorageBucketOperatorMetadata,
+  StorageBucketOperatorMetadata,
 } from '@joystream/metadata-protobuf'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -604,15 +604,12 @@ export async function setStorageNodeOperationalStatus(
   operationalStatus: INodeOperationalStatus
 ): Promise<boolean> {
   return await extrinsicWrapper(() => {
-    const operationalStatusField: ISetNodeOperationalStatus = {
-      workerId: workerId.toString(),
-      bucketId: bucketId.toString(),
+    const metadata: IStorageBucketOperatorMetadata = {
       operationalStatus,
     }
-    const metadata: IStorageBucketOperatorMetadata = {
-      operationalStatus: operationalStatusField,
-    }
-    const tx = api.tx.storageWorkingGroup.leadRemark(
+    const tx = api.tx.storage.setStorageOperatorMetadata(
+      workerId,
+      bucketId,
       '0x' + Buffer.from(StorageBucketOperatorMetadata.encode(metadata).finish()).toString('hex')
     )
 
