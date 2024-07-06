@@ -1,6 +1,5 @@
 import {
   INodeOperationalStatus,
-  ISetNodeOperationalStatus,
   IStorageBucketOperatorMetadata,
   StorageBucketOperatorMetadata,
 } from '@joystream/metadata-protobuf'

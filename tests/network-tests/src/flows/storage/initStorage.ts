@@ -208,5 +208,3 @@ export default function createFlow({ buckets, dynamicBagPolicy }: InitStorageCon
     assert(operatorMaintenanceDeactivationResult[0].isCompleted, 'setStorageOperatorMetadata failed')
   }
 }
-
-async function setStorageOperatorMetadataTest() {}
