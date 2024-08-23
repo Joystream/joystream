@@ -44,6 +44,14 @@ Resources:
           FromPort: 30333
           ToPort: 30333
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 4000
+          ToPort: 4000
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}_substrate_node'
