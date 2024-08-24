@@ -1,4 +1,3 @@
-version: '3.4'
 services:
   localstack:
     container_name: local_stack

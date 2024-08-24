@@ -8,7 +8,7 @@ THIS_DIR=$(dirname $TMP)
 echo "Staring storage infrastructure"
 
 # Start Storage-Squid
-docker-compose -f $THIS_DIR/../../docker-compose.storage-squid.yml up -d
+docker compose -f $THIS_DIR/../../docker-compose.storage-squid.yml up -d
 
 HOST_IP=`$THIS_DIR/get-host-ip.sh`
 export COLOSSUS_1_URL="http://${HOST_IP}:3333"
@@ -24,7 +24,7 @@ sleep 30
 export LOCALSTACK_ENABLED=true
 export LOCALSTACK_HOST="${HOST_IP}:4566"
 export LOCALSTACK_ENDPOINT="http://${LOCALSTACK_HOST}"
-docker-compose -f $THIS_DIR/../../docker-compose.localstack.yml up -d localstack && sleep 15
+docker compose -f $THIS_DIR/../../docker-compose.localstack.yml up -d localstack && sleep 15
 python3 -m venv .venv
 pip install awscli-local
 source .venv/bin/activate
@@ -33,10 +33,10 @@ awslocal s3api create-bucket --bucket test-bucket-2 --endpoint ${LOCALSTACK_ENDP
 deactivate
 
 # Start colossus & argus
-docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-1
-docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-1
-docker-compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-2
-docker-compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-2
+docker compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-1
+docker compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-1
+docker compose -f $THIS_DIR/../../docker-compose.yml up -d colossus-2
+docker compose -f $THIS_DIR/../../docker-compose.yml up -d distributor-2
 
 # allow a few seconds for nodes to startup and display first few log entries
 # to help debug tests

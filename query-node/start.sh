@@ -8,16 +8,16 @@ cd $SCRIPT_PATH
 [ ! -d "generated/" ] && yarn build
 
 # Bring up db
-docker-compose -f ../docker-compose.yml up -d db
+docker compose -f ../docker-compose.yml up -d db
 echo "Waiting for the db to be ready..."
 sleep 5
 
 # Start indexer and gateway
-docker-compose -f ../docker-compose.yml up -d indexer
-docker-compose -f ../docker-compose.yml up -d hydra-indexer-gateway
+docker compose -f ../docker-compose.yml up -d indexer
+docker compose -f ../docker-compose.yml up -d hydra-indexer-gateway
 
 # Start processor
-docker-compose -f ../docker-compose.yml up -d processor
+docker compose -f ../docker-compose.yml up -d processor
 echo "Waiting for processor to be ready..." && sleep 30
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # On Docker Desktop things take a bit longer to startup
@@ -25,5 +25,5 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 
 # Start graphql-server
-docker-compose -f ../docker-compose.yml up -d graphql-server
+docker compose -f ../docker-compose.yml up -d graphql-server
 echo "Waiting for graphql-server to be ready..." && sleep 30

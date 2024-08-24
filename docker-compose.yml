@@ -1,5 +1,4 @@
 # Complete joystream development network
-version: '3.4'
 services:
   joystream-node:
     image: joystream/node:$JOYSTREAM_NODE_TAG
@@ -256,7 +255,7 @@ services:
       "
 
   indexer:
-    image: joystream/hydra-indexer:v5.0.0-alpha.8
+    image: hydra-indexer
     container_name: indexer
     restart: unless-stopped
     env_file:
@@ -278,7 +277,7 @@ services:
       sh -c "yarn db:bootstrap && yarn start:prod"
 
   hydra-indexer-gateway:
-    image: joystream/hydra-indexer-gateway:5.0.0-alpha.8
+    image: hydra-indexer-gateway
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
