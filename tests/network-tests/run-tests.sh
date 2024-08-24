@@ -17,16 +17,15 @@ function cleanup() {
 
   if [ "${NO_STORAGE}" != true ]; then
     docker-compose -f ../../docker-compose.storage-squid.yml down -v
+    docker-compose -f ../../docker-compose.localstack.yml down -v
   fi
 
   docker-compose -f ../../docker-compose.yml down -v
-  docker-compose -f ../../docker-compose.localstack.yml down -v
 }
 
 trap cleanup EXIT ERR SIGINT SIGTERM
 
-export JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG:-latest}
-RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh
+export JOYSTREAM_NODE_TAG=`RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh`
 CHAIN=dev docker compose -f ../../docker-compose.yml up -d joystream-node
 
 sleep 30
