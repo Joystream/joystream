@@ -26,8 +26,8 @@ export LOCALSTACK_HOST="${HOST_IP}:4566"
 export LOCALSTACK_ENDPOINT="http://${LOCALSTACK_HOST}"
 docker compose -f $THIS_DIR/../../docker-compose.localstack.yml up -d localstack && sleep 15
 python3 -m venv .venv
-pip install awscli-local
 source .venv/bin/activate
+pip install awscli-local
 awslocal s3api create-bucket --bucket test-bucket-1 --endpoint ${LOCALSTACK_ENDPOINT}
 awslocal s3api create-bucket --bucket test-bucket-2 --endpoint ${LOCALSTACK_ENDPOINT}
 deactivate
