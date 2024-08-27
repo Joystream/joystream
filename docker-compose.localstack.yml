@@ -2,7 +2,7 @@ version: '3.4'
 services:
   localstack:
     container_name: local_stack
-    image: localstack/localstack
+    image: localstack/localstack:3
     network_mode: bridge
     environment:
       - SERVICES=s3 # we only need s3 bucket
