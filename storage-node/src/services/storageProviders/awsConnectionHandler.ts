@@ -1,11 +1,13 @@
-import { IConnectionHandler } from './IConnectionHandler'
+import { IConnectionHandler, UploadFileIfNotExistsOutput, UploadFileOutput } from './IConnectionHandler'
 import {
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsCommand,
   ListObjectsCommandInput,
   PutObjectCommand,
+  PutObjectCommandInput,
   S3Client,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -66,6 +68,15 @@ export class AwsConnectionHandler implements IConnectionHandler {
     // Response status code info: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
     return response.$metadata.httpStatusCode === 200
   }
+
+  private fileNotFoundResponse(response: any): boolean {
+    return response.$metadata.httpStatusCode === 404
+  }
+
+  private insufficientPermissionsResponse(response: any): boolean {
+    return response.$metadata.httpStatusCode === 403
+  }
+
   private isMultiPartNeeded(filePath: string): boolean {
     const stats = fs.statSync(filePath)
     const fileSizeInBytes = stats.size
@@ -73,20 +84,59 @@ export class AwsConnectionHandler implements IConnectionHandler {
     return fileSizeInGigabytes > this.multiPartThresholdGB
   }
 
-  async uploadFileToRemoteBucket(filename: string, filePath: string): Promise<any> {
-    const input = {
+  async uploadFileToRemoteBucket(key: string, filePath: string): Promise<UploadFileOutput> {
+    try {
+      await this.uploadFileToAWSBucket(key, filePath)
+      return {
+        key,
+        filePath,
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async uploadFileToRemoteBucketIfNotExists(key: string, filePath: string): Promise<UploadFileIfNotExistsOutput> {
+    // check if file exists at key
+    const fileExists = await this.checkIfFileExists(key)
+    // if it does, return
+    if (fileExists) {
+      return {
+        key,
+        filePath,
+        alreadyExists: true,
+      }
+    }
+    // if it doesn't, upload the file
+    try {
+      await this.uploadFileToAWSBucket(key, filePath)
+      return {
+        key,
+        filePath,
+        alreadyExists: false,
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  private async uploadFileToAWSBucket(filename: string, filePath: string): Promise<any> {
+    const fileStream = fs.createReadStream(filePath)
+
+    const input: PutObjectCommandInput = {
       Bucket: this.bucket,
       Key: filename,
-      Body: filePath,
+      Body: fileStream,
     }
 
     // Uploading files to the bucket: multipart
     const command = this.isMultiPartNeeded(filePath)
       ? new CreateMultipartUploadCommand(input)
       : new PutObjectCommand(input)
-    const response = await this.client.send(command)
-    if (!this.isSuccessfulResponse(response)) {
-      throw new Error('Failed to upload file to S3')
+    try {
+      return await this.client.send(command)
+    } catch (error) {
+      throw error
     }
   }
 
@@ -135,5 +185,26 @@ export class AwsConnectionHandler implements IConnectionHandler {
     }
 
     await this.client.send(new DeleteObjectCommand(input))
+  }
+
+  private async checkIfFileExists(filename: string): Promise<boolean> {
+    const input = {
+      Bucket: this.bucket,
+      Key: filename,
+    }
+
+    const command = new HeadObjectCommand(input)
+    const response = await this.client.send(command)
+    if (this.isSuccessfulResponse(response)) {
+      return true
+    } else if (this.fileNotFoundResponse(response)) {
+      return false
+    } else if (this.insufficientPermissionsResponse(response)) {
+      throw new Error('Insufficient permissions to check if file exists in S3 bucket')
+    } else {
+      throw new Error(
+        `Unknown error when checking if file exists in S3 bucket: error ${response.$metadata.httpStatusCode}`
+      )
+    }
   }
 }
