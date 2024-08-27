@@ -52,7 +52,7 @@ export async function getFile(
     return
   }
 
-  const unpin = _.once(async () => {
+  const unpin = _.once(() => {
     unpinDataObjectIdFromCache(dataObjectId)
   })
 
