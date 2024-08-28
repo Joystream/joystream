@@ -53,6 +53,7 @@ describe('AwsConnectionHandler full test suite', () => {
     const filePath = './testfile.txt'
     const bucketPath = 'testDir/testfile.txt'
 
-    await awsConnectionHandler.uploadFileToRemoteBucket(filePath, bucketPath)
+    const result = await awsConnectionHandler.uploadFileToRemoteBucketIfNotExists(filePath, bucketPath)
+    expect(result.alreadyExists).toBe(true)
   })
 })
