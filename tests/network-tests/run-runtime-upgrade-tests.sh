@@ -68,7 +68,7 @@ function create_raw_chain_spec() {
 
 # Start a chain with generated chain spec
 function start_joystream_node {
-    docker-compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec \
+    docker compose -f ../../docker-compose.yml run -d -v ${DATA_PATH}:/spec \
         --name joystream-node \
         -p 9944:9944 -p 9933:9933 joystream-node \
         --validator --unsafe-ws-external --unsafe-rpc-external \
@@ -140,7 +140,7 @@ function init_chain_db() {
     # if the initial state is large.
     # exporting should give some essential tasks errors but they are harmless https://github.com/paritytech/substrate/issues/10583
     echo >&2 "exporting state"
-    docker-compose -f ../../docker-compose.yml run --rm \
+    docker compose -f ../../docker-compose.yml run --rm \
         -v ${DATA_PATH}:/spec joystream-node export-state \
         --chain /spec/chain-spec-forked.json \
         --base-path /data --pruning archive >${DATA_PATH}/exported-state.json

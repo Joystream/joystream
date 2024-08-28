@@ -15,10 +15,10 @@ ELASTIC_USERNAME=${ELASTIC_USERNAME:="elastic"}
 ELASTIC_PASSWORD=${ELASTIC_PASSWORD:="password"}
 
 # Remove elasticsearch stack containers & volumes
-docker-compose -f ./docker-compose.elasticsearch.yml down -v
+docker compose -f ./docker-compose.elasticsearch.yml down -v
 
-# Run docker-compose to start elasticsearch container
-docker-compose -f ./docker-compose.elasticsearch.yml up -d elasticsearch
+# Run docker compose to start elasticsearch container
+docker compose -f ./docker-compose.elasticsearch.yml up -d elasticsearch
 
 echo 'Waiting for Elasticsearch...'
 
@@ -46,10 +46,10 @@ export ELASTICSEARCH_SERVICEACCOUNTTOKEN=$(echo $response_body | jq -r '.token.v
 
 echo 'Starting for Kibana...'
 
-## Run docker-compose to start kibana container
-docker-compose -f ./docker-compose.elasticsearch.yml up -d kibana
+## Run docker compose to start kibana container
+docker compose -f ./docker-compose.elasticsearch.yml up -d kibana
 
 echo 'Starting APM Server...'
 
-## Run docker-compose to start apm-server container
-docker-compose -f ./docker-compose.elasticsearch.yml up -d apm-server
+## Run docker compose to start apm-server container
+docker compose -f ./docker-compose.elasticsearch.yml up -d apm-server

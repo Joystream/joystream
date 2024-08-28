@@ -18,7 +18,7 @@ function cleanup() {
     docker logs ${CONTAINER_ID} --tail 15
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
-    docker-compose -f ../../docker-compose.yml down -v
+    docker compose -f ../../docker-compose.yml down -v
 }
 
 trap cleanup EXIT ERR SIGINT SIGTERM

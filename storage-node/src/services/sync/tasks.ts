@@ -7,14 +7,10 @@ import urljoin from 'url-join'
 import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../services/logger'
-import {
-  addDataObjectIdToCache,
-  deleteDataObjectIdFromCache,
-  getDataObjectIdFromCache,
-} from '../caching/localDataObjects'
+import { deleteDataObjectIdFromCache, getDataObjectIdFromCache } from '../caching/localDataObjects'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
-import { moveFile } from '../helpers/moveFile'
+import { acceptObject } from '../helpers/acceptObject'
 const fsPromises = fs.promises
 
 /**
@@ -56,7 +52,7 @@ export class DeleteLocalFileTask implements SyncTask {
     }
 
     const cachedDataObjectId = getDataObjectIdFromCache(dataObjectId)
-    if (cachedDataObjectId && cachedDataObjectId.pinnedCount) {
+    if (cachedDataObjectId && cachedDataObjectId.entry.pinCount) {
       logger.warn(
         `Cleanup - the data object is currently in use by downloading api - file deletion canceled: ${this.filename}`
       )
@@ -79,7 +75,7 @@ export class DownloadFileTask implements SyncTask {
     baseUrls: string[],
     private dataObjectId: string,
     private expectedHash: string,
-    private uploadsDirectory: string,
+    private uploadsDirectory: string | undefined,
     private tempDirectory: string,
     private downloadTimeout: number,
     private hostId: string
@@ -103,17 +99,13 @@ export class DownloadFileTask implements SyncTask {
       const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
       logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
 
-      const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
       try {
         // Try downloading file
-        await this.tryDownload(chosenBaseUrl, filepath)
+        await this.tryDownloadToAccepted(chosenBaseUrl, this.dataObjectId)
 
-        // if download succeeds, break the loop
-        try {
-          await fsPromises.access(filepath, fs.constants.F_OK)
+        // if acceptance flow succeeds, break the loop
+        if (getDataObjectIdFromCache(this.dataObjectId)) {
           return
-        } catch (err) {
-          continue
         }
       } catch (err) {
         logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
@@ -123,7 +115,7 @@ export class DownloadFileTask implements SyncTask {
     logger.warn(`Sync - Failed to download ${this.dataObjectId}`)
   }
 
-  async tryDownload(url: string, filepath: string): Promise<void> {
+  async tryDownloadToAccepted(url: string, filename: string): Promise<void> {
     const streamPipeline = promisify(pipeline)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
@@ -156,8 +148,11 @@ export class DownloadFileTask implements SyncTask {
       })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
-      await moveFile(tempFilePath, filepath)
-      addDataObjectIdToCache(this.dataObjectId)
+      await acceptObject(
+        filename,
+        tempFilePath,
+        this.uploadsDirectory ? path.join(this.uploadsDirectory, filename) : undefined
+      )
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {

@@ -105,7 +105,7 @@ export abstract class CLI {
     )
 
     const response = {
-      exitCode,
+      exitCode: Number(exitCode),
       stdout,
       stderr,
       out: stdout.trim(),

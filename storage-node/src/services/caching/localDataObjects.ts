@@ -1,14 +1,16 @@
-import fs from 'fs'
 import logger from '../logger'
 import assert from 'assert'
-
-const fsPromises = fs.promises
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../commands/server'
+import { getLocalFileNames } from './localFileNames'
 
 type DataObjectId = string
-type DataObjectPinCount = number
+type DataObjectEntry = {
+  pinCount: number
+  onLocalVolume: boolean
+}
 
 // Local in-memory cache for IDs.
-const idCache = new Map<DataObjectId, DataObjectPinCount>()
+const idCache = new Map<DataObjectId, DataObjectEntry>()
 
 /**
  * Return the current ID cache.
@@ -28,13 +30,41 @@ export function getDataObjectIDs(): string[] {
  * @param uploadDir - uploading directory
  */
 export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
-  const names = await getLocalFileNames(uploadDir)
+  try {
+    const names = await getLocalFileNames(uploadDir)
 
-  names
-    // Just incase the directory is polluted with other files,
-    // filter out filenames that do not match with an objectid (number)
-    .filter((name) => Number.isInteger(Number(name)))
-    .forEach((id) => idCache.set(id, 0))
+    names
+      // Just incase the directory is polluted with other files,
+      // filter out filenames that do not match with an objectid (number)
+      .filter((name) => Number.isInteger(Number(name)))
+      .forEach((id) =>
+        idCache.set(id, {
+          pinCount: 0,
+          onLocalVolume: true,
+        })
+      )
+  } catch (e) {
+    logger.error(`Error loading local ID cache: ${e}`)
+  }
+
+  if (!isStorageProviderConnectionEnabled()) {
+    logger.debug(`no storage provider connection enabled for cache loading`)
+    return
+  }
+  const connection = getStorageProviderConnection()!
+  try {
+    const namesOnCloud = await connection.listFilesOnRemoteBucket()
+    namesOnCloud
+      .filter((name) => Number.isInteger(Number(name)))
+      .forEach((id) =>
+        idCache.set(id, {
+          pinCount: 0,
+          onLocalVolume: false,
+        })
+      )
+  } catch (e) {
+    logger.error(`Error loading remote ID cache: ${e}`)
+  }
 
   logger.debug(`Local ID cache loaded.`)
 }
@@ -43,13 +73,17 @@ export async function loadDataObjectIdCache(uploadDir: string): Promise<void> {
  * Adds data object ID to the local cache.
  *
  * @param dataObjectId - Storage data object ID
+ * @param onLocalVolume - flag to indicate if the data object is on the local volume (default true)
  *
  * @returns void
  */
-export function addDataObjectIdToCache(dataObjectId: string): void {
+export function addDataObjectIdToCache(dataObjectId: string, onLocalVolume: boolean = true): void {
   assert(typeof dataObjectId === 'string')
   assert(!idCache.has(dataObjectId))
-  idCache.set(dataObjectId, 0)
+  idCache.set(dataObjectId, {
+    pinCount: 0,
+    onLocalVolume,
+  })
 }
 
 /**
@@ -63,9 +97,12 @@ export function pinDataObjectIdToCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
   assert(idCache.has(dataObjectId))
 
-  const currentPinnedCount = idCache.get(dataObjectId)
-  assert(currentPinnedCount !== undefined)
-  idCache.set(dataObjectId, currentPinnedCount + 1)
+  const currentEntry = idCache.get(dataObjectId)
+  assert(currentEntry !== undefined)
+  idCache.set(dataObjectId, {
+    pinCount: currentEntry.pinCount + 1,
+    onLocalVolume: currentEntry.onLocalVolume,
+  })
 }
 
 /**
@@ -79,10 +116,13 @@ export function unpinDataObjectIdFromCache(dataObjectId: string): void {
   assert(typeof dataObjectId === 'string')
   assert(idCache.has(dataObjectId))
 
-  const currentPinnedCount = idCache.get(dataObjectId)
-  assert(currentPinnedCount)
-  assert(currentPinnedCount > 0)
-  idCache.set(dataObjectId, currentPinnedCount - 1)
+  const currentEntry = idCache.get(dataObjectId)
+  assert(currentEntry)
+  assert(currentEntry.pinCount > 0)
+  idCache.set(dataObjectId, {
+    onLocalVolume: currentEntry.onLocalVolume,
+    pinCount: currentEntry.pinCount - 1,
+  })
 }
 
 /**
@@ -105,11 +145,11 @@ export function deleteDataObjectIdFromCache(dataObjectId: string): void {
  */
 export function getDataObjectIdFromCache(
   dataObjectId: string
-): { dataObjectId: DataObjectId; pinnedCount: DataObjectPinCount } | undefined {
+): { dataObjectId: DataObjectId; entry: DataObjectEntry } | undefined {
   assert(typeof dataObjectId === 'string')
 
   if (idCache.has(dataObjectId)) {
-    return { dataObjectId, pinnedCount: idCache.get(dataObjectId) as DataObjectPinCount }
+    return { dataObjectId, entry: idCache.get(dataObjectId) as DataObjectEntry }
   }
 }
 
@@ -120,14 +160,4 @@ export function getDataObjectIdFromCache(
  */
 export function isDataObjectIdInCache(dataObjectId: string): boolean {
   return idCache.has(dataObjectId)
-}
-
-/**
- * Returns file names from the local directory, ignoring subfolders.
- *
- * @param directory - local directory to get file names from
- */
-async function getLocalFileNames(directory: string): Promise<string[]> {
-  const result = await fsPromises.readdir(directory, { withFileTypes: true })
-  return result.filter((entry) => entry.isFile()).map((entry) => entry.name)
 }

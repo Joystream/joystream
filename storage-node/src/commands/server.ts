@@ -22,7 +22,13 @@ import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligatio
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
+import { IConnectionHandler, parseConfigOptionAndBuildConnection } from '../services/storageProviders'
 const fsPromises = fs.promises
+
+// Global variable for storage provider connection, initialised by server, then readonly
+let storageProviderConnection: IConnectionHandler | undefined
+export const getStorageProviderConnection = () => storageProviderConnection
+export const isStorageProviderConnectionEnabled = () => storageProviderConnection !== undefined
 
 /**
  * CLI command:
@@ -228,8 +234,8 @@ Supported values: warn, error, debug, info. Default:debug`,
       logger.warn(`Only subset of buckets will process uploads!`)
     }
 
-    logger.info(`Buckets synced and served: ${selectedBuckets}`)
-    logger.info(`Buckets accepting uploads: ${writableBuckets}`)
+    logger.info(`Buckets synced and served: [${selectedBuckets}]`)
+    logger.info(`Buckets accepting uploads: [${writableBuckets}]`)
 
     if (!flags.tempFolder) {
       logger.warn(
@@ -259,6 +265,10 @@ Supported values: warn, error, debug, info. Default:debug`,
     if (path.relative(pendingFolder, flags.uploads) === '') {
       this.error('Paths for pending and uploads folders must be unique.')
     }
+
+    // initialise storage provider connection: undefined if not enabled
+    storageProviderConnection = await parseConfigOptionAndBuildConnection()
+    logger.debug(`remote storage provider connection status: ${isStorageProviderConnectionEnabled()}`)
 
     await createDirectory(flags.uploads)
     await loadDataObjectIdCache(flags.uploads)

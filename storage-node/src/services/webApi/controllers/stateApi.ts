@@ -5,7 +5,6 @@ import fs from 'fs'
 import _ from 'lodash'
 import NodeCache from 'node-cache'
 import { promisify } from 'util'
-import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 import logger from '../../logger'
 import { QueryNodeApi } from '../../queryNode/api'
 import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
@@ -17,6 +16,8 @@ import {
   VersionResponse,
 } from '../types'
 import { AppConfig, sendResponseWithError } from './common'
+import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
+import { isStorageProviderConnectionEnabled } from '../../../commands/server'
 const fsPromises = fs.promises
 
 // Expiration period in seconds for the local cache.
@@ -32,12 +33,12 @@ const dataCache = new NodeCache({
  * A public endpoint: return all local data objects.
  */
 export async function getAllLocalDataObjects(
-  req: express.Request,
+  _req: express.Request,
   res: express.Response<DataObjectResponse, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
   try {
-    const ids = await getDataObjectIDs()
+    const ids = getDataObjectIDs()
 
     res.status(200).json(ids)
   } catch (err) {
@@ -51,7 +52,7 @@ export async function getAllLocalDataObjects(
  *  @return total size and count of the data objects.
  */
 export async function getLocalDataStats(
-  req: express.Request,
+  _req: express.Request,
   res: express.Response<DataStatsResponse, AppConfig>,
   next: express.NextFunction
 ): Promise<void> {
@@ -96,6 +97,7 @@ export async function getLocalDataStats(
       tempDirSize,
       pendingObjects,
       pendingDirSize,
+      cloudProvider: isStorageProviderConnectionEnabled() ? process.env.CLOUD_STORAGE_PROVIDER_NAME : undefined,
     })
   } catch (err) {
     sendResponseWithError(res, next, err, 'local_data_stats')
@@ -128,7 +130,7 @@ export async function getLocalDataObjectsByBagId(
  * A public endpoint: return the server version.
  */
 export async function getVersion(
-  req: express.Request,
+  _req: express.Request,
   res: express.Response<VersionResponse, AppConfig>
 ): Promise<void> {
   const config = res.locals.process
@@ -143,7 +145,10 @@ export async function getVersion(
 /**
  * A public endpoint: returns the server status.
  */
-export async function getStatus(req: express.Request, res: express.Response<StatusResponse, AppConfig>): Promise<void> {
+export async function getStatus(
+  _req: express.Request,
+  res: express.Response<StatusResponse, AppConfig>
+): Promise<void> {
   const { qnApi, api, process: proc, uploadBuckets, downloadBuckets, sync, cleanup } = res.locals
 
   // Copy from an object, because the actual object could contain more data.

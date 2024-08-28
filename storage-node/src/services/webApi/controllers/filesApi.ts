@@ -8,7 +8,6 @@ import _ from 'lodash'
 import path from 'path'
 import send from 'send'
 import { QueryNodeApi } from '../../../services/queryNode/api'
-import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../caching/localDataObjects'
 import { parseBagId } from '../../helpers/bagTypes'
 import { getFileInfo, FileInfo } from '../../helpers/fileInfo'
 import { hashFile } from '../../helpers/hashing'
@@ -17,6 +16,12 @@ import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'
 import { AppConfig, WebApiError, getHttpStatusCodeByError, sendResponseWithError } from './common'
+import {
+  pinDataObjectIdToCache,
+  unpinDataObjectIdFromCache,
+  getDataObjectIdFromCache,
+} from '../../caching/localDataObjects'
+import { getStorageProviderConnection, isStorageProviderConnectionEnabled } from '../../../commands/server'
 const fsPromises = fs.promises
 
 const FileInfoCache = new Map<string, FileInfo>()
@@ -42,6 +47,7 @@ export async function getFile(
   try {
     pinDataObjectIdToCache(dataObjectId)
   } catch (err) {
+    logger.error(`Error pinning file ${dataObjectId} to cache`)
     res.status(404).send()
     return
   }
@@ -50,30 +56,50 @@ export async function getFile(
     unpinDataObjectIdFromCache(dataObjectId)
   })
 
+  const dataObjectEntry = getDataObjectIdFromCache(dataObjectId)
+
   try {
-    const uploadsDir = res.locals.uploadsDir
-    const fullPath = path.resolve(uploadsDir, dataObjectId)
-    const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
+    if (dataObjectEntry === undefined) {
+      throw new WebApiError(`File ${dataObjectId} not found`, 404)
+    }
+    const { entry } = dataObjectEntry
 
-    const stream = send(req, fullPath)
+    if (entry.onLocalVolume) {
+      const uploadsDir = res.locals.uploadsDir
+      const fullPath = path.resolve(uploadsDir, dataObjectId)
+      const fileInfo = await getCachedFileInfo(uploadsDir, dataObjectId)
 
-    stream.on('headers', (res) => {
-      // serve all files for download
-      res.setHeader('Content-Disposition', 'inline')
-      res.setHeader('Content-Type', fileInfo.mimeType)
-      res.setHeader('Content-Length', fileInfo.size)
-    })
+      const stream = send(req, fullPath)
 
-    stream.on('error', (err) => {
-      sendResponseWithError(res, next, err, 'files')
-      unpin()
-    })
+      stream.on('headers', (res) => {
+        // serve all files for download
+        res.setHeader('Content-Disposition', 'inline')
+        res.setHeader('Content-Type', fileInfo.mimeType)
+        res.setHeader('Content-Length', fileInfo.size)
+      })
 
-    stream.on('end', () => {
-      unpin()
-    })
+      stream.on('error', (err) => {
+        sendResponseWithError(res, next, err, 'files')
+        unpin()
+      })
 
-    stream.pipe(res)
+      stream.on('end', () => {
+        unpin()
+      })
+
+      stream.pipe(res)
+    } else {
+      if (!isStorageProviderConnectionEnabled()) {
+        throw new WebApiError('Storage provider connection not available for storage node', 500)
+      }
+      const connection = getStorageProviderConnection()!
+
+      const url = await connection.getRedirectUrlForObject(dataObjectId)
+      logger.info(`Creating presigned url for remote file ${url}`)
+
+      // Redirect to the remote file
+      res.redirect(url)
+    }
   } catch (err) {
     sendResponseWithError(res, next, err, 'files')
     unpin()

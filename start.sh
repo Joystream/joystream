@@ -26,8 +26,8 @@ else
   function down()
   {
       # Stop containers and clear volumes
-      docker-compose -f ./docker-compose.storage-squid.yml down -v
-      docker-compose down -v
+      docker compose -f ./docker-compose.storage-squid.yml down -v
+      docker compose down -v
   }
 
   trap down EXIT ERR SIGINT SIGTERM
@@ -36,7 +36,7 @@ fi
 if [ "${SKIP_NODE}" != true ]
 then
   ## Run a local development chain
-  docker-compose up -d joystream-node
+  docker compose up -d joystream-node
 fi
 
 ## Query Node Infrastructure
@@ -46,7 +46,7 @@ fi
 ./start-orion.sh
 
 ## Storage Squid
-docker-compose -f ./docker-compose.storage-squid.yml up -d
+docker compose -f ./docker-compose.storage-squid.yml up -d
 
 ## Init the chain with some state
 if [[ $SKIP_CHAIN_SETUP != true ]]; then
@@ -58,17 +58,17 @@ if [[ $SKIP_CHAIN_SETUP != true ]]; then
 
   ## Member faucet
   export INVITER_KEY=`cat ./tests/network-tests/output.json | jq -r .faucet.suri`
-  docker-compose up -d faucet
+  docker compose up -d faucet
 
   ## Storage Infrastructure Nodes
-  docker-compose up -d colossus-1
-  docker-compose up -d distributor-1
+  docker compose up -d colossus-1
+  docker compose up -d distributor-1
 fi
 
 if [ "${PERSIST}" == true ]
 then
   echo "All services started in the background"
-  echo "Remember to run 'docker-compose down -v' to kill all docker services before starting new playground."
+  echo "Remember to run 'docker compose down -v' to kill all docker services before starting new playground."
 else
   echo "use Ctrl+C to shutdown the development network."
   while true; do

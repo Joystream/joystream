@@ -182,7 +182,7 @@ export default class Api {
     return new Date(blockTime.toNumber())
   }
 
-  protected workingGroupApiQuery<T extends WorkingGroups>(group: T): ApiPromise['query'][typeof apiModuleByGroup[T]] {
+  protected workingGroupApiQuery<T extends WorkingGroups>(group: T): ApiPromise['query'][(typeof apiModuleByGroup)[T]] {
     const module = apiModuleByGroup[group]
     return this._api.query[module]
   }
