@@ -23,6 +23,6 @@ export async function acceptObject(
     await fsPromises.unlink(src)
     logger.info(`File ${filename} accepted to remote storage`)
   }
-  addDataObjectIdToCache(filename)
+  addDataObjectIdToCache(filename, toBeAcceptedOnLocalVolume)
   logger.info(`File ${filename} added to local cache`)
 }
