@@ -2,10 +2,10 @@
 set -e
 
 # clean start
-docker-compose -f ../docker-compose.yml down -v
+docker compose -f ../docker-compose.yml down -v
 
 function cleanup() {
-    docker-compose -f ../docker-compose.yml down -v
+    docker compose -f ../docker-compose.yml down -v
 }
 
 trap cleanup EXIT
@@ -21,7 +21,7 @@ if [[ -z $JOYSTREAM_NODE_TAG ]]; then
 fi
 
 # start node image, network and volume
-docker-compose -f ../docker-compose.yml up -d joystream-node
+docker compose -f ../docker-compose.yml up -d joystream-node
 
 # copy native runtime
 docker cp ../target/release/joystream-node joystream-node:/joystream/node

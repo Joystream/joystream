@@ -1,16 +1,12 @@
-version: '3.4'
 services:
   localstack:
     container_name: local_stack
-    image: localstack/localstack:3
+    image: localstack/localstack:3.3
     network_mode: bridge
     environment:
       - SERVICES=s3 # we only need s3 bucket
       - DEBUG=1
-      - DEFAULT_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - LOCALSTACK_ENDPOINT=${LOCALSTACK_ENDPOINT}
+      - LOCALSTACK_HOST=${LOCALSTACK_HOST}
     ports:
       - 4566:4566
     volumes:

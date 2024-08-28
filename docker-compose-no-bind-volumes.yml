@@ -1,5 +1,4 @@
 # Complete joystream development network
-version: '3.4'
 services:
   joystream-node:
     image: joystream/node:$JOYSTREAM_NODE_TAG
@@ -37,6 +36,9 @@ services:
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
       # - OTEL_EXPORTER_OTLP_ENDPOINT=http://apm-server:8200
       # - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
+      - AWS_BUCKET_NAME=test-bucket-1
+      - LOCALSTACK_ENDPOINT=${LOCALSTACK_ENDPOINT}
+      - LOCALSTACK_ENABLED=${LOCALSTACK_ENABLED}
     entrypoint: ['yarn']
     command: [
       'start', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
@@ -106,6 +108,9 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
+      - AWS_BUCKET_NAME=test-bucket-2
+      - LOCALSTACK_ENDPOINT=${LOCALSTACK_ENDPOINT}
+      - LOCALSTACK_ENABLED=${LOCALSTACK_ENABLED}
     entrypoint: ['yarn', 'storage-node']
     command: [
       'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
