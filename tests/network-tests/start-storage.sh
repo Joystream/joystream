@@ -3,7 +3,7 @@ set -e
 source .env
 
 TMP=$0
-THIS_DIR=$(dirname $TMP)
+THIS_DIR=(dirname $TMP)
 
 echo "Staring storage infrastructure"
 

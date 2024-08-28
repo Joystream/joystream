@@ -25,7 +25,7 @@ function cleanup() {
 
 trap cleanup EXIT ERR SIGINT SIGTERM
 
-export JOYSTREAM_NODE_TAG=`RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh`
+export JOYSTREAM_NODE_TAG=$(RUNTIME_PROFILE=TESTING ../../scripts/runtime-code-shasum.sh)
 CHAIN=dev docker compose -f ../../docker-compose.yml up -d joystream-node
 
 sleep 30

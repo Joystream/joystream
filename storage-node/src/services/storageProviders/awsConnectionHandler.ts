@@ -54,6 +54,7 @@ export class AwsConnectionHandler implements IConnectionHandler {
   }
   private constructWithLocalstack(opts: AwsConnectionHandlerParams): S3Client {
     return new S3Client({
+      region: opts.region,
       credentials: {
         accessKeyId: opts.accessKeyId,
         secretAccessKey: opts.secretAccessKey,
@@ -67,14 +68,6 @@ export class AwsConnectionHandler implements IConnectionHandler {
   private isSuccessfulResponse(response: any): boolean {
     // Response status code info: https://docs.aws.amazon.com/AmazonS3/latest/API/ErrorResponses.html
     return response.$metadata.httpStatusCode === 200
-  }
-
-  private fileNotFoundResponse(response: any): boolean {
-    return response.$metadata.httpStatusCode === 404
-  }
-
-  private insufficientPermissionsResponse(response: any): boolean {
-    return response.$metadata.httpStatusCode === 403
   }
 
   private isMultiPartNeeded(filePath: string): boolean {
@@ -194,17 +187,24 @@ export class AwsConnectionHandler implements IConnectionHandler {
     }
 
     const command = new HeadObjectCommand(input)
-    const response = await this.client.send(command)
-    if (this.isSuccessfulResponse(response)) {
+    try {
+      await this.client.send(command)
       return true
-    } else if (this.fileNotFoundResponse(response)) {
-      return false
-    } else if (this.insufficientPermissionsResponse(response)) {
-      throw new Error('Insufficient permissions to check if file exists in S3 bucket')
-    } else {
-      throw new Error(
-        `Unknown error when checking if file exists in S3 bucket: error ${response.$metadata.httpStatusCode}`
-      )
+    } catch (error) {
+      if (error.$metadata && error.$metadata.httpStatusCode) {
+        switch (error.$metadata.httpStatusCode) {
+          case 404:
+            return false
+          case 403:
+            throw new Error('Insufficient permissions to check if file exists in S3 bucket')
+          default:
+            throw new Error(
+              `Unknown error when checking if file exists in S3 bucket: error ${error.$metadata.httpStatusCode}`
+            )
+        }
+      } else {
+        throw new Error('Unexpected error format when checking if file exists in S3 bucket')
+      }
     }
   }
 }

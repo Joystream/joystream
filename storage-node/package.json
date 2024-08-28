@@ -103,7 +103,7 @@
     "sinon": "^11.1.1",
     "swagger-ui-express": "^4.1.6",
     "ts-jest": "^29.1.2",
-    "ts-node": "^10.2.1",
+    "ts-node": "^10.9.2",
     "type-doc": "^0.1.41",
     "typescript": "^5.0.2"
   },
