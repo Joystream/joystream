@@ -1,6 +1,6 @@
 {
   "name": "query-node-mappings",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "Mappings for hydra-processor",
   "main": "lib/src/index.js",
   "license": "MIT",
