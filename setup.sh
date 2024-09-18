@@ -14,7 +14,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
     if ! command -v docker &> /dev/null
     then
       # Install Docker from linux distro maintaners
-      sudo apt-get install -y docker.io containerd runc
+      echo "docker not found. You will need to install it. Visit https://www.docker.com/get-started"
     fi
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # install brew package manager
