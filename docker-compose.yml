@@ -1,5 +1,4 @@
 # Complete joystream development network
-version: '3.4'
 services:
   joystream-node:
     image: joystream/node:$JOYSTREAM_NODE_TAG
@@ -30,7 +29,6 @@ services:
     ports:
       - 3333:3333
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
@@ -65,7 +63,6 @@ services:
       - 3334:3334
       - 127.0.0.1:4334:4334
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     # Node configuration can be overriden via env, for exampe:
     environment:
@@ -104,7 +101,6 @@ services:
     ports:
       - 3335:3333
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
@@ -137,7 +133,6 @@ services:
       - 3336:3334
       - 127.0.0.1:4336:4334
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     # Node configuration can be overriden via env, for exampe:
     environment:
@@ -169,7 +164,6 @@ services:
     volumes:
       - query-node-data:/var/lib/postgresql/data
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -182,7 +176,6 @@ services:
     container_name: graphql-server
     restart: unless-stopped
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - DB_HOST=db
@@ -209,7 +202,6 @@ services:
     container_name: processor
     restart: unless-stopped
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - INDEXER_ENDPOINT_URL=${PROCESSOR_INDEXER_GATEWAY}
@@ -244,7 +236,6 @@ services:
     container_name: indexer
     restart: unless-stopped
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - DB_NAME=${INDEXER_DB_NAME}
@@ -266,7 +257,6 @@ services:
     container_name: hydra-indexer-gateway
     restart: unless-stopped
     env_file:
-      # relative to working directory where docker-compose was run from
       - .env
     environment:
       - WARTHOG_STARTER_DB_DATABASE=${INDEXER_DB_NAME}

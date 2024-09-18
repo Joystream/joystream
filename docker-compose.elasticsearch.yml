@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   # Ref: https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docker.html
   elasticsearch:

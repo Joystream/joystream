@@ -16,10 +16,10 @@ function cleanup() {
     docker logs colossus-2 --tail 100 || :
 
     if [ "${NO_STORAGE}" != true ]; then
-      docker-compose -f ../../docker-compose.storage-squid.yml down -v
+      docker compose -f ../../docker-compose.storage-squid.yml down -v
     fi
 
-    docker-compose -f ../../docker-compose.yml down -v
+    docker compose -f ../../docker-compose.yml down -v
   }
 
 trap cleanup EXIT ERR SIGINT SIGTERM
