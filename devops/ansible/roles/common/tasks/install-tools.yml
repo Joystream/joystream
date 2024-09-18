@@ -43,7 +43,6 @@
       - docker-compose
       - docker.io
       - docker-doc
-      - docker-compose
       - podman-docker
       - containerd
       - runc
@@ -73,17 +72,6 @@
       - docker-compose-plugin
     state: latest
     update_cache: true
-
-- name: Install docker-compose
-  become: true
-  shell:
-    cmd: |
-      bash -c "
-        curl -L 'https://github.com/docker/compose/releases/download/v2.20.1/docker-compose-$(uname -s)-$(uname -m)' -o /usr/local/bin/docker-compose
-        chmod +x /usr/local/bin/docker-compose
-        ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-      "
-    creates: /usr/local/bin/docker-compose
 
 - name: Install Docker module for Python
   pip:

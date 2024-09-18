@@ -37,8 +37,8 @@ This script script will:
 - Bring up `db` service (query node is using a PostgreSQL database to store the data)
 - Configure the database (`yarn workspace query-node config:dev`)
 - Create the database and initialize schema (`yarn workspace query-node-root db:prepare && yarn workspace query-node-root db:processor:migrate`)
-- Start the GraphQL server service (`docker-compose up -d graphql-server`)
-- Start the Hydra Processor responsible for processing the runtime events and running the mappings' functions (`docker-compose up -d processor`)
+- Start the GraphQL server service (`docker compose up -d graphql-server`)
+- Start the Hydra Processor responsible for processing the runtime events and running the mappings' functions (`docker compose up -d processor`)
 
 ## 4. Stopping the node and removing all associated containers
 
@@ -102,10 +102,10 @@ It's useful when you want to interact with Joystream node via Pioneer or Atlas a
 processed by the processor.
 
 ```
-docker-compose up -d joystream-node indexer hydra-indexer-gateway processor
+docker compose up -d joystream-node indexer hydra-indexer-gateway processor
 
 # start the GraphQL server and Playground if needed via
-docker-compose up -d graphql-server
+docker compose up -d graphql-server
 ```
 
 **Running processor with remote Joystream node and local indexer.**
@@ -113,7 +113,7 @@ It's useful when you want to synchronize the indexer and processor with Joystrea
 You can analyze any errors in docker logs and tweak mappings.
 
 ```
-JOYSTREAM_NODE_WS=wss://target-domain.tmp/ws-rpc docker-compose up -d indexer hydra-indexer-gateway processor
+JOYSTREAM_NODE_WS=wss://target-domain.tmp/ws-rpc docker compose up -d indexer hydra-indexer-gateway processor
 ```
 
 **Running processor with remote Joystream node and remote indexer.**
@@ -121,7 +121,7 @@ When debugging an error that happened in processor mappings on a remote server t
 and skip potentially time-consuming indexer synchronization
 
 ```
-PROCESSOR_INDEXER_GATEWAY=https://target-domain.tmp/query-node/indexer/graphql docker-compose up -d processor
+PROCESSOR_INDEXER_GATEWAY=https://target-domain.tmp/query-node/indexer/graphql docker compose up -d processor
 ```
 
 ### Restart processor from the beginning
@@ -134,10 +134,10 @@ when the said `Member` created a forum post trying to create. The only way to cr
 is to start processing events all over.
 
 ```
-docker-compose stop graphql-server # ensure graphql server is disconnected from db
-docker-compose rm -vfs processor # turn off processor
+docker compose stop graphql-server # ensure graphql server is disconnected from db
+docker compose rm -vfs processor # turn off processor
 WARTHOG_DB_OVERRIDE=true yarn workspace query-node-root db:reset # reset processor database
-docker-compose up -d processor # start processor again
+docker compose up -d processor # start processor again
 ```
 
 ### Debugging Hydra errors
