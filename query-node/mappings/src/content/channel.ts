@@ -7,6 +7,8 @@ import {
   ChannelMetadata,
   ChannelModeratorRemarked,
   ChannelOwnerRemarked,
+  IChannelModeratorRemarked,
+  IChannelOwnerRemarked,
   IMakeChannelPayment,
 } from '@joystream/metadata-protobuf'
 import { DataObjectId } from '@joystream/types/primitives'
@@ -312,9 +314,9 @@ export async function content_ChannelOwnerRemarked(ctx: EventContext & StoreCont
     return unimplementedError('Unsupported content actor type')
   }
 
-  const metadata = ChannelOwnerRemarked.decode(message.toU8a(true))
+  const metadata = deserializeMetadata(ChannelOwnerRemarked, message)
   const contentActor = getContentActor(channel.ownerMember, channel.ownerCuratorGroup)
-  const metaprotocolTxResult = await processOwnerRemark(store, event, channel, contentActor, metadata)
+  const metaprotocolTxResult = await processOwnerRemark(store, event, channel, contentActor, metadata ?? {})
 
   if (metaprotocolTxResult instanceof MetaprotocolTransactionSuccessful) {
     await saveMetaprotocolTransactionSuccessful(store, event, metaprotocolTxResult)
@@ -331,9 +333,9 @@ export async function content_ChannelAgentRemarked(ctx: EventContext & StoreCont
   // load channel
   const channel = await getChannelOrFail(store, channelId.toString())
 
-  const metadata = ChannelModeratorRemarked.decode(message.toU8a(true))
+  const metadata = deserializeMetadata(ChannelModeratorRemarked, message)
   const contentActor = await convertContentActor(store, moderator)
-  const metaprotocolTxResult = await processModeratorRemark(store, event, channel, contentActor, metadata)
+  const metaprotocolTxResult = await processModeratorRemark(store, event, channel, contentActor, metadata ?? {})
 
   if (metaprotocolTxResult instanceof MetaprotocolTransactionSuccessful) {
     await saveMetaprotocolTransactionSuccessful(store, event, metaprotocolTxResult)
@@ -382,7 +384,7 @@ async function processOwnerRemark(
   event: SubstrateEvent,
   channel: Channel,
   contentActor: typeof ContentActor,
-  decodedMessage: ChannelOwnerRemarked
+  decodedMessage: DecodedMetadataObject<IChannelOwnerRemarked>
 ): Promise<MetaprotocolTransactionSuccessful | MetaprotocolTxError> {
   const metaprotocolTransactionSuccessful = new MetaprotocolTransactionSuccessful()
   if (decodedMessage.pinOrUnpinComment) {
@@ -450,8 +452,11 @@ async function processModeratorRemark(
   event: SubstrateEvent,
   channel: Channel,
   contentActor: typeof ContentActor,
-  decodedMessage: ChannelModeratorRemarked
+  decodedMessage: DecodedMetadataObject<IChannelModeratorRemarked>
 ): Promise<MetaprotocolTransactionSuccessful | MetaprotocolTxError> {
+  // if (!decodedMessage) {
+  //   return MetaprotocolTxError.InvalidMetadata
+  // }
   const metaprotocolTransactionSuccessful = new MetaprotocolTransactionSuccessful()
   if (decodedMessage.moderateComment) {
     const commentOrError = await processModerateCommentMessage(
