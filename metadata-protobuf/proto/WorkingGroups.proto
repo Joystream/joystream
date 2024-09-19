@@ -67,6 +67,7 @@ message RemarkMetadataAction {
   oneof action {
     ModeratePost moderate_post = 1;
     VerifyValidator verify_validator = 2;
+    SetNodeOperationalStatus set_node_operational_status = 3;
   }
 }
 

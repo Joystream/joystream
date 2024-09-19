@@ -1,5 +1,32 @@
+fragment NodeOperationalStatusFragment on NodeOperationalStatus {
+  __typename
+  ... on NodeOperationalStatusNormal {
+    __typename
+  }
+  ... on NodeOperationalStatusNoService {
+    __typename
+    forced
+  }
+  ... on NodeOperationalStatusNoServiceFrom {
+    __typename
+    forced
+    from
+  }
+  ... on NodeOperationalStatusNoServiceUntil {
+    __typename
+    forced
+    from
+    until
+  }
+}
+
 fragment StorageBucketIds on StorageBucket {
   id
+  operatorMetadata {
+    nodeOperationalStatus {
+      ...NodeOperationalStatusFragment
+    }
+  }
 }
 
 query getStorageBuckets {
@@ -8,11 +35,39 @@ query getStorageBuckets {
   }
 }
 
-query getStorageBucketsByWorkerId($workerId: Int!) {
+query getStorageBucketsByWorkerId($workerId: BigInt!) {
   storageBuckets(
     where: { operatorStatus: { isTypeOf_eq: "StorageBucketOperatorStatusActive", workerId_eq: $workerId } }
   ) {
     ...StorageBucketIds
+  }
+}
+
+query getStorageBucketsOperationalStatus($ids: [String!]) {
+  storageBuckets(where: { id_in: $ids }) {
+    id
+    operatorMetadata {
+      nodeOperationalStatus {
+        ... on NodeOperationalStatusNormal {
+          __typename
+        }
+        ... on NodeOperationalStatusNoService {
+          __typename
+          forced
+        }
+        ... on NodeOperationalStatusNoServiceFrom {
+          __typename
+          forced
+          from
+        }
+        ... on NodeOperationalStatusNoServiceUntil {
+          __typename
+          forced
+          from
+          until
+        }
+      }
+    }
   }
 }
 

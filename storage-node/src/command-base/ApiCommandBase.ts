@@ -1,16 +1,18 @@
+import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
 import { Command, flags } from '@oclif/command'
-import { createApi } from '../services/runtime/api'
-import { addAccountFromJsonFile, addAlicePair, addAccountFromUri } from '../services/runtime/accounts'
-import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiPromise, Keyring } from '@polkadot/api'
-import { cryptoWaitReady } from '@polkadot/util-crypto'
-import logger from '../services/logger'
-import ExitCodes from './ExitCodes'
 import { CLIError } from '@oclif/errors'
 import { Input } from '@oclif/parser'
-import path from 'path'
+import { ApiPromise, Keyring } from '@polkadot/api'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 import fs from 'fs'
-import { JOYSTREAM_ADDRESS_PREFIX } from '@joystream/types'
+import inquirer, { DistinctQuestion } from 'inquirer'
+import inquirerDatepicker from 'inquirer-datepicker'
+import path from 'path'
+import logger from '../services/logger'
+import { addAccountFromJsonFile, addAccountFromUri, addAlicePair } from '../services/runtime/accounts'
+import { createApi } from '../services/runtime/api'
+import ExitCodes from './ExitCodes'
 
 /**
  * Parent class for all runtime-based commands. Defines common functions.
@@ -104,6 +106,8 @@ export default abstract class ApiCommandBase extends Command {
     }
 
     await this.getApi()
+
+    inquirer.registerPrompt('datepicker', inquirerDatepicker)
   }
 
   /**
@@ -248,6 +252,21 @@ export default abstract class ApiCommandBase extends Command {
   getUnlockedAccounts(): string[] {
     const keyring = this.getKeyring()
     return keyring.pairs.filter((pair) => !pair.isLocked).map((pair) => pair.address)
+  }
+
+  async datePrompt(question: DistinctQuestion): Promise<Date> {
+    const { result } = await inquirer.prompt([
+      {
+        ...question,
+        type: 'datepicker',
+        name: 'result',
+        clearable: true,
+        default: new Date().toISOString(),
+      },
+    ])
+
+    const date = new Date(result)
+    return date
   }
 
   /**
