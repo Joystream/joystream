@@ -105,6 +105,9 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
+      # Env that allows testing cleanup
+      - CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD=10
+      - CLEANUP_MIN_REPLICATION_THRESHOLD=1
     entrypoint: ['yarn', 'storage-node']
     command: [
       'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
@@ -113,7 +116,10 @@ services:
       '--apiUrl=${JOYSTREAM_NODE_WS}',
       '--logFilePath=/logs',
       '--tempFolder=/data/temp/',
-      '--pendingFolder=/data/pending/'
+      '--pendingFolder=/data/pending/',
+      # Use cleanup on colossus-2 for testing purposes
+      '--cleanup',
+      '--cleanupInterval=1'
     ]
 
   distributor-2:

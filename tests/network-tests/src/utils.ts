@@ -143,7 +143,14 @@ export class Utils {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timeout reached`)), timeoutMs)
       const check = async () => {
-        if (await conditionFunc({ debug })) {
+        let result = false
+        try {
+          result = await conditionFunc({ debug })
+        } catch (e: any) {
+          debug(`conditionFunc error: ${e.toString()}`)
+          return
+        }
+        if (result) {
           clearInterval(interval)
           clearTimeout(timeout)
           debug('Condition satisfied!')

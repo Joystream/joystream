@@ -24,6 +24,10 @@ const levels = {
  */
 function createDefaultLoggerOptions(): winston.LoggerOptions {
   const level = () => {
+    const levelFlag = process.env.COLOSSUS_DEFAULT_LOG_LEVEL
+    if (levelFlag && Object.keys(levels).includes(levelFlag)) {
+      return levelFlag
+    }
     const env = process.env.NODE_ENV || 'development'
     const isDevelopment = env === 'development'
     return isDevelopment ? 'debug' : 'warn'

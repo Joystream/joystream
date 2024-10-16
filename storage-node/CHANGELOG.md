@@ -1,3 +1,9 @@
+### 4.2.0
+
+- Fix `util:cleanup` script (call `loadDataObjectIdCache` first)
+- Allow changing default log level using environment variable (`COLOSSUS_DEFAULT_LOG_LEVEL`)
+- Allow adjusting cleanup constants via env (`CLEANUP_MIN_REPLICATION_THRESHOLD`, `CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD`)
+
 ### 4.1.2
 
 - Bump @joystream/types to Petra version
