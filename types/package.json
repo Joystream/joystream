@@ -1,13 +1,14 @@
 {
   "name": "@joystream/types",
-  "version": "4.6.0",
+  "version": "4.6.1",
   "description": "Types for Joystream Substrate Runtime - Nara release",
   "main": "lib/cjs/index.js",
   "types": "lib/index.d.ts",
   "exports": {
     ".": {
       "import": "./lib/mjs/index.js",
-      "require": "./lib/cjs/index.js"
+      "require": "./lib/cjs/index.js",
+      "types": "./lib/index.d.ts"
     }
   },
   "typesVersions": {
