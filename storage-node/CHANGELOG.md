@@ -1,6 +1,7 @@
-### 4.1.2
+### 4.2.0
 
-- Bump @joystream/types to Petra version
+- Updates `operator:set-metadata` CLI command to set storage-node's operational status along with other metadata.
+- Adds `leader:set-node-operational-status` CLI command to set operational status of any storage-node by Lead.
 
 ### 4.1.1
 

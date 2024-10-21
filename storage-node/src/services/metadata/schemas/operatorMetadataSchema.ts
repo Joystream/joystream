@@ -22,6 +22,81 @@ export const operatorMetadataSchema: JSONSchema4 = {
         },
       },
     },
+    operationalStatus: {
+      oneOf: [
+        {
+          type: 'object',
+          properties: {
+            normal: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          required: ['normal'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            noService: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+          required: ['noService'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            noServiceFrom: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+                from: {
+                  type: 'string',
+                },
+              },
+              required: ['from'],
+            },
+          },
+          required: ['noServiceFrom'],
+          additionalProperties: false,
+        },
+        {
+          type: 'object',
+          properties: {
+            noServiceUntil: {
+              type: 'object',
+              properties: {
+                rationale: {
+                  type: 'string',
+                },
+                from: {
+                  type: 'string',
+                },
+                until: {
+                  type: 'string',
+                },
+              },
+              required: ['until'],
+            },
+          },
+          required: ['noServiceUntil'],
+          additionalProperties: false,
+        },
+      ],
+    },
     extra: { type: 'string' },
   },
 }

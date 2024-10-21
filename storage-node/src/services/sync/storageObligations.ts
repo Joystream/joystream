@@ -130,7 +130,7 @@ export async function getStorageObligationsFromRuntime(
  * @returns storage bucket IDs
  */
 export async function getStorageBucketIdsByWorkerId(qnApi: QueryNodeApi, workerId: number): Promise<string[]> {
-  const idFragments = await qnApi.getStorageBucketIdsByWorkerId(workerId)
+  const idFragments = await qnApi.getStorageBucketIdsByWorkerId(BigInt(workerId))
   const ids = idFragments.map((frag) => frag.id)
 
   return ids

@@ -1,3 +1,8 @@
+import {
+  INodeOperationalStatus,
+  IStorageBucketOperatorMetadata,
+  StorageBucketOperatorMetadata,
+} from '@joystream/metadata-protobuf'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PalletStorageBagIdType as BagId, PalletStorageDynamicBagType as DynamicBagType } from '@polkadot/types/lookup'
@@ -572,6 +577,40 @@ export async function updateBlacklist(
     const addHashes = api.createType('BTreeSet<Bytes>', add)
 
     const tx = api.tx.storage.updateBlacklist(removeHashes, addHashes)
+
+    return sendAndFollowNamedTx(api, account, tx)
+  })
+}
+
+/**
+ * Set/update storage nodes operational status by Lead
+ *
+ * @remarks
+ * It sends an lead remark extrinsic to the runtime.
+ *
+ * @param api - runtime API promise
+ * @param account - KeyringPair instance
+ * @param workerId - Worker ID
+ * @param buckerId - Bucket ID
+ * @param operationalStatus - Operational Status to set for the node
+ * @returns promise with a success flag.
+ */
+export async function setStorageNodeOperationalStatus(
+  api: ApiPromise,
+  account: KeyringPair,
+  workerId: number,
+  bucketId: number,
+  operationalStatus: INodeOperationalStatus
+): Promise<boolean> {
+  return await extrinsicWrapper(() => {
+    const metadata: IStorageBucketOperatorMetadata = {
+      operationalStatus,
+    }
+    const tx = api.tx.storage.setStorageOperatorMetadata(
+      workerId,
+      bucketId,
+      '0x' + Buffer.from(StorageBucketOperatorMetadata.encode(metadata).finish()).toString('hex')
+    )
 
     return sendAndFollowNamedTx(api, account, tx)
   })
