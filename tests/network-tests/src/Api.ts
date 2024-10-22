@@ -652,7 +652,7 @@ export class Api {
   public async untilProposalsCanBeCreated(
     numberOfProposals = 1,
     intervalMs = BLOCKTIME,
-    timeoutMs = 180000
+    maxRetries = 180
   ): Promise<void> {
     await Utils.until(
       `${numberOfProposals} proposals can be created`,
@@ -663,7 +663,7 @@ export class Api {
         return maxActiveProposalLimit.sub(activeProposalsN).toNumber() >= numberOfProposals
       },
       intervalMs,
-      timeoutMs
+      maxRetries
     )
   }
 
@@ -671,9 +671,9 @@ export class Api {
     targetStage: 'Announcing' | 'Voting' | 'Revealing' | 'Idle',
     announcementPeriodNr: number | null = null,
     blocksReserve = 4,
-    intervalMs = BLOCKTIME
+    intervalMs = BLOCKTIME,
+    maxRetries = 600
   ): Promise<void> {
-    const stageTimeoutMs = 100 * 6 * 1000
     await Utils.until(
       `council stage ${targetStage} (+${blocksReserve} blocks reserve)`,
       async ({ debug }) => {
@@ -710,7 +710,7 @@ export class Api {
         )
       },
       intervalMs,
-      stageTimeoutMs
+      maxRetries
     )
   }
 

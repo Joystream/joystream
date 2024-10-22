@@ -20,8 +20,9 @@ export const MAXIMUM_QN_LAGGING_THRESHOLD = 100
 /**
  * The number of (peer) storage operators that should hold the assets, before the
  * cleanup/pruning of the outdated assets from this storage node can be initialed.
+ * Default=2.
  */
-export const MINIMUM_REPLICATION_THRESHOLD = 2
+export const MINIMUM_REPLICATION_THRESHOLD = parseInt(process.env.CLEANUP_MIN_REPLICATION_THRESHOLD || '0') || 2
 
 /**
  * Runs the data objects cleanup/pruning workflow. It removes all the local
@@ -80,6 +81,7 @@ export async function performCleanup(
   const removedIds = _.difference(storedObjectsIds, assignedObjectsIds)
   const removedObjects = await getDataObjectsByIDs(qnApi, removedIds)
 
+  logger.debug(`Cleanup - stored objects: ${storedObjectsIds.length}, assigned objects: ${assignedObjectsIds.length}`)
   logger.debug(`Cleanup - pruning ${removedIds.length} obsolete objects`)
 
   // Data objects permanently deleted from the runtime
