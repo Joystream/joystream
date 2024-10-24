@@ -4,6 +4,7 @@ import ApiCommandBase from '../../command-base/ApiCommandBase'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../../services/queryNode/api'
 import { performCleanup } from '../../services/sync/cleanupService'
+import { loadDataObjectIdCache } from '../../services/caching/localDataObjects'
 
 /**
  * CLI command:
@@ -51,6 +52,7 @@ export default class Cleanup extends ApiCommandBase {
     const bucketId = flags.bucketId.toString()
     const api = await this.getApi()
     const qnApi = new QueryNodeApi(flags.queryNodeEndpoint)
+    await loadDataObjectIdCache(flags.uploads)
 
     logger.info('Cleanup...')
 

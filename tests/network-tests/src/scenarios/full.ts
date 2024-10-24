@@ -42,6 +42,7 @@ import { updateApp } from '../flows/content/updateApp'
 import curatorModerationActions from '../flows/content/curatorModerationActions'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 import updateValidatorVerificationStatus from '../flows/membership/updateValidatorVerifications'
+import { storageCleanup } from '../flows/storage/storageCleanup'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job }) => {
@@ -123,8 +124,10 @@ scenario('Full', async ({ job }) => {
 
   const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
 
+  // Storage cleanup
+  const storageCleanupJob = job('storage cleanup', storageCleanup).after(contentDirectoryJob)
   // Storage & distribution CLIs
   job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
-    contentDirectoryJob
+    storageCleanupJob
   )
 })
