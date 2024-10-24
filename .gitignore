@@ -48,3 +48,5 @@ runtime-inputs/
 devops/infrastructure
 
 joystream.tar.gz
+
+.venv
