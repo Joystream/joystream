@@ -3,7 +3,7 @@ import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
 import { DownloadFileTask } from './tasks'
-import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
+import { TaskProcessorSpawner, WorkingStack } from '../processing/workingProcess'
 import _ from 'lodash'
 
 /**
@@ -93,7 +93,7 @@ export async function performSync(
  * @param hostId - Random host UUID assigned to each node during bootstrap
  * @param selectedOperatorUrl - operator URL selected for syncing objects
  */
-async function getDownloadTasks(
+export async function getDownloadTasks(
   dataObligations: DataObligations,
   ownBuckets: string[],
   added: DataObligations['dataObjects'],
@@ -156,6 +156,7 @@ async function getDownloadTasks(
       selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
       dataObject.id,
       dataObject.ipfsHash,
+      dataObject.size,
       uploadDirectory,
       tempDirectory,
       asyncWorkersTimeout,

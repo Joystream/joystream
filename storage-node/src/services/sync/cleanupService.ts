@@ -8,7 +8,7 @@ import { QueryNodeApi } from '../queryNode/api'
 import { DataObjectDetailsFragment } from '../queryNode/generated/queries'
 import { DataObligations, getDataObjectsByIDs, getStorageObligationsFromRuntime } from './storageObligations'
 import { DeleteLocalFileTask } from './tasks'
-import { TaskProcessorSpawner, WorkingStack } from './workingProcess'
+import { TaskProcessorSpawner, WorkingStack } from '../processing/workingProcess'
 
 /**
  * The maximum allowed threshold by which the QN processor can lag behind

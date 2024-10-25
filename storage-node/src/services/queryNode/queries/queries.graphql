@@ -55,6 +55,7 @@ query getStorageBagDetails($bucketIds: [String!]) {
 
 fragment DataObjectByBagIdsDetails on StorageDataObject {
   id
+  size
   ipfsHash
   storageBag {
     id

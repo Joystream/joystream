@@ -29,3 +29,8 @@ export async function getLeadRoleAccount(api: ApiPromise): Promise<string | unde
     return getWorkerRoleAccount(api, leadWorkerId)
   }
 }
+
+export async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
+  const worker = await api.query.storageWorkingGroup.workerById(workerId)
+  return worker.isSome
+}

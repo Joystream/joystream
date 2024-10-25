@@ -12,7 +12,7 @@ import { pinDataObjectIdToCache, unpinDataObjectIdFromCache } from '../../cachin
 import { parseBagId } from '../../helpers/bagTypes'
 import { getFileInfo, FileInfo } from '../../helpers/fileInfo'
 import { hashFile } from '../../helpers/hashing'
-import { moveFile } from '../../helpers/moveFile'
+import { moveFile } from '../../helpers/filesystem'
 import logger from '../../logger'
 import { getStorageBucketIdsByWorkerId } from '../../sync/storageObligations'
 import { GetFileHeadersRequestParams, GetFileRequestParams, UploadFileQueryParams } from '../types'

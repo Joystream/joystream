@@ -47,7 +47,9 @@ function createDefaultLoggerOptions(): winston.LoggerOptions {
   const format = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
     winston.format.colorize(),
-    winston.format.printf((info) => `${info.timestamp} ${info.level}: ${info.message}`)
+    winston.format.printf(
+      (info) => `${info.timestamp} ${info.level}: ${info?.label ? `[${info.label}] ` : ''}${info.message}`
+    )
   )
 
   // Redirect all logs to the stderr
