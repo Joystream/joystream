@@ -2,6 +2,7 @@ import path from 'path'
 import { createReadStream, promises as fsp } from 'fs'
 import lockfile from 'proper-lockfile'
 import readline from 'node:readline/promises'
+import _ from 'lodash'
 
 export const OBJECTS_TRACKING_FILENAME = 'objects_trackfile'
 export const ARCHIVES_TRACKING_FILENAME = 'archives_trackfile.jsonl'
@@ -41,13 +42,22 @@ abstract class TrackfileService {
 
 type TrackedArchive = { name: string; dataObjectIds: string[] }
 
+type ArchiveSearchResultHit = {
+  name: string
+  foundObjects: string[]
+}
+type ArchiveSearchResults = {
+  hits: ArchiveSearchResultHit[]
+  missingObjects: string[]
+}
+
 export class ArchivesTrackingService extends TrackfileService {
   protected trackfilePath: string
   protected trackedArchiveNames: Set<string> | undefined
 
-  constructor(private directory: string) {
+  constructor(private directory: string, trackFileName = ARCHIVES_TRACKING_FILENAME) {
     super()
-    this.trackfilePath = path.join(this.directory, ARCHIVES_TRACKING_FILENAME)
+    this.trackfilePath = path.join(this.directory, trackFileName)
   }
 
   public getTrackfilePath(): string {
@@ -86,6 +96,26 @@ export class ArchivesTrackingService extends TrackfileService {
       rl.close()
       this.trackedArchiveNames = trackedArchiveNames
     })
+  }
+
+  public async findDataObjects(dataObjectIds: string[]): Promise<ArchiveSearchResults> {
+    const results: ArchiveSearchResults = {
+      hits: [],
+      missingObjects: [...dataObjectIds],
+    }
+    await this.withLock(async () => {
+      const rl = readline.createInterface({ input: createReadStream(this.trackfilePath) })
+      for await (const line of rl) {
+        const trackedArchive: TrackedArchive = JSON.parse(line.trim())
+        const foundObjects = _.intersection(trackedArchive.dataObjectIds, dataObjectIds)
+        results.missingObjects = _.difference(results.missingObjects, foundObjects)
+        if (foundObjects.length > 0) {
+          results.hits.push({ name: trackedArchive.name, foundObjects })
+        }
+      }
+      rl.close()
+    })
+    return results
   }
 }
 
