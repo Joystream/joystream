@@ -7,6 +7,7 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import { IConnectionHandler } from '../s3/IConnectionHandler'
 import { SevenZipService } from './SevenZipService'
 import { ArchivesTrackingService } from './tracking'
+import { StorageClass } from '@aws-sdk/client-s3'
 
 /**
  * Compresses provided files into a 7zip archive and removes them.
@@ -89,7 +90,7 @@ export class UploadArchiveFileTask implements Task {
     private objectKey: string,
     private uploadsDirectory: string,
     private archivesTrackingService: ArchivesTrackingService,
-    private connectionHandler: IConnectionHandler
+    private connectionHandler: IConnectionHandler<StorageClass>
   ) {
     this._7z = new SevenZipService()
   }

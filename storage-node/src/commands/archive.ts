@@ -15,8 +15,7 @@ import { IConnectionHandler } from '../services/s3/IConnectionHandler'
 import { AwsConnectionHandler } from '../services/s3/AwsConnectionHandler'
 import { createDirectory } from '../services/helpers/filesystem'
 import { promises as fsp } from 'fs'
-
-// TODO: Add command for retrieving archive links by object ids.
+import { StorageClass } from '@aws-sdk/client-s3'
 
 /**
  * CLI command:
@@ -191,6 +190,13 @@ Supported values: warn, error, debug, info. Default:debug`,
       env: 'AWS_BUCKET_NAME',
       required: true,
     }),
+    awsStorageClass: flags.enum<StorageClass>({
+      description: 'AWS S3 storage class to use when uploading the archives to S3.',
+      env: 'AWS_STORAGE_CLASS',
+      required: true,
+      default: 'DEEP_ARCHIVE',
+      options: Object.keys(StorageClass) as StorageClass[],
+    }),
     ...ApiCommandBase.flags,
   }
 
@@ -303,9 +309,10 @@ Supported values: warn, error, debug, info. Default:debug`,
     }
 
     // Try to construct S3 connection handler
-    const s3ConnectionHandler: IConnectionHandler = new AwsConnectionHandler({
+    const s3ConnectionHandler: IConnectionHandler<StorageClass> = new AwsConnectionHandler({
       bucketName: flags.awsS3BucketName,
       region: flags.awsS3BucketRegion,
+      defaultStorageClass: flags.awsStorageClass,
     })
 
     // Get buckets to sync

@@ -17,6 +17,7 @@ import { getStorageObligationsFromRuntime } from '../sync/storageObligations'
 import { getDownloadTasks } from '../sync/synchronizer'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
+import { StorageClass } from '@aws-sdk/client-s3'
 
 type DataObjectData = {
   id: string
@@ -120,7 +121,7 @@ type ArchiveServiceParams = {
   uploadQueueDir: string
   tmpDownloadDir: string
   // API's
-  s3ConnectionHandler: IConnectionHandler
+  s3ConnectionHandler: IConnectionHandler<StorageClass>
   queryNodeApi: QueryNodeApi
   // Upload tasks config
   uploadWorkersNum: number
@@ -149,7 +150,7 @@ export class ArchiveService {
   private tmpDownloadDir: string
   // API's and services
   private queryNodeApi: QueryNodeApi
-  private s3ConnectionHandler: IConnectionHandler
+  private s3ConnectionHandler: IConnectionHandler<StorageClass>
   // Tracking services
   private objectTrackingService: ObjectTrackingService
   private archivesTrackingService: ArchivesTrackingService
@@ -247,7 +248,11 @@ export class ArchiveService {
     const lastModified = (await fsp.stat(trackfilePath)).mtime
     if (!this.archiveTrackfileLastMtime || lastModified.getTime() > this.archiveTrackfileLastMtime.getTime()) {
       this.logger.info('Backing up the archive trackfile...')
-      await this.s3ConnectionHandler.uploadFileToRemoteBucket(path.basename(trackfilePath), trackfilePath)
+      // For the trackfile we're using STANDARD class, because:
+      // 1. It's a lightweight file,
+      // 2. It may be useful to be able to access it quickly,
+      // 3. It's often overriden, which would incur additional costs for archival storage classes.
+      await this.s3ConnectionHandler.uploadFileToRemoteBucket(path.basename(trackfilePath), trackfilePath, 'STANDARD')
       this.archiveTrackfileLastMtime = lastModified
     }
   }

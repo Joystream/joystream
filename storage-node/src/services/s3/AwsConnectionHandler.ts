@@ -10,6 +10,7 @@ import {
   PutObjectCommand,
   PutObjectCommandInput,
   S3Client,
+  StorageClass,
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { fromEnv } from '@aws-sdk/credential-provider-env'
@@ -19,11 +20,13 @@ import fs from 'fs'
 export type AwsConnectionHandlerParams = {
   region: string
   bucketName: string
+  defaultStorageClass?: StorageClass
 }
 
-export class AwsConnectionHandler implements IConnectionHandler {
+export class AwsConnectionHandler implements IConnectionHandler<StorageClass> {
   private client: S3Client
   private bucket: string
+  private defaultStorageClass?: StorageClass
 
   // Official doc at https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html:
   // Upload an object in a single operation by using the AWS SDKs, REST API, or AWS CLI – With a single PUT operation, you can upload a single object up to 5 GB in size.
@@ -36,11 +39,15 @@ export class AwsConnectionHandler implements IConnectionHandler {
       this.client = this.constructProduction(opts)
     }
     this.bucket = opts.bucketName
+    this.defaultStorageClass = opts.defaultStorageClass
     logger.info(
       `AWS connection handler initialized with bucket config ${
         process.env.LOCALSTACK_ENABLED === 'true' ? 'LOCALSTACK' : 'PRODUCTION'
       }`
     )
+    if (this.defaultStorageClass) {
+      logger.info(`Using default AWS S3 storage class: ${this.defaultStorageClass}`)
+    }
   }
 
   private constructProduction(opts: AwsConnectionHandlerParams): S3Client {
@@ -71,15 +78,23 @@ export class AwsConnectionHandler implements IConnectionHandler {
     return fileSizeInBytes > this.multiPartThresholdGB * 1_000_000_000
   }
 
-  async uploadFileToRemoteBucket(key: string, filePath: string): Promise<UploadFileOutput> {
-    await this.uploadFileToAWSBucket(key, filePath)
+  async uploadFileToRemoteBucket(
+    key: string,
+    filePath: string,
+    storageClass?: StorageClass
+  ): Promise<UploadFileOutput> {
+    await this.uploadFileToAWSBucket(key, filePath, storageClass)
     return {
       key,
       filePath,
     }
   }
 
-  async uploadFileToRemoteBucketIfNotExists(key: string, filePath: string): Promise<UploadFileIfNotExistsOutput> {
+  async uploadFileToRemoteBucketIfNotExists(
+    key: string,
+    filePath: string,
+    storageClass?: StorageClass
+  ): Promise<UploadFileIfNotExistsOutput> {
     // check if file exists at key
     const fileExists = await this.checkIfFileExists(key)
     // if it does, return
@@ -91,7 +106,7 @@ export class AwsConnectionHandler implements IConnectionHandler {
       }
     }
     // if it doesn't, upload the file
-    await this.uploadFileToAWSBucket(key, filePath)
+    await this.uploadFileToAWSBucket(key, filePath, storageClass)
     return {
       key,
       filePath,
@@ -99,13 +114,18 @@ export class AwsConnectionHandler implements IConnectionHandler {
     }
   }
 
-  private async uploadFileToAWSBucket(filename: string, filePath: string): Promise<CreateMultipartUploadCommandOutput> {
+  private async uploadFileToAWSBucket(
+    filename: string,
+    filePath: string,
+    storageClass?: StorageClass
+  ): Promise<CreateMultipartUploadCommandOutput> {
     const fileStream = fs.createReadStream(filePath)
 
     const input: PutObjectCommandInput = {
       Bucket: this.bucket,
       Key: filename,
       Body: fileStream,
+      StorageClass: storageClass || this.defaultStorageClass,
     }
 
     // Uploading files to the bucket: multipart

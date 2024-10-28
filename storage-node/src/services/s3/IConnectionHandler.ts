@@ -14,22 +14,28 @@ export type UploadFileIfNotExistsOutput = {
  * Within this storage unit, objects are organized using keys. A key is a string that defines the location of an object
  * within the storage unit. Keys use the format "<directory>/<filename>" with "/" as a delimiter to separate directories.
  */
-export interface IConnectionHandler {
+export interface IConnectionHandler<StorageClassType> {
   /**
    * Asynchronously uploads an object to the storage unit. It doesn't check if the object already exists.
    * @param key - The key of the object in the storage unit.
    * @param filePath - The local file path of the object to upload.
+   * @param storageClass - Optional. The storage class of the object.
    * @returns A promise that resolves when the upload is complete or rejects with an error.
    */
-  uploadFileToRemoteBucket(key: string, filePath: string): Promise<UploadFileOutput>
+  uploadFileToRemoteBucket(key: string, filePath: string, storageClass?: StorageClassType): Promise<UploadFileOutput>
 
   /**
    * Asynchronously uploads an object to the storage unit if it does not exist.
    * @param key - The key of the object in the storage unit.
    * @param filePath - The local file path of the object to upload.
+   * @param storageClass - Optional. The storage class of the object.
    * @returns A promise that resolves when the upload is complete or rejects with an error.
    */
-  uploadFileToRemoteBucketIfNotExists(key: string, filePath: string): Promise<UploadFileIfNotExistsOutput>
+  uploadFileToRemoteBucketIfNotExists(
+    key: string,
+    filePath: string,
+    storageClass?: StorageClassType
+  ): Promise<UploadFileIfNotExistsOutput>
 
   /**
    * Asynchronously retrieves a presigned URL for an object in the storage unit.
