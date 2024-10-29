@@ -15,6 +15,7 @@ import { IConnectionHandler } from '../services/s3/IConnectionHandler'
 import { AwsConnectionHandler } from '../services/s3/AwsConnectionHandler'
 import { createDirectory } from '../services/helpers/filesystem'
 import { promises as fsp } from 'fs'
+import { CompressionAlgorithm, CompressionLevel, getCompressionService } from '../services/archive/compression'
 import { StorageClass } from '@aws-sdk/client-s3'
 
 /**
@@ -87,10 +88,33 @@ export default class Archive extends ApiCommandBase {
     }),
     archiveTrackfileBackupFreqMinutes: flags.integer({
       description:
-        'Specifies how frequently the archive tracking file (containing information about .7z files content)' +
+        'Specifies how frequently the archive tracking file (containing information about archive files content)' +
         " should be uploaded to S3 (in case it's changed).",
       env: 'ARCHIVE_TRACKFILE_BACKUP_FREQ_MINUTES',
       default: 60,
+    }),
+    compressionAlgorithm: flags.enum<CompressionAlgorithm>({
+      required: true,
+      description: 'Compression algorithm to use for archive files',
+      options: ['7zip', 'zstd', 'none'],
+      default: 'zstd',
+      env: 'COMPRESSION_ALGORITHM',
+    }),
+    compressionLevel: flags.enum<CompressionLevel>({
+      required: true,
+      description: 'Compression level to use for archive files (lower is faster, but provides lower storage savings)',
+      env: 'COMPRESSION_LEVEL',
+      default: 'medium',
+      options: ['low', 'medium', 'high'],
+    }),
+    compressionThreads: flags.integer({
+      required: true,
+      description:
+        'Number of threads to use for compression. ' +
+        'Note that {uploadWorkersNumber} upload tasks may be running at once ' +
+        'and each of them can spawn a separate compression task which uses {compressionThreads} threads!',
+      env: 'COMPRESSION_THREADS',
+      default: 1,
     }),
     uploadWorkersNumber: flags.integer({
       required: false,
@@ -248,7 +272,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       this.error('No buckets to serve. Exiting...')
     }
 
-    if (syncableBuckets.length !== flags.buckets.length) {
+    if (flags.buckets.length && syncableBuckets.length !== flags.buckets.length) {
       logger.warn(`Only ${syncableBuckets.length} out of ${flags.buckets.length} provided buckets will be synced!`)
     }
 
@@ -325,6 +349,12 @@ Supported values: warn, error, debug, info. Default:debug`,
       uploadQueueDir: flags.uploadQueueDir,
     })
 
+    const compressionService = getCompressionService(
+      flags.compressionAlgorithm,
+      flags.compressionThreads,
+      flags.compressionLevel
+    )
+
     // Build and run archive service
     const X_HOST_ID = uuidv4()
     const archiveService = new ArchiveService({
@@ -339,6 +369,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       tmpDownloadDir,
       s3ConnectionHandler,
       queryNodeApi: qnApi,
+      compressionService,
       uploadWorkersNum: flags.uploadWorkersNumber,
       hostId: X_HOST_ID,
       syncWorkersNum: flags.syncWorkersNumber,

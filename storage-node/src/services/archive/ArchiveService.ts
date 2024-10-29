@@ -1,7 +1,7 @@
 import { promises as fsp } from 'fs'
 import path from 'path'
 import logger from '../logger'
-import { CompressFilesTask, UploadArchiveFileTask } from './tasks'
+import { CompressAndUploadTask, UploadArchiveFileTask } from './tasks'
 import { WorkingStack, TaskProcessorSpawner } from '../processing/workingProcess'
 import { downloadEvents, DownloadFileTask } from '../sync/tasks'
 import _ from 'lodash'
@@ -18,6 +18,7 @@ import { getDownloadTasks } from '../sync/synchronizer'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { StorageClass } from '@aws-sdk/client-s3'
+import { CompressionService } from './compression'
 
 type DataObjectData = {
   id: string
@@ -123,6 +124,8 @@ type ArchiveServiceParams = {
   // API's
   s3ConnectionHandler: IConnectionHandler<StorageClass>
   queryNodeApi: QueryNodeApi
+  // Compression service
+  compressionService: CompressionService
   // Upload tasks config
   uploadWorkersNum: number
   // Sync tasks config
@@ -151,6 +154,8 @@ export class ArchiveService {
   // API's and services
   private queryNodeApi: QueryNodeApi
   private s3ConnectionHandler: IConnectionHandler<StorageClass>
+  // Compression service
+  private compressionService: CompressionService
   // Tracking services
   private objectTrackingService: ObjectTrackingService
   private archivesTrackingService: ArchivesTrackingService
@@ -183,6 +188,7 @@ export class ArchiveService {
     this.uploadQueueDir = params.uploadQueueDir
     this.tmpDownloadDir = params.tmpDownloadDir
     this.s3ConnectionHandler = params.s3ConnectionHandler
+    this.compressionService = params.compressionService
     this.queryNodeApi = params.queryNodeApi
     this.uploadWorkersNum = params.uploadWorkersNum
     this.hostId = params.hostId
@@ -400,9 +406,12 @@ export class ArchiveService {
     const uploadDirContents = await fsp.readdir(this.uploadQueueDir, { withFileTypes: true })
     for (const item of uploadDirContents) {
       if (item.isFile()) {
-        const [name, ext1, ext2] = item.name.split('.')
+        const splitParts = item.name.split('.')
+        const name = splitParts[0]
+        const isTmp = splitParts[1] === 'tmp'
+        const ext = splitParts.slice(isTmp ? 2 : 1).join('.')
         // 1. If file name is an int and has no ext: We assume it's a fully downloaded data object
-        if (parseInt(name).toString() === name && !ext1) {
+        if (parseInt(name).toString() === name && !isTmp && !ext) {
           const dataObjectId = name
           // 1.1. If the object is not in dataObjectsQueue: remove
           if (!this.dataObjectsQueue.has(dataObjectId)) {
@@ -419,8 +428,8 @@ export class ArchiveService {
             await this.tryRemovingLocalDataObject(dataObjectId)
           }
         }
-        // 2. If file is .7z: We assume it's a valid archive with data objects
-        else if (ext1 === '7z') {
+        // 2. If file is an archive and has no `.tmp` ext: We assume it's a valid archive with data objects
+        else if (!isTmp && ext === this.compressionService.getExt()) {
           if (!this.archivesTrackingService.isTracked(item.name)) {
             // 2.1. If not tracked by archiveTrackingService - try to re-upload:
             this.logger.warn(`Found unuploaded archive: ${item.name}. Scheduling for re-upload...`)
@@ -430,7 +439,8 @@ export class ArchiveService {
                 item.name,
                 this.uploadQueueDir,
                 this.archivesTrackingService,
-                this.s3ConnectionHandler
+                this.s3ConnectionHandler,
+                this.compressionService
               ),
             ])
             // 2.2. If it's already tracked by archiveTrackingService (already uploaded): remove
@@ -438,9 +448,9 @@ export class ArchiveService {
             this.logger.warn(`Found already uploaded archive: ${item.name}. Removing...`)
             await this.tryRemovingLocalFile(path.join(this.uploadQueueDir, item.name))
           }
-          // 3. If file is .tmp.7z: remove
-        } else if (ext1 === 'tmp' && ext2 === '7z') {
-          this.logger.warn(`Found broken archive: ${item.name}. Removing...`)
+          // 3. If file is temporary: remove
+        } else if (isTmp) {
+          this.logger.warn(`Found temporary file: ${item.name}. Removing...`)
           await this.tryRemovingLocalFile(path.join(this.uploadQueueDir, item.name))
         } else if (item.name !== ARCHIVES_TRACKING_FILENAME && item.name !== OBJECTS_TRACKING_FILENAME) {
           this.logger.warn(`Found unrecognized file: ${item.name}`)
@@ -583,8 +593,7 @@ export class ArchiveService {
   }
 
   /**
-   * Compresses batches of data objects into 7zip archives and
-   * schedules the uploads to S3.
+   * Compresses batches of data objects into archives and schedules the uploads to S3.
    */
   public async prepareAndUploadBatches(dataObjectBatches: DataObjectData[][]): Promise<void> {
     if (!dataObjectBatches.length) {
@@ -594,46 +603,20 @@ export class ArchiveService {
 
     this.preparingForUpload = true
 
-    this.logger.info(`Preparing ${dataObjectBatches.length} batches for upload...`)
-    const compressionTasks: CompressFilesTask[] = []
+    this.logger.info(`Preparing ${dataObjectBatches.length} object batches for upload...`)
+    const uploadTasks: CompressAndUploadTask[] = []
     for (const batch of dataObjectBatches) {
-      const compressionTask = new CompressFilesTask(
+      const uploadTask = new CompressAndUploadTask(
         this.uploadQueueDir,
-        batch.map((o) => o.id)
+        batch.map((o) => o.id),
+        this.archivesTrackingService,
+        this.s3ConnectionHandler,
+        this.compressionService
       )
-      compressionTasks.push(compressionTask)
+      uploadTasks.push(uploadTask)
     }
 
-    // We run compression tasks one by one, because they spawn 7zip, which uses all available threads
-    // by default, ie. we probably won't benefit from running multiple 7zip tasks in parallel.
-    this.logger.info(`Creating ${compressionTasks.length} archive file(s)...`)
-    const archiveFiles = []
-    for (const compressionTask of compressionTasks) {
-      this.logger.debug(compressionTask.description())
-      try {
-        await compressionTask.execute()
-        archiveFiles.push(compressionTask.getArchiveFilePath())
-      } catch (e) {
-        this.logger.error(`Data objects compression task failed: ${e.toString()}`)
-      }
-    }
-
-    // After collecting the archive files we add them to upload queue
-    const uploadFileTasks = archiveFiles.map(
-      (filePath) =>
-        new UploadArchiveFileTask(
-          filePath,
-          path.basename(filePath),
-          this.uploadQueueDir,
-          this.archivesTrackingService,
-          this.s3ConnectionHandler
-        )
-    )
-
-    if (uploadFileTasks.length) {
-      this.logger.info(`Scheduling ${uploadFileTasks.length} uploads to S3...`)
-      await this.uploadWorkingStack.add(uploadFileTasks)
-    }
+    await this.uploadWorkingStack.add(uploadTasks)
 
     this.preparingForUpload = false
   }
