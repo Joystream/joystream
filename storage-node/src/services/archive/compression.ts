@@ -73,11 +73,13 @@ export class TarService extends CompressionService {
   ): Promise<void> {
     try {
       const useCompressProgram = this.getCompressProgramFlag(level || this.defaultCompressionLevel)
+      const baseDir = path.dirname(compressFilePaths[0])
+      const relativeFilePaths = compressFilePaths.map((f) => path.relative(baseDir, f))
       const { stderr } = await execPromise(
         // -c - compress
         // -f - output to file
-        // -P - don't strip leading '/'s from file names
-        `tar -Pcf ${archiveFilePath} ${useCompressProgram} ${compressFilePaths.join(' ')}`
+        // -C - omit the path from file names (cd into the directory)
+        `tar -cf ${archiveFilePath} ${useCompressProgram} -C ${baseDir} ${relativeFilePaths.join(' ')}`
       )
       if (stderr) {
         logger.warn(`tar process stderr: ${stderr}`)

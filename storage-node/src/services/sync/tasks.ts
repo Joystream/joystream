@@ -16,7 +16,7 @@ import { EventEmitter } from 'node:events'
 const fsPromises = fs.promises
 
 export const downloadEvents = new EventEmitter<{
-  'success': [string, number]
+  'success': [string, number, bigint, bigint]
   'fail': [string, number]
 }>()
 
@@ -88,6 +88,7 @@ export class DownloadFileTask implements Task {
       return
     }
 
+    const startTime = process.hrtime.bigint()
     for (const randomUrlIndex of operatorUrlIndices) {
       const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
       logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
@@ -101,7 +102,8 @@ export class DownloadFileTask implements Task {
           try {
             await moveFile(tempFilePath, filepath)
             await fsPromises.access(filepath, fs.constants.F_OK)
-            downloadEvents.emit('success', this.dataObjectId, this.expectedSize)
+            const endTime = process.hrtime.bigint()
+            downloadEvents.emit('success', this.dataObjectId, this.expectedSize, startTime, endTime)
             return
           } catch (err) {
             logger.error(`Sync - error trying to move file ${tempFilePath} to ${filepath}: ${err.toString()}`)

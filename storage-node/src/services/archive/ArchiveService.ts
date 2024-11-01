@@ -19,6 +19,7 @@ import sleep from 'sleep-promise'
 import { Logger } from 'winston'
 import { StorageClass } from '@aws-sdk/client-s3'
 import { CompressionService } from './compression'
+import { StatsCollectingService } from './stats'
 
 type DataObjectData = {
   id: string
@@ -135,6 +136,8 @@ type ArchiveServiceParams = {
   syncInterval: number
   // Archive tracking backup
   archiveTrackfileBackupFreqMinutes: number
+  // Stats logging
+  statsLoggingInterval: number
 }
 
 export class ArchiveService {
@@ -176,6 +179,9 @@ export class ArchiveService {
   private syncQueueObjectsSize = 0
   private syncWorkersTimeout: number
   private syncInterval: number
+  // Statistics
+  private statsLoggingInterval: number
+  private statsCollectingService: StatsCollectingService
 
   constructor(params: ArchiveServiceParams) {
     // From params:
@@ -196,12 +202,14 @@ export class ArchiveService {
     this.syncWorkersTimeout = params.syncWorkersTimeout
     this.syncInterval = params.syncInterval
     this.archiveTrackfileBackupFreqMinutes = params.archiveTrackfileBackupFreqMinutes
+    this.statsLoggingInterval = params.statsLoggingInterval
     // Other:
     this.objectTrackingService = new ObjectTrackingService(this.uploadQueueDir)
     this.archivesTrackingService = new ArchivesTrackingService(this.uploadQueueDir)
     this.dataObjectsQueue = new DataObjectsQueue(this.uploadQueueDir)
     this.uploadWorkingStack = new WorkingStack()
     this.syncWorkingStack = new WorkingStack()
+    this.statsCollectingService = new StatsCollectingService()
     this.logger = logger.child({ label: 'ArchiveService' })
   }
 
@@ -228,8 +236,13 @@ export class ArchiveService {
    * Initializes downloadEvent handlers and archive trackfile backup interval.
    */
   private installTriggers(): void {
-    downloadEvents.on('success', (dataObjectId, size) => {
+    downloadEvents.on('success', (dataObjectId, size, startTime, endTime) => {
       this.logger.debug(`Download success event received for object: ${dataObjectId}`)
+      this.statsCollectingService.addDownloadJobStats({
+        start: startTime,
+        end: endTime,
+        size: size,
+      })
       this.handleSuccessfulDownload(dataObjectId).catch((e) => {
         this.logger.error(`Critical error on handleSuccessfulDownload: ${e.toString()}`)
         process.exit(1)
@@ -244,6 +257,9 @@ export class ArchiveService {
         this.logger.error(`Failed to upload archive trackfile backup to S3: ${e.toString()}`)
       })
     }, this.archiveTrackfileBackupFreqMinutes * 60_000)
+    setInterval(() => {
+      this.statsCollectingService.logSummaries()
+    }, this.statsLoggingInterval * 60_000)
   }
 
   /**
@@ -440,7 +456,8 @@ export class ArchiveService {
                 this.uploadQueueDir,
                 this.archivesTrackingService,
                 this.s3ConnectionHandler,
-                this.compressionService
+                this.compressionService,
+                this.statsCollectingService
               ),
             ])
             // 2.2. If it's already tracked by archiveTrackingService (already uploaded): remove
@@ -611,7 +628,8 @@ export class ArchiveService {
         batch.map((o) => o.id),
         this.archivesTrackingService,
         this.s3ConnectionHandler,
-        this.compressionService
+        this.compressionService,
+        this.statsCollectingService
       )
       uploadTasks.push(uploadTask)
     }

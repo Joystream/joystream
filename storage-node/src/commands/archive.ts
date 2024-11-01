@@ -221,6 +221,12 @@ Supported values: warn, error, debug, info. Default:debug`,
       default: 'DEEP_ARCHIVE',
       options: Object.keys(StorageClass) as StorageClass[],
     }),
+    statsLoggingInterval: flags.integer({
+      description: 'How often the upload/download/compression statistics summary will be logged (in minutes).',
+      env: 'STATS_LOGGING_INTERVAL',
+      default: 60,
+      required: true,
+    }),
     ...ApiCommandBase.flags,
   }
 
@@ -375,6 +381,7 @@ Supported values: warn, error, debug, info. Default:debug`,
       syncWorkersNum: flags.syncWorkersNumber,
       syncWorkersTimeout: flags.syncWorkersTimeout,
       syncInterval: flags.syncInterval,
+      statsLoggingInterval: flags.statsLoggingInterval,
     })
 
     await archiveService.init()

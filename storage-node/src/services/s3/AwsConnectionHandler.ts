@@ -119,12 +119,14 @@ export class AwsConnectionHandler implements IConnectionHandler<StorageClass> {
     filePath: string,
     storageClass?: StorageClass
   ): Promise<CreateMultipartUploadCommandOutput> {
+    const size = (await fs.promises.stat(filePath)).size
     const fileStream = fs.createReadStream(filePath)
 
     const input: PutObjectCommandInput = {
       Bucket: this.bucket,
       Key: filename,
       Body: fileStream,
+      ContentLength: size,
       StorageClass: storageClass || this.defaultStorageClass,
     }
 
