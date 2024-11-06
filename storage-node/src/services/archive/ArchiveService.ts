@@ -110,8 +110,6 @@ class DataObjectsQueue {
 }
 
 type ArchiveServiceParams = {
-  // Supported buckets
-  buckets: string[]
   // Upload trigger Thresholds
   localCountTriggerThreshold: number | undefined
   localSizeTriggerThreshold: number
@@ -142,8 +140,6 @@ type ArchiveServiceParams = {
 
 export class ArchiveService {
   private logger: Logger
-  // Buckets
-  private buckets: string[]
   // Thresholds
   private localCountTriggerThreshold: number | undefined
   private localSizeTriggerThreshold: number
@@ -185,7 +181,6 @@ export class ArchiveService {
 
   constructor(params: ArchiveServiceParams) {
     // From params:
-    this.buckets = params.buckets
     this.localCountTriggerThreshold = params.localCountTriggerThreshold
     this.localSizeTriggerThreshold = params.localSizeTriggerThreshold
     this.localAgeTriggerThresholdMinutes = params.localAgeTriggerThresholdMinutes
@@ -372,7 +367,7 @@ export class ArchiveService {
    * @throws Error If there's an issue w/ file access or the query node
    */
   public async performSync(): Promise<void> {
-    const model = await getStorageObligationsFromRuntime(this.queryNodeApi, this.buckets)
+    const model = await getStorageObligationsFromRuntime(this.queryNodeApi)
 
     const assignedObjects = model.dataObjects
     const added = assignedObjects.filter((obj) => !this.objectTrackingService.isTracked(obj.id))
@@ -400,7 +395,7 @@ export class ArchiveService {
         }
         const [downloadTask] = await getDownloadTasks(
           model,
-          this.buckets,
+          [],
           [object],
           this.uploadQueueDir,
           this.tmpDownloadDir,

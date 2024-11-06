@@ -95,16 +95,17 @@ export type DataObject = {
  * runtime (Query Node).
  *
  * @param queryNodeUrl - Query Node URL
- * @param workerId - worker ID
+ * @param bucketIds - bucket IDs. If undefined, we treat all existing bags as obligations.
  * @returns promise for the DataObligations
  */
 export async function getStorageObligationsFromRuntime(
   qnApi: QueryNodeApi,
-  bucketIds: string[]
+  bucketIds?: string[]
 ): Promise<DataObligations> {
   const allBuckets = await getAllBuckets(qnApi)
 
-  const assignedBags = await getAllAssignedBags(qnApi, bucketIds)
+  const assignedBags =
+    bucketIds === undefined ? await qnApi.getAllStorageBagsDetails() : await getAllAssignedBags(qnApi, bucketIds)
 
   const bagIds = assignedBags.map((bag) => bag.id)
   const assignedDataObjects = await getAllAssignedDataObjects(qnApi, bagIds)

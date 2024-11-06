@@ -1,13 +1,10 @@
 import { flags } from '@oclif/command'
-import { ApiPromise } from '@polkadot/api'
 import _ from 'lodash'
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import ApiCommandBase from '../command-base/ApiCommandBase'
-import { customFlags } from '../command-base/CustomFlags'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
-import { constructBucketToAddressMapping } from '../services/sync/storageObligations'
 import { verifyWorkerId } from '../services/runtime/queries'
 import { ArchiveService } from '../services/archive/ArchiveService'
 import ExitCodes from './../command-base/ExitCodes'
@@ -37,13 +34,6 @@ export default class Archive extends ApiCommandBase {
       required: true,
       description: 'Storage provider worker ID',
       env: 'WORKER_ID',
-    }),
-    buckets: customFlags.integerArr({
-      char: 'b',
-      description:
-        'Comma separated list of bucket IDs to sync. Buckets that are not assigned to worker are ignored.\n' +
-        'If not specified all buckets belonging to the worker will be synced.',
-      default: process.env.BUCKETS ? _.uniq(process.env.BUCKETS.split(',').map((b) => parseInt(b))) : [],
     }),
     uploadQueueDir: flags.string({
       description:
@@ -230,61 +220,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     ...ApiCommandBase.flags,
   }
 
-  async getSyncableBuckets(api: ApiPromise, qnApi: QueryNodeApi): Promise<string[]> {
-    const { flags } = this.parse(Archive)
-    const workerId = flags.worker
-
-    if (!(await verifyWorkerId(api, workerId))) {
-      logger.error(`workerId ${workerId} does not exist in the storage working group`)
-      this.exit(ExitCodes.InvalidWorkerId)
-    }
-
-    if (!flags.buckets.length) {
-      logger.info(`No buckets provided. Will use all bucket belonging to worker ${workerId}.`)
-    }
-
-    const selectedBucketsAndAccounts = await constructBucketToAddressMapping(api, qnApi, workerId, flags.buckets)
-    const selectedBuckets = selectedBucketsAndAccounts.map(([bucketId]) => bucketId)
-    const selectedVsProvidedDiff = _.difference(
-      flags.buckets.map((id) => id.toString()),
-      selectedBuckets
-    )
-
-    if (selectedVsProvidedDiff.length) {
-      logger.warn(
-        `Buckets: ${JSON.stringify(
-          selectedVsProvidedDiff
-        )} do not belong to worker with ID=${workerId} and will NOT be synced!`
-      )
-    }
-
-    let syncableBuckets = selectedBuckets
-    if (process.env.DISABLE_BUCKET_AUTH === 'true') {
-      logger.warn('Bucket authentication is disabled! This is not recommended for production use!')
-    } else {
-      const keystoreAddresses = this.getUnlockedAccounts()
-      const bucketsWithKeysInKeyring = selectedBucketsAndAccounts.filter(([bucketId, address]) => {
-        if (!keystoreAddresses.includes(address)) {
-          this.warn(`Missing transactor key for bucket ${bucketId}. It will NOT be synced!`)
-          return false
-        }
-        return true
-      })
-
-      syncableBuckets = bucketsWithKeysInKeyring.map(([bucketId]) => bucketId)
-    }
-
-    if (!syncableBuckets.length) {
-      this.error('No buckets to serve. Exiting...')
-    }
-
-    if (flags.buckets.length && syncableBuckets.length !== flags.buckets.length) {
-      logger.warn(`Only ${syncableBuckets.length} out of ${flags.buckets.length} provided buckets will be synced!`)
-    }
-
-    return syncableBuckets
-  }
-
   initLogger(): void {
     const { flags } = this.parse(Archive)
     if (!_.isEmpty(flags.elasticSearchEndpoint) || !_.isEmpty(flags.logFilePath)) {
@@ -345,9 +280,12 @@ Supported values: warn, error, debug, info. Default:debug`,
       defaultStorageClass: flags.awsStorageClass,
     })
 
-    // Get buckets to sync
-    const syncableBuckets = await this.getSyncableBuckets(api, qnApi)
-    logger.info(`Buckets to sync: [${syncableBuckets}]`)
+    // Verify workerId
+    const workerId = flags.worker
+    if (!(await verifyWorkerId(api, workerId))) {
+      logger.error(`workerId ${workerId} does not exist in the storage working group`)
+      this.exit(ExitCodes.InvalidWorkerId)
+    }
 
     // Check and normalize input directories
     const { tmpDownloadDir, uploadQueueDir } = await this.checkAndNormalizeDirs({
@@ -364,7 +302,6 @@ Supported values: warn, error, debug, info. Default:debug`,
     // Build and run archive service
     const X_HOST_ID = uuidv4()
     const archiveService = new ArchiveService({
-      buckets: syncableBuckets.map((id) => id.toString()),
       archiveTrackfileBackupFreqMinutes: flags.archiveTrackfileBackupFreqMinutes,
       localCountTriggerThreshold: flags.localCountTriggerThreshold,
       localSizeTriggerThreshold: flags.localSizeTriggerThresholdMB * 1_000_000,

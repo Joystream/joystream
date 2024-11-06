@@ -1,6 +1,6 @@
 ### 4.3.0
 
-- Adds `archive` mode / command, which allows downloading, compressing and uploading assigned data objects to an external S3 bucket that can be used as a backup.
+- Adds `archive` mode / command, which allows downloading, compressing and uploading all data objects to an external S3 bucket that can be used as a backup.
 
 ### 4.2.0
 
