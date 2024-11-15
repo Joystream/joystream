@@ -54,6 +54,10 @@ export class AwsConnectionHandler implements IConnectionHandler<StorageClass> {
     return new S3Client({
       credentials: fromEnv(),
       region: opts.region,
+      requestHandler: {
+        connectionTimeout: 60_000,
+        requestTimeout: 60_000,
+      },
     })
   }
 

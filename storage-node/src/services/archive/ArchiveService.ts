@@ -37,7 +37,7 @@ class DataObjectsQueue {
 
   constructor(dataDir: string) {
     this.dataDir = dataDir
-    this.logger = logger.child('DataObjectsQueue')
+    this.logger = logger.child({ label: 'DataObjectsQueue' })
   }
 
   public get totalSize() {
@@ -450,6 +450,7 @@ export class ArchiveService {
                 item.name,
                 this.uploadQueueDir,
                 this.archivesTrackingService,
+                this.objectTrackingService,
                 this.s3ConnectionHandler,
                 this.compressionService,
                 this.statsCollectingService
@@ -622,6 +623,7 @@ export class ArchiveService {
         this.uploadQueueDir,
         batch.map((o) => o.id),
         this.archivesTrackingService,
+        this.objectTrackingService,
         this.s3ConnectionHandler,
         this.compressionService,
         this.statsCollectingService
