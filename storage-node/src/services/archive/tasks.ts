@@ -106,7 +106,8 @@ export class CompressFilesTask implements Task {
       this.logger.error(`Exiting due to cirtical error...`)
       process.exit(1)
     }
-    throw new Error(`Compression task failed: ${error.toString()}`)
+    this.logger.error(`Compression task failed: ${error.toString()}`)
+    throw error
   }
 
   private async clenaup(): Promise<void> {
@@ -201,7 +202,8 @@ export class UploadArchiveFileTask implements Task {
       this.logger.error(`Exiting due to cirtical error...`)
       process.exit(1)
     }
-    throw new Error(`Upload failed: ${error.toString()}`)
+    this.logger.error(`Upload failed: ${error.toString()}`)
+    throw error
   }
 
   public async execute(): Promise<void> {
