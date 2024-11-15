@@ -91,12 +91,14 @@ export class CompressFilesTask implements Task {
     }
   }
 
-  private async handleFailure(e: Error): Promise<void> {
+  private async handleFailure(error: Error): Promise<void> {
     const pathsToClean = [this.tmpArchiveFilePath, this.archiveFilePath, ...this.dataObjectPaths]
     // Untrack data objects so that they can be re-downloaded
     // and remove data objects and any archives that were created from uploadsDir
     try {
-      await Promise.all(this.dataObjectIds.map((id) => this.objectTrackingService.untrack(id)))
+      for (const id of this.dataObjectIds) {
+        await this.objectTrackingService.untrack(id)
+      }
       await Promise.all(pathsToClean.map((p) => fsp.rm(p, { force: true })))
     } catch (e) {
       this.logger.error(`Compression failed: ${e.toString()}`)
@@ -104,7 +106,7 @@ export class CompressFilesTask implements Task {
       this.logger.error(`Exiting due to cirtical error...`)
       process.exit(1)
     }
-    throw new Error(`Compression task failed: ${e.toString()}`)
+    throw new Error(`Compression task failed: ${error.toString()}`)
   }
 
   private async clenaup(): Promise<void> {
@@ -186,10 +188,12 @@ export class UploadArchiveFileTask implements Task {
     }
   }
 
-  private async handleFailure(e: Error, dataObjectIds: string[]): Promise<void> {
+  private async handleFailure(error: Error, dataObjectIds: string[]): Promise<void> {
     // Untrack the data objects so that they can be re-downloaded and remove the archive file
     try {
-      await Promise.all(dataObjectIds.map((id) => this.objectTrackingService.untrack(id)))
+      for (const id of dataObjectIds) {
+        await this.objectTrackingService.untrack(id)
+      }
       await fsp.rm(this.archiveFilePath, { force: true })
     } catch (e) {
       this.logger.error(`Upload failed: ${e.toString()}`)
@@ -197,7 +201,7 @@ export class UploadArchiveFileTask implements Task {
       this.logger.error(`Exiting due to cirtical error...`)
       process.exit(1)
     }
-    throw new Error(`Upload failed: ${e.toString()}`)
+    throw new Error(`Upload failed: ${error.toString()}`)
   }
 
   public async execute(): Promise<void> {

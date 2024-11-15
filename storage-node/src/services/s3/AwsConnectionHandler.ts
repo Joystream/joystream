@@ -55,8 +55,8 @@ export class AwsConnectionHandler implements IConnectionHandler<StorageClass> {
       credentials: fromEnv(),
       region: opts.region,
       requestHandler: {
-        connectionTimeout: 60_000,
-        requestTimeout: 60_000,
+        connectionTimeout: 30_000,
+        requestTimeout: 120_000,
       },
     })
   }

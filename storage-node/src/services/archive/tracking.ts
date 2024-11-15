@@ -17,9 +17,8 @@ abstract class TrackfileService {
       // Source: https://www.npmjs.com/package/retry
       retries: {
         minTimeout: 10,
-        maxTimeout: 100,
-        factor: 1.5,
-        retries: 10,
+        maxTimeout: 10,
+        retries: 10_000,
       },
     })
   }
