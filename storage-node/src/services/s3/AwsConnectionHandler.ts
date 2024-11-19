@@ -139,7 +139,13 @@ export class AwsConnectionHandler implements IConnectionHandler<StorageClass> {
       ? new CreateMultipartUploadCommand(input)
       : new PutObjectCommand(input)
 
-    return await this.client.send(command)
+    try {
+      const resp = await this.client.send(command)
+      return resp
+    } catch (e) {
+      fileStream.destroy()
+      throw e
+    }
   }
 
   async getRedirectUrlForObject(filename: string): Promise<string> {
