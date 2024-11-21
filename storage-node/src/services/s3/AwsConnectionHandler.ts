@@ -142,9 +142,8 @@ export class AwsConnectionHandler implements IConnectionHandler<StorageClass> {
     try {
       const resp = await this.client.send(command)
       return resp
-    } catch (e) {
+    } finally {
       fileStream.destroy()
-      throw e
     }
   }
 
