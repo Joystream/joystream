@@ -1,12 +1,7 @@
 import _ from 'lodash'
 import logger from '../logger'
-import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from '../queryNode/api'
-import {
-  DataObjectByBagIdsDetailsFragment,
-  DataObjectDetailsFragment,
-  StorageBagDetailsFragment,
-  StorageBucketDetailsFragment,
-} from '../queryNode/generated/queries'
+import { MAX_RESULTS_PER_QUERY, PaginationQueryResult, QueryNodeApi } from '../queryNode/api'
+import { DataObjectDetailsFragment, StorageBucketDetailsFragment } from '../queryNode/generated/queries'
 import { ApiPromise } from '@polkadot/api'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 
@@ -25,9 +20,19 @@ export type DataObligations = {
   bags: Bag[]
 
   /**
-   * Assigned data objects for the storage provider.
+   * Map from bucket id to storage node url, without own buckets.
    */
-  dataObjects: DataObject[]
+  bucketOperatorUrlById: Map<string, string>
+
+  /**
+   * Map from assigned bag ids to storage node urls.
+   */
+  bagOperatorsUrlsById: Map<string, string[]>
+
+  /**
+   * A function that returns a loader of all assigned data object ids
+   */
+  createAssignedObjectsIdsLoader(isAccepted?: boolean): DataObjectIdsLoader
 }
 
 /**
@@ -90,6 +95,93 @@ export type DataObject = {
   size: number
 }
 
+export abstract class LazyBatchLoader<QueryResult extends PaginationQueryResult<unknown>, MappedEntity> {
+  private endCursor: string | undefined
+  private _hasNextPage: boolean
+  private queryFn: (limit: number, after?: string) => Promise<QueryResult | null>
+
+  constructor(queryFn: (limit: number, after?: string) => Promise<QueryResult | null>) {
+    this.queryFn = queryFn
+    this._hasNextPage = true
+  }
+
+  public get hasNextPage(): boolean {
+    return this._hasNextPage
+  }
+
+  abstract mapResults(results: QueryResult['edges'][number]['node'][]): Promise<MappedEntity[]>
+
+  async nextBatch(size = 10_000): Promise<MappedEntity[] | null> {
+    if (!this._hasNextPage) {
+      return null
+    }
+    const result = await this.queryFn(size, this.endCursor)
+    if (!result) {
+      throw new Error('Connection query returned empty result')
+    }
+
+    this.endCursor = result.pageInfo.endCursor || undefined
+    this._hasNextPage = result.pageInfo.hasNextPage
+    const mapped = await this.mapResults(result.edges.map((e) => e.node))
+    return mapped
+  }
+
+  async getAll(): Promise<MappedEntity[]> {
+    const results: MappedEntity[] = []
+    while (this._hasNextPage) {
+      const batch = await this.nextBatch()
+      if (!batch) {
+        break
+      }
+      results.push(...batch)
+    }
+
+    return results
+  }
+}
+
+type DataObjectsLoadBy = { by: 'bagIds' | 'ids'; ids: string[]; isAccepted?: boolean }
+
+export class DataObjectDetailsLoader extends LazyBatchLoader<
+  PaginationQueryResult<DataObjectDetailsFragment>,
+  DataObject
+> {
+  constructor(qnApi: QueryNodeApi, by: DataObjectsLoadBy) {
+    if (by.by === 'bagIds') {
+      super((limit, after) => qnApi.getDataObjectsByBagsPage(by.ids, limit, after, true, by.isAccepted))
+    } else if (by.by === 'ids') {
+      super((limit, after) => qnApi.getDataObjectsByIdsPage(by.ids, limit, after, true, by.isAccepted))
+    } else {
+      throw new Error(`Unknown "by" condition: ${JSON.stringify(by)}`)
+    }
+  }
+
+  async mapResults(results: DataObjectDetailsFragment[]): Promise<DataObject[]> {
+    return results.map((dataObject) => ({
+      id: dataObject.id,
+      size: parseInt(dataObject.size),
+      bagId: dataObject.storageBag.id,
+      ipfsHash: dataObject.ipfsHash,
+    }))
+  }
+}
+
+export class DataObjectIdsLoader extends LazyBatchLoader<PaginationQueryResult<{ id: string }>, string> {
+  constructor(qnApi: QueryNodeApi, by: DataObjectsLoadBy) {
+    if (by.by === 'bagIds') {
+      super((limit, after) => qnApi.getDataObjectsByBagsPage(by.ids, limit, after, false, by.isAccepted))
+    } else if (by.by === 'ids') {
+      super((limit, after) => qnApi.getDataObjectsByIdsPage(by.ids, limit, after, false, by.isAccepted))
+    } else {
+      throw new Error(`Unknown "by" condition: ${JSON.stringify(by)}`)
+    }
+  }
+
+  async mapResults(results: { id: string }[]): Promise<string[]> {
+    return results.map(({ id }) => id)
+  }
+}
+
 /**
  * Get storage provider obligations like (assigned data objects) from the
  * runtime (Query Node).
@@ -102,30 +194,58 @@ export async function getStorageObligationsFromRuntime(
   qnApi: QueryNodeApi,
   bucketIds?: string[]
 ): Promise<DataObligations> {
-  const allBuckets = await getAllBuckets(qnApi)
+  const storageBuckets = (await getAllBuckets(qnApi)).map((bucket) => ({
+    id: bucket.id,
+    operatorUrl: bucket.operatorMetadata?.nodeEndpoint ?? '',
+    workerId: bucket.operatorStatus?.workerId,
+  }))
 
-  const assignedBags =
-    bucketIds === undefined ? await qnApi.getAllStorageBagsDetails() : await getAllAssignedBags(qnApi, bucketIds)
+  const bags = (
+    bucketIds === undefined ? await qnApi.getAllStorageBagsDetails() : await qnApi.getStorageBagsDetails(bucketIds)
+  ).map((bag) => ({
+    id: bag.id,
+    buckets: bag.storageBuckets.map((bucketInBag) => bucketInBag.storageBucket.id),
+  }))
 
-  const bagIds = assignedBags.map((bag) => bag.id)
-  const assignedDataObjects = await getAllAssignedDataObjects(qnApi, bagIds)
+  const ownBuckets = new Set<string>(bucketIds || [])
+  const ownOperatorUrls = new Set<string>()
+  for (const bucket of storageBuckets) {
+    if (ownBuckets.has(bucket.id)) {
+      ownOperatorUrls.add(bucket.operatorUrl)
+    }
+  }
+
+  const bucketOperatorUrlById = new Map<string, string>()
+  for (const bucket of storageBuckets) {
+    if (!ownBuckets.has(bucket.id)) {
+      if (ownOperatorUrls.has(bucket.operatorUrl)) {
+        logger.warn(`(sync) Skipping remote bucket ${bucket.id} - ${bucket.operatorUrl}`)
+      } else {
+        bucketOperatorUrlById.set(bucket.id, bucket.operatorUrl)
+      }
+    }
+  }
+
+  const bagOperatorsUrlsById = new Map<string, string[]>()
+  for (const bag of bags) {
+    const operatorUrls = []
+    for (const bucketId of bag.buckets) {
+      const operatorUrl = bucketOperatorUrlById.get(bucketId)
+      if (operatorUrl) {
+        operatorUrls.push(operatorUrl)
+      }
+    }
+
+    bagOperatorsUrlsById.set(bag.id, operatorUrls)
+  }
 
   const model: DataObligations = {
-    storageBuckets: allBuckets.map((bucket) => ({
-      id: bucket.id,
-      operatorUrl: bucket.operatorMetadata?.nodeEndpoint ?? '',
-      workerId: bucket.operatorStatus?.workerId,
-    })),
-    bags: assignedBags.map((bag) => ({
-      id: bag.id,
-      buckets: bag.storageBuckets.map((bucketInBag) => bucketInBag.storageBucket.id),
-    })),
-    dataObjects: assignedDataObjects.map((dataObject) => ({
-      id: dataObject.id,
-      size: parseInt(dataObject.size),
-      bagId: dataObject.storageBag.id,
-      ipfsHash: dataObject.ipfsHash,
-    })),
+    storageBuckets,
+    bags,
+    bagOperatorsUrlsById,
+    bucketOperatorUrlById,
+    createAssignedObjectsIdsLoader: (isAccepted?: boolean) =>
+      new DataObjectIdsLoader(qnApi, { by: 'bagIds', ids: bags.map((b) => b.id), isAccepted }),
   }
 
   return model
@@ -143,19 +263,6 @@ export async function getStorageBucketIdsByWorkerId(qnApi: QueryNodeApi, workerI
   const ids = idFragments.map((frag) => frag.id)
 
   return ids
-}
-
-/**
- * Get IDs of the data objects assigned to the bag ID.
- *
- * @param qnApi - initialized QueryNodeApi instance
- * @param bagId - bag ID
- * @returns data object IDs
- */
-export async function getDataObjectIDsByBagId(qnApi: QueryNodeApi, bagId: string): Promise<string[]> {
-  const dataObjects = await getAllAssignedDataObjects(qnApi, [bagId])
-
-  return dataObjects.map((obj) => obj.id)
 }
 
 /**
@@ -177,45 +284,6 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
       return false
     }
   })
-}
-
-/**
- * Get all data objects assigned to storage provider.
- *
- * @param api - initialized QueryNodeApi instance
- * @param bagIds - assigned storage bags' IDs
- * @returns storage bag data
- */
-async function getAllAssignedDataObjects(
-  api: QueryNodeApi,
-  bagIds: string[]
-): Promise<DataObjectByBagIdsDetailsFragment[]> {
-  return await api.getDataObjectsByBagIds(bagIds)
-}
-
-/**
- * Get details of storage data objects by IDs.
- *
- * @param api - initialized QueryNodeApi instance
- * @param dataObjectIds - data objects' IDs
- * @returns storage data objects
- */
-export async function getDataObjectsByIDs(
-  api: QueryNodeApi,
-  dataObjectIds: string[]
-): Promise<DataObjectDetailsFragment[]> {
-  return await api.getDataObjectDetails(dataObjectIds)
-}
-
-/**
- * Get all bags assigned to storage provider.
- *
- * @param api - initialiazed QueryNodeApi instance
- * @param bucketIds - assigned storage provider buckets' IDs
- * @returns storage bag data
- */
-async function getAllAssignedBags(api: QueryNodeApi, bucketIds: string[]): Promise<StorageBagDetailsFragment[]> {
-  return await api.getStorageBagsDetails(bucketIds)
 }
 
 /**
