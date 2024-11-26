@@ -1,6 +1,12 @@
 ### 4.3.0
 
-- Adds `archive` mode / command, which allows downloading, compressing and uploading all data objects to an external S3 bucket that can be used as a backup.
+- **New feature:** `archive` mode / command, which allows downloading, compressing and uploading all data objects to an external S3 bucket that can be used as a backup.
+- **Optimizations:** The way data objects / data object ids are queried and processed during sync and cleanup has been optimized:
+    - `DataObjectDetailsLoader` and `DataObjectIdsLoader` were implemented. They allow loading data objects / data object ids in batches using a connection query and avoid fetching redundant data from the GraphQL server.
+    - Sync and cleanup services now process tasks in batches of `10_000` to avoid overflowing the memory.
+    - Synchronous operations like `sort` or `filter` on larger arrays of data objects have been optimized (for example, by replacing `.filter(Array.includes(...))` with `.filter(Set.has(...))`)
+- Improved logging during cleanup
+
 
 ### 4.2.0
 
