@@ -4,8 +4,9 @@
 - **Optimizations:** The way data objects / data object ids are queried and processed during sync and cleanup has been optimized:
     - `DataObjectDetailsLoader` and `DataObjectIdsLoader` were implemented. They allow loading data objects / data object ids in batches using a connection query and avoid fetching redundant data from the GraphQL server.
     - Sync and cleanup services now process tasks in batches of `10_000` to avoid overflowing the memory.
-    - Synchronous operations like `sort` or `filter` on larger arrays of data objects have been optimized (for example, by replacing `.filter(Array.includes(...))` with `.filter(Set.has(...))`)
-- Improved logging during cleanup
+    - Synchronous operations like `sort` or `filter` on larger arrays of data objects have been optimized (for example, by replacing `.filter(Array.includes(...))` with `.filter(Set.has(...))`).
+- A safety mechanism was added to avoid removing "deleted" objects for which a related `DataObjectDeleted` event cannot be found in storage squid.
+- Improved logging during cleanup.
 
 
 ### 4.2.0

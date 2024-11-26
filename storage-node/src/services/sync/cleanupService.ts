@@ -91,41 +91,60 @@ export async function performCleanup(
   const deletedDataObjectIds = new Set([...obsoleteObjectIds].filter((id) => !movedObjectIds.has(id)))
 
   logger.info(`stored objects: ${storedObjectsIds.length}, assigned objects: ${assignedObjectIds.size}`)
-  logger.info(
-    `pruning ${obsoleteObjectIds.size} obsolete objects ` +
-      `(${movedObjectIds.size} moved, ${deletedDataObjectIds.size} deleted)`
-  )
-
-  const workingStack = new WorkingStack()
-  const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
-
-  // Execute deleted objects removal tasks in batches of 10_000
-  let deletedProcessed = 0
-  logger.info(`removing ${deletedDataObjectIds.size} deleted objects...`)
-  for (const deletedObjectsIdsBatch of _.chunk([...deletedDataObjectIds], 10_000)) {
-    const deletionTasks = deletedObjectsIdsBatch.map((id) => new DeleteLocalFileTask(uploadDirectory, id))
-    await workingStack.add(deletionTasks)
-    await processSpawner.process()
-    deletedProcessed += deletedObjectsIdsBatch.length
-    logger.debug(`${deletedProcessed} / ${deletedDataObjectIds.size} deleted objects processed...`)
-  }
-
-  // Execute moved objects removal tasks in batches of 10_000
-  let movedProcessed = 0
-  logger.info(`removing ${movedObjectIds.size} moved objects...`)
-  for (const movedObjectsIdsBatch of _.chunk([...movedObjectIds], 10_000)) {
-    const movedDataObjectsBatch = await qnApi.getDataObjectsWithBagDetails(movedObjectsIdsBatch)
-    const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
-      logger,
-      uploadDirectory,
-      model,
-      movedDataObjectsBatch,
-      hostId
+  if (obsoleteObjectIds.size) {
+    logger.info(
+      `pruning ${obsoleteObjectIds.size} obsolete objects ` +
+        `(${movedObjectIds.size} moved, ${deletedDataObjectIds.size} deleted)`
     )
-    await workingStack.add(deletionTasksOfMovedDataObjects)
-    await processSpawner.process()
-    movedProcessed += movedDataObjectsBatch.length
-    logger.debug(`${movedProcessed} / ${movedObjectIds.size} moved objects processed...`)
+
+    const workingStack = new WorkingStack()
+    const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
+
+    // Execute deleted objects removal tasks in batches of 10_000
+    if (deletedDataObjectIds.size) {
+      let deletedProcessed = 0
+      logger.info(`removing ${deletedDataObjectIds.size} deleted objects...`)
+      for (let deletedObjectsIdsBatch of _.chunk([...deletedDataObjectIds], 10_000)) {
+        // Confirm whether the objects were actually deleted by fetching the related deletion events
+        const dataObjectDeletedEvents = await qnApi.getDataObjectDeletedEvents(deletedObjectsIdsBatch)
+        const confirmedIds = new Set(dataObjectDeletedEvents.map((e) => e.data.dataObjectId))
+        deletedObjectsIdsBatch = deletedObjectsIdsBatch.filter((id) => {
+          if (confirmedIds.has(id)) {
+            return true
+          } else {
+            logger.warn(`Could not find DataObjectDeleted event for object ${id}, skipping from cleanup...`)
+            return false
+          }
+        })
+        const deletionTasks = deletedObjectsIdsBatch.map((id) => new DeleteLocalFileTask(uploadDirectory, id))
+        await workingStack.add(deletionTasks)
+        await processSpawner.process()
+        deletedProcessed += deletedObjectsIdsBatch.length
+        logger.debug(`${deletedProcessed} / ${deletedDataObjectIds.size} deleted objects processed...`)
+      }
+    }
+
+    // Execute moved objects removal tasks in batches of 10_000
+    if (movedObjectIds.size) {
+      let movedProcessed = 0
+      logger.info(`removing ${movedObjectIds.size} moved objects...`)
+      for (const movedObjectsIdsBatch of _.chunk([...movedObjectIds], 10_000)) {
+        const movedDataObjectsBatch = await qnApi.getDataObjectsWithBagDetails(movedObjectsIdsBatch)
+        const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
+          logger,
+          uploadDirectory,
+          model,
+          movedDataObjectsBatch,
+          hostId
+        )
+        await workingStack.add(deletionTasksOfMovedDataObjects)
+        await processSpawner.process()
+        movedProcessed += movedDataObjectsBatch.length
+        logger.debug(`${movedProcessed} / ${movedObjectIds.size} moved objects processed...`)
+      }
+    }
+  } else {
+    logger.info('No objects to prune, skipping...')
   }
 
   logger.info('Cleanup ended.')
