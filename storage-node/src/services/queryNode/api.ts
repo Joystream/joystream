@@ -15,6 +15,9 @@ import {
   GetDataObjectsDeletedEventsQueryVariables,
   GetDataObjectsQuery,
   GetDataObjectsQueryVariables,
+  GetSquidVersion,
+  GetSquidVersionQuery,
+  GetSquidVersionQueryVariables,
   GetStorageBagDetails,
   GetStorageBagDetailsQuery,
   GetStorageBagDetailsQueryVariables,
@@ -135,7 +138,7 @@ export class QueryNodeApi {
     while (hasNextPage) {
       const paginationVariables = { limit: itemsPerPage, cursor: lastCursor }
       const queryVariables = { ...variables, ...paginationVariables }
-      logger.debug(`Query - ${resultKey}`)
+      logger.debug(`Query - ${String(resultKey)}`)
       const result = await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
         query,
         variables: queryVariables,
@@ -313,7 +316,16 @@ export class QueryNodeApi {
     return result
   }
 
-  public async getQueryNodeState(): Promise<SquidStatusFieldsFragment | null> {
+  public async getPackageVersion(): Promise<string> {
+    const squidVersion = await this.uniqueEntityQuery<GetSquidVersionQuery, GetSquidVersionQueryVariables>(
+      GetSquidVersion,
+      {},
+      'squidVersion'
+    )
+    return squidVersion?.version || ''
+  }
+
+  public async getState(): Promise<SquidStatusFieldsFragment | null> {
     const squidStatus = await this.uniqueEntityQuery<SquidStatusQuery, SquidStatusQueryVariables>(
       SquidStatus,
       {},

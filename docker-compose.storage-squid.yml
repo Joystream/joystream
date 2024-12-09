@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   squid_db:
     container_name: squid_db

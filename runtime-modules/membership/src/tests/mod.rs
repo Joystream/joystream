@@ -157,8 +157,8 @@ fn gift_membership_succeeds_with_same_root_and_controller() {
         run_to_block(starting_block);
 
         let params = get_bob_gift_membership_parameters_single_account();
-        let credit_root_account = params.clone().credit_root_account;
-        let credit_controller_account = params.clone().credit_controller_account;
+        let credit_root_account = params.credit_root_account;
+        let credit_controller_account = params.credit_controller_account;
 
         assert_eq!(params.root_account, params.controller_account);
 
@@ -187,12 +187,10 @@ fn gift_membership_succeeds_with_same_root_and_controller() {
 
         // usable-balance
         let locked_balance = params
-            .clone()
             .apply_controller_account_invitation_lock
             .unwrap_or_else(Zero::zero)
             .saturating_add(
                 params
-                    .clone()
                     .apply_root_account_invitation_lock
                     .unwrap_or_else(Zero::zero),
             );
@@ -302,7 +300,7 @@ fn update_profile_succeeds() {
         assert_ok!(buy_default_membership_as_alice());
         let info = get_bob_info();
         assert_ok!(Membership::update_profile(
-            Origin::signed(ALICE_ACCOUNT_ID),
+            RuntimeOrigin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
             info.handle.clone(),
             Some(info.metadata.clone()),
@@ -334,7 +332,7 @@ fn update_profile_has_no_effect_on_empty_parameters() {
 
         assert_ok!(buy_default_membership_as_alice());
         assert_ok!(Membership::update_profile(
-            Origin::signed(ALICE_ACCOUNT_ID),
+            RuntimeOrigin::signed(ALICE_ACCOUNT_ID),
             next_member_id,
             None,
             None,
@@ -361,7 +359,7 @@ fn update_profile_accounts_succeeds() {
         const ALICE_NEW_ACCOUNT_ID: u64 = 2;
 
         assert_ok!(Membership::update_accounts(
-            Origin::signed(ALICE_ACCOUNT_ID),
+            RuntimeOrigin::signed(ALICE_ACCOUNT_ID),
             ALICE_MEMBER_ID,
             Some(ALICE_NEW_ACCOUNT_ID),
             Some(ALICE_NEW_ACCOUNT_ID),
@@ -386,7 +384,7 @@ fn update_accounts_has_effect_on_empty_account_parameters() {
         set_alice_as_initial_member();
 
         assert_ok!(Membership::update_accounts(
-            Origin::signed(ALICE_ACCOUNT_ID),
+            RuntimeOrigin::signed(ALICE_ACCOUNT_ID),
             ALICE_MEMBER_ID,
             None,
             None,

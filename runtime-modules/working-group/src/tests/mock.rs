@@ -1,8 +1,9 @@
-use frame_support::parameter_types;
-use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier};
+use frame_support::traits::{ConstU16, ConstU32, ConstU64, LockIdentifier, WithdrawReasons};
 use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::{parameter_types, PalletId};
 
 use sp_core::H256;
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -10,14 +11,14 @@ use sp_runtime::{
 use staking_handler::LockComparator;
 use std::convert::{TryFrom, TryInto};
 
-use crate as working_group;
+use crate::{self as working_group, BalanceOf, VestingBalanceOf};
 use crate::{Config, Module};
 use frame_support::dispatch::DispatchError;
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
     pub const MinimumPeriod: u64 = 5;
-    pub const ExistentialDeposit: u32 = 10;
+    pub const ExistentialDeposit: u64 = 10;
     pub const DefaultMembershipPrice: u64 = 0;
     pub const DefaultInitialInvitationBalance: u64 = 100;
     pub const DefaultMemberInvitesCount: u32 = 2;
@@ -39,6 +40,7 @@ frame_support::construct_runtime!(
         System: frame_system,
         Balances: balances,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T> },
         Timestamp: pallet_timestamp,
         TestWorkingGroup: working_group::{Pallet, Call, Storage, Event<T>},
     }
@@ -49,8 +51,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -58,7 +60,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -78,10 +80,26 @@ impl pallet_timestamp::Config for Test {
     type WeightInfo = ();
 }
 
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 1;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
+
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -96,7 +114,7 @@ impl common::membership::MembershipTypes for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Module<Test>;
     type WeightInfo = ();
@@ -122,10 +140,12 @@ parameter_types! {
     pub const MinimumApplicationStake: u64 = 50;
     pub const LockId: [u8; 8] = [1; 8];
     pub const LeaderOpeningStake: u64 = 20;
+    pub const WorkingGroupModuleId: PalletId = PalletId(*b"mworking"); // module storage
 }
 
 impl Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
+    type VestingBalanceToBalance = BalanceConverter;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = staking_handler::StakingManager<Self, LockId>;
     type StakingAccountValidator = ();
@@ -137,6 +157,21 @@ impl Config for Test {
     type LeaderOpeningStake = LeaderOpeningStake;
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, BalanceOf<Test>>
+    for BlockNumberToBalance
+{
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> BalanceOf<Test> {
+        block as u64
+    }
+}
+pub struct BalanceConverter();
+impl Convert<BalanceOf<Test>, VestingBalanceOf<Test>> for BalanceConverter {
+    fn convert(balance: BalanceOf<Test>) -> VestingBalanceOf<Test> {
+        balance as u64
+    }
+}
+
 impl common::StakingAccountValidator<Test> for () {
     fn is_member_staking_account(_: &u64, account_id: &u64) -> bool {
         *account_id != STAKING_ACCOUNT_ID_NOT_BOUND_TO_MEMBER
@@ -145,9 +180,9 @@ impl common::StakingAccountValidator<Test> for () {
 
 pub const ACTOR_ORIGIN_ERROR: &str = "Invalid membership";
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let signed_account_id = frame_system::ensure_signed(origin)?;

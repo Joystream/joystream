@@ -137,25 +137,27 @@ export class Utils {
     name: string,
     conditionFunc: (props: { debug: Debugger.Debugger }) => Promise<boolean>,
     intervalMs = BLOCKTIME,
-    timeoutMs = 10 * 60 * 1000
+    maxRetries = 600
   ): Promise<void> {
     const debug = extendDebug(`awaiting:${name}`)
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error(`Awaiting ${name} - timeout reached`)), timeoutMs)
-      const check = async () => {
-        if (await conditionFunc({ debug })) {
-          clearInterval(interval)
-          clearTimeout(timeout)
+    for (let i = 0; i < maxRetries; ++i) {
+      try {
+        const result = await conditionFunc({ debug })
+        if (result) {
           debug('Condition satisfied!')
-          resolve()
           return
         }
-        debug('Condition not satisfied, waiting...')
+      } catch (e: any) {
+        debug(`conditionFunc error: ${e.toString()}`)
+        // Continue the loop...
       }
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      const interval = setInterval(check, intervalMs)
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      check()
-    })
+
+      if (i !== maxRetries - 1) {
+        debug(`Attempt ${i + 1}/${maxRetries}: Condition not satisfied, waiting...`)
+        await Utils.wait(intervalMs)
+      }
+    }
+
+    throw new Error(`Awaiting ${name} - max retries reached!`)
   }
 }

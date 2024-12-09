@@ -5,7 +5,7 @@
   },
   "branchName": {
     "description": "Branch to deploy",
-    "value": "carthage"
+    "value": "master"
   },
   "instanceType": {
     "description": "AWS EC2 instance type for Validators and Rpc (t2.micro, t2.large, t2.xlarge)",
@@ -28,15 +28,15 @@
     "value": ""
   },
   "deploymentType": {
-    "description": "Chain deployment type (live, dev etc.)",
-    "value": "staging"
+    "description": "Chain deployment type (testnet, mainnet)",
+    "value": "testnet"
   },
   "encryptionKey": {
     "description": "Password to encrypt the artifacts",
-    "value": "staging"
+    "value": "testnet"
   },
   "runtimeProfile": {
-    "description": "STAGING | PLAYGROUND | TESTING - leave empty for production",
+    "description": "STAGING | PLAYGROUND | TESTING | FAST-PROD (leave empty for production)",
     "value": "PLAYGROUND"
   },
   "endowAccounts": {

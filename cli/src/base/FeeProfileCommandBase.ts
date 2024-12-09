@@ -120,9 +120,9 @@ export default abstract class FeeProfileCommandBase extends ApiCommandBase {
       txClass: txClass.type,
       txLength,
       txWeight: {
-        base: this.formatBN(baseExtrinsicWeight),
-        extra: this.formatBN(weight),
-        total: this.formatBN(baseExtrinsicWeight.add(weight)),
+        base: this.formatBN(baseExtrinsicWeight.refTime.toBn()),
+        extra: this.formatBN(weight.refTime.toBn()),
+        total: this.formatBN(baseExtrinsicWeight.refTime.toBn().add(weight.refTime.toBn())),
       },
       costs: costsProfile,
       returns: returnsProfile,

@@ -3,11 +3,12 @@
 #![allow(non_fmt_panics)]
 
 use frame_election_provider_support::{onchain, SequentialPhragmen, VoteWeight};
+use frame_support::traits::WithdrawReasons;
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
     traits::{
-        ConstU32, ConstU64, Currency, EnsureOneOf, Imbalance, LockIdentifier, OnUnbalanced,
+        ConstU32, ConstU64, Currency, EitherOfDiverse, Imbalance, LockIdentifier, OnUnbalanced,
         OneSessionHandler,
     },
     weights::constants::RocksDbWeight,
@@ -17,6 +18,7 @@ pub use frame_system;
 use frame_system::{EnsureRoot, EnsureSigned};
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
+use sp_runtime::traits::Convert;
 use sp_runtime::{
     testing::{Header, TestXt, UintAuthorityId},
     traits::{IdentityLookup, Zero},
@@ -48,6 +50,7 @@ pub(crate) type AccountId = u64;
 pub(crate) type AccountIndex = u64;
 pub(crate) type BlockNumber = u64;
 pub(crate) type Balance = u64;
+pub(crate) type VestingBalance = u64;
 
 /// Another session handler struct to test on_disabled.
 pub struct OtherSessionHandler;
@@ -89,11 +92,11 @@ frame_support::construct_runtime!(
         Balances: balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         Staking: staking::{Pallet, Call, Config<T>, Storage, Event<T>},
         BagsList: pallet_bags_list::{Pallet, Call, Storage, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
 
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Pallet, Call, Storage, Event<T>},
         ProposalsEngine: proposals_engine::{Pallet, Call, Storage, Event<T>},
-        Council: council::{Pallet, Call, Storage, Event<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Pallet, Call, Storage, Event<T>},
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T>},
@@ -105,13 +108,17 @@ frame_support::construct_runtime!(
         OperationsWorkingGroupBeta: working_group::<Instance7>::{Pallet, Call, Storage, Event<T>},
         OperationsWorkingGroupGamma: working_group::<Instance8>::{Pallet, Call, Storage, Event<T>},
         DistributionWorkingGroup: working_group::<Instance9>::{Pallet, Call, Storage, Event<T>},
+        Council: council::{Pallet, Call, Storage, Event<T>},
+        Storage: storage::{Pallet, Call, Storage, Event<T>},
+        Token: token::{Pallet, Call, Storage, Event<T>},
+        ArgoBridge: argo_bridge::{Pallet, Call, Storage, Event<T>}
     }
 );
 
 parameter_types! {
     pub BlockWeights: frame_system::limits::BlockWeights =
         frame_system::limits::BlockWeights::simple_max(
-            frame_support::weights::constants::WEIGHT_PER_SECOND * 2
+            frame_support::weights::Weight::from_parts(frame_support::weights::constants::WEIGHT_REF_TIME_PER_SECOND * 2, 0u64)
         );
     pub static SessionsPerEra: SessionIndex = 3;
     pub static ExistentialDeposit: Balance = 1;
@@ -125,16 +132,16 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = RocksDbWeight;
-    type Origin = Origin;
+    type RuntimeOrigin = RuntimeOrigin;
     type Index = AccountIndex;
     type BlockNumber = BlockNumber;
-    type Call = Call;
+    type RuntimeCall = RuntimeCall;
     type Hash = H256;
     type Hashing = ::sp_runtime::traits::BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = frame_support::traits::ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -146,12 +153,13 @@ impl frame_system::Config for Test {
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
+
 impl balances::Config for Test {
     type MaxLocks = frame_support::traits::ConstU32<1024>;
     type MaxReserves = ();
     type ReserveIdentifier = [u8; 8];
     type Balance = Balance;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
@@ -207,7 +215,7 @@ parameter_types! {
 }
 
 impl pallet_bags_list::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
     type ScoreProvider = Staking;
     type BagThresholds = BagThresholds;
@@ -220,6 +228,9 @@ impl onchain::Config for OnChainSeqPhragmen {
     type Solver = SequentialPhragmen<AccountId, Perbill>;
     type DataProvider = Staking;
     type WeightInfo = ();
+    type MaxWinners = ConstU32<2_000>;
+    type VotersBound = ConstU32<5_000>;
+    type TargetsBound = ConstU32<2_000>;
 }
 
 pub struct MockReward {}
@@ -253,38 +264,40 @@ impl staking::Config for Test {
     type UnixTime = Timestamp;
     type CurrencyToVote = frame_support::traits::SaturatingCurrencyToVote;
     type RewardRemainder = RewardRemainderMock;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Slash = ();
     type Reward = MockReward;
     type SessionsPerEra = SessionsPerEra;
     type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
     type BondingDuration = BondingDuration;
     type SessionInterface = ();
     type EraPayout = staking::ConvertCurve<RewardCurve>;
     type NextNewSession = ();
     type MaxNominatorRewardedPerValidator = ConstU32<64>;
     type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
-    type ElectionProvider = onchain::UnboundedExecution<OnChainSeqPhragmen>;
+    type ElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
     type GenesisElectionProvider = Self::ElectionProvider;
     // NOTE: consider a macro and use `UseNominatorsAndValidatorsMap<Self>` as well.
     type VoterList = BagsList;
+    type TargetList = staking::UseValidatorsMap<Self>;
     type MaxUnlockingChunks = ConstU32<32>;
     type OnStakerSlash = OnStakerSlashMock<Test>;
     type BenchmarkingConfig = TestBenchmarkingConfig;
     type WeightInfo = ();
     type BondingRestriction = ();
+    type HistoryDepth = ConstU32<120>;
+    type AdminOrigin = EnsureRoot<AccountId>;
 }
 
 impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
 where
-    Call: From<LocalCall>,
+    RuntimeCall: From<LocalCall>,
 {
-    type OverarchingCall = Call;
+    type OverarchingCall = RuntimeCall;
     type Extrinsic = Extrinsic;
 }
 
-pub type Extrinsic = TestXt<Call, ()>;
+pub type Extrinsic = TestXt<RuntimeCall, ()>;
 
 parameter_types! {
     pub const InvitedMemberLockId: [u8; 8] = [2; 8];
@@ -300,7 +313,7 @@ impl common::membership::MembershipTypes for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();
@@ -311,6 +324,86 @@ impl membership::Config for Test {
         staking_handler::StakingManager<Self, StakingCandidateLockId>;
     type CandidateStake = CandidateStake;
     type DefaultMemberInvitesCount = DefaultMemberInvitesCount;
+}
+
+parameter_types! {
+    // constants for token::Config
+    pub const TokenModuleId: PalletId = PalletId(*b"m__Token");
+    pub const MaxVestingSchedulesPerAccountPerToken: u32 = 3;
+    pub const BlocksPerYear: u32 = 5259487; // blocks every 6s
+    pub const MaxOutputs: u32 = 256;
+    // constants for storage::Config
+    pub const MaxNumberOfDataObjectsPerBag: u64 = 4;
+    pub const MaxDistributionBucketFamilyNumber: u64 = 4;
+    pub const DataObjectDeletionPrize: u64 = 15;
+    pub const StorageModuleId: PalletId = PalletId(*b"mstorage"); // module storage
+    pub const BlacklistSizeLimit: u64 = 1;
+    pub const MaxNumberOfPendingInvitationsPerDistributionBucket: u32 = 1;
+    pub const InitialStorageBucketsNumberForDynamicBag: u64 = 3;
+    pub const MaxRandomIterationNumber: u64 = 3;
+    pub const DefaultMemberDynamicBagNumberOfStorageBuckets: u32 = 3;
+    pub const DefaultChannelDynamicBagNumberOfStorageBuckets: u32 = 4;
+    pub const MaxDataObjectSize: u64 = 1_000_000_000;
+    pub const MinStorageBucketsPerBag: u32 = 3;
+    pub const MaxStorageBucketsPerBag: u32 = 10;
+    pub const MinDistributionBucketsPerBag: u32 = 3;
+    pub const MaxDistributionBucketsPerBag: u32 = 10;
+    pub const MaxNumberOfOperatorsPerDistributionBucket: u32 = 5;
+    /// constants for argo_bridge::config
+    pub const MaxPauserAccounts: u32 = 10;
+    pub const DefaultBridgingFee: Balance = 1;
+}
+
+impl storage::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type DataObjectId = u64;
+    type StorageBucketId = u64;
+    type DistributionBucketIndex = u64;
+    type DistributionBucketFamilyId = u64;
+    type DistributionBucketOperatorId = u64;
+    type ChannelId = u64;
+    type BlacklistSizeLimit = BlacklistSizeLimit;
+    type ModuleId = StorageModuleId;
+    type MinStorageBucketsPerBag = MinStorageBucketsPerBag;
+    type MaxStorageBucketsPerBag = MaxStorageBucketsPerBag;
+    type MinDistributionBucketsPerBag = MinDistributionBucketsPerBag;
+    type MaxDistributionBucketsPerBag = MaxDistributionBucketsPerBag;
+    type DefaultMemberDynamicBagNumberOfStorageBuckets =
+        DefaultMemberDynamicBagNumberOfStorageBuckets;
+    type DefaultChannelDynamicBagNumberOfStorageBuckets =
+        DefaultChannelDynamicBagNumberOfStorageBuckets;
+    type MaxDistributionBucketFamilyNumber = MaxDistributionBucketFamilyNumber;
+    type MaxNumberOfPendingInvitationsPerDistributionBucket =
+        MaxNumberOfPendingInvitationsPerDistributionBucket;
+    type MaxNumberOfOperatorsPerDistributionBucket = MaxNumberOfOperatorsPerDistributionBucket;
+    type ContentId = u64;
+    type MaxDataObjectSize = MaxDataObjectSize;
+    type StorageWorkingGroup = Wg;
+    type DistributionWorkingGroup = Wg;
+    type ModuleAccountInitialBalance = ExistentialDeposit;
+    type WeightInfo = ();
+}
+
+impl token::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = u64;
+    type TokenId = u64;
+    type DataObjectStorage = storage::Module<Self>;
+    type ModuleId = TokenModuleId;
+    type JoyExistentialDeposit = ExistentialDeposit;
+    type MaxVestingSchedulesPerAccountPerToken = MaxVestingSchedulesPerAccountPerToken;
+    type BlocksPerYear = BlocksPerYear;
+    type WeightInfo = ();
+    type MemberOriginValidator = membership::Module<Self>;
+    type MembershipInfoProvider = membership::Module<Self>;
+    type MaxOutputs = MaxOutputs;
+}
+
+impl argo_bridge::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxPauserAccounts = MaxPauserAccounts;
+    type WeightInfo = argo_bridge::weights::SubstrateWeight<Test>;
+    type DefaultBridgingFee = DefaultBridgingFee;
 }
 
 pub struct Wg;
@@ -333,13 +426,15 @@ pub const LEADER_ACCOUNT_ID: u64 = 100;
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -391,7 +486,7 @@ parameter_types! {
 }
 
 impl proposals_engine::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ProposerOriginValidator = ();
     type CouncilOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
@@ -423,9 +518,9 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         _: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -444,8 +539,8 @@ impl common::membership::MembershipInfoProvider<Test> for () {
     }
 }
 
-impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+impl common::council::CouncilOriginValidator<RuntimeOrigin, u64, u64> for () {
+    fn ensure_member_consulate(origin: RuntimeOrigin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 
         Ok(())
@@ -462,7 +557,7 @@ parameter_types! {
 }
 
 impl proposals_discussion::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type AuthorOriginValidator = ();
     type MembershipInfoProvider = ();
     type CouncilOriginValidator = ();
@@ -482,6 +577,35 @@ impl VotersParameters for MockVotersParameters {
     }
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> Balance {
+        block as u64
+    }
+}
+pub struct VestingBalanceToBalance();
+impl Convert<Balance, VestingBalance> for VestingBalanceToBalance {
+    fn convert(balance: Balance) -> VestingBalance {
+        balance as u64
+    }
+}
+
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
@@ -498,7 +622,7 @@ parameter_types! {
 }
 
 impl working_group::Config<ForumWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
     type StakingAccountValidator = ();
@@ -508,10 +632,11 @@ impl working_group::Config<ForumWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
     type StakingAccountValidator = ();
@@ -521,10 +646,11 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<ContentWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId3>;
     type StakingAccountValidator = ();
@@ -534,10 +660,11 @@ impl working_group::Config<ContentWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId4>;
     type StakingAccountValidator = ();
@@ -547,10 +674,11 @@ impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<AppWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId5>;
     type StakingAccountValidator = ();
@@ -560,10 +688,11 @@ impl working_group::Config<AppWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<MembershipWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId6>;
     type StakingAccountValidator = ();
@@ -573,10 +702,11 @@ impl working_group::Config<MembershipWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId7>;
     type StakingAccountValidator = ();
@@ -586,10 +716,11 @@ impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId8>;
     type StakingAccountValidator = ();
@@ -599,10 +730,11 @@ impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId9>;
     type StakingAccountValidator = ();
@@ -612,6 +744,7 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 parameter_types! {
@@ -632,7 +765,7 @@ pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
 }
 
 impl crate::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
     type WeightInfo = ();
@@ -662,6 +795,11 @@ impl crate::Config for Test {
     type FundingRequestProposalMaxTotalAmount = FundingRequestProposalMaxTotalAmount;
     type FundingRequestProposalMaxAccounts = FundingRequestProposalMaxAccounts;
     type SetMaxValidatorCountProposalMaxValidators = SetMaxValidatorCountProposalMaxValidators;
+    type SetPalletFozenStatusProposalParameters = DefaultProposalParameters;
+    type UpdateTokenPalletTokenConstraints = DefaultProposalParameters;
+    type UpdateArgoBridgeConstraints = DefaultProposalParameters;
+    type SetEraPayoutDampingFactorProposalParameters = DefaultProposalParameters;
+    type DecreaseCouncilBudgetProposalParameters = DefaultProposalParameters;
 }
 
 parameter_types! {
@@ -684,7 +822,7 @@ parameter_types! {
 pub type ReferendumInstance = referendum::Instance1;
 
 impl council::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type Referendum = referendum::Module<Test, ReferendumInstance>;
 
@@ -719,12 +857,13 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 

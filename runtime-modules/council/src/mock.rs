@@ -11,7 +11,7 @@ use crate::{
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::{
-    ConstU16, ConstU32, ConstU64, Currency, EnsureOneOf, Get, LockIdentifier, OnFinalize,
+    ConstU16, ConstU32, ConstU64, Currency, EitherOfDiverse, Get, LockIdentifier, OnFinalize,
     OnInitialize, WithdrawReasons,
 };
 
@@ -27,6 +27,7 @@ use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup, Zero},
+    Percent,
 };
 use staking_handler::{LockComparator, StakingHandler, StakingManager};
 use std::boxed::Box;
@@ -71,7 +72,7 @@ impl common::membership::MembershipTypes for Runtime {
 }
 
 impl Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type Referendum = referendum::Module<Runtime, ReferendumInstance>;
 
@@ -103,9 +104,9 @@ impl Config for Runtime {
     type MemberOriginValidator = ();
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = ensure_signed(origin)?;
@@ -157,8 +158,8 @@ impl frame_system::Config for Runtime {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -166,7 +167,7 @@ impl frame_system::Config for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -209,11 +210,12 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -282,7 +284,7 @@ impl referendum::Config<ReferendumInstance> for Runtime {
 impl balances::Config for Runtime {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -292,7 +294,7 @@ impl balances::Config for Runtime {
 }
 
 impl membership::Config for Runtime {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();
@@ -322,7 +324,7 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
     fn ensure_worker_origin(
-        _origin: <Runtime as frame_system::Config>::Origin,
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Runtime as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
@@ -339,7 +341,9 @@ impl common::working_group::WorkingGroupAuthenticator<Runtime> for Wg {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Runtime as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Runtime as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -535,6 +539,7 @@ pub fn default_genesis_config() -> council::GenesisConfig<Runtime> {
         next_budget_refill: <Runtime as Config>::BudgetRefillPeriod::get(),
         budget_increment: 1,
         councilor_reward: 100,
+        era_payout_damping_factor: Percent::from_percent(100),
     }
 }
 
@@ -567,9 +572,9 @@ where
     T::BlockNumber: From<u64> + Into<u64>,
     Balance<T>: From<u64> + Into<u64>,
 {
-    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
+    pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::RuntimeOrigin {
         match origin {
-            OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
+            OriginType::Signed(account_id) => T::RuntimeOrigin::from(RawOrigin::Signed(account_id)),
             OriginType::Root => RawOrigin::Root.into(),
             //_ => panic!("not implemented"),
         }
@@ -682,9 +687,9 @@ where
 
     T::Hash: From<<Runtime as frame_system::Config>::Hash>
         + Into<<Runtime as frame_system::Config>::Hash>,
-    T::Origin: From<<Runtime as frame_system::Config>::Origin>
-        + Into<<Runtime as frame_system::Config>::Origin>,
-    <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
+    T::RuntimeOrigin: From<<Runtime as frame_system::Config>::RuntimeOrigin>
+        + Into<<Runtime as frame_system::Config>::RuntimeOrigin>,
+    <T::Referendum as ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
     T::MemberId: Into<T::AccountId>,
 {
@@ -740,7 +745,7 @@ where
             OptionResult<
                 T::MemberId,
                 <T::Referendum as ReferendumManager<
-                    T::Origin,
+                    T::RuntimeOrigin,
                     T::AccountId,
                     T::MemberId,
                     T::Hash,
@@ -749,7 +754,7 @@ where
         >,
         intermediate_results: BTreeMap<
             u64,
-            <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::MemberId, T::Hash>>::VotePower,
+            <T::Referendum as ReferendumManager<T::RuntimeOrigin, T::AccountId, T::MemberId, T::Hash>>::VotePower,
         >,
         expected_update_block_number: T::BlockNumber,
     ) {
@@ -816,14 +821,12 @@ where
     }
 
     pub fn check_new_council_elected_hook() {
-        let result = LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
+        LAST_COUNCIL_ELECTED_OK.with(|value| assert!(value.borrow().0));
 
         // clear election sign
         LAST_COUNCIL_ELECTED_OK.with(|value| {
             *value.borrow_mut() = (false,);
         });
-
-        result
     }
 
     pub fn set_candidacy_note(
@@ -850,7 +853,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CandidacyNoteSet(
+            RuntimeEvent::Council(RawEvent::CandidacyNoteSet(
                 membership_id.into(),
                 note.into()
             )),
@@ -905,7 +908,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::NewCandidate(
+            RuntimeEvent::Council(RawEvent::NewCandidate(
                 member_id.into(),
                 staking_account_id.into(),
                 reward_account_id.into(),
@@ -934,7 +937,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CandidacyWithdraw(member_id.into(),)),
+            RuntimeEvent::Council(RawEvent::CandidacyWithdraw(member_id.into(),)),
         );
     }
 
@@ -961,7 +964,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
+            RuntimeEvent::Council(RawEvent::CandidacyStakeRelease(member_id.into(),)),
         );
     }
 
@@ -1038,7 +1041,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::BudgetBalanceSet(amount.into())),
+            RuntimeEvent::Council(RawEvent::BudgetBalanceSet(amount.into())),
         );
     }
 
@@ -1066,7 +1069,7 @@ where
             assert!(frame_system::Pallet::<Runtime>::events()
                 .iter()
                 .any(|ev| ev.event
-                    == Event::Council(RawEvent::RequestFunded(
+                    == RuntimeEvent::Council(RawEvent::RequestFunded(
                         funding_request.account.clone().into(),
                         funding_request.amount.into(),
                     ))));
@@ -1112,7 +1115,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::BudgetRefillPlanned(next_refill.into())),
+            RuntimeEvent::Council(RawEvent::BudgetRefillPlanned(next_refill.into())),
         );
     }
 
@@ -1142,7 +1145,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
+            RuntimeEvent::Council(RawEvent::CouncilorRewardUpdated(councilor_reward.into())),
         );
     }
 
@@ -1172,7 +1175,7 @@ where
                 .last()
                 .unwrap()
                 .event,
-            Event::Council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
+            RuntimeEvent::Council(RawEvent::BudgetIncrementUpdated(budget_increment.into())),
         );
     }
 
@@ -1472,12 +1475,12 @@ pub fn run_to_block(n: u64) {
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, u64, u64, u64>) {
-        let converted_event = Event::Council(expected_raw_event);
+        let converted_event = RuntimeEvent::Council(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
 
-    pub fn assert_last_global_event(expected_event: Event) {
+    pub fn assert_last_global_event(expected_event: RuntimeEvent) {
         let expected_event = EventRecord {
             phase: Phase::Initialization,
             event: expected_event,
@@ -1493,7 +1496,7 @@ pub fn set_invitation_lock(
     amount: Balance<Runtime>,
 ) {
     <Runtime as membership::Config>::InvitedMemberStakingHandler::lock_with_reasons(
-        &who,
+        who,
         amount,
         WithdrawReasons::except(WithdrawReasons::TRANSACTION_PAYMENT),
     );

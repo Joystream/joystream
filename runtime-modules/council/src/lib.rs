@@ -79,8 +79,9 @@ use scale_info::TypeInfo;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, Zero};
+use sp_runtime::Percent;
 use sp_std::convert::TryInto;
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 use staking_handler::StakingHandler;
 
 // declared modules
@@ -210,7 +211,7 @@ impl<AccountId, MemberId, Balance, Hash, VotePower, BlockNumber>
 
 pub type Balance<T> = <T as balances::Config>::Balance;
 pub type VotePowerOf<T> = <<T as Config>::Referendum as ReferendumManager<
-    <T as frame_system::Config>::Origin,
+    <T as frame_system::Config>::RuntimeOrigin,
     <T as frame_system::Config>::AccountId,
     <T as common::membership::MembershipTypes>::MemberId,
     <T as frame_system::Config>::Hash,
@@ -245,10 +246,15 @@ pub trait Config:
     frame_system::Config + common::membership::MembershipTypes + balances::Config
 {
     /// The overarching event type.
-    type Event: From<Event<Self>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Referendum used for council elections.
-    type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::MemberId, Self::Hash>;
+    type Referendum: ReferendumManager<
+        Self::RuntimeOrigin,
+        Self::AccountId,
+        Self::MemberId,
+        Self::Hash,
+    >;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -299,7 +305,7 @@ pub trait Config:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: MemberOriginValidator<
-        Self::Origin,
+        Self::RuntimeOrigin,
         common::MemberId<Self>,
         Self::AccountId,
     >;
@@ -362,6 +368,10 @@ decl_storage! { generate_storage_info
 
         /// Councilor reward per block
         pub CouncilorReward get(fn councilor_reward) config(): Balance<T>;
+
+        /// Era payou damping factor: a parameter in [0,1] that can be used to reduce the era
+        /// payout without changing the reward curve directly
+        pub EraPayoutDampingFactor get(fn era_payout_damping_factor) config(): Percent = Percent::from_percent(100);
     }
 }
 
@@ -418,6 +428,11 @@ decl_event! {
         /// Councilor reward has been updated.
         CouncilorRewardUpdated(Balance),
 
+        /// Councilor budget has been decreased
+        /// Params:
+        /// - Reduction amount
+        CouncilBudgetDecreased(Balance),
+
         /// Request has been funded
         RequestFunded(AccountId, Balance),
 
@@ -433,6 +448,9 @@ decl_event! {
 
         /// Candidate remark message
         CandidateRemarked(MemberId, Vec<u8>),
+
+        /// Era payou damping factor set
+        EraPayoutDampingFactorSet(Percent),
     }
 }
 
@@ -513,6 +531,9 @@ decl_error! {
 
         /// Cannot withdraw: insufficient budget balance.
         InsufficientBalanceForTransfer,
+
+        /// Cannot reduce the budget by the given amount.
+        ReductionAmountTooLarge
     }
 }
 
@@ -522,10 +543,16 @@ impl<T: Config> From<BadOrigin> for Error<T> {
     }
 }
 
+impl<T: Config> From<sp_runtime::DispatchError> for Error<T> {
+    fn from(err: sp_runtime::DispatchError) -> Self {
+        err.into()
+    }
+}
+
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
-    pub struct Module<T: Config> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config> for enum Call where origin: T::RuntimeOrigin {
         /// Predefined errors
         type Error = Error<T>;
 
@@ -832,7 +859,6 @@ decl_module! {
             Ok(())
         }
 
-
         /// Transfers funds from council budget to account
         ///
         /// # <weight>
@@ -990,6 +1016,66 @@ decl_module! {
             //
 
             Self::deposit_event(RawEvent::CandidateRemarked(candidate_id, msg));
+        }
+
+        /// Set the era payout damping factor
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::set_era_payout_damping_factor()] // TODO: adjust
+        pub fn set_era_payout_damping_factor(origin, new_parameter: Percent) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_era_payout_damping_factor(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::set_era_payout_damping_factor(new_parameter);
+
+            // emit event
+            Self::deposit_event(RawEvent::EraPayoutDampingFactorSet(new_parameter));
+
+            Ok(())
+        }
+
+        /// Decrease the council total budget
+        ///
+        /// # <weight>
+        ///
+        /// ## weight
+        /// `O (1)`
+        /// - db:
+        ///    - `O(1)` doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = CouncilWeightInfo::<T>::decrease_council_budget()]
+        pub fn decrease_council_budget(origin, reduction_amount: Balance<T>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_decrease_council_budget(origin)?;
+
+            // ensure reduction amount is not too large
+            ensure!(
+                reduction_amount <= Self::budget(),
+                Error::<T>::ReductionAmountTooLarge
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::decrease_budget(reduction_amount);
+
+            // emit event
+            Self::deposit_event(RawEvent::CouncilBudgetDecreased(reduction_amount));
+
+            Ok(())
         }
     }
 }
@@ -1602,6 +1688,10 @@ impl<T: Config> Mutations<T> {
         let next_reward_block = now + T::ElectedMemberRewardPeriod::get();
         NextRewardPayments::<T>::put(next_reward_block);
     }
+
+    fn set_era_payout_damping_factor(new_parameter: Percent) {
+        EraPayoutDampingFactor::put(new_parameter);
+    }
 }
 
 /////////////////// Ensure checks //////////////////////////////////////////////
@@ -1614,7 +1704,7 @@ impl<T: Config> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
     fn ensure_user_membership(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         let account_id = T::MemberOriginValidator::ensure_member_controller_account_origin(
@@ -1630,7 +1720,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in announcing candidacy.
     fn can_announce_candidacy(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
         staking_account_id: &T::AccountId,
         stake: &Balance<T>,
@@ -1683,7 +1773,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in releasing old candidacy stake.
     fn can_release_candidacy_stake(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<T::AccountId, Error<T>> {
         // ensure user's membership
@@ -1703,7 +1793,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in withdrawing already announced candidacy.
     fn can_withdraw_candidacy(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<(CouncilStageAnnouncing<T::BlockNumber>, CandidateOf<T>), Error<T>> {
         // ensure user's membership
@@ -1729,7 +1819,7 @@ impl<T: Config> EnsureChecks<T> {
 
     // Ensures there is no problem in setting new note for the candidacy.
     fn can_set_candidacy_note(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         membership_id: &T::MemberId,
     ) -> Result<(), Error<T>> {
         // ensure user's membership
@@ -1751,28 +1841,41 @@ impl<T: Config> EnsureChecks<T> {
     }
 
     // Ensures there is no problem in setting the budget balance.
-    fn can_set_budget(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_set_budget(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
     }
 
     // Ensures there is no problem in planning next budget refill.
-    fn can_plan_budget_refill(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_plan_budget_refill(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
     }
 
     // Ensures there is no problem in setting the budget increment.
-    fn can_set_budget_increment(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_set_budget_increment(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
     }
 
     // Ensures there is no problem in setting the councilor reward.
-    fn can_set_councilor_reward(origin: T::Origin) -> Result<(), Error<T>> {
+    fn can_set_councilor_reward(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    // Ensures there is no problem in decreasing the council budget
+    fn can_decrease_council_budget(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
+        ensure_root(origin)?;
+
+        Ok(())
+    }
+
+    fn can_set_era_payout_damping_factor(origin: T::RuntimeOrigin) -> Result<(), Error<T>> {
         ensure_root(origin)?;
 
         Ok(())
@@ -1780,9 +1883,9 @@ impl<T: Config> EnsureChecks<T> {
 }
 
 impl<T: Config + common::membership::MembershipTypes>
-    CouncilOriginValidator<T::Origin, T::MemberId, T::AccountId> for Module<T>
+    CouncilOriginValidator<T::RuntimeOrigin, T::MemberId, T::AccountId> for Module<T>
 {
-    fn ensure_member_consulate(origin: T::Origin, member_id: T::MemberId) -> DispatchResult {
+    fn ensure_member_consulate(origin: T::RuntimeOrigin, member_id: T::MemberId) -> DispatchResult {
         EnsureChecks::<T>::ensure_user_membership(origin, &member_id)?;
 
         let is_councilor = Self::council_members()
@@ -1816,6 +1919,13 @@ impl<T: Config + balances::Config> common::council::CouncilBudgetManager<T::Acco
 
         Self::decrease_budget(amount);
 
+        Ok(())
+    }
+}
+
+impl<T: Config> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
         Ok(())
     }
 }

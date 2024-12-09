@@ -104,6 +104,8 @@ message VideoMetadata {
     // overriding list with an empty array wont work
     optional bool clear_subtitles = 19;
 
+    // Is video a short format, vertical video (e.g. Youtube Shorts, TikTok, Instagram Reels)
+    optional bool is_short = 20;
 }
 
 message ContentMetadata {

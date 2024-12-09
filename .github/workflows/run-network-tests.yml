@@ -14,14 +14,14 @@ jobs:
       matrix:
         node-version: [18.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: checks
-      run: |
-        yarn build
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: checks
+        run: |
+          yarn build
 
   tests_build_osx:
     name: MacOS Checks
@@ -30,14 +30,16 @@ jobs:
       matrix:
         node-version: [18.x]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: checks
-      run: |
-        yarn build
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: python setuptools
+        run: brew install python-setuptools
+      - name: checks
+        run: |
+          yarn build
 
   build_images:
     name: Build joystream/node
@@ -47,8 +49,15 @@ jobs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
       runtime: ${{ steps.compute_shasum.outputs.shasum }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Make some space
+        shell: bash
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
 
@@ -104,7 +113,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx
+          key: ${{ runner.os }}-buildx-tests
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Build
@@ -152,8 +161,8 @@ jobs:
           - scenario: 'setupNewChainMultiStorage'
             no_storage: 'true'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '18.x'
       - name: Get artifacts
@@ -174,74 +183,3 @@ jobs:
           export RUNTIME=${{ needs.build_images.outputs.runtime }}
           export NO_STORAGE=${{ matrix.no_storage }}
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}
-
-  runtime_upgrade:
-    name: Runtime Upgrade from production runtime
-    needs: build_images
-    runs-on: ubuntu-latest
-    if: github.ref != 'refs/heads/master'
-    steps:
-      # Checkout master branch
-      - name: check out master repo
-        uses: actions/checkout@v3
-        with:
-          repository: Joystream/joystream
-          ref: master
-
-      - name: pull base runtime image
-        id: pull_base_image
-        env:
-          RUNTIME_PROFILE: 'TESTING'
-        run: |
-          export RUNTIME=`scripts/runtime-code-shasum.sh`
-          echo "::set-output name=shasum::${RUNTIME}"
-          docker pull joystream/node:$RUNTIME
-          docker images
-
-      # Get new runtime built for this workflow (target runtime)
-      # tagged in local repo as joystream/node:latest
-      - name: Get artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ needs.build_images.outputs.use_artifact }}
-      - name: Install artifacts
-        run: |
-          docker load --input joystream-node-docker-image.tar.gz
-          docker images
-
-      # Checkout workflow's branch/tag/commit
-      - name: checkout workflow branch
-        uses: actions/checkout@v3
-      
-      # Look only for changes that would indicate possible change in runtime version
-      # This is not the best way to check. Ideally the script "run-runtime-upgrade-tests.sh" should
-      # look for the change of `spec_version`, and exit gracefully.
-      - name: Check for runtime version change
-        uses: technote-space/get-diff-action@v3
-        with:
-          PREFIX_FILTER: |
-            runtime
-            runtime-modules
-          SUFFIX_FILTER: |
-            .rs
-      - name: setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-      - name: Install packages and dependencies
-        if: env.GIT_DIFF
-        run: |
-          yarn build
-      - name: Ensure tests are runnable
-        if: env.GIT_DIFF
-        run: yarn workspace network-tests build
-      - name: Execute network tests
-        if: env.GIT_DIFF
-        env:
-          TARGET_RUNTIME: ${{ needs.build_images.outputs.runtime }}
-          RUNTIME: ${{ steps.pull_base_image.outputs.shasum }}
-        run: |
-          export HOME=${PWD}
-          mkdir -p ${HOME}/.local/share/joystream-cli
-          yarn joystream-cli api:setUri ws://localhost:9944
-          tests/network-tests/run-runtime-upgrade-tests.sh

@@ -1,12 +1,41 @@
+### 2.4.1
+
+- Fix handling of proposal details between spec versions 2003 and 2004
+
+### 2.4.0
+
+- Bump @joystream/types to Petra version
+
+### 2.2.1
+
+- Bump deps @polkadot/api v10.7.1
+
+### 2.1.0
+
+- Bump polkadot-js/api version bump, use newer hydra-typegen version
+- Fixes in mappings, when checking runtime version to pick correct event type
+
+### 2.0.0
+
+- Add support for Nara release - CRTs, freeze pallet proposal, new chain metadata spec
+
+### 1.9.0
+
+- Add `isShort` field to `Video` entity. and updated mappings to process/set this filed
+
+### 1.8.2
+
+- Fix validator profile verification - [#5061](https://github.com/Joystream/joystream/pull/5061)
+
 ### 1.8.0
 
-- Add support for validator account verification
+- Add support for validator profile verification - [#4976](https://github.com/Joystream/joystream/pull/4976)
 
 ### 1.7.0
 
 - Refactor of mappings for more better handling of error cases. [#4856](https://github.com/Joystream/joystream/pull/4856)
 - Bug fix [#4855](https://github.com/Joystream/joystream/issues/4855)
-- Add support for UpdateGlobalNftLimit proposal. 
+- Add support for UpdateGlobalNftLimit proposal.
 
 ### 1.6.0
 

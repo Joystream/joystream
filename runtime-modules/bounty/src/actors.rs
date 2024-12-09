@@ -27,7 +27,7 @@ pub(crate) enum BountyActorManager<T: Config> {
 impl<T: Config> BountyActorManager<T> {
     // Construct BountyActor by extrinsic origin and optional member_id.
     pub(crate) fn ensure_bounty_actor_manager(
-        origin: T::Origin,
+        origin: T::RuntimeOrigin,
         actor: BountyActor<MemberId<T>>,
     ) -> Result<BountyActorManager<T>, DispatchError> {
         match actor {

@@ -111,23 +111,26 @@ export default class Server extends ApiCommandBase {
       required: false,
       env: 'ELASTIC_ENDPOINT',
       description: `Elasticsearch endpoint (e.g.: http://some.com:8081).
-Log level could be set using the ELASTIC_LOG_LEVEL enviroment variable.
+Log level could be set using the ELASTIC_LOG_LEVEL environment variable.
 Supported values: warn, error, debug, info. Default:debug`,
     }),
     elasticSearchIndexPrefix: flags.string({
       required: false,
       env: 'ELASTIC_INDEX_PREFIX',
-      description: 'Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus',
+      description:
+        'Elasticsearch index prefix. Node ID will be appended to the prefix. Default: logs-colossus. Can be passed through ELASTIC_INDEX_PREFIX environment variable.',
     }),
     elasticSearchUser: flags.string({
       dependsOn: ['elasticSearchEndpoint', 'elasticSearchPassword'],
       env: 'ELASTIC_USER',
-      description: 'Elasticsearch user for basic authentication.',
+      description:
+        'Elasticsearch user for basic authentication. Can be passed through ELASTIC_USER environment variable.',
     }),
     elasticSearchPassword: flags.string({
       dependsOn: ['elasticSearchEndpoint', 'elasticSearchUser'],
       env: 'ELASTIC_PASSWORD',
-      description: 'Elasticsearch password for basic authentication.',
+      description:
+        'Elasticsearch password for basic authentication. Can be passed through ELASTIC_PASSWORD environment variable.',
     }),
     logFilePath: flags.string({
       char: 'l',
@@ -350,7 +353,11 @@ Supported values: warn, error, debug, info. Default:debug`,
         },
         x_host_id: X_HOST_ID,
       })
-      app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
+      const server = app.listen(port, () => logger.info(`Listening on http://localhost:${port}`))
+
+      // INFO: https://nodejs.org/dist/latest-v18.x/docs/api/http.html#serverrequesttimeout
+      // Set the server request timeout to 0 to disable it. This was default behaviour pre Node.js 18.x
+      server.requestTimeout = 0
     } catch (err) {
       logger.error(`Server error: ${err}`)
       this.exit(ExitCodes.ServerError)

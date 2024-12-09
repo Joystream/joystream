@@ -13,7 +13,7 @@ fn setup_open_auction_scenario() {
 
     // Issue nft
     assert_ok!(Content::issue_nft(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         NftIssuanceParameters::<Test>::default(),
@@ -29,7 +29,7 @@ fn setup_open_auction_scenario() {
 
     // Start nft auction
     assert_ok!(Content::start_open_auction(
-        Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
         ContentActor::Member(DEFAULT_MEMBER_ID),
         video_id,
         auction_params,
@@ -47,7 +47,7 @@ fn setup_open_auction_scenario_with_bid() {
 
     // Make nft auction bid
     assert_ok!(Content::make_open_auction_bid(
-        Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+        RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
         SECOND_MEMBER_ID,
         video_id,
         bid,
@@ -76,7 +76,7 @@ fn cancel_open_auction_bid() {
 
         // Cancel auction bid
         assert_ok!(Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         ));
@@ -107,7 +107,7 @@ fn cancel_open_auction_bid_lock_duration_did_not_expire() {
 
         // Make an attempt to cancel open auction bid if lock duration did not expire
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -135,7 +135,7 @@ fn cancel_open_auction_bid_auth_failed() {
 
         // Make an attempt to cancel open auction bid with wrong credentials
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -158,7 +158,7 @@ fn cancel_open_auction_bid_video_does_not_exist() {
 
         // Make an attempt to cancel open auction bid which corresponding video does not exist
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -185,7 +185,7 @@ fn cancel_open_auction_bid_nft_is_not_issued() {
 
         // Make an attempt to cancel open auction bid for nft which is not issued yet
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -213,7 +213,7 @@ fn cancel_open_auction_bid_last_bid_does_not_exist() {
 
         // Make an attempt to cancel open auction bid if it does not exist
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         );
@@ -241,7 +241,7 @@ fn cancel_open_auction_fails_for_with_non_bidder() {
 
         // Make an attempt to cancel open auction bid if actor is not a last bidder
         let cancel_open_auction_bid_result = Content::cancel_open_auction_bid(
-            Origin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(UNAUTHORIZED_MEMBER_ACCOUNT_ID),
             UNAUTHORIZED_MEMBER_ID,
             video_id,
         );
@@ -267,14 +267,14 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
         let bid = Content::min_starting_price();
 
         assert_ok!(Content::make_open_auction_bid(
-            Origin::signed(THIRD_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(THIRD_MEMBER_ACCOUNT_ID),
             THIRD_MEMBER_ID,
             video_id,
             bid,
         ));
 
         assert_ok!(Content::pick_open_auction_winner(
-            Origin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(DEFAULT_MEMBER_ACCOUNT_ID),
             ContentActor::Member(DEFAULT_MEMBER_ID),
             video_id,
             THIRD_MEMBER_ID,
@@ -283,7 +283,7 @@ fn cancel_open_auction_bid_ok_for_expired_auction() {
 
         // Attempt OK: auction closed
         assert_ok!(Content::cancel_open_auction_bid(
-            Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+            RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
             SECOND_MEMBER_ID,
             video_id,
         ));
@@ -306,7 +306,7 @@ fn cancel_open_auction_bid_fails_during_transfer() {
 
         assert_noop!(
             Content::cancel_open_auction_bid(
-                Origin::signed(SECOND_MEMBER_ACCOUNT_ID),
+                RuntimeOrigin::signed(SECOND_MEMBER_ACCOUNT_ID),
                 SECOND_MEMBER_ID,
                 VideoId::one(),
             ),

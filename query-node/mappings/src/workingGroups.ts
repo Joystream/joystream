@@ -34,6 +34,7 @@ import {
   BudgetFundedEvent,
   BudgetSetEvent,
   BudgetSpendingEvent,
+  VestedBudgetSpendingEvent,
   ForumPost,
   InvalidActionMetadata,
   LeaderSetEvent,
@@ -83,6 +84,7 @@ import {
   StorageWorkingGroup_ApplicationWithdrawnEvent_V1001 as WorkingGroup_ApplicationWithdrawnEvent_V1001,
   StorageWorkingGroup_AppliedOnOpeningEvent_V1001 as WorkingGroup_AppliedOnOpeningEvent_V1001,
   StorageWorkingGroup_BudgetSpendingEvent_V1001 as WorkingGroup_BudgetSpendingEvent_V1001,
+  StorageWorkingGroup_VestedBudgetSpendingEvent_V2003 as WorkingGroup_VestedBudgetSpendingEvent_V2003,
   StorageWorkingGroup_LeadRemarkedEvent_V1001 as WorkingGroup_LeadRemarkedEvent_V1001,
   StorageWorkingGroup_NewMissedRewardLevelReachedEvent_V1001 as WorkingGroup_NewMissedRewardLevelReachedEvent_V1001,
   StorageWorkingGroup_OpeningAddedEvent_V1001 as WorkingGroup_OpeningAddedEvent_V1001,
@@ -415,6 +417,45 @@ function isWorkerActive(worker: Worker): boolean {
   )
 }
 
+async function applyWorkingGroupsRemark(
+  { store, event }: EventContext & StoreContext,
+  metadataByte: Bytes,
+  getActor: (group: WorkingGroupModuleName) => Promise<Worker>
+): Promise<void> {
+  const group = await getWorkingGroupOrFail(store, event)
+
+  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
+  if (metadata?.moderatePost) {
+    if (group.name !== 'forumWorkingGroup') {
+      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
+    }
+    const { postId, rationale } = metadata.moderatePost
+    const actor = await getActor(group.name)
+
+    const post = await getById(store, ForumPost, postId)
+    if (!post) {
+      return invalidMetadata(`Forum post not found by id: ${postId}`)
+    }
+    const eventType = actor.isLead ? 'leadRemark' : 'workerRemark'
+    await moderatePost(store, event, eventType, post, actor, rationale)
+  } else if (metadata?.verifyValidator) {
+    if (group.name !== 'membershipWorkingGroup') {
+      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
+    }
+    const { memberId, isVerified } = metadata.verifyValidator
+
+    const member = await getById(store, Membership, memberId, ['metadata'])
+    if (!member || !member.metadata) {
+      return invalidMetadata(`Membership not found by id: ${memberId}`)
+    }
+    member.metadata.isVerifiedValidator = isVerified
+    await store.save<MemberMetadata>(member.metadata)
+    await store.save<Membership>(member)
+  } else {
+    return invalidMetadata('Unrecognized remarked action')
+  }
+}
+
 // Mapping functions
 export async function workingGroups_OpeningAdded({ store, event }: EventContext & StoreContext): Promise<void> {
   const [openingRuntimeId, metadataBytes, openingType, stakePolicy, optRewardPerBlock] =
@@ -709,74 +750,16 @@ export async function workingGroups_StatusTextChanged({ store, event }: EventCon
   await store.save<StatusTextChangedEvent>(statusTextChangedEvent)
 }
 
-export async function workingGroups_LeadRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(event).params
-  const group = await getWorkingGroupOrFail(store, event)
-
-  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
-  if (metadata?.moderatePost) {
-    if (group.name !== 'forumWorkingGroup') {
-      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
-    }
-    const { postId, rationale } = metadata.moderatePost
-    const actor = await getWorkingGroupLeadOrFail(store, group.name)
-
-    const post = await getById(store, ForumPost, postId)
-    if (!post) {
-      return invalidMetadata(`Forum post not found by id: ${postId}`)
-    }
-    await moderatePost(store, event, 'leadRemark', post, actor, rationale)
-  } else if (metadata?.verifyValidator) {
-    if (group.name !== 'membershipWorkingGroup') {
-      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
-    }
-    const { memberId, isVerified } = metadata.verifyValidator
-
-    const member = await getById(store, Membership, memberId)
-    if (!member) {
-      return invalidMetadata(`Membership not found by id: ${memberId}`)
-    }
-    member.metadata.isVerifiedValidator = isVerified
-    await store.save<MemberMetadata>(member.metadata)
-    await store.save<Membership>(member)
-  } else {
-    return invalidMetadata('Unrecognized remarked action')
-  }
+export async function workingGroups_LeadRemarked(context: EventContext & StoreContext): Promise<void> {
+  const [metadataByte] = new WorkingGroup_LeadRemarkedEvent_V1001(context.event).params
+  const getWorker = (group: WorkingGroupModuleName) => getWorkingGroupLeadOrFail(context.store, group)
+  await applyWorkingGroupsRemark(context, metadataByte, getWorker)
 }
 
-export async function workingGroups_WorkerRemarked({ store, event }: EventContext & StoreContext): Promise<void> {
-  const [workerId, metadataByte] = new WorkingGroup_WorkerRemarkedEvent_V1001(event).params
-  const group = await getWorkingGroupOrFail(store, event)
-
-  const metadata = deserializeMetadata(RemarkMetadataAction, metadataByte)
-  if (metadata?.moderatePost) {
-    if (group.name !== 'forumWorkingGroup') {
-      return invalidMetadata(`The ${group.name} is incompatible with the remarked moderatePost`)
-    }
-    const { postId, rationale } = metadata.moderatePost
-    const actor = await getWorkerOrFail(store, group.name, workerId)
-
-    const post = await getById(store, ForumPost, postId)
-    if (!post) {
-      return invalidMetadata(`Forum post not found by id: ${postId}`)
-    }
-    await moderatePost(store, event, 'workerRemark', post, actor, rationale)
-  } else if (metadata?.verifyValidator) {
-    if (group.name !== 'membershipWorkingGroup') {
-      return invalidMetadata(`The ${group.name} can't verify the validator's membership`)
-    }
-    const { memberId, isVerified } = metadata.verifyValidator
-
-    const member = await getById(store, Membership, memberId)
-    if (!member) {
-      return invalidMetadata(`Membership not found by id: ${memberId}`)
-    }
-    member.metadata.isVerifiedValidator = isVerified
-    await store.save<MemberMetadata>(member.metadata)
-    await store.save<Membership>(member)
-  } else {
-    return invalidMetadata('Unrecognized remarked action')
-  }
+export async function workingGroups_WorkerRemarked(context: EventContext & StoreContext): Promise<void> {
+  const [workerId, metadataByte] = new WorkingGroup_WorkerRemarkedEvent_V1001(context.event).params
+  const getWorker = (group: WorkingGroupModuleName) => getWorkerOrFail(context.store, group, workerId)
+  await applyWorkingGroupsRemark(context, metadataByte, getWorker)
 }
 
 export async function workingGroups_WorkerRoleAccountUpdated({
@@ -1051,6 +1034,28 @@ export async function workingGroups_BudgetSpending({ store, event }: EventContex
   })
 
   await store.save<BudgetSpendingEvent>(budgetSpendingEvent)
+
+  group.budget = group.budget.sub(amount)
+
+  await store.save<WorkingGroup>(group)
+}
+
+export async function workingGroups_VestedBudgetSpending({ store, event }: EventContext & StoreContext): Promise<void> {
+  const [receiver, vestingSchedule, rationale] = new WorkingGroup_VestedBudgetSpendingEvent_V2003(event).params
+  const amount = vestingSchedule.locked
+  const group = await getWorkingGroupOrFail(store, event)
+
+  const vestedBudgetSpendingEvent = new VestedBudgetSpendingEvent({
+    ...genericEventFields(event),
+    group,
+    amount,
+    perBlock: vestingSchedule.perBlock,
+    startingBlock: vestingSchedule.startingBlock.toNumber(),
+    receiver: receiver.toString(),
+    rationale: rationale.isSome ? bytesToString(rationale.unwrap()) : undefined,
+  })
+
+  await store.save<VestedBudgetSpendingEvent>(vestedBudgetSpendingEvent)
 
   group.budget = group.budget.sub(amount)
 

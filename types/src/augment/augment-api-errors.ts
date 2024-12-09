@@ -1,10 +1,16 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { ApiTypes } from '@polkadot/api-base/types';
+// import type lookup before we augment - in some environments
+// this is required to allow for ambient/previous definitions
+import '@polkadot/api-base/types/errors';
+
+import type { ApiTypes, AugmentedError } from '@polkadot/api-base/types';
+
+export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>;
 
 declare module '@polkadot/api-base/types/errors' {
-  export interface AugmentedErrors<ApiType extends ApiTypes> {
+  interface AugmentedErrors<ApiType extends ApiTypes> {
     appWorkingGroup: {
       /**
        * Trying to fill opening with an application for other opening
@@ -135,36 +141,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ZeroTokensFunding: AugmentedError<ApiType>;
     };
-    authorship: {
-      /**
-       * The uncle is genesis.
-       **/
-      GenesisUncle: AugmentedError<ApiType>;
-      /**
-       * The uncle parent not in the chain.
-       **/
-      InvalidUncleParent: AugmentedError<ApiType>;
-      /**
-       * The uncle isn't recent enough to be included.
-       **/
-      OldUncle: AugmentedError<ApiType>;
-      /**
-       * The uncle is too high in chain.
-       **/
-      TooHighUncle: AugmentedError<ApiType>;
-      /**
-       * Too many uncles.
-       **/
-      TooManyUncles: AugmentedError<ApiType>;
-      /**
-       * The uncle is already included.
-       **/
-      UncleAlreadyIncluded: AugmentedError<ApiType>;
-      /**
-       * Uncles already set in the block.
-       **/
-      UnclesAlreadySet: AugmentedError<ApiType>;
-    };
     babe: {
       /**
        * A given equivocation report is valid but already previously reported.
@@ -183,12 +159,6 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InvalidKeyOwnershipProof: AugmentedError<ApiType>;
     };
-    bagsList: {
-      /**
-       * A error in the list interface implementation.
-       **/
-      List: AugmentedError<ApiType>;
-    };
     balances: {
       /**
        * Beneficiary account must pre-exist
@@ -203,7 +173,7 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ExistingVestingSchedule: AugmentedError<ApiType>;
       /**
-       * Balance too low to send value
+       * Balance too low to send value.
        **/
       InsufficientBalance: AugmentedError<ApiType>;
       /**
@@ -513,6 +483,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Invalid extrinsic call: Channel state bloat bond changed.
        **/
       ChannelStateBloatBondChanged: AugmentedError<ApiType>;
+      /**
+       * Channel Transfers are blocked during active AMM
+       **/
+      ChannelTransfersBlockedDuringActiveAmm: AugmentedError<ApiType>;
       /**
        * Channel Transfers are blocked during revenue splits
        **/
@@ -1086,6 +1060,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NotCouncilor: AugmentedError<ApiType>;
       /**
+       * Cannot reduce the budget by the given amount.
+       **/
+      ReductionAmountTooLarge: AugmentedError<ApiType>;
+      /**
        * The same account is recieving funds from the same request twice
        **/
       RepeatedFundRequestAccount: AugmentedError<ApiType>;
@@ -1234,6 +1212,10 @@ declare module '@polkadot/api-base/types/errors' {
     };
     electionProviderMultiPhase: {
       /**
+       * Some bound not met
+       **/
+      BoundNotMet: AugmentedError<ApiType>;
+      /**
        * The call is not allowed at this point.
        **/
       CallNotAllowed: AugmentedError<ApiType>;
@@ -1281,6 +1263,10 @@ declare module '@polkadot/api-base/types/errors' {
        * The signed submission consumes too much weight
        **/
       SignedTooMuchWeight: AugmentedError<ApiType>;
+      /**
+       * Submitted solution has too many winners
+       **/
+      TooManyWinners: AugmentedError<ApiType>;
     };
     forum: {
       /**
@@ -2281,6 +2267,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotDeissueTokenWithOutstandingAccounts: AugmentedError<ApiType>;
       /**
+       * No Sale if Amm is active
+       **/
+      CannotInitSaleIfAmmIsActive: AugmentedError<ApiType>;
+      /**
        * Attempt to issue in a split with zero allocation amount
        **/
       CannotIssueSplitWithZeroAllocationAmount: AugmentedError<ApiType>;
@@ -2296,6 +2286,14 @@ declare module '@polkadot/api-base/types/errors' {
        * Attempt to participate in a split with zero token to stake
        **/
       CannotParticipateInSplitWithZeroAmount: AugmentedError<ApiType>;
+      /**
+       * Curve slope parameters below minimum allowed
+       **/
+      CurveSlopeParametersTooLow: AugmentedError<ApiType>;
+      /**
+       * Deadline constraint not satisfied
+       **/
+      DeadlineExpired: AugmentedError<ApiType>;
       /**
        * At least one of the members provided as part of InitialAllocation does not exist
        **/
@@ -2313,9 +2311,17 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       InsufficientJoyBalance: AugmentedError<ApiType>;
       /**
+       * Creator token balance is insufficient
+       **/
+      InsufficientTokenBalance: AugmentedError<ApiType>;
+      /**
        * Account's transferrable balance is insufficient to perform the transfer or initialize token sale
        **/
       InsufficientTransferrableBalance: AugmentedError<ApiType>;
+      /**
+       * Invalid bonding curve construction parameters
+       **/
+      InvalidCurveParameters: AugmentedError<ApiType>;
       /**
        * The amount of JOY to be transferred is not enough to keep the destination account alive
        **/
@@ -2334,9 +2340,18 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       NoActiveSale: AugmentedError<ApiType>;
       /**
+       * Attempting to sell more than amm provided supply
+       **/
+      NotEnoughTokenMintedByAmmForThisSale: AugmentedError<ApiType>;
+      /**
        * Amount of tokens to purchase on sale exceeds the quantity of tokens still available on the sale
        **/
       NotEnoughTokensOnSale: AugmentedError<ApiType>;
+      /**
+       * ------ AMM ---------------------------------------------------------
+       * not in AMM state
+       **/
+      NotInAmmState: AugmentedError<ApiType>;
       /**
        * There are no remaining tokes to recover from the previous token sale.
        **/
@@ -2345,6 +2360,14 @@ declare module '@polkadot/api-base/types/errors' {
        * The token has no upcoming sale
        **/
       NoUpcomingSale: AugmentedError<ApiType>;
+      /**
+       * Oustanding AMM-provided supply constitutes too large percentage of the token's total supply
+       **/
+      OutstandingAmmProvidedSupplyTooLarge: AugmentedError<ApiType>;
+      /**
+       * Attempt to perform an action when pallet is frozen
+       **/
+      PalletFrozen: AugmentedError<ApiType>;
       /**
        * Previous sale was still not finalized, finalize it first.
        **/
@@ -2420,6 +2443,11 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       SaleUpperBoundQuantityIsZero: AugmentedError<ApiType>;
       /**
+       * Slippage tolerance constraint tolerance not satisfied
+       **/
+      SlippageToleranceExceeded: AugmentedError<ApiType>;
+      /**
+       * -------- Patronage --------------------------------------------------
        * Target Rate is higher than current patronage rate
        **/
       TargetPatronageRateIsHigherThanCurrentRate: AugmentedError<ApiType>;
@@ -2436,6 +2464,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TokenSymbolAlreadyInUse: AugmentedError<ApiType>;
       /**
+       * Transfer destination member id invalid
+       **/
+      TooManyTransferOutputs: AugmentedError<ApiType>;
+      /**
        * At least one of the transfer destinations is not an existing member id
        **/
       TransferDestinationMemberDoesNotExist: AugmentedError<ApiType>;
@@ -2447,6 +2479,10 @@ declare module '@polkadot/api-base/types/errors' {
        * User is not participating in any split
        **/
       UserNotParticipantingInAnySplit: AugmentedError<ApiType>;
+      /**
+       * Provided value for patronage is too big (yearly format)
+       **/
+      YearlyPatronageRateLimitExceeded: AugmentedError<ApiType>;
     };
     proposalsCodex: {
       /**
@@ -2537,6 +2573,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Invalid working group budget capacity parameter
        **/
       InvalidWorkingGroupBudgetCapacity: AugmentedError<ApiType>;
+      /**
+       * Reduction Amount Zero
+       **/
+      ReductionAmountZero: AugmentedError<ApiType>;
       /**
        * Require root origin in extrinsics
        **/
@@ -2691,6 +2731,40 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       ZeroExactExecutionBlock: AugmentedError<ApiType>;
     };
+    proxy: {
+      /**
+       * Account is already a proxy.
+       **/
+      Duplicate: AugmentedError<ApiType>;
+      /**
+       * Call may not be made by proxy because it may escalate its privileges.
+       **/
+      NoPermission: AugmentedError<ApiType>;
+      /**
+       * Cannot add self as proxy.
+       **/
+      NoSelfProxy: AugmentedError<ApiType>;
+      /**
+       * Proxy registration not found.
+       **/
+      NotFound: AugmentedError<ApiType>;
+      /**
+       * Sender is not a proxy of the account to be proxied.
+       **/
+      NotProxy: AugmentedError<ApiType>;
+      /**
+       * There are too many proxies registered or too many announcements pending.
+       **/
+      TooMany: AugmentedError<ApiType>;
+      /**
+       * Announcement, if made at all, was made too recently.
+       **/
+      Unannounced: AugmentedError<ApiType>;
+      /**
+       * A call which is incompatible with the proxy type's filter was attempted.
+       **/
+      Unproxyable: AugmentedError<ApiType>;
+    };
     referendum: {
       /**
        * A vote cannot be cast from an account that already opted out of voting.
@@ -2797,6 +2871,10 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       BondingRestricted: AugmentedError<ApiType>;
       /**
+       * Some bound is not met.
+       **/
+      BoundNotMet: AugmentedError<ApiType>;
+      /**
        * The user has enough bond and thus cannot be chilled forcefully by an external person.
        **/
       CannotChillOther: AugmentedError<ApiType>;
@@ -2872,8 +2950,8 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       TooManyTargets: AugmentedError<ApiType>;
       /**
-       * There are too many validators in the system. Governance needs to adjust the staking
-       * settings to keep things safe for the runtime.
+       * There are too many validator candidates in the system. Governance needs to adjust the
+       * staking settings to keep things safe for the runtime.
        **/
       TooManyValidators: AugmentedError<ApiType>;
     };
@@ -3329,6 +3407,12 @@ declare module '@polkadot/api-base/types/errors' {
        * An index was out of bounds of the vesting schedules.
        **/
       ScheduleIndexOutOfBounds: AugmentedError<ApiType>;
+    };
+    voterList: {
+      /**
+       * A error in the list interface implementation.
+       **/
+      List: AugmentedError<ApiType>;
     };
   } // AugmentedErrors
 } // declare module

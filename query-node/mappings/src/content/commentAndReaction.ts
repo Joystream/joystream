@@ -545,7 +545,7 @@ export async function processModerateCommentMessage(
   event: SubstrateEvent,
   channelOwnerOrCurator: typeof ContentActor,
   channel: Channel,
-  message: IModerateComment
+  message: DecodedMetadataObject<IModerateComment>
 ): Promise<Comment | MetaprotocolTxError> {
   const { commentId, rationale } = message
 
@@ -606,7 +606,7 @@ export async function processPinOrUnpinCommentMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   channel: Channel,
-  message: IPinOrUnpinComment
+  message: DecodedMetadataObject<IPinOrUnpinComment>
 ): Promise<Comment | MetaprotocolTxError> {
   const { commentId, option } = message
 
@@ -647,7 +647,7 @@ export async function processBanOrUnbanMemberFromChannelMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   channel: Channel,
-  message: IBanOrUnbanMemberFromChannel
+  message: DecodedMetadataObject<IBanOrUnbanMemberFromChannel>
 ): Promise<Membership | MetaprotocolTxError> {
   const { memberId, option } = message
 
@@ -689,7 +689,7 @@ export async function processVideoReactionsPreferenceMessage(
   store: DatabaseManager,
   event: SubstrateEvent,
   channel: Channel,
-  message: IVideoReactionsPreference
+  message: DecodedMetadataObject<IVideoReactionsPreference>
 ): Promise<Channel | MetaprotocolTxError> {
   const { videoId, option } = message
 

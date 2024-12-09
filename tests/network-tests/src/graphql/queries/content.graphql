@@ -166,6 +166,7 @@ fragment VideoFields on Video {
   duration
   isPublic
   isExplicit
+  isShort
   hasMarketing
   ytVideoId
   entryApp {
@@ -387,6 +388,12 @@ query getBidsByMemberId($videoId: ID!, $memberId: ID!) {
 query getChannelNftCollectors {
   channelNftCollectors {
     ...ChannelNftCollectorFields
+  }
+}
+
+query getDataObjectsByChannelId($channelId: ID) {
+  storageDataObjects(where: { type_json: { channelId_eq: $channelId } }) {
+    ...StorageDataObjectFields
   }
 }
 

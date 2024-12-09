@@ -1,7 +1,7 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "1.2.3",
+  "version": "1.5.2",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
@@ -17,13 +17,14 @@
     "@oclif/plugin-help": "^3.2.2",
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
-    "@polkadot/api": "8.9.1",
-    "@polkadot/keyring": "9.5.1",
-    "@polkadot/util": "9.5.1",
-    "@polkadot/util-crypto": "9.5.1",
-    "@substrate/txwrapper-core": "3.1.3",
-    "@substrate/txwrapper-substrate": "3.1.3",
-    "@substrate/txwrapper-polkadot": "3.1.3",
+    "@polkadot/api": "10.7.1",
+    "@polkadot/types": "10.7.1",
+    "@polkadot/keyring": "12.6.2",
+    "@polkadot/util": "12.6.2",
+    "@polkadot/util-crypto": "12.6.2",
+    "@substrate/txwrapper-core": "6.0.1",
+    "@substrate/txwrapper-substrate": "6.0.1",
+    "@substrate/txwrapper-polkadot": "6.0.1",
     "@types/cli-progress": "^3.9.1",
     "@types/fluent-ffmpeg": "^2.1.16",
     "@types/inquirer": "^6.5.0",
@@ -56,7 +57,7 @@
     "proper-lockfile": "^4.1.1",
     "slug": "^2.1.1",
     "tslib": "^1.11.1",
-    "@joystream/js": "^1.6.3"
+    "@joystream/js": "^1.12.0"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^1.21.4",
@@ -68,7 +69,7 @@
     "@oclif/test": "^1.2.5",
     "@types/chai": "^4.2.11",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^10.17.18",
+    "@types/node": "^18.6.0",
     "chai": "^4.2.0",
     "eslint": "^7.6.0",
     "eslint-config-oclif": "^3.1.0",
@@ -78,7 +79,7 @@
     "mocha": "^5.2.0",
     "nyc": "^14.1.1",
     "ts-node": "^10.2.1",
-    "typescript": "^4.4.3"
+    "typescript": "^5.0.2"
   },
   "engines": {
     "node": ">=14.18.0",

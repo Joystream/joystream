@@ -39,6 +39,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+      - name: python setuptools
+        run: brew install python-setuptools
       - name: checks
         run: |
           yarn install --frozen-lockfile --network-timeout 120000

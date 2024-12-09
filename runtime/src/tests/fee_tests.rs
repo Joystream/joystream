@@ -15,10 +15,10 @@ fn runtime_upgrade_total_fee_is_correct() {
     // byte fee + base weight fee
     initial_test_ext().execute_with(|| {
         let tx_length_bytes = 3_000_000u32;
-        let dispatch_info = frame_support::weights::DispatchInfo {
+        let dispatch_info = frame_support::dispatch::DispatchInfo {
             weight: MAXIMUM_BLOCK_WEIGHT,
-            class: frame_support::weights::DispatchClass::Operational,
-            pays_fee: frame_support::weights::Pays::Yes,
+            class: frame_support::dispatch::DispatchClass::Operational,
+            pays_fee: frame_support::dispatch::Pays::Yes,
         };
         let x = TransactionPayment::<Runtime>::compute_fee(tx_length_bytes, &dispatch_info, 0);
         let weight_fee = WeightToFeeImpl::weight_to_fee(&MAXIMUM_BLOCK_WEIGHT);

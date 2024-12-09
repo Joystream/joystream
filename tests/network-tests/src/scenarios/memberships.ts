@@ -14,7 +14,7 @@ import electCouncil from '../flows/council/elect'
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Memberships', async ({ job }) => {
   const councilJob = job('electing council', electCouncil)
-  const hireLeads = job('hire leads', leadOpening()).after(councilJob)
+  const hireLeads = job('hire leads', leadOpening(true, ['membershipWorkingGroup'])).after(councilJob)
 
   // All other job should be executed after, otherwise changing membershipPrice etc. may break them
   job('buying members', buyingMemberships)

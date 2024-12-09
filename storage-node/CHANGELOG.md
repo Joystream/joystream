@@ -1,4 +1,32 @@
+### 4.2.0
+
+- Fix `util:cleanup` script (call `loadDataObjectIdCache` first)
+- Allow changing default log level using environment variable (`COLOSSUS_DEFAULT_LOG_LEVEL`)
+- Allow adjusting cleanup constants via env (`CLEANUP_MIN_REPLICATION_THRESHOLD`, `CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD`)
+- Error handling: Clearer warning messages if unexpected response encountered during sync (ie. 404)
+
+### 4.1.2
+
+- Bump @joystream/types to Petra version
+
+### 4.1.1
+
+- Bump deps @polkadot/api v10.7.1
+
+### 4.1.0
+
+- Nara release.
+
+### 4.0.1
+
+- Set the `server.requestTimeout` option in `http.Server` instance to 0 to disable the timeout. This was default behaviour pre Node.js `18.x`
+
+### 4.0.0
+
+- Replaced `Query-Node` API with `Storage-Squid` Graphql API. This is a breaking change and requires the `--queryNodeEndpoint` configuration option to be replaced with `--storageSquidEndpoint`.
+
 ### 3.10.2
+
 - Fix processing large arrays causing high cpu during sync and cleanup runs [#5033](https://github.com/Joystream/joystream/pull/5033)
 
 - Fix task runner to avoid ending prematurely on individual task failure [#5033](https://github.com/Joystream/joystream/pull/5033)

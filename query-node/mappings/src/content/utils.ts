@@ -263,7 +263,7 @@ export async function processVideoMetadata(
 ): Promise<Video> {
   const assets = await getSortedDataObjectsByIds(ctx.store, newAssets)
 
-  integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic'])
+  integrateMeta(video, meta, ['title', 'description', 'duration', 'hasMarketing', 'isExplicit', 'isPublic', 'isShort'])
 
   await processVideoAssets(ctx, assets, video, meta)
 

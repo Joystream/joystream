@@ -222,6 +222,39 @@ fragment ProposalDetailsFields on ProposalDetails {
     maxCashoutAllowed
     channelCashoutsEnabled
   }
+
+  ... on UpdatePalletFrozenStatusProposalDetails {
+    frozen
+    pallet
+  }
+
+  ... on DecreaseCouncilBudgetProposalDetails {
+    amount
+  }
+
+  ... on SetEraPayoutDampingFactorProposalDetails {
+    dampingFactor
+  }
+
+  ... on UpdateTokenPalletTokenConstraintsProposalDetails {
+    maxYearlyRate
+    minAmmSlope
+    minSaleDuration
+    minRevenueSplitDuration
+    minRevenueSplitTimeToStart
+    salePlatformFee
+    ammBuyTxFees
+    ammSellTxFees
+    bloatBond
+  }
+
+  ... on UpdateArgoBridgeConstraintsProposalDetails {
+    operatorAccount
+    pauserAccounts
+    bridgingFee
+    thawnDuration
+    remoteChains
+  }
 }
 
 fragment ProposalFields on Proposal {

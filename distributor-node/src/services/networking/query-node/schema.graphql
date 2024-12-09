@@ -17,6 +17,11 @@ enum Continent {
   SA
 }
 
+type DataObjectDeletedEventData {
+  """Runtime ID of deleted the deleted object"""
+  dataObjectId: String!
+}
+
 union DataObjectType = DataObjectTypeVideoSubtitle
 
 type DataObjectTypeVideoSubtitle {
@@ -666,11 +671,28 @@ type Event {
   data: EventData!
 }
 
-union EventData = MetaprotocolTransactionStatusEventData
+union EventData = MetaprotocolTransactionStatusEventData | DataObjectDeletedEventData
 
 input EventDataWhereInput {
   result_isNull: Boolean
   result: MetaprotocolTransactionResultWhereInput
+  dataObjectId_isNull: Boolean
+  dataObjectId_eq: String
+  dataObjectId_not_eq: String
+  dataObjectId_gt: String
+  dataObjectId_gte: String
+  dataObjectId_lt: String
+  dataObjectId_lte: String
+  dataObjectId_in: [String!]
+  dataObjectId_not_in: [String!]
+  dataObjectId_contains: String
+  dataObjectId_not_contains: String
+  dataObjectId_containsInsensitive: String
+  dataObjectId_not_containsInsensitive: String
+  dataObjectId_startsWith: String
+  dataObjectId_not_startsWith: String
+  dataObjectId_endsWith: String
+  dataObjectId_not_endsWith: String
   isTypeOf_isNull: Boolean
   isTypeOf_eq: String
   isTypeOf_not_eq: String
@@ -716,6 +738,10 @@ enum EventOrderByInput {
   timestamp_DESC
   timestamp_ASC_NULLS_FIRST
   timestamp_DESC_NULLS_LAST
+  data_dataObjectId_ASC
+  data_dataObjectId_DESC
+  data_dataObjectId_ASC_NULLS_FIRST
+  data_dataObjectId_DESC_NULLS_LAST
   data_isTypeOf_ASC
   data_isTypeOf_DESC
   data_isTypeOf_ASC_NULLS_FIRST
@@ -957,14 +983,14 @@ type PageInfo {
 }
 
 type Query {
-  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
-  videoSubtitleById(id: String!): VideoSubtitle
-  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
-  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
   events(where: EventWhereInput, orderBy: [EventOrderByInput!], offset: Int, limit: Int): [Event!]!
   eventById(id: String!): Event
   eventByUniqueInput(where: WhereIdInput!): Event @deprecated(reason: "Use eventById")
   eventsConnection(orderBy: [EventOrderByInput!]!, after: String, first: Int, where: EventWhereInput): EventsConnection!
+  videoSubtitles(where: VideoSubtitleWhereInput, orderBy: [VideoSubtitleOrderByInput!], offset: Int, limit: Int): [VideoSubtitle!]!
+  videoSubtitleById(id: String!): VideoSubtitle
+  videoSubtitleByUniqueInput(where: WhereIdInput!): VideoSubtitle @deprecated(reason: "Use videoSubtitleById")
+  videoSubtitlesConnection(orderBy: [VideoSubtitleOrderByInput!]!, after: String, first: Int, where: VideoSubtitleWhereInput): VideoSubtitlesConnection!
   storageBucketOperatorMetadata(where: StorageBucketOperatorMetadataWhereInput, orderBy: [StorageBucketOperatorMetadataOrderByInput!], offset: Int, limit: Int): [StorageBucketOperatorMetadata!]!
   storageBucketOperatorMetadataById(id: String!): StorageBucketOperatorMetadata
   storageBucketOperatorMetadataByUniqueInput(where: WhereIdInput!): StorageBucketOperatorMetadata @deprecated(reason: "Use storageBucketOperatorMetadataById")
@@ -1010,11 +1036,16 @@ type Query {
   distributionBucketFamilyByUniqueInput(where: WhereIdInput!): DistributionBucketFamily @deprecated(reason: "Use distributionBucketFamilyById")
   distributionBucketFamiliesConnection(orderBy: [DistributionBucketFamilyOrderByInput!]!, after: String, first: Int, where: DistributionBucketFamilyWhereInput): DistributionBucketFamiliesConnection!
   squidStatus: SquidStatus
+  squidVersion: SquidVersion!
 }
 
 type SquidStatus {
   """The height of the processed part of the chain"""
   height: Int
+}
+
+type SquidVersion {
+  version: String!
 }
 
 type StorageBag {
@@ -1934,3 +1965,4 @@ input VideoSubtitleWhereInput {
 input WhereIdInput {
   id: String!
 }
+

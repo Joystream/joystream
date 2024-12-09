@@ -110,6 +110,12 @@ export interface StatusResponse {
     'version': string;
     /**
      * 
+     * @type {number}
+     * @memberof StatusResponse
+     */
+    'uptime': number;
+    /**
+     * 
      * @type {string}
      * @memberof StatusResponse
      */
@@ -200,6 +206,12 @@ export interface StatusResponseQueryNodeStatus {
      * @memberof StatusResponseQueryNodeStatus
      */
     'blocksProcessed': number;
+    /**
+     * 
+     * @type {string}
+     * @memberof StatusResponseQueryNodeStatus
+     */
+    'packageVersion': string;
 }
 /**
  * 

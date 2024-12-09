@@ -7,7 +7,7 @@ use common::locks::{
 pub use frame_support::traits::LockIdentifier;
 use frame_support::{
     ensure, parameter_types,
-    traits::{ConstU16, ConstU32, ConstU64},
+    traits::{ConstU16, ConstU32, ConstU64, WithdrawReasons},
     PalletId,
 };
 use frame_system::ensure_signed;
@@ -54,6 +54,7 @@ frame_support::construct_runtime!(
         Timestamp: pallet_timestamp,
         Membership: membership::{Pallet, Call, Storage, Event<T>},
         Storage: crate::{Pallet, Call, Storage, Config<T>, Event<T>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
         // Need to be added for benchmarks to work
         Wg2: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
         Wg9: working_group::<Instance9>::{Pallet, Call, Storage, Event<T, I>},
@@ -65,8 +66,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -74,7 +75,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -97,7 +98,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -149,7 +150,7 @@ pub const DEFAULT_STORAGE_BUCKETS_NUMBER: u32 = 3;
 pub const ONE_MB: u64 = 1_048_576;
 
 impl crate::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DataObjectId = u64;
     type StorageBucketId = u64;
     type DistributionBucketIndex = u64;
@@ -194,11 +195,16 @@ parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
+    pub const SWGModuleId: PalletId = PalletId(*b"m_storwg");
+    pub const DWGModuleId: PalletId = PalletId(*b"m_distwg");
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
 }
 
 // implemented for benchmarks features to work
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, StorageWorkingGroupLockId>;
@@ -208,11 +214,12 @@ impl working_group::Config<StorageWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = ();
 }
 
 // implemented for benchmarks only
 impl working_group::Config<DistributionWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingAccountValidator = membership::Module<Test>;
     type StakingHandler = staking_handler::StakingManager<Self, DistributionWorkingGroupLockId>;
@@ -222,11 +229,22 @@ impl working_group::Config<DistributionWorkingGroupInstance> for Test {
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = ();
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl vesting::Config for Test {
+    type BlockNumberToBalance = ();
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
+
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         member_id: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = ensure_signed(origin).unwrap();
@@ -267,13 +285,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for MembershipWG
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for MembershipWG {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!()
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -319,7 +339,7 @@ impl LockComparator<<Test as balances::Config>::Balance> for Test {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type DefaultInitialInvitationBalance = DefaultInitialInvitationBalance;
     type WorkingGroup = MembershipWG;
@@ -359,7 +379,7 @@ pub struct DistributionWG;
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -376,7 +396,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
         }
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
         ensure!(
             account_id == STORAGE_WG_LEADER_ACCOUNT_ID,
@@ -430,7 +452,7 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for StorageWG {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
     fn ensure_worker_origin(
-        origin: <Test as frame_system::Config>::Origin,
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
@@ -448,7 +470,9 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for DistributionWG {
         }
     }
 
-    fn ensure_leader_origin(origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         let account_id = ensure_signed(origin)?;
 
         ensure!(

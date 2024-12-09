@@ -7,22 +7,25 @@ use common::working_group::{WorkingGroup, WorkingGroupBudgetHandler};
 use frame_support::{
     dispatch::DispatchError,
     parameter_types,
-    traits::{ConstU16, ConstU32, ConstU64, EnsureOneOf, LockIdentifier, OnFinalize, OnInitialize},
+    traits::{
+        ConstU16, ConstU32, ConstU64, EitherOfDiverse, LockIdentifier, OnFinalize, OnInitialize,
+        WithdrawReasons,
+    },
 };
 use frame_system::{EnsureRoot, EnsureSigned, EventRecord, RawOrigin};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+    traits::{BlakeTwo256, Convert, IdentityLookup},
     DispatchResult, Perbill,
 };
 use sp_std::convert::{TryFrom, TryInto};
 
 use staking_handler::{LockComparator, StakingManager};
 
-pub(crate) fn assert_last_event(generic_event: <Test as Config>::Event) {
+pub(crate) fn assert_last_event(generic_event: <Test as Config>::RuntimeEvent) {
     let events = System::events();
-    let system_event: <Test as frame_system::Config>::Event = generic_event;
+    let system_event: <Test as frame_system::Config>::RuntimeEvent = generic_event;
     assert!(
         !events.is_empty(),
         "If you are checking for last event there must be at least 1 event"
@@ -91,6 +94,8 @@ pub type DistributionWorkingGroupInstance = working_group::Instance9;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+type Balance = u64;
+type VestingBalance = u64;
 
 frame_support::construct_runtime!(
     pub enum Test where
@@ -105,6 +110,7 @@ frame_support::construct_runtime!(
         Utility: utility::{Pallet, Call, Event<T>},
         Council: council::{Pallet, Call, Storage, Event<T>, Config<T>},
         Referendum: referendum::<Instance1>::{Pallet, Call, Storage, Event<T, I>},
+        Vesting: vesting::{Pallet, Call, Storage, Event<T>},
 
         ForumWorkingGroup: working_group::<Instance1>::{Pallet, Call, Storage, Event<T, I>},
         StorageWorkingGroup: working_group::<Instance2>::{Pallet, Call, Storage, Event<T, I>},
@@ -132,8 +138,8 @@ impl frame_system::Config for Test {
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
-    type Origin = Origin;
-    type Call = Call;
+    type RuntimeOrigin = RuntimeOrigin;
+    type RuntimeCall = RuntimeCall;
     type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
@@ -141,7 +147,7 @@ impl frame_system::Config for Test {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
@@ -164,7 +170,7 @@ impl pallet_timestamp::Config for Test {
 impl balances::Config for Test {
     type Balance = u64;
     type DustRemoval = ();
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type MaxLocks = ();
@@ -174,7 +180,7 @@ impl balances::Config for Test {
 }
 
 impl Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
 
     type WeightInfo = ();
 
@@ -197,7 +203,7 @@ parameter_types! {
 }
 
 impl membership::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type DefaultMembershipPrice = DefaultMembershipPrice;
     type WorkingGroup = Wg;
     type WeightInfo = ();
@@ -227,13 +233,15 @@ impl common::working_group::WorkingGroupBudgetHandler<u64, u64> for Wg {
 
 impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     fn ensure_worker_origin(
-        _origin: <Test as frame_system::Config>::Origin,
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
         _worker_id: &<Test as common::membership::MembershipTypes>::ActorId,
     ) -> DispatchResult {
         unimplemented!();
     }
 
-    fn ensure_leader_origin(_origin: <Test as frame_system::Config>::Origin) -> DispatchResult {
+    fn ensure_leader_origin(
+        _origin: <Test as frame_system::Config>::RuntimeOrigin,
+    ) -> DispatchResult {
         unimplemented!()
     }
 
@@ -269,130 +277,300 @@ impl common::working_group::WorkingGroupAuthenticator<Test> for Wg {
     }
 }
 
+pub struct BlockNumberToBalance();
+impl Convert<<Test as frame_system::Config>::BlockNumber, Balance> for BlockNumberToBalance {
+    fn convert(block: <Test as frame_system::Config>::BlockNumber) -> Balance {
+        block as u64
+    }
+}
+pub struct VestingBalanceToBalance();
+impl Convert<Balance, VestingBalance> for VestingBalanceToBalance {
+    fn convert(balance: Balance) -> VestingBalance {
+        balance as u64
+    }
+}
+parameter_types! {
+    pub const MinVestedTransfer: u64 = 10;
+    pub UnvestedFundsAllowedWithdrawReasons: WithdrawReasons =
+        WithdrawReasons::except(WithdrawReasons::TRANSFER | WithdrawReasons::RESERVE);
+}
+
+impl vesting::Config for Test {
+    type BlockNumberToBalance = BlockNumberToBalance;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    const MAX_VESTING_SCHEDULES: u32 = 3;
+    type MinVestedTransfer = MinVestedTransfer;
+    type WeightInfo = ();
+    type UnvestedFundsAllowedWithdrawReasons = UnvestedFundsAllowedWithdrawReasons;
+}
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
     pub const LockId1: [u8; 8] = [1; 8];
     pub const LockId2: [u8; 8] = [2; 8];
+    pub const LockId3: [u8; 8] = [3; 8];
+    pub const LockId4: [u8; 8] = [4; 8];
+    pub const LockId5: [u8; 8] = [5; 8];
+    pub const LockId6: [u8; 8] = [6; 8];
+    pub const LockId7: [u8; 8] = [7; 8];
+    pub const LockId8: [u8; 8] = [8; 8];
+    pub const LockId9: [u8; 8] = [9; 8];
     pub const MinimumApplicationStake: u32 = 50;
     pub const LeaderOpeningStake: u32 = 20;
 }
 
-impl working_group::Config<ContentWorkingGroupInstance> for Test {
-    type Event = Event;
+impl working_group::Config<ForumWorkingGroupInstance> for Test {
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId1>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<StorageWorkingGroupInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
-impl working_group::Config<ForumWorkingGroupInstance> for Test {
-    type Event = Event;
+impl working_group::Config<ContentWorkingGroupInstance> for Test {
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = StakingManager<Self, LockId3>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
-}
-
-impl working_group::Config<MembershipWorkingGroupInstance> for Test {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
-    type MemberOriginValidator = ();
-    type MinUnstakingPeriodLimit = ();
-    type RewardPeriod = ();
-    type WeightInfo = ();
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
-}
-
-impl working_group::Config<AppWorkingGroupInstance> for Test {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
-    type MemberOriginValidator = ();
-    type MinUnstakingPeriodLimit = ();
-    type RewardPeriod = ();
-    type WeightInfo = ();
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
-}
-
-impl working_group::Config<DistributionWorkingGroupInstance> for Test {
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
-    type MemberOriginValidator = ();
-    type MinUnstakingPeriodLimit = ();
-    type RewardPeriod = ();
-    type WeightInfo = ();
-    type MinimumApplicationStake = MinimumApplicationStake;
-    type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = StakingManager<Self, LockId4>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
+}
+
+impl working_group::Config<AppWorkingGroupInstance> for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId5>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
+}
+
+impl working_group::Config<MembershipWorkingGroupInstance> for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId6>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = StakingManager<Self, LockId7>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
 
 impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = StakingManager<Self, LockId2>;
-    type StakingAccountValidator = membership::Module<Test>;
+    type StakingHandler = StakingManager<Self, LockId8>;
+    type StakingAccountValidator = ();
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = ();
     type RewardPeriod = ();
     type WeightInfo = ();
     type MinimumApplicationStake = MinimumApplicationStake;
     type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
 }
+
+impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = StakingManager<Self, LockId9>;
+    type StakingAccountValidator = ();
+    type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = ();
+    type RewardPeriod = ();
+    type WeightInfo = ();
+    type MinimumApplicationStake = MinimumApplicationStake;
+    type LeaderOpeningStake = LeaderOpeningStake;
+    type VestingBalanceToBalance = VestingBalanceToBalance;
+}
+
+// j
+// parameter_types! {
+//     pub const MaxWorkerNumberLimit: u32 = 100;
+//     pub const LockId1: [u8; 8] = [1; 8];
+//     pub const LockId2: [u8; 8] = [2; 8];
+//     pub const MinimumApplicationStake: u32 = 50;
+//     pub const LeaderOpeningStake: u32 = 20;
+// }
+
+// impl working_group::Config<ContentWorkingGroupInstance> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId1>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<StorageWorkingGroupInstance> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<ForumWorkingGroupInstance> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = staking_handler::StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<MembershipWorkingGroupInstance> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<AppWorkingGroupInstance> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<DistributionWorkingGroupInstance> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<OperationsWorkingGroupInstanceAlpha> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<OperationsWorkingGroupInstanceBeta> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
+
+// impl working_group::Config<OperationsWorkingGroupInstanceGamma> for Test {
+//     type RuntimeEvent = RuntimeEvent;
+//     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+//     type StakingHandler = StakingManager<Self, LockId2>;
+//     type StakingAccountValidator = membership::Module<Test>;
+//     type MemberOriginValidator = ();
+//     type MinUnstakingPeriodLimit = ();
+//     type RewardPeriod = ();
+//     type WeightInfo = ();
+//     type MinimumApplicationStake = MinimumApplicationStake;
+//     type LeaderOpeningStake = LeaderOpeningStake;
+// }
 
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u32 = 1;
@@ -420,10 +598,11 @@ parameter_types! {
 }
 
 impl referendum::Config<ReferendumInstance> for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type MaxSaltLength = MaxSaltLength;
     type StakingHandler = staking_handler::StakingManager<Self, VotingLockId>;
-    type ManagerOrigin = EnsureOneOf<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+    type ManagerOrigin =
+        EitherOfDiverse<EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
     type VotePower = u64;
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -544,7 +723,7 @@ impl BurnTokensFixture {
 }
 
 impl council::Config for Test {
-    type Event = Event;
+    type RuntimeEvent = RuntimeEvent;
     type Referendum = referendum::Module<Test, ReferendumInstance>;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
@@ -568,9 +747,9 @@ impl common::StakingAccountValidator<Test> for () {
     }
 }
 
-impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
+impl common::membership::MemberOriginValidator<RuntimeOrigin, u64, u64> for () {
     fn ensure_member_controller_account_origin(
-        origin: Origin,
+        origin: RuntimeOrigin,
         _: u64,
     ) -> Result<u64, DispatchError> {
         let account_id = frame_system::ensure_signed(origin)?;
@@ -583,8 +762,8 @@ impl common::membership::MemberOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl common::council::CouncilOriginValidator<Origin, u64, u64> for () {
-    fn ensure_member_consulate(origin: Origin, _: u64) -> DispatchResult {
+impl common::council::CouncilOriginValidator<RuntimeOrigin, u64, u64> for () {
+    fn ensure_member_consulate(origin: RuntimeOrigin, _: u64) -> DispatchResult {
         frame_system::ensure_signed(origin)?;
 
         Ok(())

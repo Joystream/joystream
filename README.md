@@ -19,7 +19,7 @@ The following tools are required for building, testing and contributing to this 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
 - [nodejs](https://nodejs.org/) >= v14.18.x - _required_ (However volta will try to use v18.6)
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) and docker-compose v2.20.x or higher - _required_
+- [docker](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) v2.20.x or higher - _required_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
@@ -91,7 +91,7 @@ yarn start
 
 ```sh
 git checkout master
-WASM_BUILD_TOOLCHAIN=nightly-2022-05-11 cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2022-11-15 cargo build --release
 ./target/release/joystream-node -- --pruning archive --chain joy-mainnet.json
 ```
 

@@ -1,12 +1,11 @@
 #![allow(clippy::unused_unit)]
 
 use crate::types::{
-    JoyBalanceOf, RevenueSplitId, TokenIssuanceParametersOf, TokenSaleId, TokenSaleOf,
-    TransferPolicyOf, ValidatedTransfersOf,
+    AmmCurveOf, JoyBalanceOf, RevenueSplitId, TokenConstraintsOf, TokenIssuanceParametersOf,
+    TokenSaleId, TokenSaleOf, TransferPolicyOf, ValidatedTransfersOf, YearlyRate,
 };
 use common::MembershipTypes;
 use frame_support::decl_event;
-use sp_runtime::Perquintill;
 use sp_std::vec::Vec;
 
 decl_event! {
@@ -22,6 +21,8 @@ decl_event! {
         TokenIssuanceParameters = TokenIssuanceParametersOf<T>,
         ValidatedTransfers = ValidatedTransfersOf<T>,
         TokenSale = TokenSaleOf<T>,
+        AmmCurve = AmmCurveOf<T>,
+        TokenConstraints = TokenConstraintsOf<T>
 
     {
         /// Token amount is transferred from src to dst
@@ -46,7 +47,7 @@ decl_event! {
         /// Params:
         /// - token identifier
         /// - new patronage rate
-        PatronageRateDecreasedTo(TokenId, Perquintill),
+        PatronageRateDecreasedTo(TokenId, YearlyRate),
 
         /// Patronage credit claimed by creator
         /// Params:
@@ -155,5 +156,45 @@ decl_event! {
         /// - member id
         /// - number of tokens burned
         TokensBurned(TokenId, MemberId, Balance),
+
+        /// AMM activated
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - params for the bonding curve
+        AmmActivated(TokenId, MemberId, AmmCurve),
+
+        /// Tokens Bought on AMM
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amount of CRT minted
+        /// - amount of JOY deposited into curve treasury
+        TokensBoughtOnAmm(TokenId, MemberId, Balance, JoyBalance),
+
+        /// Tokens Sold on AMM
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amount of CRT burned
+        /// - amount of JOY withdrawn from curve treasury
+        TokensSoldOnAmm(TokenId, MemberId, Balance, JoyBalance),
+
+        /// AMM deactivated
+        /// Params:
+        /// - token id
+        /// - member id
+        /// - amm treasury amount burned upon deactivation
+        AmmDeactivated(TokenId, MemberId, JoyBalance),
+
+        /// Pallet Frozen status toggled
+        /// Params:
+        /// - new frozen status (true | false)
+        FrozenStatusUpdated(bool),
+
+        /// Governance parameters updated
+        /// Params:
+        /// - governance parameters
+        TokenConstraintsUpdated(TokenConstraints),
     }
 }

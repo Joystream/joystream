@@ -62,37 +62,40 @@ mod types;
 pub mod weights;
 pub use weights::WeightInfo;
 
+use common::{costs::burn_from_usable, StakingAccountValidator};
+use frame_support::dispatch::RawOrigin;
 use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, StorageValue};
 use frame_system::{ensure_root, ensure_signed};
-use sp_arithmetic::traits::{One, Zero};
-use sp_runtime::traits::{Hash, SaturatedConversion, Saturating};
+use sp_runtime::traits::Convert;
+use sp_runtime::traits::{Hash, One, SaturatedConversion, Saturating, StaticLookup, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use sp_std::vec::Vec;
+use sp_std::{vec, vec::Vec};
 
 pub use errors::Error;
 pub use types::*;
 use types::{ApplicationInfo, WorkerInfo};
 
-use common::costs::burn_from_usable;
 use common::membership::MemberOriginValidator;
 use common::to_kb;
-use common::{MemberId, StakingAccountValidator};
+use common::MemberId;
 use frame_support::dispatch::DispatchResult;
 use staking_handler::StakingHandler;
 type Balances<T> = balances::Pallet<T>;
 
 type WeightInfoWorkingGroup<T, I> = <T as Config<I>>::WeightInfo;
+type VestingInfoOf<T> =
+    vesting::VestingInfo<VestingBalanceOf<T>, <T as frame_system::Config>::BlockNumber>;
 
 /// The _Group_ main _Config_
 pub trait Config<I: Instance = DefaultInstance>:
-    frame_system::Config + balances::Config + common::membership::MembershipTypes
+    frame_system::Config + balances::Config + common::membership::MembershipTypes + vesting::Config
 {
     /// _Administration_ event type.
-    type Event: From<Event<Self, I>> + Into<<Self as frame_system::Config>::Event>;
+    type RuntimeEvent: From<Event<Self, I>> + Into<<Self as frame_system::Config>::RuntimeEvent>;
 
     /// Defines max workers number in the group.
     type MaxWorkerNumberLimit: Get<u32>;
@@ -109,7 +112,14 @@ pub trait Config<I: Instance = DefaultInstance>:
     type StakingAccountValidator: common::StakingAccountValidator<Self>;
 
     /// Validates member id and origin combination.
-    type MemberOriginValidator: MemberOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+    type MemberOriginValidator: MemberOriginValidator<
+        Self::RuntimeOrigin,
+        MemberId<Self>,
+        Self::AccountId,
+    >;
+
+    /// Balances Converter: delay all conversion until actual balance type is specified (in our case u128 for prod and u64 for tests)
+    type VestingBalanceToBalance: Convert<VestingBalanceOf<Self>, BalanceOf<Self>>;
 
     /// Defines min unstaking period in the group.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
@@ -141,7 +151,8 @@ decl_event!(
        StakePolicy = StakePolicy<<T as frame_system::Config>::BlockNumber, BalanceOf<T>>,
        ApplyOnOpeningParameters = ApplyOnOpeningParameters<T>,
        MemberId = MemberId<T>,
-       Hash = <T as frame_system::Config>::Hash
+       Hash = <T as frame_system::Config>::Hash,
+       VestingInfo = VestingInfoOf<T>
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -261,7 +272,14 @@ decl_event!(
         /// Emits on budget from the working group being spent
         /// Params:
         /// - Receiver Account Id.
-        /// - Balance spent.
+        /// - Vesting scheduled
+        /// - Rationale.
+        VestedBudgetSpending(AccountId, VestingInfo, Option<Vec<u8>>),
+
+        /// Emits on budget from the working group being spent
+        /// Params:
+        /// - Receiver Account Id.
+        /// - Amount to spend
         /// - Rationale.
         BudgetSpending(AccountId, Balance, Option<Vec<u8>>),
 
@@ -338,7 +356,7 @@ decl_storage! { generate_storage_info
 
 decl_module! {
     /// _Working group_ substrate module.
-    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Config<I>, I: Instance=DefaultInstance> for enum Call where origin: T::RuntimeOrigin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -1121,17 +1139,6 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash, status_text));
         }
-
-        /// Transfers specified amount to any account.
-        /// Requires leader origin.
-        ///
-        /// # <weight>
-        ///
-        /// ## Weight
-        /// `O (1)`
-        /// - DB:
-        ///    - O(1) doesn't depend on the state or parameters
-        /// # </weight>
         #[weight = WeightInfoWorkingGroup::<T, I>::spend_from_budget()]
         pub fn spend_from_budget(
             origin,
@@ -1160,6 +1167,53 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSpending(account_id, amount, rationale));
         }
+
+        /// Transfers specified amount to any account.
+        /// Requires leader origin.
+        ///
+        /// # <weight>
+        ///
+        /// ## Weight
+        /// `O (1)`
+        /// - DB:
+        ///    - O(1) doesn't depend on the state or parameters
+        /// # </weight>
+        #[weight = WeightInfoWorkingGroup::<T, I>::vested_spend_from_budget()]
+        pub fn vested_spend_from_budget(
+            origin,
+            account_id: T::AccountId,
+            vesting_schedule: VestingInfoOf<T>,
+            rationale: Option<Vec<u8>>,
+        ) {
+            let amount = T::VestingBalanceToBalance::convert(vesting_schedule.locked());
+
+            // Ensure group leader privilege.
+            checks::ensure_origin_is_active_leader::<T,I>(origin)?;
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
+
+            // Ensures that the budget is sufficient for the spending of specified amount
+            let (_, potential_missed_payment) = Self::calculate_possible_payment(amount);
+            ensure!(
+                potential_missed_payment == Zero::zero(),
+                Error::<T, I>::InsufficientBudgetForSpending
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::pay_from_budget(&account_id, amount);
+            vesting::Pallet::<T>::force_vested_transfer(
+                RawOrigin::Root.into(),
+                <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
+                <<T as frame_system::Config>::Lookup as StaticLookup>::unlookup(account_id.clone()),
+                vesting_schedule,
+            )?;
+            // Trigger event
+            Self::deposit_event(RawEvent::VestedBudgetSpending(account_id, vesting_schedule, rationale));
+        }
+
 
         /// Fund working group budget by a member.
         /// <weight>
@@ -1627,14 +1681,13 @@ impl<T: Config<I>, I: Instance> Module<T, I> {
 impl<T: Config<I>, I: Instance> common::working_group::WorkingGroupAuthenticator<T>
     for Module<T, I>
 {
-    fn ensure_worker_origin(origin: T::Origin, worker_id: &WorkerId<T>) -> DispatchResult {
+    fn ensure_worker_origin(origin: T::RuntimeOrigin, worker_id: &WorkerId<T>) -> DispatchResult {
         checks::ensure_worker_signed::<T, I>(origin, worker_id).map(|_| ())
     }
 
-    fn ensure_leader_origin(origin: T::Origin) -> DispatchResult {
+    fn ensure_leader_origin(origin: T::RuntimeOrigin) -> DispatchResult {
         checks::ensure_origin_is_active_leader::<T, I>(origin)
     }
-
     fn get_leader_member_id() -> Option<T::MemberId> {
         checks::ensure_lead_is_set::<T, I>()
             .map(Self::worker_by_id)
@@ -1690,6 +1743,13 @@ impl<T: Config<I>, I: Instance>
 
         Self::decrease_budget(amount);
 
+        Ok(())
+    }
+}
+
+impl<T: Config<I>, I: Instance> frame_support::traits::Hooks<T::BlockNumber> for Pallet<T, I> {
+    #[cfg(feature = "try-runtime")]
+    fn try_state(_: T::BlockNumber) -> Result<(), &'static str> {
         Ok(())
     }
 }

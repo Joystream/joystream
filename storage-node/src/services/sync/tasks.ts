@@ -2,7 +2,7 @@ import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
 import { pipeline } from 'stream'
-import superagent from 'superagent'
+import superagent, { Response } from 'superagent'
 import urljoin from 'url-join'
 import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
@@ -138,9 +138,9 @@ export class DownloadFileTask implements SyncTask {
         .set('X-COLOSSUS-HOST-ID', this.hostId) as unknown as NodeJS.ReadableStream
       const fileStream = fs.createWriteStream(tempFilePath)
 
-      request.on('response', (res) => {
-        if (!res.ok && res.statusCode !== 404) {
-          logger.warn(`Sync - unexpected status code(${res.statusCode}) for ${res?.request?.url}`)
+      request.on('response', (res: Response) => {
+        if (!res.ok) {
+          request.emit('error', `request failed: ${res.error}`)
         }
 
         // Handle 'error' event on Response too, because it will be emitted if request was
@@ -151,9 +151,6 @@ export class DownloadFileTask implements SyncTask {
         })
       })
 
-      request.on('error', (err) => {
-        logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
-      })
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
       await moveFile(tempFilePath, filepath)

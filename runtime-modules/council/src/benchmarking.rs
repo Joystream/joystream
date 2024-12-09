@@ -1,7 +1,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
 use balances::Pallet as Balances;
-use frame_benchmarking::{account, benchmarks, Zero};
+use frame_benchmarking::v1::{account, benchmarks, Zero};
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_system::EventRecord;
 use frame_system::Pallet as System;
@@ -40,9 +40,9 @@ impl CreateAccountId for sp_core::crypto::AccountId32 {
     }
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -51,9 +51,9 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
     assert_eq!(event, &system_event);
 }
 
-fn assert_in_events<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_in_events<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
 
     assert!(!events.is_empty(), "There are no events in event queue");
 
@@ -703,6 +703,30 @@ benchmarks! {
         );
     }
 
+    decrease_council_budget {
+        let reduction_amount: Balance<T> = 100u32.into();
+
+        Mutations::<T>::increase_budget(1000u32.into());
+
+    }: _ (RawOrigin::Root, reduction_amount)
+    verify {
+        assert_eq!(Council::<T>::budget(), 900u32.into(), "Budget not updated");
+        assert_last_event::<T>(
+            RawEvent::CouncilBudgetDecreased(reduction_amount).into()
+        );
+    }
+
+    set_era_payout_damping_factor {
+        let new_value = Percent::from_percent(80);
+
+    }: _ (RawOrigin::Root, new_value)
+    verify {
+        assert_eq!(Council::<T>::era_payout_damping_factor(), Percent::from_percent(80), "Budget not updated");
+        assert_last_event::<T>(
+            RawEvent::EraPayoutDampingFactorSet(new_value).into()
+        );
+    }
+
     candidate_remark {
         let msg = b"test".to_vec();
         let (account_id, member_id) = start_period_announce_candidacy::<T>(0);
@@ -864,6 +888,14 @@ mod tests {
     }
 
     #[test]
+    fn test_decrease_council_budget() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_decrease_council_budget());
+        })
+    }
+
+    #[test]
     fn test_councilor_remark() {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
@@ -876,6 +908,14 @@ mod tests {
         let config = default_genesis_config();
         build_test_externalities(config).execute_with(|| {
             assert_ok!(Council::<Runtime>::test_benchmark_candidate_remark());
+        })
+    }
+
+    #[test]
+    fn test_set_era_payout_damping_factor() {
+        let config = default_genesis_config();
+        build_test_externalities(config).execute_with(|| {
+            assert_ok!(Council::<Runtime>::test_benchmark_set_era_payout_damping_factor());
         })
     }
 }

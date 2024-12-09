@@ -13,10 +13,13 @@ use sp_std::vec::Vec;
 
 use crate::{
     AccountId, AllPalletsWithSystem, AuthorityDiscovery, AuthorityDiscoveryId, Babe, Balance,
-    BlockNumber, Call, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
-    InherentDataExt, ProposalsEngine, Runtime, RuntimeVersion, SessionKeys, Signature, System,
-    TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
+    BlockNumber, EpochDuration, Grandpa, GrandpaAuthorityList, GrandpaId, Historical, Index,
+    InherentDataExt, ProposalsEngine, Runtime, RuntimeCall, RuntimeVersion, SessionKeys, Signature,
+    Staking, System, TransactionPayment, BABE_GENESIS_EPOCH_CONFIG, VERSION,
 };
+
+#[cfg(feature = "try-runtime")]
+use crate::RuntimeBlockWeights;
 
 use frame_support::weights::Weight;
 
@@ -51,32 +54,40 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 
 /// The payload being signed in transactions.
-pub type SignedPayload = generic::SignedPayload<Call, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic =
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
-/// Custom runtime upgrade handler.
-pub struct CustomOnRuntimeUpgrade;
-impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
+// On runtime upgrade, stored calls of proposals are not guarnateed to still
+// represent the intended module and dispatch call, so for safety we cancel
+// all proposals.
+pub struct CancelActiveAndPendingProposals;
+impl OnRuntimeUpgrade for CancelActiveAndPendingProposals {
     fn on_runtime_upgrade() -> Weight {
         ProposalsEngine::cancel_active_and_pending_proposals();
 
-        10_000_000 // TODO: adjust weight
+        Weight::from_parts(10_000_000, 0)
     }
 }
 
-/// Executive: handles dispatch to the various modules with CustomOnRuntimeUpgrade.
+/// Migrations to run on runtime upgrade.
+/// Migrations will run before pallet on_runtime_upgrade hooks
+/// Always include 'CancelActiveAndPendingProposals' as first migration
+pub type Migrations = (CancelActiveAndPendingProposals,);
+
+/// Executive: handles dispatch to the various modules with Migrations.
 pub type Executive = frame_executive::Executive<
     Runtime,
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    CustomOnRuntimeUpgrade,
+    Migrations,
 >;
 
 /// Export of the private const generated within the macro.
@@ -87,7 +98,7 @@ mod benches {
     define_benchmarks!(
         [frame_benchmarking, BaselineBench::<Runtime>]
         [pallet_babe, Babe]
-        [pallet_bags_list, BagsList]
+        [pallet_bags_list, VoterList]
         [pallet_balances, Balances]
         [pallet_election_provider_multi_phase, ElectionProviderMultiPhase]
         [pallet_election_provider_support_benchmarking, EPSBench::<Runtime>]
@@ -115,6 +126,8 @@ mod benches {
         [storage, Storage]
         [content, Content]
         [project_token, ProjectToken]
+        [pallet_proxy, Proxy]
+        [argo_bridge, ArgoBridge]
     );
 }
 
@@ -154,6 +167,12 @@ impl_runtime_apis! {
 
         fn check_inherents(block: Block, data: InherentData) -> CheckInherentsResult {
             data.check_extrinsics(&block)
+        }
+    }
+
+    impl pallet_staking_runtime_api::StakingApi<Block, Balance> for Runtime {
+        fn nominations_quota(balance: Balance) -> u32 {
+            Staking::api_nominations_quota(balance)
         }
     }
 
@@ -210,19 +229,20 @@ impl_runtime_apis! {
     }
 
     impl sp_consensus_babe::BabeApi<Block> for Runtime {
-        fn configuration() -> sp_consensus_babe::BabeGenesisConfiguration {
+        fn configuration() -> sp_consensus_babe::BabeConfiguration {
             // The choice of `c` parameter (where `1 - c` represents the
             // probability of a slot being empty), is done in accordance to the
             // slot duration and expected target block time, for safely
             // resisting network delays of maximum two seconds.
             // <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
-            sp_consensus_babe::BabeGenesisConfiguration {
+            let epoch_config = Babe::epoch_config().unwrap_or(BABE_GENESIS_EPOCH_CONFIG);
+            sp_consensus_babe::BabeConfiguration {
                 slot_duration: Babe::slot_duration(),
                 epoch_length: EpochDuration::get(),
-                c: BABE_GENESIS_EPOCH_CONFIG.c,
-                genesis_authorities: Babe::authorities().to_vec(),
+                c: epoch_config.c,
+                authorities: Babe::authorities().to_vec(),
                 randomness: Babe::randomness(),
-                allowed_slots: BABE_GENESIS_EPOCH_CONFIG.allowed_slots,
+                allowed_slots: epoch_config.allowed_slots,
             }
         }
 
@@ -284,6 +304,12 @@ impl_runtime_apis! {
         fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
             TransactionPayment::query_fee_details(uxt, len)
         }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
+        }
     }
 
     impl sp_session::SessionKeys<Block> for Runtime {
@@ -298,13 +324,35 @@ impl_runtime_apis! {
         }
     }
 
+    #[cfg(feature = "try-runtime")]
+    impl frame_try_runtime::TryRuntime<Block> for Runtime {
+        fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
+            // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
+            // have a backtrace here. If any of the pre/post migration checks fail, we shall stop
+            // right here and right now.
+            let weight = Executive::try_runtime_upgrade(checks).unwrap();
+            (weight, RuntimeBlockWeights::get().max_block)
+        }
+
+        fn execute_block(
+            block: Block,
+            state_root_check: bool,
+            signature_check: bool,
+            select: frame_try_runtime::TryStateSelect
+        ) -> Weight {
+            // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
+            // have a backtrace here.
+            Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
+        }
+    }
+
     #[cfg(feature = "runtime-benchmarks")]
-    impl frame_benchmarking::Benchmark<Block> for Runtime {
+    impl frame_benchmarking::v1::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
-            Vec<frame_benchmarking::BenchmarkList>,
+            Vec<frame_benchmarking::v1::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkList};
+            use frame_benchmarking::v1::{baseline, Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use crate::*;
 
@@ -325,9 +373,9 @@ impl_runtime_apis! {
         }
 
         fn dispatch_benchmark(
-            config: frame_benchmarking::BenchmarkConfig
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{baseline, Benchmarking, BenchmarkBatch,  TrackedStorageKey};
+            config: frame_benchmarking::v1::BenchmarkConfig
+        ) -> Result<Vec<frame_benchmarking::v1::BenchmarkBatch>, sp_runtime::RuntimeString> {
+            use frame_benchmarking::v1::{baseline, Benchmarking, BenchmarkBatch,  TrackedStorageKey};
             use crate::*;
 
             // Trying to add benchmarks directly to the Session Pallet caused cyclic dependency
@@ -440,7 +488,7 @@ mod tests {
     fn validate_transaction_submitter_bounds() {
         fn is_submit_signed_transaction<T>()
         where
-            T: CreateSignedTransaction<Call>,
+            T: CreateSignedTransaction<RuntimeCall>,
         {
         }
 
@@ -463,11 +511,11 @@ mod tests {
     fn call_size() {
         // https://github.com/Joystream/joystream/pull/4336#discussion_r992359003
         const SAFE_SIZE: usize = 400;
-        let current_size = core::mem::size_of::<Call>();
+        let current_size = core::mem::size_of::<RuntimeCall>();
         assert!(
             current_size <= SAFE_SIZE,
-            "size of Call {} is more than {} bytes: some calls have too big arguments, use Box to reduce the
-            size of Call. If the limit is too strong, maybe consider increase the limit.",
+            "size of RuntimeCall {} is more than {} bytes: some calls have too big arguments, use Box to reduce the
+            size of RuntimeCall. If the limit is too strong, maybe consider increase the limit.",
             current_size, SAFE_SIZE
         );
     }

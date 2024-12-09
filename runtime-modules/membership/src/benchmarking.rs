@@ -6,7 +6,7 @@ use crate::{
 };
 use balances::Pallet as Balances;
 use core::convert::TryInto;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::v1::{account, benchmarks};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
 use frame_system::Pallet as System;
@@ -32,9 +32,9 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> (8 * byte_number)) as u8
 }
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::Event) {
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     let events = System::<T>::events();
-    let system_event: <T as frame_system::Config>::Event = generic_event.into();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
     let EventRecord { event, .. } = &events[events.len() - 1];
     assert_eq!(event, &system_event);
@@ -139,7 +139,7 @@ benchmarks! {
             invites,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 
@@ -262,8 +262,8 @@ benchmarks! {
         let handle_updated_hash = T::Hashing::hash(&handle_updated);
 
         assert!(!MemberIdByHandleHash::<T>::contains_key(handle_old_hash));
-        assert!(MemberIdByHandleHash::<T>::contains_key(&handle_updated_hash));
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_updated_hash), member_id);
+        assert!(MemberIdByHandleHash::<T>::contains_key(handle_updated_hash));
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_updated_hash), member_id);
 
         assert_last_event::<T>(RawEvent::MemberProfileUpdated(
                 member_id,
@@ -501,7 +501,7 @@ benchmarks! {
 
         assert_eq!(T::WorkingGroup::get_budget(), new_wg_budget);
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), invited_member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), invited_member_id);
 
         assert_eq!(MembershipById::<T>::get(invited_member_id), Some(invited_membership));
 
@@ -555,7 +555,7 @@ benchmarks! {
             invites: 0,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(gifted_membership));
 
@@ -829,7 +829,7 @@ benchmarks! {
             invites,
         };
 
-        assert_eq!(MemberIdByHandleHash::<T>::get(&handle_hash), member_id);
+        assert_eq!(MemberIdByHandleHash::<T>::get(handle_hash), member_id);
 
         assert_eq!(MembershipById::<T>::get(member_id), Some(membership));
 

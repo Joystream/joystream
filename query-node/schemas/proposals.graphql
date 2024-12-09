@@ -332,12 +332,66 @@ type UpdateChannelPayoutsProposalDetails @variant {
   payloadHash: String
 }
 
+type UpdatePalletFrozenStatusProposalDetails @variant {
+  "New frozen status for pallet"
+  frozen: Boolean!
+  "The pallet to update frozen status on"
+  pallet: String!
+}
+
 type UpdateGlobalNftLimitProposalDetails @variant {
   "New daily NFT limit set in the proposal (if any)"
   newDailyNftLimit: Int
 
   "New weekly NFT limit set in the proposal (if any)"
   newWeeklyNftLimit: Int
+}
+
+type DecreaseCouncilBudgetProposalDetails @variant {
+  "Proposed amount of token to burn"
+  amount: BigInt!
+}
+
+type UpdateTokenPalletTokenConstraintsProposalDetails @variant {
+  "Proposed maximum patronage yearly interest rate (in part per million)"
+  maxYearlyRate: Int
+
+  "Proposed minimum value of the slope amm parameter"
+  minAmmSlope: BigInt
+
+  "Proposed minimum block duration of sales"
+  minSaleDuration: Int
+
+  "Proposed minimum block duration for a revenue split"
+  minRevenueSplitDuration: Int
+
+  "Proposed minimum blocks between revenue share issuance block and actual revenue share starting block"
+  minRevenueSplitTimeToStart: Int
+
+  "Proposed platform fee ratio charged on top of each sale and burned (in part per million)"
+  salePlatformFee: Int
+
+  "Proposed ratio of fees charged on top of each token purchase from the AMM (in part per million)"
+  ammBuyTxFees: Int
+
+  "Proposed ratio of fees charged on top of each token sold to the AMM (in part per million)"
+  ammSellTxFees: Int
+
+  "Proposed	bloat bond value used during account creation"
+  bloatBond: BigInt
+}
+
+type SetEraPayoutDampingFactorProposalDetails @variant {
+  "Proposed validator payout damping factor"
+  dampingFactor: Int!
+}
+
+type UpdateArgoBridgeConstraintsProposalDetails @variant {
+  operatorAccount: String
+  pauserAccounts: [String]
+  bridgingFee: BigInt
+  thawnDuration: Int
+  remoteChains: [Int]
 }
 
 union ProposalDetails =
@@ -363,4 +417,9 @@ union ProposalDetails =
   | SetReferralCutProposalDetails
   | VetoProposalDetails
   | UpdateChannelPayoutsProposalDetails
+  | UpdatePalletFrozenStatusProposalDetails
   | UpdateGlobalNftLimitProposalDetails
+  | DecreaseCouncilBudgetProposalDetails
+  | UpdateTokenPalletTokenConstraintsProposalDetails
+  | SetEraPayoutDampingFactorProposalDetails
+  | UpdateArgoBridgeConstraintsProposalDetails

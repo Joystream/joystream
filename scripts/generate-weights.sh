@@ -2,7 +2,7 @@
 
 # Executes and replaces all benchmarks with the new weights
 
-SCRIPT_DIR=$(dirname "${BASH_SOURCE[0]}")
+SCRIPT_DIR=`dirname "${BASH_SOURCE[0]}"`
 
 STEPS=${1:-50}
 REPEAT=${2:-20}
@@ -116,10 +116,11 @@ substrate_pallet_benchmark pallet_vesting
 substrate_pallet_benchmark pallet_multisig
 substrate_pallet_benchmark pallet_bags_list
 substrate_pallet_benchmark pallet_election_provider_multi_phase
-substrate_pallet_benchmark pallet_election_provider_support_benchmarking
+# substrate_pallet_benchmark pallet_election_provider_support_benchmarking
 substrate_pallet_benchmark pallet_staking
 substrate_pallet_benchmark pallet_balances
 substrate_pallet_benchmark pallet_im_online
+substrate_pallet_benchmark pallet_proxy
 
 # Joystrem benchmarks
 joystream_pallet_benchmark proposals_discussion proposals/discussion

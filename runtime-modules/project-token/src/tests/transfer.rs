@@ -2,7 +2,9 @@
 use frame_support::{assert_noop, assert_ok};
 
 use crate::tests::mock::*;
-use crate::tests::test_utils::{default_vesting_schedule, TokenDataBuilder};
+use crate::tests::test_utils::{
+    default_vesting_schedule, new_issuer_transfers, new_transfers, TokenDataBuilder,
+};
 use crate::traits::PalletToken;
 use crate::types::{TransferPolicyOf, Transfers, Validated, VestingSource};
 use crate::Config;
@@ -10,19 +12,20 @@ use crate::{
     balance, joy, last_event_eq, member, merkle_root, origin, token, Error, RawEvent,
     RepayableBloatBond,
 };
+use frame_system::RawOrigin;
 use sp_runtime::{traits::Hash, DispatchError, Permill};
 use sp_std::{collections::btree_map::BTreeMap, convert::TryInto};
 
 // some helpers
 macro_rules! outputs {
     [$(($a:expr, $b: expr)),*] => {
-        Transfers::<_,_>::new(vec![$(($a, $b),)*])
+        new_transfers(vec![$(($a, $b),)*])
     };
 }
 
 macro_rules! issuer_outputs {
     [$(($a:expr, $b: expr, $c: expr)),*] => {
-        Transfers::<_,_>::new_issuer(vec![$(($a, $b, $c),)*])
+        new_issuer_transfers(vec![$(($a, $b, $c),)*])
     };
 }
 
@@ -1838,4 +1841,44 @@ fn issuer_transfer_fails_with_incompatible_locked_funds() {
             Error::<Test>::InsufficientJoyBalance
         );
     });
+}
+
+#[test]
+fn transfer_fails_on_frozen_pallet() {
+    let token_id = token!(1);
+    let token_data = TokenDataBuilder::new_empty()
+        .with_transfer_policy(Policy::Permissionless)
+        .build();
+    let (src_member_id, src_acc) = member!(1);
+    let (dst, amount) = (member!(2).0, balance!(100));
+
+    let config = GenesisConfigBuilder::new_empty()
+        .with_token_and_owner(token_id, token_data, src_member_id, amount)
+        .with_account(dst, ConfigAccountData::default())
+        .build();
+
+    build_test_externalities(config).execute_with(|| {
+        increase_account_balance(&src_acc, ExistentialDeposit::get());
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), true));
+        assert_noop!(
+            Token::transfer(
+                origin!(src_acc),
+                src_member_id,
+                token_id,
+                outputs![(dst, amount)],
+                vec![],
+            ),
+            Error::<Test>::PalletFrozen
+        );
+
+        assert_ok!(Token::set_frozen_status(RawOrigin::Root.into(), false));
+        assert_ok!(Token::transfer(
+            origin!(src_acc),
+            src_member_id,
+            token_id,
+            outputs![(dst, amount)],
+            vec![],
+        ));
+    })
 }

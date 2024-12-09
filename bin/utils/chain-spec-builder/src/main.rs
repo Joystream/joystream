@@ -24,9 +24,9 @@ use std::{
 };
 
 use joystream_node::chain_spec::{
-    self, content_config, initial_balances, joy_chain_spec_properties, project_token_config,
-    storage_config, AccountId, AuthorityDiscoveryId, BabeId, GrandpaId, ImOnlineId,
-    JOY_ADDRESS_PREFIX,
+    self, argo_bridge_config, content_config, initial_balances, joy_chain_spec_properties,
+    project_token_config, storage_config, AccountId, AuthorityDiscoveryId, BabeId, GrandpaId,
+    ImOnlineId, JOY_ADDRESS_PREFIX,
 };
 
 use sc_chain_spec::ChainType;
@@ -43,10 +43,16 @@ const TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, PartialEq, enum_utils::FromStr)]
 enum ChainDeployment {
+    /// Single node chain with testing genesis config.
+    /// Private IP and local network discovery enabled.
     dev,
+    /// Two nodes (on same machine) chain with testing genesis config.
+    /// Private IP and local network discovery enabled
     local,
-    staging,
-    live,
+    /// Two or more public nodes chain with testing genesis config.
+    testnet,
+    /// Two or more public nodes chain with production genesis config.
+    mainnet,
 }
 
 #[allow(clippy::from_over_into)]
@@ -55,8 +61,8 @@ impl Into<ChainType> for ChainDeployment {
         match self {
             ChainDeployment::dev => ChainType::Development,
             ChainDeployment::local => ChainType::Local,
-            ChainDeployment::staging => ChainType::Live,
-            ChainDeployment::live => ChainType::Live,
+            ChainDeployment::testnet => ChainType::Live,
+            ChainDeployment::mainnet => ChainType::Live,
         }
     }
 }
@@ -93,8 +99,8 @@ enum ChainSpecBuilder {
         /// The path to an initial balances file
         #[structopt(long)]
         initial_balances_path: Option<PathBuf>,
-        /// Deployment type: dev, local, staging, live
-        #[structopt(long, short, default_value = "live")]
+        /// Deployment type: dev, local, testnet, mainnet
+        #[structopt(long, short, default_value = "mainnet")]
         deployment: String,
         /// Endow authorities, and nominators. Initial balances
         /// overrides endowed amount.
@@ -128,8 +134,8 @@ enum ChainSpecBuilder {
         /// The path to an initial balances file
         #[clap(long)]
         initial_balances_path: Option<PathBuf>,
-        /// Deployment type: dev, local, staging, live
-        #[clap(long, short, default_value = "live")]
+        /// Deployment type: dev, local, testnet, mainnet
+        #[clap(long, short, default_value = "mainnet")]
         deployment: String,
     },
 }
@@ -184,6 +190,23 @@ impl ChainSpecBuilder {
             ChainSpecBuilder::Generate { .. } => true,
         }
     }
+
+    fn valid_number_of_authorities(&self) -> bool {
+        match self {
+            ChainSpecBuilder::New { authorities, .. } => match self.chain_deployment() {
+                ChainDeployment::dev => authorities.len().eq(&1),
+                ChainDeployment::local => authorities.len().eq(&2),
+                ChainDeployment::testnet => authorities.len().gt(&1),
+                ChainDeployment::mainnet => authorities.len().gt(&1),
+            },
+            ChainSpecBuilder::Generate { authorities, .. } => match self.chain_deployment() {
+                ChainDeployment::dev => authorities.eq(&1),
+                ChainDeployment::local => authorities.eq(&2),
+                ChainDeployment::testnet => authorities.gt(&1),
+                ChainDeployment::mainnet => authorities.gt(&1),
+            },
+        }
+    }
 }
 
 fn authorities_from_seeds(
@@ -230,18 +253,23 @@ fn genesis_constructor(
         .unwrap_or_else(Vec::new);
 
     let content_cfg = match deployment {
-        ChainDeployment::live => content_config::production_config(),
+        ChainDeployment::mainnet => content_config::production_config(),
         _ => content_config::testing_config(),
     };
 
     let storage_cfg = match deployment {
-        ChainDeployment::live => storage_config::production_config(),
+        ChainDeployment::mainnet => storage_config::production_config(),
         _ => storage_config::testing_config(),
     };
 
     let project_token_cfg = match deployment {
-        ChainDeployment::live => project_token_config::production_config(),
+        ChainDeployment::mainnet => project_token_config::production_config(),
         _ => project_token_config::testing_config(),
+    };
+
+    let argo_bridge_cfg = match deployment {
+        ChainDeployment::mainnet => argo_bridge_config::production_config(),
+        _ => argo_bridge_config::testing_config(),
     };
 
     chain_spec::testnet_genesis(
@@ -254,6 +282,7 @@ fn genesis_constructor(
         content_cfg,
         storage_cfg,
         project_token_cfg,
+        argo_bridge_cfg,
     )
 }
 
@@ -309,10 +338,13 @@ fn generate_chain_spec(
         .map(parse_account)
         .collect::<Result<Vec<_>, String>>()?;
 
-    let telemetry_endpoints = Some(
-        TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
-            .expect("Staging telemetry url is valid; qed"),
-    );
+    let telemetry_endpoints = match deployment {
+        ChainDeployment::mainnet => Some(
+            TelemetryEndpoints::new(vec![(TELEMETRY_URL.to_string(), 0)])
+                .expect("Telemetry url is invalid; qed"),
+        ),
+        _ => None,
+    };
 
     let chain_spec = chain_spec::ChainSpec::from_genesis(
         "Joystream Testnet",
@@ -330,7 +362,7 @@ fn generate_chain_spec(
         },
         vec![],
         telemetry_endpoints,
-        Some(&*"/joy/testnet/0"),
+        Some("/joy/testnet/0"),
         None, // Some(&*"joy"),
         Some(joy_chain_spec_properties()),
         Default::default(),
@@ -413,6 +445,10 @@ async fn main() -> Result<(), String> {
     let initial_balances_path = builder.initial_balances_path().clone();
     let deployment = builder.chain_deployment();
     let fund_accounts = builder.fund_accounts();
+    if !builder.valid_number_of_authorities() {
+        println!("Incorrect number of authorities for the deployment type chosen.");
+        std::process::exit(1);
+    }
 
     let (authorities, nominator_accounts, endowed_accounts) = match builder {
         ChainSpecBuilder::Generate {

@@ -19,6 +19,7 @@
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
 
+pub mod argo_bridge_config;
 pub mod content_config;
 pub mod council_config;
 pub mod forum_config;
@@ -30,10 +31,10 @@ pub use grandpa_primitives::AuthorityId as GrandpaId;
 
 use node_runtime::{
     constants::currency::{DOLLARS, MIN_NOMINATOR_BOND, MIN_VALIDATOR_BOND},
-    wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, Block, ContentConfig,
-    ExistentialDeposit, GrandpaConfig, ImOnlineConfig, MaxNominations, ProjectTokenConfig,
-    SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig, SystemConfig,
-    TransactionPaymentConfig, VestingConfig,
+    wasm_binary_unwrap, ArgoBridgeConfig, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig,
+    Block, ContentConfig, ExistentialDeposit, GrandpaConfig, ImOnlineConfig, MaxNominations,
+    ProjectTokenConfig, SessionConfig, SessionKeys, StakerStatus, StakingConfig, StorageConfig,
+    SystemConfig, TransactionPaymentConfig, VestingConfig,
 };
 pub use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_chain_spec::ChainSpecExtension;
@@ -47,7 +48,7 @@ pub use sp_consensus_babe::AuthorityId as BabeId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
     traits::{IdentifyAccount, Verify},
-    Perbill,
+    FixedU128, Perbill,
 };
 
 pub use node_runtime::constants::JOY_ADDRESS_PREFIX;
@@ -183,6 +184,7 @@ pub fn testnet_genesis(
     content_cfg: ContentConfig,
     storage_cfg: StorageConfig,
     project_token_cfg: ProjectTokenConfig,
+    argo_bridge_cfg: ArgoBridgeConfig,
 ) -> GenesisConfig {
     // staking benchmakrs is not sensitive to actual value of min bonds so
     // accounts are not funded with sufficient funds and fail with InsufficientBond err
@@ -307,11 +309,10 @@ pub fn testnet_genesis(
             minimum_validator_count: initial_authorities.len().min(4) as u32,
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
-            force_era: Forcing::ForceNone,
+            force_era: Forcing::NotForcing,
             stakers,
             min_nominator_bond: GENESIS_MIN_NOMINATOR_BOND,
             min_validator_bond: GENESIS_MIN_VALIDATOR_BOND,
-            history_depth: 120,
             max_validator_count: Some(400),
             max_nominator_count: Some(20_000),
             ..Default::default()
@@ -325,7 +326,9 @@ pub fn testnet_genesis(
         grandpa: GrandpaConfig {
             authorities: vec![],
         },
-        transaction_payment: TransactionPaymentConfig {},
+        transaction_payment: TransactionPaymentConfig {
+            multiplier: FixedU128::from(1),
+        },
         vesting: VestingConfig {
             vesting: vesting_accounts,
         },
@@ -334,6 +337,7 @@ pub fn testnet_genesis(
         content: content_cfg,
         storage: storage_cfg,
         project_token: project_token_cfg,
+        argo_bridge: argo_bridge_cfg,
         proposals_discussion: Default::default(),
         members: Default::default(),
     }
@@ -353,6 +357,7 @@ fn development_config_genesis() -> GenesisConfig {
         content_config::testing_config(),
         storage_config::testing_config(),
         project_token_config::testing_config(),
+        argo_bridge_config::testing_config(),
     )
 }
 
@@ -386,6 +391,7 @@ fn local_testnet_genesis() -> GenesisConfig {
         content_config::testing_config(),
         storage_config::testing_config(),
         project_token_config::testing_config(),
+        argo_bridge_config::testing_config(),
     )
 }
 
@@ -416,6 +422,7 @@ fn prod_test_config_genesis() -> GenesisConfig {
         content_config::production_config(),
         storage_config::production_config(),
         project_token_config::production_config(),
+        argo_bridge_config::production_config(),
     )
 }
 
@@ -453,6 +460,7 @@ pub(crate) mod tests {
             content_config::testing_config(),
             storage_config::testing_config(),
             project_token_config::testing_config(),
+            argo_bridge_config::testing_config(),
         )
     }
 
@@ -498,6 +506,7 @@ pub(crate) mod tests {
                 task_manager,
                 client,
                 network,
+                sync,
                 transaction_pool,
                 ..
             } = new_full_base(config, false, |_, _| ())?;
@@ -505,6 +514,7 @@ pub(crate) mod tests {
                 task_manager,
                 client,
                 network,
+                sync,
                 transaction_pool,
             ))
         });

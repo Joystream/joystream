@@ -3,7 +3,6 @@ eslint-disable @typescript-eslint/naming-convention
 */
 import { DatabaseManager, EventContext, StoreContext, SubstrateEvent } from '@joystream/hydra-common'
 import { Bytes } from '@polkadot/types'
-import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails } from '@polkadot/types/lookup'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import {
@@ -56,19 +55,16 @@ import {
   SignalProposalDetails,
   SlashWorkingGroupLeadProposalDetails,
   TerminateWorkingGroupLeadProposalDetails,
+  UpdateArgoBridgeConstraintsProposalDetails,
   UpdateChannelPayoutsProposalDetails,
+  UpdatePalletFrozenStatusProposalDetails,
   UpdateGlobalNftLimitProposalDetails,
   UpdateWorkingGroupBudgetProposalDetails,
   VetoProposalDetails,
+  DecreaseCouncilBudgetProposalDetails,
+  UpdateTokenPalletTokenConstraintsProposalDetails,
+  SetEraPayoutDampingFactorProposalDetails,
 } from 'query-node/dist/model'
-import {
-  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
-  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
-  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
-  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
-  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
-  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
-} from '../generated/types'
 import {
   INT32MAX,
   asBN,
@@ -81,6 +77,18 @@ import {
   unwrap,
   whenDef,
 } from './common'
+import {
+  ProposalsCodex_ProposalCreatedEvent_V1001 as ProposalCreatedEvent_V1001,
+  ProposalsCodex_ProposalCreatedEvent_V2003 as ProposalCreatedEvent_V2003,
+  ProposalsCodex_ProposalCreatedEvent_V2004 as ProposalCreatedEvent_V2004,
+  ProposalsEngine_ProposalCancelledEvent_V1001 as ProposalCancelledEvent_V1001,
+  ProposalsEngine_ProposalDecisionMadeEvent_V1001 as ProposalDecisionMadeEvent_V1001,
+  ProposalsEngine_ProposalExecutedEvent_V1001 as ProposalExecutedEvent_V1001,
+  ProposalsEngine_ProposalStatusUpdatedEvent_V1001 as ProposalStatusUpdatedEvent_V1001,
+  ProposalsEngine_VotedEvent_V1001 as ProposalVotedEvent_V1001,
+} from '../generated/types'
+import { PalletProposalsCodexProposalDetails as RuntimeProposalDetails_V2004 } from '../generated/types/2004/types-lookup'
+
 import { createWorkingGroupOpeningMetadata } from './workingGroups'
 
 async function getProposal(store: DatabaseManager, id: string) {
@@ -103,7 +111,7 @@ async function getOrCreateRuntimeWasmBytecode(store: DatabaseManager, bytecode: 
 async function parseProposalDetails(
   event: SubstrateEvent,
   store: DatabaseManager,
-  proposalDetails: RuntimeProposalDetails
+  proposalDetails: RuntimeProposalDetails_V2004
 ): Promise<typeof ProposalDetails> {
   const eventTime = new Date(event.blockTimestamp)
 
@@ -311,6 +319,53 @@ async function parseProposalDetails(
       details.newWeeklyNftLimit = specificDetails[1].toNumber()
     }
     return details
+  }
+  // RuntimeProposalDetails
+  else if (proposalDetails.isSetPalletFozenStatus) {
+    const details = new UpdatePalletFrozenStatusProposalDetails()
+    const [frozen, pallet] = proposalDetails.asSetPalletFozenStatus
+    details.frozen = frozen.isTrue
+    details.pallet = pallet.toString()
+    return details
+  }
+  // DecreaseCouncilBudgetProposalDetails
+  else if (proposalDetails.isDecreaseCouncilBudget) {
+    const details = new DecreaseCouncilBudgetProposalDetails()
+    details.amount = new BN(proposalDetails.asDecreaseCouncilBudget.toString())
+    return details
+  }
+  // UpdateTokenPalletTokenConstraints
+  else if (proposalDetails.isUpdateTokenPalletTokenConstraints) {
+    const details = new UpdateTokenPalletTokenConstraintsProposalDetails()
+    const specificDetails = proposalDetails.asUpdateTokenPalletTokenConstraints
+
+    details.maxYearlyRate = unwrap(specificDetails.maxYearlyRate)?.toNumber()
+    details.minAmmSlope = whenDef(unwrap(specificDetails.minAmmSlope), asBN)
+    details.minSaleDuration = unwrap(specificDetails.minSaleDuration)?.toNumber()
+    details.minRevenueSplitDuration = unwrap(specificDetails.minRevenueSplitDuration)?.toNumber()
+    details.minRevenueSplitTimeToStart = unwrap(specificDetails.minRevenueSplitTimeToStart)?.toNumber()
+    details.salePlatformFee = unwrap(specificDetails.salePlatformFee)?.toNumber()
+    details.ammBuyTxFees = unwrap(specificDetails.ammBuyTxFees)?.toNumber()
+    details.ammSellTxFees = unwrap(specificDetails.ammSellTxFees)?.toNumber()
+    details.bloatBond = whenDef(unwrap(specificDetails.bloatBond), asBN)
+    return details
+  }
+  // SetEraPayoutDampingFactorProposalDetails
+  else if (proposalDetails.isSetEraPayoutDampingFactor) {
+    const details = new SetEraPayoutDampingFactorProposalDetails()
+    details.dampingFactor = proposalDetails.asSetEraPayoutDampingFactor.toNumber()
+    return details
+  }
+  // UpdateArgoBridgeConstraintsProposalDetails
+  else if (proposalDetails.isUpdateArgoBridgeConstraints) {
+    const details = new UpdateArgoBridgeConstraintsProposalDetails()
+    const bridgeConstraints = proposalDetails.asUpdateArgoBridgeConstraints
+    details.operatorAccount = unwrap(bridgeConstraints.operatorAccount)?.toString()
+    details.pauserAccounts = unwrap(bridgeConstraints.pauserAccounts)?.map((a) => a.toString())
+    details.bridgingFee = whenDef(unwrap(bridgeConstraints.bridgingFee), asBN)
+    details.thawnDuration = unwrap(bridgeConstraints.thawnDuration)?.toNumber()
+    details.remoteChains = unwrap(bridgeConstraints.remoteChains)?.map((a) => a.toNumber())
+    return details
   } else {
     unimplementedError(`Unsupported proposal details type: ${proposalDetails.type}`)
   }
@@ -342,11 +397,25 @@ async function handleRuntimeUpgradeProposalExecution(event: SubstrateEvent, stor
   )
 }
 
-export async function proposalsCodex_ProposalCreated({ store, event }: EventContext & StoreContext): Promise<void> {
+export async function proposalsCodex_ProposalCreated({
+  store,
+  event,
+  block,
+}: EventContext & StoreContext): Promise<void> {
+  const specVersion = Number(block.runtimeVersion.specVersion)
   const [proposalId, generalProposalParameters, runtimeProposalDetails, proposalThreadId] =
-    new ProposalCreatedEvent_V1001(event).params
+    specVersion < 2001
+      ? new ProposalCreatedEvent_V1001(event).params
+      : specVersion < 2004
+      ? new ProposalCreatedEvent_V2003(event).params
+      : new ProposalCreatedEvent_V2004(event).params
+
   const eventTime = new Date(event.blockTimestamp)
-  const proposalDetails = await parseProposalDetails(event, store, runtimeProposalDetails)
+  const proposalDetails = await parseProposalDetails(
+    event,
+    store,
+    runtimeProposalDetails as RuntimeProposalDetails_V2004
+  )
 
   const proposal = new Proposal({
     id: proposalId.toString(),
