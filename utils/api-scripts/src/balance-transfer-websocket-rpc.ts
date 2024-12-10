@@ -36,6 +36,7 @@ async function main() {
   const nonce = await api.rpc.system.accountNextIndex(keyringPair.address)
 
   const signedTx = await tx.signAsync(keyringPair, { nonce })
+  console.error('Transaction:', signedTx.toHuman())
 
   console.error('TxHash:', signedTx.hash.toHex())
 
@@ -43,15 +44,16 @@ async function main() {
     if (result.status.isReady) {
       // The transaction has been successfully validated by the transaction pool
       // and is ready to be included in a block by the block producer.
-      console.error('Tx Submitted. Waiting for inclusion...')
+      console.error('Tx Submitted, waiting for inclusion...')
     }
 
     if (result.status.isInBlock) {
-      console.error('Tx in block', result.status.asInBlock.toHex())
+      // console.error('Tx in block', result.status.asInBlock.toHex())
+      console.error('Tx in Block, waiting for finalization...')
     }
 
     if (result.status.isFinalized) {
-      console.error('Tx Finalized')
+      console.error('Tx Finalized.')
       const blockHash = result.status.asFinalized
       console.log(
         JSON.stringify(
@@ -72,7 +74,7 @@ async function main() {
       } else {
         const failed = result.findRecord('system', 'ExtrinsicFailed')
         if (failed) {
-          console.error('Transfer Failed:', failed.event.data.toString())
+          console.error('Transfer Failed.', failed.event.data.toString())
           console.error('Error:', decodeError(api, failed.event))
         }
         process.exit(3)

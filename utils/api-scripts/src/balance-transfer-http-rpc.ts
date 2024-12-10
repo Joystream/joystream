@@ -39,6 +39,7 @@ async function main() {
 
   // Sign the transaction
   const signedTx = await tx.signAsync(keyringPair, { nonce: accountNonce })
+  console.error('Transaction:', signedTx.toHuman())
 
   // Transaction Hash can be used to find the transaction on the blockchain
   console.log('TxHash:', signedTx.hash.toHex())
