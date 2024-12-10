@@ -21,14 +21,11 @@ async function monitorForTransaction(wsProvider: WsProvider, txHash: string | un
       if (extrinsic.hash.toHex() === txHash || !txHash) {
         const blockEvents = await (await api.at(blockHash)).query.system.events()
         const details = constructTransactionDetails(blockEvents as Vec<EventRecord>, index, extrinsic)
-        if (details.result !== 'Success') continue
-        delete details.events
-        delete details.nonce
         details.blockHash = blockHash.toHex()
         details.blockNumber = header.number.toNumber()
         console.log(JSON.stringify(details, null, 2))
         if (txHash) {
-          unsub() // Unsubscribe when transaction is found
+          unsub() // Unsubscribe when specific transaction is found
           await api.disconnect()
           return
         }

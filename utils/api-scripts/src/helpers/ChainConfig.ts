@@ -1,11 +1,8 @@
 import { getRegistry } from '@substrate/txwrapper-registry'
 
 /*
-
-https://api-sidecar.joystream.org/transaction/material?noMeta=false&metadata=json
-
 curl -X 'GET' \
-  'https://api-sidecar.joystream.org/transaction/material?noMeta=false' \
+  'https://api-sidecar.joystream.org/transaction/material?noMeta=false&metadata=json' \
   -H 'accept: application/json'
 
   {
@@ -21,6 +18,7 @@ curl -X 'GET' \
       "metadata": { .... }
   }
 */
+
 export const JOYSTREAM_CHAIN_CONFIG = {
   chainName: 'Joystream',
   specName: 'joystream-node',
