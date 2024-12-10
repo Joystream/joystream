@@ -60,6 +60,6 @@ const wsProvider = new WsProvider(WS_URI)
 // - Provide a date range to search in.
 
 fetchLatestBlocksAndCheckTransaction(wsProvider, txHash, blockCount)
-  .then((outout) => console.log(JSON.stringify(outout, null, 2)))
+  .then((output) => console.log(JSON.stringify(output, null, 2)))
   .catch(console.error)
   .finally(() => process.exit(0))
