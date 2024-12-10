@@ -28,6 +28,9 @@ async function main() {
   const destination = 'j4UYhDYJ4pz2ihhDDzu69v2JTVeGaGmTebmBdWaX2ANVinXyE'
   const tx = api.tx.balances.transfer(destination, OneJoy)
 
+  const { partialFee } = await tx.paymentInfo(keyringPair.address)
+  console.error('Estimated Fee:', partialFee.toHuman())
+
   // Get the next account nonce
   const senderAddress = keyringPair.address
 

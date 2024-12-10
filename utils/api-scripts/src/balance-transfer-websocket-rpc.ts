@@ -28,6 +28,9 @@ async function main() {
   const OneJoy = new BN(`${1e10}`, 10) // 10_000_000_000 = 1 Joy
   const tx = api.tx.balances.transfer('j4UYhDYJ4pz2ihhDDzu69v2JTVeGaGmTebmBdWaX2ANVinXyE', OneJoy)
 
+  const { partialFee } = await tx.paymentInfo(keyringPair.address)
+  console.error('Estimated Fee:', partialFee.toHuman())
+
   // Get the next account nonce
   const nonce = await api.rpc.system.accountNextIndex(keyringPair.address)
 
