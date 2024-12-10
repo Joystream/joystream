@@ -8,6 +8,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { cryptoWaitReady } from '@polkadot/util-crypto'
 import { Keyring } from '@polkadot/keyring'
 import { BN } from '@polkadot/util'
+import { decodeError } from './helpers/decodeError'
 
 async function main() {
   await cryptoWaitReady()
@@ -72,6 +73,7 @@ async function main() {
         const failed = result.findRecord('system', 'ExtrinsicFailed')
         if (failed) {
           console.error('Transfer Failed:', failed.event.data.toString())
+          console.error('Error:', decodeError(api, failed.event))
         }
         process.exit(3)
       }
