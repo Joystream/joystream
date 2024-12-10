@@ -1,6 +1,4 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { Vec } from '@polkadot/types'
-import { EventRecord } from '@polkadot/types/interfaces'
 import { constructTransactionDetails } from './helpers/TransactionDetails'
 
 async function fetchLatestBlocksAndCheckTransaction(wsProvider: WsProvider, txHash: string, blockCount: number) {
@@ -19,10 +17,8 @@ async function fetchLatestBlocksAndCheckTransaction(wsProvider: WsProvider, txHa
       const blockHash = currentBlockHash.toHex()
 
       if (extrinsicHash === txHash) {
-        // Fetch the block and its associated events
-        const blockEvents = await (await api.at(currentBlockHash)).query.system.events()
         // Construct the transaction details
-        const details = constructTransactionDetails(blockEvents as Vec<EventRecord>, index, extrinsic)
+        const details = await constructTransactionDetails(api, blockHash, index, extrinsic)
         // Update with block hash and number
         details.blockNumber = blockNumber
         details.blockHash = blockHash

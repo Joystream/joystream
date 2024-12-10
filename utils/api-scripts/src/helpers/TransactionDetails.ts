@@ -2,6 +2,8 @@ import { AnyJson } from '@polkadot/types/types'
 import { GenericExtrinsic } from '@polkadot/types/extrinsic/Extrinsic'
 import { Vec } from '@polkadot/types'
 import { EventRecord } from '@polkadot/types/interfaces'
+import { decodeError } from './decodeError'
+import { ApiPromise } from '@polkadot/api'
 
 export interface TransactionDetails {
   section?: string
@@ -14,13 +16,15 @@ export interface TransactionDetails {
   blockNumber?: number
   blockHash?: string
   txHash?: string
+  error?: string
 }
 
-export function constructTransactionDetails(
-  blockEvents: Vec<EventRecord>,
+export async function constructTransactionDetails(
+  api: ApiPromise,
+  blockHash: string,
   index: number,
   extrinsic: GenericExtrinsic
-): TransactionDetails {
+): Promise<TransactionDetails> {
   const details: TransactionDetails = {}
   const {
     method: { args, section, method },
@@ -37,6 +41,10 @@ export function constructTransactionDetails(
   details.nonce = nonce.toNumber()
   details.txHash = extrinsic.hash.toHex()
 
+  // Fetch the block and its associated events
+  const atApi = await api.at(blockHash)
+  const blockEvents = (await atApi.query.system.events()) as Vec<EventRecord>
+
   // Check for related events
   const relatedEvents = blockEvents.filter(
     ({ phase }: EventRecord) => phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(index)
@@ -49,6 +57,7 @@ export function constructTransactionDetails(
       details.result = 'Success'
     } else if (event.section === 'system' && event.method === 'ExtrinsicFailed') {
       details.result = 'Failed'
+      details.error = decodeError(api, event)
     }
   }
 

@@ -1,7 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { constructTransactionDetails } from './helpers/TransactionDetails'
-import { Vec } from '@polkadot/types'
-import { EventRecord } from '@polkadot/types/interfaces'
 
 async function monitorForTransaction(wsProvider: WsProvider, txHash: string | undefined) {
   const api = await ApiPromise.create({ provider: wsProvider })
@@ -19,8 +17,7 @@ async function monitorForTransaction(wsProvider: WsProvider, txHash: string | un
       if (section !== 'balances') continue
       if (!method.startsWith('transfer')) continue
       if (extrinsic.hash.toHex() === txHash || !txHash) {
-        const blockEvents = await (await api.at(blockHash)).query.system.events()
-        const details = constructTransactionDetails(blockEvents as Vec<EventRecord>, index, extrinsic)
+        const details = await constructTransactionDetails(api, blockHash.toHex(), index, extrinsic)
         details.blockHash = blockHash.toHex()
         details.blockNumber = header.number.toNumber()
         console.log(JSON.stringify(details, null, 2))
