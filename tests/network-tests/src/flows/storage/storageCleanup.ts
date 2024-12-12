@@ -67,8 +67,8 @@ export async function storageCleanup({ api, query }: FlowProps): Promise<void> {
   )
 
   // Give colossus nodes some time to sync
-  debug('Giving colossus nodes 60 seconds to sync...')
-  await Utils.wait(60_000)
+  debug('Giving colossus nodes 120 seconds to sync...')
+  await Utils.wait(120_000)
 
   // Verify that both storage nodes store all the assets of created channels
   const colossus1Endpoint = doubleBucketConfig.buckets[0].metadata.endpoint

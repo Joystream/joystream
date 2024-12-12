@@ -7,6 +7,8 @@ import {
   StorageBagDetailsFragment,
   StorageBucketDetailsFragment,
 } from '../queryNode/generated/queries'
+import { ApiPromise } from '@polkadot/api'
+import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 
 /**
  * Defines storage provider data obligations.
@@ -66,7 +68,7 @@ type Bag = {
 /**
  * Data object abstraction.
  */
-type DataObject = {
+export type DataObject = {
   /**
    * Data object ID
    */
@@ -81,6 +83,11 @@ type DataObject = {
    * Data Object hash
    */
   ipfsHash: string
+
+  /**
+   * Data Object size
+   */
+  size: number
 }
 
 /**
@@ -88,16 +95,17 @@ type DataObject = {
  * runtime (Query Node).
  *
  * @param queryNodeUrl - Query Node URL
- * @param workerId - worker ID
+ * @param bucketIds - bucket IDs. If undefined, we treat all existing bags as obligations.
  * @returns promise for the DataObligations
  */
 export async function getStorageObligationsFromRuntime(
   qnApi: QueryNodeApi,
-  bucketIds: string[]
+  bucketIds?: string[]
 ): Promise<DataObligations> {
   const allBuckets = await getAllBuckets(qnApi)
 
-  const assignedBags = await getAllAssignedBags(qnApi, bucketIds)
+  const assignedBags =
+    bucketIds === undefined ? await qnApi.getAllStorageBagsDetails() : await getAllAssignedBags(qnApi, bucketIds)
 
   const bagIds = assignedBags.map((bag) => bag.id)
   const assignedDataObjects = await getAllAssignedDataObjects(qnApi, bagIds)
@@ -114,6 +122,7 @@ export async function getStorageObligationsFromRuntime(
     })),
     dataObjects: assignedDataObjects.map((dataObject) => ({
       id: dataObject.id,
+      size: parseInt(dataObject.size),
       bagId: dataObject.storageBag.id,
       ipfsHash: dataObject.ipfsHash,
     })),
@@ -238,4 +247,33 @@ async function getAllObjectsWithPaging<T>(
   } while (resultPart.length > 0)
 
   return result
+}
+
+/**
+ * Given a list of bucket ids, constructs a list of [bucketId, operatorAddress] entries.
+ * Filters out buckets that are not assigned to the provided workerId.
+ *
+ * @param api - runtime API
+ * @param qnApi - query node API
+ * @param workerId - ID of the worker
+ * @param bucketsToServe - list of buckets to serve / construct the mapping for
+ * @returns [bucketId, operatorAddress] entries
+ */
+export async function constructBucketToAddressMapping(
+  api: ApiPromise,
+  qnApi: QueryNodeApi,
+  workerId: number,
+  bucketsToServe: number[]
+): Promise<[string, string][]> {
+  const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
+  const buckets: [string, PalletStorageStorageBucketRecord][] = (
+    await Promise.all(
+      bucketIds.map(async (bucketId) => [bucketId, await api.query.storage.storageBucketById(bucketId)] as const)
+    )
+  )
+    .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))
+    .filter(([, optBucket]) => optBucket.isSome && optBucket.unwrap().operatorStatus.isStorageWorker)
+    .map(([bucketId, optBucket]) => [bucketId, optBucket.unwrap()])
+
+  return buckets.map(([bucketId, bucket]) => [bucketId, bucket.operatorStatus.asStorageWorker[1].toString()])
 }

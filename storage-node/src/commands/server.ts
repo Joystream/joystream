@@ -1,15 +1,13 @@
 import { flags } from '@oclif/command'
 import { ApiPromise } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import fs from 'fs'
 import _ from 'lodash'
 import path from 'path'
 import sleep from 'sleep-promise'
 import { v4 as uuidv4 } from 'uuid'
 import ApiCommandBase from '../command-base/ApiCommandBase'
 import { customFlags } from '../command-base/CustomFlags'
-import { loadDataObjectIdCache } from '../services/caching/localDataObjects'
+import { addDataObjectIdToCache, loadDataObjectIdCache } from '../services/caching/localDataObjects'
 import logger, { DatePatternByFrequency, Frequency, initNewLogger } from '../services/logger'
 import { QueryNodeApi } from '../services/queryNode/api'
 import { AcceptPendingObjectsService } from '../services/sync/acceptPendingObjects'
@@ -18,11 +16,13 @@ import {
   MINIMUM_REPLICATION_THRESHOLD,
   performCleanup,
 } from '../services/sync/cleanupService'
-import { getStorageBucketIdsByWorkerId } from '../services/sync/storageObligations'
+import { constructBucketToAddressMapping } from '../services/sync/storageObligations'
 import { PendingDirName, TempDirName, performSync } from '../services/sync/synchronizer'
+import { downloadEvents } from '../services/sync/tasks'
 import { createApp } from '../services/webApi/app'
 import ExitCodes from './../command-base/ExitCodes'
-const fsPromises = fs.promises
+import { createDirectory } from '../services/helpers/filesystem'
+import { verifyWorkerId } from '../services/runtime/queries'
 
 /**
  * CLI command:
@@ -53,11 +53,11 @@ export default class Server extends ApiCommandBase {
     }),
     tempFolder: flags.string({
       description:
-        'Directory to store tempory files during sync and upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
+        'Directory to store tempory files during sync (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
     }),
     pendingFolder: flags.string({
       description:
-        'Directory to store pending files which are uploaded upload (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
+        'Directory to store pending files which are being uploaded (absolute path).\nIf not specified a subfolder under the uploads directory will be used.',
     }),
     port: flags.integer({
       char: 'o',
@@ -284,6 +284,9 @@ Supported values: warn, error, debug, info. Default:debug`,
     // any assets.
     if (flags.sync && selectedBuckets.length) {
       logger.info(`Synchronization is Enabled.`)
+      downloadEvents.on('success', (id) => {
+        addDataObjectIdToCache(id)
+      })
       setTimeout(
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         async () =>
@@ -444,39 +447,4 @@ async function runCleanupWithInterval(
       logger.error(`Critical cleanup error: ${err}`)
     }
   }
-}
-
-/**
- * Creates a directory recursivly. Like `mkdir -p`
- *
- * @param tempDirName - full path to temporary directory
- * @returns void promise.
- */
-async function createDirectory(dirName: string): Promise<void> {
-  logger.info(`Creating directory ${dirName}`)
-  await fsPromises.mkdir(dirName, { recursive: true })
-}
-
-async function verifyWorkerId(api: ApiPromise, workerId: number): Promise<boolean> {
-  const worker = await api.query.storageWorkingGroup.workerById(workerId)
-  return worker.isSome
-}
-
-async function constructBucketToAddressMapping(
-  api: ApiPromise,
-  qnApi: QueryNodeApi,
-  workerId: number,
-  bucketsToServe: number[]
-): Promise<[string, string][]> {
-  const bucketIds = await getStorageBucketIdsByWorkerId(qnApi, workerId)
-  const buckets: [string, PalletStorageStorageBucketRecord][] = (
-    await Promise.all(
-      bucketIds.map(async (bucketId) => [bucketId, await api.query.storage.storageBucketById(bucketId)] as const)
-    )
-  )
-    .filter(([bucketId]) => bucketsToServe.length === 0 || bucketsToServe.includes(parseInt(bucketId)))
-    .filter(([, optBucket]) => optBucket.isSome && optBucket.unwrap().operatorStatus.isStorageWorker)
-    .map(([bucketId, optBucket]) => [bucketId, optBucket.unwrap()])
-
-  return buckets.map(([bucketId, bucket]) => [bucketId, bucket.operatorStatus.asStorageWorker[1].toString()])
 }

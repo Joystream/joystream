@@ -30,7 +30,10 @@ RUN yarn workspace storage-node build
 RUN yarn cache clean
 
 FROM node:18 as final
+
 WORKDIR /joystream
+# 7zip and zstd are required by the archive script
+RUN apt-get update && apt-get install -y p7zip-full zstd
 COPY --from=builder /joystream /joystream
 RUN yarn --frozen-lockfile --production
 

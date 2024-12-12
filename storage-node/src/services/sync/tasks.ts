@@ -7,35 +7,23 @@ import urljoin from 'url-join'
 import { promisify } from 'util'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../../services/logger'
-import {
-  addDataObjectIdToCache,
-  deleteDataObjectIdFromCache,
-  getDataObjectIdFromCache,
-} from '../caching/localDataObjects'
+import { deleteDataObjectIdFromCache, getDataObjectIdFromCache } from '../caching/localDataObjects'
 import { isNewDataObject } from '../caching/newUploads'
 import { hashFile } from '../helpers/hashing'
-import { moveFile } from '../helpers/moveFile'
+import { moveFile } from '../helpers/filesystem'
+import { Task } from '../processing/workingProcess'
+import { EventEmitter } from 'node:events'
 const fsPromises = fs.promises
 
-/**
- * Defines syncronization task abstraction.
- */
-export interface SyncTask {
-  /**
-   * Returns human-friendly task description.
-   */
-  description(): string
-
-  /**
-   * Performs the task.
-   */
-  execute(): Promise<void>
-}
+export const downloadEvents = new EventEmitter<{
+  'success': [string, number, bigint, bigint]
+  'fail': [string, number]
+}>()
 
 /**
  * Deletes the file in the local storage by its name.
  */
-export class DeleteLocalFileTask implements SyncTask {
+export class DeleteLocalFileTask implements Task {
   uploadsDirectory: string
   filename: string
 
@@ -72,13 +60,14 @@ export class DeleteLocalFileTask implements SyncTask {
 /**
  * Download the file from the remote storage node to the local storage.
  */
-export class DownloadFileTask implements SyncTask {
+export class DownloadFileTask implements Task {
   operatorUrls: string[]
 
   constructor(
     baseUrls: string[],
     private dataObjectId: string,
     private expectedHash: string,
+    private expectedSize: number,
     private uploadsDirectory: string,
     private tempDirectory: string,
     private downloadTimeout: number,
@@ -99,6 +88,7 @@ export class DownloadFileTask implements SyncTask {
       return
     }
 
+    const startTime = process.hrtime.bigint()
     for (const randomUrlIndex of operatorUrlIndices) {
       const chosenBaseUrl = this.operatorUrls[randomUrlIndex]
       logger.debug(`Sync - random storage node URL was chosen ${chosenBaseUrl}`)
@@ -106,14 +96,19 @@ export class DownloadFileTask implements SyncTask {
       const filepath = path.join(this.uploadsDirectory, this.dataObjectId)
       try {
         // Try downloading file
-        await this.tryDownload(chosenBaseUrl, filepath)
-
-        // if download succeeds, break the loop
-        try {
-          await fsPromises.access(filepath, fs.constants.F_OK)
-          return
-        } catch (err) {
-          continue
+        const tempFilePath = await this.tryDownload(chosenBaseUrl)
+        // If download succeeds, try to move the file to uploads directory
+        if (tempFilePath) {
+          try {
+            await moveFile(tempFilePath, filepath)
+            await fsPromises.access(filepath, fs.constants.F_OK)
+            const endTime = process.hrtime.bigint()
+            downloadEvents.emit('success', this.dataObjectId, this.expectedSize, startTime, endTime)
+            return
+          } catch (err) {
+            logger.error(`Sync - error trying to move file ${tempFilePath} to ${filepath}: ${err.toString()}`)
+            continue
+          }
         }
       } catch (err) {
         logger.error(`Sync - fetching data error for ${this.dataObjectId}: ${err}`, { err })
@@ -121,9 +116,10 @@ export class DownloadFileTask implements SyncTask {
     }
 
     logger.warn(`Sync - Failed to download ${this.dataObjectId}`)
+    downloadEvents.emit('fail', this.dataObjectId, this.expectedSize)
   }
 
-  async tryDownload(url: string, filepath: string): Promise<void> {
+  async tryDownload(url: string): Promise<string | undefined> {
     const streamPipeline = promisify(pipeline)
     // We create tempfile first to mitigate partial downloads on app (or remote node) crash.
     // This partial downloads will be cleaned up during the next sync iteration.
@@ -153,8 +149,7 @@ export class DownloadFileTask implements SyncTask {
 
       await streamPipeline(request, fileStream)
       await this.verifyDownloadedFile(tempFilePath)
-      await moveFile(tempFilePath, filepath)
-      addDataObjectIdToCache(this.dataObjectId)
+      return tempFilePath
     } catch (err) {
       logger.warn(`Sync - fetching data error for ${url}: ${err}`, { err })
       try {

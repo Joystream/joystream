@@ -6,6 +6,9 @@ import logger from '../logger'
 import {
   DataObjectByBagIdsDetailsFragment,
   DataObjectDetailsFragment,
+  GetAllStorageBagDetails,
+  GetAllStorageBagDetailsQuery,
+  GetAllStorageBagDetailsQueryVariables,
   GetDataObjects,
   GetDataObjectsByBagIds,
   GetDataObjectsByBagIdsQuery,
@@ -232,6 +235,15 @@ export class QueryNodeApi {
     if (!result) {
       return []
     }
+
+    return result
+  }
+
+  public async getAllStorageBagsDetails(): Promise<Array<StorageBagDetailsFragment>> {
+    const result = await this.multipleEntitiesQuery<
+      GetAllStorageBagDetailsQuery,
+      GetAllStorageBagDetailsQueryVariables
+    >(GetAllStorageBagDetails, {}, 'storageBags')
 
     return result
   }

@@ -1,4 +1,5 @@
 import fs from 'fs'
+import logger from '../logger'
 const fsPromises = fs.promises
 
 /**
@@ -18,4 +19,15 @@ export async function moveFile(src: fs.PathLike, dest: fs.PathLike): Promise<voi
 
   // Only if copy operation succeeds we delete the source file
   await fsPromises.unlink(src)
+}
+
+/**
+ * Creates a directory recursivly. Like `mkdir -p`
+ *
+ * @param tempDirName - full path to temporary directory
+ * @returns void promise.
+ */
+export async function createDirectory(dirName: string): Promise<void> {
+  logger.info(`Creating directory ${dirName}`)
+  await fsPromises.mkdir(dirName, { recursive: true })
 }
