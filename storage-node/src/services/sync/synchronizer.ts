@@ -1,7 +1,12 @@
 import { getDataObjectIDs, isDataObjectIdInCache } from '../../services/caching/localDataObjects'
 import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
-import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
+import {
+  DataObject,
+  DataObjectDetailsLoader,
+  DataObligations,
+  getStorageObligationsFromRuntime,
+} from './storageObligations'
 import { DownloadFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from '../processing/workingProcess'
 import _ from 'lodash'
@@ -48,35 +53,39 @@ export async function performSync(
   const model = await getStorageObligationsFromRuntime(qnApi, buckets)
   const storedObjectIds = getDataObjectIDs()
 
-  const assignedObjects = model.dataObjects
-  const assignedObjectIds = assignedObjects.map((obj) => obj.id)
+  const assignedObjectIdsLoader = model.createAssignedObjectsIdsLoader(true)
+  const assignedObjectIds = new Set(await assignedObjectIdsLoader.getAll())
 
-  const added = assignedObjects.filter((obj) => !isDataObjectIdInCache(obj.id))
-  const removed = _.difference(storedObjectIds, assignedObjectIds)
+  const unsyncedObjectIds = [...assignedObjectIds].filter((id) => !isDataObjectIdInCache(id))
+  const obsoleteObjectsNum = storedObjectIds.reduce((count, id) => (assignedObjectIds.has(id) ? count : count + 1), 0)
 
-  logger.debug(`Sync - new objects: ${added.length}`)
-  logger.debug(`Sync - obsolete objects: ${removed.length}`)
+  logger.debug(`Sync - new objects: ${unsyncedObjectIds.length}`)
+  logger.debug(`Sync - obsolete objects: ${obsoleteObjectsNum}`)
 
   const workingStack = new WorkingStack()
-
-  const addedTasks = await getDownloadTasks(
-    model,
-    buckets,
-    added,
-    uploadDirectory,
-    tempDirectory,
-    asyncWorkersTimeout,
-    hostId,
-    selectedOperatorUrl
-  )
-
-  logger.debug(`Sync - started processing...`)
-
   const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
-  await workingStack.add(addedTasks)
+  // Process unsynced objects in batches od 10_000
+  logger.debug(`Sync - started processing...`)
+  let processed = 0
+  for (const unsyncedIdsBatch of _.chunk(unsyncedObjectIds, 10_000)) {
+    const objectsLoader = new DataObjectDetailsLoader(qnApi, { by: 'ids', ids: unsyncedIdsBatch })
+    const objectsBatch = await objectsLoader.getAll()
+    const syncTasks = await getDownloadTasks(
+      model,
+      objectsBatch,
+      uploadDirectory,
+      tempDirectory,
+      asyncWorkersTimeout,
+      hostId,
+      selectedOperatorUrl
+    )
+    await workingStack.add(syncTasks)
+    await processSpawner.process()
+    processed += objectsBatch.length
+    logger.debug(`Sync - processed ${processed} / ${unsyncedObjectIds.length} objects...`)
+  }
 
-  await processSpawner.process()
   logger.info('Sync ended.')
 }
 
@@ -84,8 +93,7 @@ export async function performSync(
  * Creates the download tasks.
  *
  * @param dataObligations - defines the current data obligations for the node
- * @param ownBuckets - list of bucket ids operated this node
- * @param addedIds - data object IDs to download
+ * @param dataObjects - list of data objects to download
  * @param uploadDirectory - local directory for data uploading
  * @param tempDirectory - local directory for temporary data uploading
  * @param taskSink - a destination for the newly created tasks
@@ -95,65 +103,18 @@ export async function performSync(
  */
 export async function getDownloadTasks(
   dataObligations: DataObligations,
-  ownBuckets: string[],
-  added: DataObligations['dataObjects'],
+  dataObjects: DataObject[],
   uploadDirectory: string,
   tempDirectory: string,
   asyncWorkersTimeout: number,
   hostId: string,
   selectedOperatorUrl?: string
 ): Promise<DownloadFileTask[]> {
-  const bagIdByDataObjectId = new Map()
-  for (const entry of dataObligations.dataObjects) {
-    bagIdByDataObjectId.set(entry.id, entry.bagId)
-  }
+  const { bagOperatorsUrlsById } = dataObligations
 
-  const ownOperatorUrls: string[] = []
-  for (const entry of dataObligations.storageBuckets) {
-    if (ownBuckets.includes(entry.id)) {
-      ownOperatorUrls.push(entry.operatorUrl)
-    }
-  }
-
-  const bucketOperatorUrlById = new Map()
-  for (const entry of dataObligations.storageBuckets) {
-    if (!ownBuckets.includes(entry.id)) {
-      if (ownOperatorUrls.includes(entry.operatorUrl)) {
-        logger.warn(`(sync) Skipping remote bucket ${entry.id} - ${entry.operatorUrl}`)
-      } else {
-        bucketOperatorUrlById.set(entry.id, entry.operatorUrl)
-      }
-    }
-  }
-
-  const bagOperatorsUrlsById = new Map()
-  for (const entry of dataObligations.bags) {
-    const operatorUrls = []
-
-    for (const bucket of entry.buckets) {
-      if (bucketOperatorUrlById.has(bucket)) {
-        const operatorUrl = bucketOperatorUrlById.get(bucket)
-        if (operatorUrl) {
-          operatorUrls.push(operatorUrl)
-        }
-      }
-    }
-
-    bagOperatorsUrlsById.set(entry.id, operatorUrls)
-  }
-
-  const tasks = added.map((dataObject) => {
-    let operatorUrls: string[] = [] // can be empty after look up
-    let bagId = null
-    if (bagIdByDataObjectId.has(dataObject.id)) {
-      bagId = bagIdByDataObjectId.get(dataObject.id)
-      if (bagOperatorsUrlsById.has(bagId)) {
-        operatorUrls = bagOperatorsUrlsById.get(bagId)
-      }
-    }
-
+  const tasks = dataObjects.map((dataObject) => {
     return new DownloadFileTask(
-      selectedOperatorUrl ? [selectedOperatorUrl] : operatorUrls,
+      selectedOperatorUrl ? [selectedOperatorUrl] : bagOperatorsUrlsById.get(dataObject.bagId) || [],
       dataObject.id,
       dataObject.ipfsHash,
       dataObject.size,

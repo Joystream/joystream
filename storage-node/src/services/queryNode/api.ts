@@ -4,20 +4,26 @@ import fetch from 'cross-fetch'
 import stringify from 'fast-safe-stringify'
 import logger from '../logger'
 import {
-  DataObjectByBagIdsDetailsFragment,
   DataObjectDetailsFragment,
+  DataObjectIdsByBagId,
+  DataObjectIdsByBagIdQuery,
+  DataObjectIdsByBagIdQueryVariables,
+  DataObjectsByBagsConnection,
+  DataObjectsByBagsConnectionQuery,
+  DataObjectsByBagsConnectionQueryVariables,
+  DataObjectsByIdsConnection,
+  DataObjectsByIdsConnectionQuery,
+  DataObjectsByIdsConnectionQueryVariables,
+  DataObjectsWithBagDetailsByIds,
+  DataObjectsWithBagDetailsByIdsQuery,
+  DataObjectsWithBagDetailsByIdsQueryVariables,
+  DataObjectWithBagDetailsFragment,
   GetAllStorageBagDetails,
   GetAllStorageBagDetailsQuery,
   GetAllStorageBagDetailsQueryVariables,
-  GetDataObjects,
-  GetDataObjectsByBagIds,
-  GetDataObjectsByBagIdsQuery,
-  GetDataObjectsByBagIdsQueryVariables,
   GetDataObjectsDeletedEvents,
   GetDataObjectsDeletedEventsQuery,
   GetDataObjectsDeletedEventsQueryVariables,
-  GetDataObjectsQuery,
-  GetDataObjectsQueryVariables,
   GetSquidVersion,
   GetSquidVersionQuery,
   GetSquidVersionQueryVariables,
@@ -41,7 +47,7 @@ import {
   StorageBucketDetailsFragment,
   StorageBucketIdsFragment,
 } from './generated/queries'
-import { Maybe, StorageBagWhereInput } from './generated/schema'
+import { Maybe } from './generated/schema'
 
 /**
  * Defines query paging limits.
@@ -53,7 +59,7 @@ type PaginationQueryVariables = {
   lastCursor?: Maybe<string>
 }
 
-type PaginationQueryResult<T = unknown> = {
+export type PaginationQueryResult<T = unknown> = {
   edges: { node: T }[]
   pageInfo: {
     hasNextPage: boolean
@@ -249,50 +255,87 @@ export class QueryNodeApi {
   }
 
   /**
-   * Returns data objects info by pages for the given bags.
+   * Gets a page of data objects belonging to specified bags.
    *
    * @param bagIds - query filter: bag IDs
    */
-  public async getDataObjectsByBagIds(bagIds: string[]): Promise<Array<DataObjectByBagIdsDetailsFragment>> {
-    const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    let fullResult: DataObjectByBagIdsDetailsFragment[] = []
-    while (allBagIds.length) {
-      const bagIdsBatch = allBagIds.splice(0, 1000)
-      const input: StorageBagWhereInput = { id_in: bagIdsBatch }
-      fullResult = [
-        ...fullResult,
-        ...(await this.multipleEntitiesQuery<GetDataObjectsByBagIdsQuery, GetDataObjectsByBagIdsQueryVariables>(
-          GetDataObjectsByBagIds,
-          { bagIds: input },
-          'storageDataObjects'
-        )),
-      ]
-    }
-
-    return fullResult
+  public async getDataObjectsByBagsPage<IncludeDetails extends boolean>(
+    bagIds: string[],
+    limit: number,
+    after: string | undefined,
+    includeDetails: IncludeDetails,
+    isAccepted?: boolean
+  ): Promise<
+    IncludeDetails extends true
+      ? PaginationQueryResult<DataObjectDetailsFragment> | null
+      : PaginationQueryResult<{ id: string }> | null
+  > {
+    return this.uniqueEntityQuery<DataObjectsByBagsConnectionQuery, DataObjectsByBagsConnectionQueryVariables>(
+      DataObjectsByBagsConnection,
+      {
+        bagIds: [...bagIds],
+        isAccepted,
+        limit,
+        after,
+        includeDetails: includeDetails,
+      },
+      'storageDataObjectsConnection'
+    )
   }
 
   /**
-   * Returns data objects info by pages for the given dataObject IDs.
+   * Gets a page of data objects by the given list of dataObject IDs.
    *
-   * @param dataObjectIds - query filter: dataObject IDs
+   * @param ids - query filter: data object ids
    */
-  public async getDataObjectDetails(dataObjectIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
-    const allDataObjectIds = [...dataObjectIds] // Copy to avoid modifying the original array
-    let fullResult: DataObjectDetailsFragment[] = []
-    while (allDataObjectIds.length) {
-      const dataObjectIdsBatch = allDataObjectIds.splice(0, 1000)
-      fullResult = [
-        ...fullResult,
-        ...(await this.multipleEntitiesQuery<GetDataObjectsQuery, GetDataObjectsQueryVariables>(
-          GetDataObjects,
-          { dataObjectIds: dataObjectIdsBatch },
-          'storageDataObjects'
-        )),
-      ]
-    }
+  public async getDataObjectsByIdsPage<IncludeDetails extends boolean>(
+    ids: string[],
+    limit: number,
+    after: string | undefined,
+    includeDetails: IncludeDetails,
+    isAccepted?: boolean
+  ): Promise<
+    IncludeDetails extends true
+      ? PaginationQueryResult<DataObjectDetailsFragment> | null
+      : PaginationQueryResult<{ id: string }> | null
+  > {
+    return this.uniqueEntityQuery<DataObjectsByIdsConnectionQuery, DataObjectsByIdsConnectionQueryVariables>(
+      DataObjectsByIdsConnection,
+      {
+        ids: [...ids],
+        isAccepted,
+        limit,
+        after,
+        includeDetails: includeDetails,
+      },
+      'storageDataObjectsConnection'
+    )
+  }
 
-    return fullResult
+  /**
+   * Returns a list of data objects by ids, with their corresponding bag details
+   *
+   * @param ids - query filter: data object ids
+   */
+  public async getDataObjectsWithBagDetails(ids: string[]): Promise<DataObjectWithBagDetailsFragment[]> {
+    return this.multipleEntitiesQuery<
+      DataObjectsWithBagDetailsByIdsQuery,
+      DataObjectsWithBagDetailsByIdsQueryVariables
+    >(DataObjectsWithBagDetailsByIds, { ids: [...ids] }, 'storageDataObjects')
+  }
+
+  /**
+   * Returns a list of data object ids that belong to a given bag.
+   *
+   * @param bagId - query filter: bag ID
+   */
+  public async getDataObjectIdsByBagId(bagId: string): Promise<string[]> {
+    const result = await this.multipleEntitiesQuery<DataObjectIdsByBagIdQuery, DataObjectIdsByBagIdQueryVariables>(
+      DataObjectIdsByBagId,
+      { bagId },
+      'storageDataObjects'
+    )
+    return result.map((o) => o.id)
   }
 
   /**

@@ -91,7 +91,7 @@ export class AcceptPendingObjectsService {
   }
 
   private async processPendingObjects(pendingIds: string[]): Promise<PendingObjectDetails> {
-    const pendingDataObjects = await this.qnApi.getDataObjectDetails(pendingIds)
+    const pendingDataObjects = await this.qnApi.getDataObjectsWithBagDetails(pendingIds)
 
     // objects not found in the query node
     const maybeDeletedObjectIds = pendingIds.filter(

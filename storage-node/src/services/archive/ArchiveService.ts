@@ -13,7 +13,7 @@ import {
   OBJECTS_TRACKING_FILENAME,
 } from './tracking'
 import { QueryNodeApi } from '../queryNode/api'
-import { getStorageObligationsFromRuntime } from '../sync/storageObligations'
+import { DataObjectDetailsLoader, getStorageObligationsFromRuntime } from '../sync/storageObligations'
 import { getDownloadTasks } from '../sync/synchronizer'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
@@ -369,40 +369,49 @@ export class ArchiveService {
   public async performSync(): Promise<void> {
     const model = await getStorageObligationsFromRuntime(this.queryNodeApi)
 
-    const assignedObjects = model.dataObjects
-    const added = assignedObjects.filter((obj) => !this.objectTrackingService.isTracked(obj.id))
-    added.sort((a, b) => parseInt(b.id) - parseInt(a.id))
+    const assignedObjectsIds = await model.createAssignedObjectsIdsLoader(true).getAll()
+    const unsyncedIds = assignedObjectsIds
+      .filter((id) => !this.objectTrackingService.isTracked(id))
+      .map((id) => parseInt(id))
+      .sort((a, b) => a - b)
 
-    this.logger.info(`Sync - new objects: ${added.length}`)
+    this.logger.info(`Sync - new objects: ${unsyncedIds.length}`)
 
-    // Add new download tasks while the upload dir size limit allows
-    while (added.length) {
-      const uploadDirectorySize = await this.getUploadDirSize()
-      while (true) {
-        const object = added.pop()
-        if (!object) {
-          break
-        }
-        if (object.size + uploadDirectorySize + this.syncQueueObjectsSize > this.uploadDirSizeLimit) {
-          this.logger.debug(
-            `Waiting for some disk space to free ` +
-              `(upload_dir: ${uploadDirectorySize} / ${this.uploadDirSizeLimit}, ` +
-              `sync_q=${this.syncQueueObjectsSize}, obj_size=${object.size})... `
+    // Sync objects in batches of 10_000
+    for (const unsyncedIdsBatch of _.chunk(unsyncedIds, 10_000)) {
+      const objectsBatchLoader = new DataObjectDetailsLoader(this.queryNodeApi, {
+        by: 'ids',
+        ids: unsyncedIdsBatch.map((id) => id.toString()),
+      })
+      const objectsBatch = await objectsBatchLoader.getAll()
+      // Add new download tasks while the upload dir size limit allows
+      while (objectsBatch.length) {
+        const uploadDirectorySize = await this.getUploadDirSize()
+        while (true) {
+          const object = objectsBatch.pop()
+          if (!object) {
+            break
+          }
+          if (object.size + uploadDirectorySize + this.syncQueueObjectsSize > this.uploadDirSizeLimit) {
+            this.logger.debug(
+              `Waiting for some disk space to free ` +
+                `(upload_dir: ${uploadDirectorySize} / ${this.uploadDirSizeLimit}, ` +
+                `sync_q=${this.syncQueueObjectsSize}, obj_size=${object.size})... `
+            )
+            objectsBatch.push(object)
+            await sleep(60_000)
+            break
+          }
+          const [downloadTask] = await getDownloadTasks(
+            model,
+            [object],
+            this.uploadQueueDir,
+            this.tmpDownloadDir,
+            this.syncWorkersTimeout,
+            this.hostId
           )
-          added.push(object)
-          await sleep(60_000)
-          break
+          await this.addDownloadTask(downloadTask, object.size)
         }
-        const [downloadTask] = await getDownloadTasks(
-          model,
-          [],
-          [object],
-          this.uploadQueueDir,
-          this.tmpDownloadDir,
-          this.syncWorkersTimeout,
-          this.hostId
-        )
-        await this.addDownloadTask(downloadTask, object.size)
       }
     }
   }
