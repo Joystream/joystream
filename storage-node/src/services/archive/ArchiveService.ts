@@ -383,7 +383,7 @@ export class ArchiveService {
         by: 'ids',
         ids: unsyncedIdsBatch.map((id) => id.toString()),
       })
-      const objectsBatch = await objectsBatchLoader.getAll()
+      const objectsBatch = (await objectsBatchLoader.getAll()).sort((a, b) => parseInt(b.id) - parseInt(a.id))
       // Add new download tasks while the upload dir size limit allows
       while (objectsBatch.length) {
         const uploadDirectorySize = await this.getUploadDirSize()
