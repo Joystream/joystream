@@ -3,8 +3,8 @@ import logger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
 import {
   DataObject,
-  DataObjectDetailsLoader,
   DataObligations,
+  getDataObjectsByIDs,
   getStorageObligationsFromRuntime,
 } from './storageObligations'
 import { DownloadFileTask } from './tasks'
@@ -53,8 +53,7 @@ export async function performSync(
   const model = await getStorageObligationsFromRuntime(qnApi, buckets)
   const storedObjectIds = getDataObjectIDs()
 
-  const assignedObjectIdsLoader = model.createAssignedObjectsIdsLoader(true)
-  const assignedObjectIds = new Set(await assignedObjectIdsLoader.getAll())
+  const assignedObjectIds = new Set(await model.getAssignedDataObjectIds(true))
 
   const unsyncedObjectIds = [...assignedObjectIds].filter((id) => !isDataObjectIdInCache(id))
   const obsoleteObjectsNum = storedObjectIds.reduce((count, id) => (assignedObjectIds.has(id) ? count : count + 1), 0)
@@ -69,8 +68,7 @@ export async function performSync(
   logger.debug(`Sync - started processing...`)
   let processed = 0
   for (const unsyncedIdsBatch of _.chunk(unsyncedObjectIds, 10_000)) {
-    const objectsLoader = new DataObjectDetailsLoader(qnApi, { by: 'ids', ids: unsyncedIdsBatch })
-    const objectsBatch = await objectsLoader.getAll()
+    const objectsBatch = await getDataObjectsByIDs(qnApi, unsyncedIdsBatch)
     const syncTasks = await getDownloadTasks(
       model,
       objectsBatch,

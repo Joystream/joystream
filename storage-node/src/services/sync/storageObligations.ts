@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import logger from '../logger'
-import { MAX_RESULTS_PER_QUERY, PaginationQueryResult, QueryNodeApi } from '../queryNode/api'
-import { DataObjectDetailsFragment, StorageBucketDetailsFragment } from '../queryNode/generated/queries'
+import { MAX_RESULTS_PER_QUERY, QueryNodeApi } from '../queryNode/api'
+import { StorageBucketDetailsFragment } from '../queryNode/generated/queries'
 import { ApiPromise } from '@polkadot/api'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
 
@@ -30,9 +30,9 @@ export type DataObligations = {
   bagOperatorsUrlsById: Map<string, string[]>
 
   /**
-   * A function that returns a loader of all assigned data object ids
+   * A function that returns assigned data object ids
    */
-  createAssignedObjectsIdsLoader(isAccepted?: boolean): DataObjectIdsLoader
+  getAssignedDataObjectIds(isAccepted?: boolean): Promise<string[]>
 }
 
 /**
@@ -95,93 +95,6 @@ export type DataObject = {
   size: number
 }
 
-export abstract class LazyBatchLoader<QueryResult extends PaginationQueryResult<unknown>, MappedEntity> {
-  private endCursor: string | undefined
-  private _hasNextPage: boolean
-  private queryFn: (limit: number, after?: string) => Promise<QueryResult | null>
-
-  constructor(queryFn: (limit: number, after?: string) => Promise<QueryResult | null>) {
-    this.queryFn = queryFn
-    this._hasNextPage = true
-  }
-
-  public get hasNextPage(): boolean {
-    return this._hasNextPage
-  }
-
-  abstract mapResults(results: QueryResult['edges'][number]['node'][]): Promise<MappedEntity[]>
-
-  async nextBatch(size = 10_000): Promise<MappedEntity[] | null> {
-    if (!this._hasNextPage) {
-      return null
-    }
-    const result = await this.queryFn(size, this.endCursor)
-    if (!result) {
-      throw new Error('Connection query returned empty result')
-    }
-
-    this.endCursor = result.pageInfo.endCursor || undefined
-    this._hasNextPage = result.pageInfo.hasNextPage
-    const mapped = await this.mapResults(result.edges.map((e) => e.node))
-    return mapped
-  }
-
-  async getAll(): Promise<MappedEntity[]> {
-    const results: MappedEntity[] = []
-    while (this._hasNextPage) {
-      const batch = await this.nextBatch()
-      if (!batch) {
-        break
-      }
-      results.push(...batch)
-    }
-
-    return results
-  }
-}
-
-type DataObjectsLoadBy = { by: 'bagIds' | 'ids'; ids: string[]; isAccepted?: boolean }
-
-export class DataObjectDetailsLoader extends LazyBatchLoader<
-  PaginationQueryResult<DataObjectDetailsFragment>,
-  DataObject
-> {
-  constructor(qnApi: QueryNodeApi, by: DataObjectsLoadBy) {
-    if (by.by === 'bagIds') {
-      super((limit, after) => qnApi.getDataObjectsByBagsPage(by.ids, limit, after, true, by.isAccepted))
-    } else if (by.by === 'ids') {
-      super((limit, after) => qnApi.getDataObjectsByIdsPage(by.ids, limit, after, true, by.isAccepted))
-    } else {
-      throw new Error(`Unknown "by" condition: ${JSON.stringify(by)}`)
-    }
-  }
-
-  async mapResults(results: DataObjectDetailsFragment[]): Promise<DataObject[]> {
-    return results.map((dataObject) => ({
-      id: dataObject.id,
-      size: parseInt(dataObject.size),
-      bagId: dataObject.storageBag.id,
-      ipfsHash: dataObject.ipfsHash,
-    }))
-  }
-}
-
-export class DataObjectIdsLoader extends LazyBatchLoader<PaginationQueryResult<{ id: string }>, string> {
-  constructor(qnApi: QueryNodeApi, by: DataObjectsLoadBy) {
-    if (by.by === 'bagIds') {
-      super((limit, after) => qnApi.getDataObjectsByBagsPage(by.ids, limit, after, false, by.isAccepted))
-    } else if (by.by === 'ids') {
-      super((limit, after) => qnApi.getDataObjectsByIdsPage(by.ids, limit, after, false, by.isAccepted))
-    } else {
-      throw new Error(`Unknown "by" condition: ${JSON.stringify(by)}`)
-    }
-  }
-
-  async mapResults(results: { id: string }[]): Promise<string[]> {
-    return results.map(({ id }) => id)
-  }
-}
-
 /**
  * Get storage provider obligations like (assigned data objects) from the
  * runtime (Query Node).
@@ -219,7 +132,7 @@ export async function getStorageObligationsFromRuntime(
   for (const bucket of storageBuckets) {
     if (!ownBuckets.has(bucket.id)) {
       if (ownOperatorUrls.has(bucket.operatorUrl)) {
-        logger.warn(`(sync) Skipping remote bucket ${bucket.id} - ${bucket.operatorUrl}`)
+        logger.warn(`Skipping remote bucket ${bucket.id} - ${bucket.operatorUrl}`)
       } else {
         bucketOperatorUrlById.set(bucket.id, bucket.operatorUrl)
       }
@@ -244,8 +157,11 @@ export async function getStorageObligationsFromRuntime(
     bags,
     bagOperatorsUrlsById,
     bucketOperatorUrlById,
-    createAssignedObjectsIdsLoader: (isAccepted?: boolean) =>
-      new DataObjectIdsLoader(qnApi, { by: 'bagIds', ids: bags.map((b) => b.id), isAccepted }),
+    getAssignedDataObjectIds: (isAccepted?: boolean) =>
+      qnApi.getDataObjectIdsByBagIds(
+        bags.map((b) => b.id),
+        isAccepted
+      ),
   }
 
   return model
@@ -284,6 +200,22 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
       return false
     }
   })
+}
+
+/**
+ * Get details of storage data objects by IDs.
+ *
+ * @param api - initialized QueryNodeApi instance
+ * @param dataObjectIds - data objects' IDs
+ * @returns storage data objects
+ */
+export async function getDataObjectsByIDs(api: QueryNodeApi, dataObjectIds: string[]): Promise<DataObject[]> {
+  return (await api.getDataObjectsDetailsByIds(dataObjectIds)).map((o) => ({
+    id: o.id,
+    size: parseInt(o.size),
+    bagId: o.storageBag.id,
+    ipfsHash: o.ipfsHash,
+  }))
 }
 
 /**

@@ -13,7 +13,7 @@ import {
   OBJECTS_TRACKING_FILENAME,
 } from './tracking'
 import { QueryNodeApi } from '../queryNode/api'
-import { DataObjectDetailsLoader, getStorageObligationsFromRuntime } from '../sync/storageObligations'
+import { getDataObjectsByIDs, getStorageObligationsFromRuntime } from '../sync/storageObligations'
 import { getDownloadTasks } from '../sync/synchronizer'
 import sleep from 'sleep-promise'
 import { Logger } from 'winston'
@@ -369,21 +369,21 @@ export class ArchiveService {
   public async performSync(): Promise<void> {
     const model = await getStorageObligationsFromRuntime(this.queryNodeApi)
 
-    const assignedObjectsIds = await model.createAssignedObjectsIdsLoader(true).getAll()
-    const unsyncedIds = assignedObjectsIds
+    const unsyncedIds = (await model.getAssignedDataObjectIds(true))
       .filter((id) => !this.objectTrackingService.isTracked(id))
       .map((id) => parseInt(id))
+      // Sort unsynced ids in ASCENDING order (oldest first)
       .sort((a, b) => a - b)
 
     this.logger.info(`Sync - new objects: ${unsyncedIds.length}`)
 
     // Sync objects in batches of 10_000
     for (const unsyncedIdsBatch of _.chunk(unsyncedIds, 10_000)) {
-      const objectsBatchLoader = new DataObjectDetailsLoader(this.queryNodeApi, {
-        by: 'ids',
-        ids: unsyncedIdsBatch.map((id) => id.toString()),
-      })
-      const objectsBatch = (await objectsBatchLoader.getAll()).sort((a, b) => parseInt(b.id) - parseInt(a.id))
+      const objectIdsBatch = unsyncedIdsBatch.map((id) => id.toString())
+      // Sort objectsBatch by ids in DESCENDING order (because we're using .pop() to get the next object)
+      const objectsBatch = (await getDataObjectsByIDs(this.queryNodeApi, objectIdsBatch)).sort(
+        (a, b) => parseInt(b.id) - parseInt(a.id)
+      )
       // Add new download tasks while the upload dir size limit allows
       while (objectsBatch.length) {
         const uploadDirectorySize = await this.getUploadDirSize()

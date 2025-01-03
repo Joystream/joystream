@@ -83,13 +83,7 @@ fragment DataObjectWithBagDetails on StorageDataObject {
   }
 }
 
-query dataObjectsByBagsConnection(
-  $bagIds: [String!]
-  $limit: Int
-  $after: String
-  $includeDetails: Boolean!
-  $isAccepted: Boolean
-) {
+query dataObjectIdsByBagIdsConnection($bagIds: [String!], $limit: Int, $after: String, $isAccepted: Boolean) {
   storageDataObjectsConnection(
     where: { storageBag: { id_in: $bagIds }, isAccepted_eq: $isAccepted }
     first: $limit
@@ -99,7 +93,6 @@ query dataObjectsByBagsConnection(
     edges {
       node {
         id
-        ...DataObjectDetails @include(if: $includeDetails)
       }
     }
     pageInfo {
@@ -110,30 +103,16 @@ query dataObjectsByBagsConnection(
   }
 }
 
-query dataObjectsByIdsConnection(
-  $ids: [String!]
-  $limit: Int
-  $after: String
-  $includeDetails: Boolean!
-  $isAccepted: Boolean
-) {
-  storageDataObjectsConnection(
-    where: { id_in: $ids, isAccepted_eq: $isAccepted }
-    first: $limit
-    after: $after
-    orderBy: id_ASC
-  ) {
-    edges {
-      node {
-        id
-        ...DataObjectDetails @include(if: $includeDetails)
-      }
-    }
-    pageInfo {
-      startCursor
-      endCursor
-      hasNextPage
-    }
+# For verifying if data objects still exist
+query dataObjectIdsByIds($ids: [String!]) {
+  storageDataObjects(where: { id_in: $ids }) {
+    id
+  }
+}
+
+query dataObjectDetailsByIds($ids: [String!]) {
+  storageDataObjects(where: { id_in: $ids }) {
+    ...DataObjectDetails
   }
 }
 

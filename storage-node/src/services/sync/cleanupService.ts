@@ -5,7 +5,7 @@ import urljoin from 'url-join'
 import { getDataObjectIDs } from '../../services/caching/localDataObjects'
 import rootLogger from '../../services/logger'
 import { QueryNodeApi } from '../queryNode/api'
-import { DataObjectIdsLoader, DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
+import { DataObligations, getStorageObligationsFromRuntime } from './storageObligations'
 import { DeleteLocalFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from '../processing/workingProcess'
 import { DataObjectWithBagDetailsFragment } from '../queryNode/generated/queries'
@@ -79,13 +79,11 @@ export async function performCleanup(
   const model = await getStorageObligationsFromRuntime(qnApi, buckets)
   const storedObjectsIds = getDataObjectIDs()
 
-  const assignedObjectsLoader = model.createAssignedObjectsIdsLoader()
-  const assignedObjectIds = new Set(await assignedObjectsLoader.getAll())
+  const assignedObjectIds = new Set(await model.getAssignedDataObjectIds())
   const obsoleteObjectIds = new Set(storedObjectsIds.filter((id) => !assignedObjectIds.has(id)))
 
   // If objects are obsolete but still exist: They are "moved" objects
-  const movedObjectsLoader = new DataObjectIdsLoader(qnApi, { by: 'ids', ids: Array.from(obsoleteObjectIds) })
-  const movedObjectIds = new Set(await movedObjectsLoader.getAll())
+  const movedObjectIds = new Set(await qnApi.getExistingDataObjectsIdsByIds([...obsoleteObjectIds]))
 
   // If objects are obsolete and don't exist: They are "deleted objects"
   const deletedDataObjectIds = new Set([...obsoleteObjectIds].filter((id) => !movedObjectIds.has(id)))
