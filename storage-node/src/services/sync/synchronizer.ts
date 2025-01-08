@@ -35,6 +35,7 @@ export const PendingDirName = 'pending'
  * @param qnApi - Query Node API
  * @param uploadDirectory - local directory to get file names from
  * @param tempDirectory - local directory for temporary data uploading
+ * @param batchSize - maximum number of data objects to process in a single batch
  * @param selectedOperatorUrl - (optional) defines the data source URL. If not set
  * the source URL is resolved for each data object separately using the Query
  * Node information about the storage providers.
@@ -46,6 +47,7 @@ export async function performSync(
   qnApi: QueryNodeApi,
   uploadDirectory: string,
   tempDirectory: string,
+  batchSize: number,
   hostId: string,
   selectedOperatorUrl?: string
 ): Promise<void> {
@@ -64,10 +66,10 @@ export async function performSync(
   const workingStack = new WorkingStack()
   const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
-  // Process unsynced objects in batches od 10_000
+  // Process unsynced objects in batches
   logger.debug(`Sync - started processing...`)
   let processed = 0
-  for (const unsyncedIdsBatch of _.chunk(unsyncedObjectIds, 10_000)) {
+  for (const unsyncedIdsBatch of _.chunk(unsyncedObjectIds, batchSize)) {
     const objectsBatch = await getDataObjectsByIDs(qnApi, unsyncedIdsBatch)
     const syncTasks = await getDownloadTasks(
       model,

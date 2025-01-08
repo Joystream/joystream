@@ -27,6 +27,10 @@ export default class Cleanup extends ApiCommandBase {
       required: true,
       description: 'The buckerId to sync prune/cleanup',
     }),
+    cleanupBatchSize: flags.integer({
+      description: 'Maximum number of objects to process in a single batch during cleanup.',
+      default: 10_000,
+    }),
     cleanupWorkersNumber: flags.integer({
       char: 'p',
       required: false,
@@ -57,7 +61,15 @@ export default class Cleanup extends ApiCommandBase {
     logger.info('Cleanup...')
 
     try {
-      await performCleanup([bucketId], flags.cleanupWorkersNumber, api, qnApi, flags.uploads, '')
+      await performCleanup(
+        [bucketId],
+        flags.cleanupWorkersNumber,
+        api,
+        qnApi,
+        flags.uploads,
+        flags.cleanupBatchSize,
+        ''
+      )
     } catch (err) {
       logger.error(err)
       logger.error(stringify(err))

@@ -78,15 +78,28 @@ export default class Server extends ApiCommandBase {
       description: 'Interval before retrying failed synchronization run (in minutes)',
       default: 3,
     }),
+    syncBatchSize: flags.integer({
+      description: 'Maximum number of objects to process in a single batch during synchronization.',
+      default: 10_000,
+    }),
     cleanup: flags.boolean({
       char: 'c',
       description: 'Enable cleanup/pruning of no-longer assigned assets.',
       default: false,
     }),
+    cleanupBatchSize: flags.integer({
+      description: 'Maximum number of objects to process in a single batch during cleanup.',
+      default: 10_000,
+    }),
     cleanupInterval: flags.integer({
       char: 'i',
       description: 'Interval between periodic cleanup actions (in minutes)',
       default: 360,
+    }),
+    cleanupWorkersNumber: flags.integer({
+      required: false,
+      description: 'Cleanup workers number (max async operations in progress).',
+      default: 100,
     }),
     storageSquidEndpoint: flags.string({
       char: 'q',
@@ -299,6 +312,7 @@ Supported values: warn, error, debug, info. Default:debug`,
             flags.syncWorkersTimeout,
             flags.syncInterval,
             flags.syncRetryInterval,
+            flags.syncBatchSize,
             X_HOST_ID
           ),
         0
@@ -319,8 +333,9 @@ Supported values: warn, error, debug, info. Default:debug`,
             api,
             qnApi,
             flags.uploads,
-            flags.syncWorkersNumber,
+            flags.cleanupWorkersNumber,
             flags.cleanupInterval,
+            flags.cleanupBatchSize,
             X_HOST_ID
           ),
         0
@@ -397,6 +412,7 @@ async function runSyncWithInterval(
   syncWorkersTimeout: number,
   syncIntervalMinutes: number,
   syncRetryIntervalMinutes: number,
+  syncBatchSize: number,
   hostId: string
 ) {
   const sleepInterval = syncIntervalMinutes * 60 * 1000
@@ -404,7 +420,16 @@ async function runSyncWithInterval(
   while (true) {
     try {
       logger.info(`Resume syncing....`)
-      await performSync(buckets, syncWorkersNumber, syncWorkersTimeout, qnApi, uploadsDirectory, tempDirectory, hostId)
+      await performSync(
+        buckets,
+        syncWorkersNumber,
+        syncWorkersTimeout,
+        qnApi,
+        uploadsDirectory,
+        tempDirectory,
+        syncBatchSize,
+        hostId
+      )
       logger.info(`Sync run complete. Next run in ${syncIntervalMinutes} minute(s).`)
       await sleep(sleepInterval)
     } catch (err) {
@@ -434,6 +459,7 @@ async function runCleanupWithInterval(
   uploadsDirectory: string,
   syncWorkersNumber: number,
   cleanupIntervalMinutes: number,
+  cleanupBatchSize: number,
   hostId: string
 ) {
   const sleepInterval = cleanupIntervalMinutes * 60 * 1000
@@ -442,7 +468,7 @@ async function runCleanupWithInterval(
     await sleep(sleepInterval)
     try {
       logger.info(`Resume cleanup....`)
-      await performCleanup(buckets, syncWorkersNumber, api, qnApi, uploadsDirectory, hostId)
+      await performCleanup(buckets, syncWorkersNumber, api, qnApi, uploadsDirectory, cleanupBatchSize, hostId)
     } catch (err) {
       logger.error(`Critical cleanup error: ${err}`)
     }

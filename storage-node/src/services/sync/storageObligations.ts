@@ -194,7 +194,7 @@ async function getAllBuckets(api: QueryNodeApi): Promise<StorageBucketDetailsFra
   return await getAllObjectsWithPaging(async (offset, limit) => {
     const idsPart = ids.slice(offset, offset + limit)
     if (!_.isEmpty(idsPart)) {
-      logger.debug(`Sync - getting all storage buckets: offset = ${offset}, limit = ${limit}`)
+      logger.debug(`Getting all storage buckets: offset = ${offset}, limit = ${limit}`)
       return await api.getStorageBucketDetails(idsPart)
     } else {
       return false

@@ -10,6 +10,7 @@ import { DeleteLocalFileTask } from './tasks'
 import { TaskProcessorSpawner, WorkingStack } from '../processing/workingProcess'
 import { DataObjectWithBagDetailsFragment } from '../queryNode/generated/queries'
 import { Logger } from 'winston'
+import pLimit from 'p-limit'
 
 /**
  * The maximum allowed threshold by which the QN processor can lag behind
@@ -41,14 +42,13 @@ export const MINIMUM_REPLICATION_THRESHOLD = parseInt(process.env.CLEANUP_MIN_RE
  * - If the asset being pruned from this storage-node is currently being downloaded
  *   by some external actors, then the cleanup action for this asset would be postponed
  *
- * @param api - (optional) runtime API promise
- * @param workerId - current storage provider ID
- * @param buckets - Selected storage buckets
+ * @param buckets - selected storage buckets
  * @param asyncWorkersNumber - maximum parallel cleanups number
- * @param asyncWorkersTimeout - downloading asset timeout
+ * @param api - runtime API promise
  * @param qnApi - Query Node API
  * @param uploadDirectory - local directory to get file names from
- * @param tempDirectory - local directory for temporary data uploading
+ * @param batchSize - max. number of data objects to process in a single batch
+ * @param hostId
  */
 export async function performCleanup(
   buckets: string[],
@@ -56,6 +56,7 @@ export async function performCleanup(
   api: ApiPromise,
   qnApi: QueryNodeApi,
   uploadDirectory: string,
+  batchSize: number,
   hostId: string
 ): Promise<void> {
   const logger = rootLogger.child({ label: 'Cleanup' })
@@ -98,11 +99,11 @@ export async function performCleanup(
     const workingStack = new WorkingStack()
     const processSpawner = new TaskProcessorSpawner(workingStack, asyncWorkersNumber)
 
-    // Execute deleted objects removal tasks in batches of 10_000
+    // Execute deleted objects removal tasks in batches
     if (deletedDataObjectIds.size) {
       let deletedProcessed = 0
       logger.info(`removing ${deletedDataObjectIds.size} deleted objects...`)
-      for (let deletedObjectsIdsBatch of _.chunk([...deletedDataObjectIds], 10_000)) {
+      for (let deletedObjectsIdsBatch of _.chunk([...deletedDataObjectIds], batchSize)) {
         // Confirm whether the objects were actually deleted by fetching the related deletion events
         const dataObjectDeletedEvents = await qnApi.getDataObjectDeletedEvents(deletedObjectsIdsBatch)
         const confirmedIds = new Set(dataObjectDeletedEvents.map((e) => e.data.dataObjectId))
@@ -120,26 +121,35 @@ export async function performCleanup(
         deletedProcessed += deletedObjectsIdsBatch.length
         logger.debug(`${deletedProcessed} / ${deletedDataObjectIds.size} deleted objects processed...`)
       }
+      logger.info(`${deletedProcessed}/${deletedDataObjectIds.size} deleted data objects successfully cleared.`)
     }
 
-    // Execute moved objects removal tasks in batches of 10_000
+    // Execute moved objects removal tasks in batches
     if (movedObjectIds.size) {
       let movedProcessed = 0
       logger.info(`removing ${movedObjectIds.size} moved objects...`)
-      for (const movedObjectsIdsBatch of _.chunk([...movedObjectIds], 10_000)) {
+      for (const movedObjectsIdsBatch of _.chunk([...movedObjectIds], batchSize)) {
         const movedDataObjectsBatch = await qnApi.getDataObjectsWithBagDetails(movedObjectsIdsBatch)
         const deletionTasksOfMovedDataObjects = await getDeletionTasksFromMovedDataObjects(
           logger,
           uploadDirectory,
           model,
           movedDataObjectsBatch,
+          asyncWorkersNumber,
           hostId
         )
+        const numberOfTasks = deletionTasksOfMovedDataObjects.length
+        if (numberOfTasks !== movedObjectsIdsBatch.length) {
+          logger.warn(
+            `Only ${numberOfTasks} / ${movedObjectsIdsBatch.length} moved objects will be removed in this batch...`
+          )
+        }
         await workingStack.add(deletionTasksOfMovedDataObjects)
         await processSpawner.process()
-        movedProcessed += movedDataObjectsBatch.length
+        movedProcessed += numberOfTasks
         logger.debug(`${movedProcessed} / ${movedObjectIds.size} moved objects processed...`)
       }
+      logger.info(`${movedProcessed}/${movedObjectIds.size} moved data objects successfully cleared.`)
     }
   } else {
     logger.info('No objects to prune, skipping...')
@@ -155,6 +165,7 @@ export async function performCleanup(
  * @param uploadDirectory - local directory for data uploading
  * @param dataObligations - defines the current data obligations for the node
  * @param movedDataObjects- obsolete (no longer assigned) data objects that has been moved to other buckets
+ * @param asyncWorkersNumber - number of async workers assigned for cleanup tasks
  * @param hostId - host id of the current node
  */
 async function getDeletionTasksFromMovedDataObjects(
@@ -162,33 +173,71 @@ async function getDeletionTasksFromMovedDataObjects(
   uploadDirectory: string,
   dataObligations: DataObligations,
   movedDataObjects: DataObjectWithBagDetailsFragment[],
+  asyncWorkersNumber: number,
   hostId: string
 ): Promise<DeleteLocalFileTask[]> {
   const timeoutMs = 60 * 1000 // 1 minute since it's only a HEAD request
   const deletionTasks: DeleteLocalFileTask[] = []
 
   const { bucketOperatorUrlById } = dataObligations
-  await Promise.allSettled(
-    movedDataObjects.map(async (movedDataObject) => {
-      let dataObjectReplicationCount = 0
+  const limit = pLimit(asyncWorkersNumber)
+  let checkedObjects = 0
+  const checkReplicationThreshold = async (movedDataObject: DataObjectWithBagDetailsFragment) => {
+    ++checkedObjects
+    if (checkedObjects % asyncWorkersNumber === 0) {
+      logger.debug(
+        `Checking replication: ${checkedObjects}/${movedDataObjects.length} (active: ${limit.activeCount}, pending: ${limit.pendingCount})`
+      )
+    }
 
-      for (const { storageBucket } of movedDataObject.storageBag.storageBuckets) {
-        const nodeUrl = bucketOperatorUrlById.get(storageBucket.id)
-        if (nodeUrl) {
-          const fileUrl = urljoin(nodeUrl, 'api/v1/files', movedDataObject.id)
+    const externaBucketEndpoints = movedDataObject.storageBag.storageBuckets
+      .map(({ storageBucket: { id } }) => {
+        return bucketOperatorUrlById.get(id)
+      })
+      .filter((url): url is string => !!url)
+    let lastErr = ''
+    let successes = 0
+    let failures = 0
+
+    if (externaBucketEndpoints.length >= MINIMUM_REPLICATION_THRESHOLD) {
+      for (const nodeUrl of externaBucketEndpoints) {
+        const fileUrl = urljoin(nodeUrl, 'api/v1/files', movedDataObject.id)
+        try {
           await superagent.head(fileUrl).timeout(timeoutMs).set('X-COLOSSUS-HOST-ID', hostId)
-          dataObjectReplicationCount++
+          ++successes
+        } catch (e) {
+          ++failures
+          lastErr = e instanceof Error ? e.message : e.toString()
+        }
+        if (successes >= MINIMUM_REPLICATION_THRESHOLD) {
+          break
         }
       }
+    }
 
-      if (dataObjectReplicationCount < MINIMUM_REPLICATION_THRESHOLD) {
-        logger.warn(`data object replication threshold unmet - file deletion canceled: ${movedDataObject.id}`)
-        return
-      }
+    if (successes < MINIMUM_REPLICATION_THRESHOLD) {
+      logger.debug(
+        `Replication threshold unmet for object ${movedDataObject.id} ` +
+          `(buckets: ${externaBucketEndpoints.length}, successes: ${successes}, failures: ${failures}). ` +
+          (lastErr ? `Last error: ${lastErr}. ` : '') +
+          `File deletion canceled...`
+      )
+      return
+    }
 
-      deletionTasks.push(new DeleteLocalFileTask(uploadDirectory, movedDataObject.id))
-    })
-  )
+    deletionTasks.push(new DeleteLocalFileTask(uploadDirectory, movedDataObject.id))
+  }
+
+  await Promise.all(movedDataObjects.map((movedDataObject) => limit(() => checkReplicationThreshold(movedDataObject))))
+
+  const failedCount = movedDataObjects.length - deletionTasks.length
+  if (failedCount > 0) {
+    logger.warn(
+      `Replication threshold was unmet or couldn't be verified for ${failedCount} / ${movedDataObjects.length} objects in the current batch.`
+    )
+  }
+
+  logger.debug('Checking replication: Done')
 
   return deletionTasks
 }
