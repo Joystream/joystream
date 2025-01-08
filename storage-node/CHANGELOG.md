@@ -3,7 +3,7 @@
 - **Optimizations:** The way data objects / data object ids are queried and processed during sync and cleanup has been optimized:
     - Sync and cleanup services now process tasks in batches of configurable size (`--syncBatchSize`, `--cleanupBatchSize`) to avoid overflowing the memory.
     - Synchronous operations like `sort` or `filter` on larger arrays of data objects have been optimized (for example, by replacing `.filter(Array.includes(...))` with `.filter(Set.has(...))`).
-    - Enforced a limit of max. results per single GraphQL query to `10,000` and max input arguments per query to `1,000`
+    - Enforced a limit of max. results per single GraphQL query to `10,000` and max input arguments per query to `1,000`.
     - Added `--cleanupWorkersNumber` flag to limit the number of concurrent async requests during cleanup.
 - A safety mechanism was added to avoid removing "deleted" objects for which a related `DataObjectDeleted` event cannot be found in storage squid.
 - Improved logging during sync and cleanup.
