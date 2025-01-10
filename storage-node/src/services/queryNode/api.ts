@@ -4,20 +4,29 @@ import fetch from 'cross-fetch'
 import stringify from 'fast-safe-stringify'
 import logger from '../logger'
 import {
-  DataObjectByBagIdsDetailsFragment,
   DataObjectDetailsFragment,
+  DataObjectIdsByBagId,
+  DataObjectIdsByBagIdQuery,
+  DataObjectIdsByBagIdQueryVariables,
+  DataObjectIdsByBagIdsConnection,
+  DataObjectIdsByBagIdsConnectionQuery,
+  DataObjectIdsByBagIdsConnectionQueryVariables,
+  DataObjectDetailsByIds,
+  DataObjectDetailsByIdsQuery,
+  DataObjectIdsByIdsQueryVariables,
+  DataObjectIdsByIds,
+  DataObjectIdsByIdsQuery,
+  DataObjectDetailsByIdsQueryVariables,
+  DataObjectsWithBagDetailsByIds,
+  DataObjectsWithBagDetailsByIdsQuery,
+  DataObjectsWithBagDetailsByIdsQueryVariables,
+  DataObjectWithBagDetailsFragment,
   GetAllStorageBagDetails,
   GetAllStorageBagDetailsQuery,
   GetAllStorageBagDetailsQueryVariables,
-  GetDataObjects,
-  GetDataObjectsByBagIds,
-  GetDataObjectsByBagIdsQuery,
-  GetDataObjectsByBagIdsQueryVariables,
   GetDataObjectsDeletedEvents,
   GetDataObjectsDeletedEventsQuery,
   GetDataObjectsDeletedEventsQueryVariables,
-  GetDataObjectsQuery,
-  GetDataObjectsQueryVariables,
   GetSquidVersion,
   GetSquidVersionQuery,
   GetSquidVersionQueryVariables,
@@ -41,16 +50,18 @@ import {
   StorageBucketDetailsFragment,
   StorageBucketIdsFragment,
 } from './generated/queries'
-import { Maybe, StorageBagWhereInput } from './generated/schema'
+import { Maybe } from './generated/schema'
+import _ from 'lodash'
 
 /**
  * Defines query paging limits.
  */
-export const MAX_RESULTS_PER_QUERY = 1000
+export const MAX_INPUT_ARGS_SIZE = 1_000
+export const MAX_RESULTS_PER_QUERY = 10_000
 
 type PaginationQueryVariables = {
-  limit: number
-  lastCursor?: Maybe<string>
+  limit?: Maybe<number>
+  after?: Maybe<string>
 }
 
 type PaginationQueryResult<T = unknown> = {
@@ -128,10 +139,10 @@ export class QueryNodeApi {
   protected async multipleEntitiesWithPagination<
     NodeT,
     QueryT extends { [k: string]: PaginationQueryResult<NodeT> },
-    CustomVariablesT extends Record<string, unknown>
+    VariablesT extends PaginationQueryVariables
   >(
     query: DocumentNode,
-    variables: CustomVariablesT,
+    variables: VariablesT,
     resultKey: keyof QueryT,
     itemsPerPage = MAX_RESULTS_PER_QUERY
   ): Promise<NodeT[]> {
@@ -139,10 +150,9 @@ export class QueryNodeApi {
     let results: NodeT[] = []
     let lastCursor: string | undefined
     while (hasNextPage) {
-      const paginationVariables = { limit: itemsPerPage, cursor: lastCursor }
+      const paginationVariables: PaginationQueryVariables = { limit: itemsPerPage, after: lastCursor }
       const queryVariables = { ...variables, ...paginationVariables }
-      logger.debug(`Query - ${String(resultKey)}`)
-      const result = await this.apolloClient.query<QueryT, PaginationQueryVariables & CustomVariablesT>({
+      const result = await this.apolloClient.query<QueryT, VariablesT>({
         query,
         variables: queryVariables,
       })
@@ -249,50 +259,108 @@ export class QueryNodeApi {
   }
 
   /**
-   * Returns data objects info by pages for the given bags.
+   * Gets a list of all data object ids belonging to provided bags.
    *
    * @param bagIds - query filter: bag IDs
+   * @param isAccepted - query filter: value of isAccepted field (any if not specified)
+   * @param bagIdsBatchSize - max. size of a single batch of bagIds to query
    */
-  public async getDataObjectsByBagIds(bagIds: string[]): Promise<Array<DataObjectByBagIdsDetailsFragment>> {
-    const allBagIds = [...bagIds] // Copy to avoid modifying the original array
-    let fullResult: DataObjectByBagIdsDetailsFragment[] = []
-    while (allBagIds.length) {
-      const bagIdsBatch = allBagIds.splice(0, 1000)
-      const input: StorageBagWhereInput = { id_in: bagIdsBatch }
-      fullResult = [
-        ...fullResult,
-        ...(await this.multipleEntitiesQuery<GetDataObjectsByBagIdsQuery, GetDataObjectsByBagIdsQueryVariables>(
-          GetDataObjectsByBagIds,
-          { bagIds: input },
-          'storageDataObjects'
-        )),
-      ]
+  public async getDataObjectIdsByBagIds(
+    bagIds: string[],
+    isAccepted?: boolean,
+    bagIdsBatchSize = MAX_INPUT_ARGS_SIZE
+  ): Promise<string[]> {
+    let dataObjectIds: string[] = []
+    for (const bagIdsBatch of _.chunk(bagIds, bagIdsBatchSize)) {
+      const dataObjectIdsBatch = await this.multipleEntitiesWithPagination<
+        { id: string },
+        DataObjectIdsByBagIdsConnectionQuery,
+        DataObjectIdsByBagIdsConnectionQueryVariables
+      >(
+        DataObjectIdsByBagIdsConnection,
+        {
+          bagIds: bagIdsBatch,
+          isAccepted,
+        },
+        'storageDataObjectsConnection'
+      )
+      dataObjectIds = dataObjectIds.concat(dataObjectIdsBatch.map(({ id }) => id))
     }
-
-    return fullResult
+    return dataObjectIds
   }
 
   /**
-   * Returns data objects info by pages for the given dataObject IDs.
+   * Gets a list of existing data object ids by the given list of data object ids.
    *
-   * @param dataObjectIds - query filter: dataObject IDs
+   * @param ids - query filter: data object ids
+   * @param batchSize - max. size of a single batch of ids to query
    */
-  public async getDataObjectDetails(dataObjectIds: string[]): Promise<Array<DataObjectDetailsFragment>> {
-    const allDataObjectIds = [...dataObjectIds] // Copy to avoid modifying the original array
-    let fullResult: DataObjectDetailsFragment[] = []
-    while (allDataObjectIds.length) {
-      const dataObjectIdsBatch = allDataObjectIds.splice(0, 1000)
-      fullResult = [
-        ...fullResult,
-        ...(await this.multipleEntitiesQuery<GetDataObjectsQuery, GetDataObjectsQueryVariables>(
-          GetDataObjects,
-          { dataObjectIds: dataObjectIdsBatch },
-          'storageDataObjects'
-        )),
-      ]
+  public async getExistingDataObjectsIdsByIds(ids: string[], batchSize = MAX_INPUT_ARGS_SIZE): Promise<string[]> {
+    let existingIds: string[] = []
+    for (const idsBatch of _.chunk(ids, batchSize)) {
+      const existingIdsBatch = await this.multipleEntitiesQuery<
+        DataObjectIdsByIdsQuery,
+        DataObjectIdsByIdsQueryVariables
+      >(DataObjectIdsByIds, { ids: idsBatch }, 'storageDataObjects')
+      existingIds = existingIds.concat(existingIdsBatch.map(({ id }) => id))
     }
+    return existingIds
+  }
 
-    return fullResult
+  /**
+   * Gets a list of data object details by the given list of dataObject IDs.
+   *
+   * @param ids - query filter: data object ids
+   * @param batchSize - max. size of a single batch of ids to query
+   */
+  public async getDataObjectsDetailsByIds(
+    ids: string[],
+    batchSize = MAX_INPUT_ARGS_SIZE
+  ): Promise<DataObjectDetailsFragment[]> {
+    let dataObjects: DataObjectDetailsFragment[] = []
+    for (const idsBatch of _.chunk(ids, batchSize)) {
+      const dataObjectsBatch = await this.multipleEntitiesQuery<
+        DataObjectDetailsByIdsQuery,
+        DataObjectDetailsByIdsQueryVariables
+      >(DataObjectDetailsByIds, { ids: idsBatch }, 'storageDataObjects')
+      dataObjects = dataObjects.concat(dataObjectsBatch)
+    }
+    return dataObjects
+  }
+
+  /**
+   * Returns a list of data objects by ids, with their corresponding bag details
+   *
+   * @param ids - query filter: data object ids
+   * @param batchSize - max. size of a single batch of ids to query
+   */
+  public async getDataObjectsWithBagDetails(
+    ids: string[],
+    batchSize = MAX_INPUT_ARGS_SIZE
+  ): Promise<DataObjectWithBagDetailsFragment[]> {
+    let dataObjects: DataObjectWithBagDetailsFragment[] = []
+    for (const idsBatch of _.chunk(ids, batchSize)) {
+      const dataObjectsBatch = await this.multipleEntitiesQuery<
+        DataObjectsWithBagDetailsByIdsQuery,
+        DataObjectsWithBagDetailsByIdsQueryVariables
+      >(DataObjectsWithBagDetailsByIds, { ids: idsBatch }, 'storageDataObjects')
+      dataObjects = dataObjects.concat(dataObjectsBatch)
+    }
+    return dataObjects
+  }
+
+  /**
+   * Returns a list of data object ids that belong to a given bag.
+   *
+   * @param bagId - query filter: bag ID
+   */
+  public async getDataObjectIdsByBagId(bagId: string): Promise<string[]> {
+    const result = await this.multipleEntitiesQuery<DataObjectIdsByBagIdQuery, DataObjectIdsByBagIdQueryVariables>(
+      DataObjectIdsByBagId,
+      { bagId },
+      'storageDataObjects'
+    )
+    return result.map((o) => o.id)
   }
 
   /**

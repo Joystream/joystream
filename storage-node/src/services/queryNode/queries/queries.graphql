@@ -59,7 +59,13 @@ query getAllStorageBagDetails {
   }
 }
 
-fragment DataObjectByBagIdsDetails on StorageDataObject {
+query dataObjectIdsByBagId($bagId: String) {
+  storageDataObjects(where: { storageBag: { id_eq: $bagId } }) {
+    id
+  }
+}
+
+fragment DataObjectDetails on StorageDataObject {
   id
   size
   ipfsHash
@@ -68,13 +74,7 @@ fragment DataObjectByBagIdsDetails on StorageDataObject {
   }
 }
 
-query getDataObjectsByBagIds($bagIds: StorageBagWhereInput) {
-  storageDataObjects(where: { storageBag: $bagIds, isAccepted_eq: true }) {
-    ...DataObjectByBagIdsDetails
-  }
-}
-
-fragment DataObjectDetails on StorageDataObject {
+fragment DataObjectWithBagDetails on StorageDataObject {
   id
   isAccepted
   ipfsHash
@@ -83,9 +83,42 @@ fragment DataObjectDetails on StorageDataObject {
   }
 }
 
-query getDataObjects($dataObjectIds: [String!]) {
-  storageDataObjects(where: { id_in: $dataObjectIds }) {
+query dataObjectIdsByBagIdsConnection($bagIds: [String!], $limit: Int, $after: String, $isAccepted: Boolean) {
+  storageDataObjectsConnection(
+    where: { storageBag: { id_in: $bagIds }, isAccepted_eq: $isAccepted }
+    first: $limit
+    after: $after
+    orderBy: id_ASC
+  ) {
+    edges {
+      node {
+        id
+      }
+    }
+    pageInfo {
+      startCursor
+      endCursor
+      hasNextPage
+    }
+  }
+}
+
+# For verifying if data objects still exist
+query dataObjectIdsByIds($ids: [String!]) {
+  storageDataObjects(where: { id_in: $ids }) {
+    id
+  }
+}
+
+query dataObjectDetailsByIds($ids: [String!]) {
+  storageDataObjects(where: { id_in: $ids }) {
     ...DataObjectDetails
+  }
+}
+
+query dataObjectsWithBagDetailsByIds($ids: [String!]) {
+  storageDataObjects(where: { id_in: $ids }) {
+    ...DataObjectWithBagDetails
   }
 }
 

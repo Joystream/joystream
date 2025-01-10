@@ -36,6 +36,10 @@ export default class FetchBucket extends Command {
       description: 'Asset downloading timeout for the syncronization (in minutes).',
       default: 30,
     }),
+    syncBatchSize: flags.integer({
+      description: 'Maximum number of objects to process in a single batch.',
+      default: 10_000,
+    }),
     queryNodeEndpoint: flags.string({
       char: 'q',
       required: false,
@@ -74,6 +78,7 @@ export default class FetchBucket extends Command {
         qnApi,
         flags.uploads,
         flags.tempFolder ? flags.tempFolder : path.join(flags.uploads, 'temp'),
+        flags.syncBatchSize,
         '',
         flags.dataSourceOperatorUrl
       )

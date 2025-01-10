@@ -8,7 +8,6 @@ import { promisify } from 'util'
 import { getDataObjectIDs } from '../../../services/caching/localDataObjects'
 import logger from '../../logger'
 import { QueryNodeApi } from '../../queryNode/api'
-import { getDataObjectIDsByBagId } from '../../sync/storageObligations'
 import {
   DataObjectResponse,
   DataStatsResponse,
@@ -168,7 +167,7 @@ async function getCachedDataObjectsObligations(qnApi: QueryNodeApi, bagId: strin
   const entryName = `data_object_obligations_${bagId}`
 
   if (!dataCache.has(entryName)) {
-    const data = await getDataObjectIDsByBagId(qnApi, bagId)
+    const data = await qnApi.getDataObjectIdsByBagId(bagId)
 
     dataCache.set(entryName, data)
   }
