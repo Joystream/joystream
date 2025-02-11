@@ -141,7 +141,7 @@ jobs:
         if: steps.check_files.outputs.files_exists == 'false'
 
       - name: Save joystream/node image to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
@@ -166,7 +166,7 @@ jobs:
         with:
           node-version: '18.x'
       - name: Get artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build_images.outputs.use_artifact }}
       - name: Install artifacts
