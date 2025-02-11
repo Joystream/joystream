@@ -168,7 +168,7 @@ jobs:
           7z a -p${{ steps.network_config.outputs.encryptionKey }} chain-data.7z deploy_artifacts/*
 
       - name: Save the output as an artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: data-chainspec-auth
           path: devops/ansible/chain-data.7z
