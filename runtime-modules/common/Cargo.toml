@@ -5,25 +5,23 @@ authors = ['Joystream contributors']
 edition = '2018'
 
 [dependencies]
-serde = { version = "1.0.101", optional = true, features = ["derive"] }
-strum = { version = "0.19", optional = true }
-strum_macros = { version = "0.19", optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+strum = { workspace = true, optional = true }
+strum_macros = { workspace = true, optional = true }
 codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = false, features = [
 	'derive',
 ] }
-scale-info = { version = "2.1.1", default-features = false, features = [
-	"derive",
-] }
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+scale-info = { workspace = true, features = ["derive"] }
+sp-runtime = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+pallet-timestamp = { workspace = true }
+sp-arithmetic = { workspace = true }
+balances = { workspace = true }
+sp-std = { workspace = true }
 
 [dev-dependencies]
-parameterized = { version = "1.1.0" }
+parameterized = { workspace = true }
 
 [features]
 default = ['std']

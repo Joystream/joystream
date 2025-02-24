@@ -7,7 +7,7 @@ version = '1.0.0'
 
 [dependencies]
 # Runtime
-joystream-node-runtime = { path = "../../../runtime" }
+joystream-node-runtime = { workspace = true }
 # Pallets
 common = { package = 'pallet-common', default-features = false, path = '../../../runtime-modules/common'}
 forum = { package = 'pallet-forum', default-features = false, path = '../../../runtime-modules/forum'}
@@ -19,7 +19,7 @@ storage = { package = 'pallet-storage', default-features = false, path = '../../
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../../../runtime-modules/proposals/engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../../../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../../../runtime-modules/proposals/codex'}
-pallet-constitution = { package = 'pallet-constitution', default-features = false, path = '../../../runtime-modules/constitution' }
+pallet-constitution = { workspace = true }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../../../runtime-modules/staking-handler'}
 bounty = { package = 'pallet-bounty', default-features = false, path = '../../../runtime-modules/bounty'}
 content = { package = 'pallet-content', default-features = false, path = '../../../runtime-modules/content'}
