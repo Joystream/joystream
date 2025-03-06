@@ -402,7 +402,7 @@ export class BagsUpdateSummaryCreator {
       before: storageUsageBefore,
       after: storageUsageAfter,
     }
-    output += `Total storage usage (among loaded buckets): ${this.formatBeforeAfterStats(
+    output += `Total storage usage (among selected buckets): ${this.formatBeforeAfterStats(
       storageUsageStats,
       storageUnit
     )}\n`

@@ -1,9 +1,22 @@
 ### 4.5.0
 
-- Added `leader:set-replication` command which allows adjusting bag-to-bucket assignments in order to achieve a given replication rate. It also supports generating detailed summaries of changes required to make that adjustment.
-- Added a possibility to set `CLEANUP` and `CLEANUP_INTERVAL` via env in the `server` command.
-- Added a few new utility functions (`stringifyBagId`, `cmpBagId`, `isEvent`, `asStorageSize`, `getBatchResults`).
-- Updated `updateStorageBucketsForBags` to rely on the new `getBatchResults` utility function.
+#### Features
+
+- New commands to help storage bags / buckets management:
+
+  - `leader:set-replication` - allows adjusting bag-to-bucket assignments in order to achieve a target replication rate.
+  - `leader:copy-bags` - allows copying all bags from one bucket / set of buckets to a different bucket / set of buckets.
+  - `leader:empty-bucket` - allows removing all bags from a given bucket.
+
+    All of those commands support generating detailed summaries of planned / executed changes in the storage system thanks to the new `BagsUpdateCreator` and `BagsUpdateSummaryCreator` services.
+
+- Adds a possibility to set `CLEANUP` and `CLEANUP_INTERVAL` via env in the `server` command.
+
+#### Small / internal changes
+
+- Fixes Colossus docker build by removing a deprecated [`@types/winston`](https://www.npmjs.com/package/@types/winston) package.
+- Adds a few new utility functions (`stringifyBagId`, `cmpBagId`, `isEvent`, `asStorageSize`, `getBatchResults`).
+- Updates `updateStorageBucketsForBags` to rely on the new `getBatchResults` utility function.
 
 ### 4.4.0
 

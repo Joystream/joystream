@@ -1,5 +1,4 @@
 import assert from 'assert'
-import { readFileSync } from 'fs'
 import { ChannelCreationInputParameters } from '@joystream/cli/src/Types'
 import { MemberId } from '@joystream/types/primitives'
 import { BaseQueryNodeFixture, FixtureRunner } from '../../Fixture'
@@ -8,8 +7,8 @@ import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
 import { BuyMembershipHappyCaseFixture } from '../membership'
 import { Utils } from '../../utils'
-import { ColossusApi } from '../../../ColossusApi'
 import { ChannelFieldsFragment } from '../../graphql/generated/queries'
+import { verifyAssets, VerifyAssetsInput } from './utils'
 
 export type GenerateAssetsFixtureParams = {
   numberOfChannels: number
@@ -22,11 +21,6 @@ export type CreatedChannelData = {
   coverPhotoPath: string
   avatarPhotoPath: string
   qnData?: ChannelFieldsFragment
-}
-
-export type VerifyAssetsInput = {
-  api: ColossusApi
-  channelIds: number[]
 }
 
 export class GenerateAssetsFixture extends BaseQueryNodeFixture {
@@ -128,32 +122,6 @@ export class GenerateAssetsFixture extends BaseQueryNodeFixture {
   }
 
   public verifyAssets = async (inputs: VerifyAssetsInput[], retryTime = 10_000, maxRetries = 18): Promise<void> => {
-    await Utils.until(
-      `assets stored by Colossus nodes match expectations`,
-      async () => {
-        const verifyAssetsPromises = this.channelsCreated.map(
-          async ({ id, avatarPhotoPath, coverPhotoPath, qnData }) => {
-            Utils.assert(qnData && qnData.avatarPhoto && qnData.coverPhoto)
-            for (const { api: colossusApi, channelIds: expectedChannelIds } of inputs) {
-              if (expectedChannelIds.includes(id)) {
-                await Promise.all([
-                  colossusApi.fetchAndVerifyAsset(qnData.coverPhoto.id, readFileSync(coverPhotoPath), 'image/bmp'),
-                  colossusApi.fetchAndVerifyAsset(qnData.avatarPhoto.id, readFileSync(avatarPhotoPath), 'image/bmp'),
-                ])
-              } else {
-                await Promise.all([
-                  colossusApi.expectAssetNotFound(qnData.coverPhoto.id),
-                  colossusApi.expectAssetNotFound(qnData.avatarPhoto.id),
-                ])
-              }
-            }
-          }
-        )
-        await Promise.all(verifyAssetsPromises)
-        return true
-      },
-      retryTime,
-      maxRetries
-    )
+    await verifyAssets(inputs, this.channelsCreated, retryTime, maxRetries)
   }
 }

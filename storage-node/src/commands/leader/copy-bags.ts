@@ -15,29 +15,30 @@ import { BagsUpdateCreator } from '../../services/helpers/bagsUpdate'
 
 /**
  * CLI command:
- * Moves all storage bags from a given bucket / set of buckets to a different bucket / set of buckets.
+ * Copies storage bags from a given bucket / set of buckets to a different bucket / set of buckets.
  *
  * @remarks
  * Storage working group leader command. Requires storage WG leader priviliges.
- * Shell command: "leader:move-bags"
+ * Shell command: "leader:copy-bags"
  */
-export default class LeaderMoveBags extends LeaderCommandBase {
-  static description = `Move all storage bags from a given bucket / set of buckets to a different bucket / set of buckets`
+export default class LeaderCopyBags extends LeaderCommandBase {
+  static description = `Copy all storage bags from a given bucket / set of buckets to a different bucket / set of buckets`
 
   static flags = {
     from: flags.integer({
       multiple: true,
       required: true,
-      description: 'List of bucket ids to move bags from',
+      description: 'List of bucket ids to copy bags from',
     }),
     to: flags.integer({
       multiple: true,
       required: true,
-      description: 'List of bucket ids to move bags to',
+      description: 'List of bucket ids to copy bags to',
     }),
-    allowReplicationRateChange: flags.boolean({
-      default: false,
-      description: 'Disable the safety check and allow the bag replication rates to change (could be dangerous)',
+    copies: flags.integer({
+      default: 1,
+      description:
+        'Number of copies to make (by default each bag is only copied once, to a single, selected destination bucket)',
     }),
     batchSize: flags.integer({
       char: 'b',
@@ -77,18 +78,8 @@ export default class LeaderMoveBags extends LeaderCommandBase {
 
   async run(): Promise<void> {
     const {
-      flags: {
-        from,
-        to,
-        batchSize,
-        skipBucketsSummary,
-        skipTxSummary,
-        output,
-        dryRun,
-        skipConfirmation,
-        allowReplicationRateChange,
-      },
-    } = this.parse(LeaderMoveBags)
+      flags: { from, to, batchSize, skipBucketsSummary, skipTxSummary, output, dryRun, skipConfirmation, copies },
+    } = this.parse(LeaderCopyBags)
 
     if (output) {
       try {
@@ -115,32 +106,21 @@ export default class LeaderMoveBags extends LeaderCommandBase {
     await bagsUpdateCreator.loadBucketsByIds(bucketsToFetch)
     logger.info(`${bagsUpdateCreator.loadedBucketsCount} storage buckets fetched.`)
 
-    logger.info(`Fetching storage bags of bucket(s) ${JSON.stringify(from)}...`)
+    logger.info(`Fetching storage bags of bucket(s) ${from.join(', ')}...`)
     await bagsUpdateCreator.loadBagsBy((bag) => from.some((bucketId) => bag.storedBy.has(bucketId)))
     logger.info(`${bagsUpdateCreator.loadedBagsCount} storage bags found.`)
 
     logger.info(`Preparing storage bag updates...`)
     bagsUpdateCreator.prepareUpdates((bag) => {
-      for (const bucketToRemoveId of from) {
-        bag.removeBucket(bagsUpdateCreator.getBucket(bucketToRemoveId))
-      }
-
-      while (true) {
+      for (let i = 0; i < copies; ++i) {
         const bucket = bagsUpdateCreator.pickBucketToAdd(bag, to)
         if (!bucket) {
-          if (!allowReplicationRateChange) {
-            this.error(
-              `Cannot keep replication rate of bag ${stringifyBagId(
-                bag.id
-              )} intact! Not enough target buckets available.`
-            )
-          }
-          break
+          this.error(
+            `Cannot make ${i} copies of bag ${stringifyBagId(bag.id)}! No more buckets available...  ` +
+              `Provide more destination buckets, reduce the number of copies or increase storage bucket voucher limits.`
+          )
         }
         bag.addBucket(bucket)
-        if (bag.bucketsToAdd.size === bag.bucketsToRemove.size) {
-          break
-        }
       }
     })
     const { modifiedBagsCount } = bagsUpdateCreator
