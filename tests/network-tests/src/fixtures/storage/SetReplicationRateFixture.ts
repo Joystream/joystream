@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { PalletStorageStorageBucketRecord } from '@polkadot/types/lookup'
-import { FinalSummary, Serialized } from 'storage-node/src/services/helpers/bagsUpdateSummary'
+import { FinalSummary, Serialized } from 'storage-node/src/services/helpers/bagsUpdate'
 import { BaseQueryNodeFixture } from '../../Fixture'
 import { QueryNodeApi } from '../../QueryNodeApi'
 import { Api } from '../../Api'
@@ -38,14 +38,14 @@ export class SetReplicationRateFixture extends BaseQueryNodeFixture {
     const expectedStorageUsageBefore = storageBucketsBefore.reduce((a, [, b]) => a + b.voucher.sizeUsed.toBigInt(), 0n)
     const expectedStorageUsageAfter = (Number(expectedStorageUsageBefore) * (newRate / oldRate)).toString()
 
-    assert.equal(result.avgReplicationRate.before, oldRate)
-    assert.equal(result.avgReplicationRate.after, newRate)
+    assert.equal(result.avgReplicationRate?.before, oldRate)
+    assert.equal(result.avgReplicationRate?.after, newRate)
     assert.equal(result.totalStorageUsage.before.toString(), expectedStorageUsageBefore.toString())
     assert.equal(result.totalStorageUsage.after.toString(), expectedStorageUsageAfter.toString())
     assert(result.transactions)
     // Expecting 1 batch transaction only!
-    assert.equal(result.transactions[0].avgReplicationRate.before, oldRate)
-    assert.equal(result.transactions[0].avgReplicationRate.after, newRate)
+    assert.equal(result.transactions[0].avgReplicationRate?.before, oldRate)
+    assert.equal(result.transactions[0].avgReplicationRate?.after, newRate)
     assert.equal(result.transactions[0].failedUpdates.length, 0)
     assert.equal(result.transactions[0].successfulUpdates.length, expectedNumUpdates)
     assert.equal(result.transactions[0].totalStorageUsage.before.toString(), expectedStorageUsageBefore.toString())
@@ -88,6 +88,7 @@ export class SetReplicationRateFixture extends BaseQueryNodeFixture {
       return [sKey.args[0], bag] as const
     })
 
+    assert(result.avgReplicationRate)
     assert.closeTo(
       result.avgReplicationRate.after,
       _.meanBy(storageBagsAfter, ([, bag]) => bag.storedBy.size),
