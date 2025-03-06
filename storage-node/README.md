@@ -150,8 +150,10 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 * [`storage-node archive`](#storage-node-archive)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
+* [`storage-node leader:copy-bags`](#storage-node-leadercopy-bags)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
+* [`storage-node leader:empty-bucket`](#storage-node-leaderempty-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
@@ -352,6 +354,50 @@ OPTIONS
 
 _See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/cancel-invite.ts)_
 
+## `storage-node leader:copy-bags`
+
+Copy all storage bags from a given bucket / set of buckets to a different bucket / set of buckets
+
+```
+USAGE
+  $ storage-node leader:copy-bags
+
+OPTIONS
+  -b, --batchSize=batchSize    [default: 100] Number of extrinsics to send in a single utility.batch call
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
+  -m, --dev                    Use development mode
+  -o, --output=output          Output result to a file (based on the provided path) instead of stdout
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --copies=copies              [default: 1] Number of copies to make (by default each bag is only copied once, to a
+                               single, selected destination bucket)
+
+  --dryRun                     Assumes all transactions were successful and generates the summary
+
+  --from=from                  (required) List of bucket ids to copy bags from
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
+
+  --skipBucketsSummary         Whether to skip a summary of changes by each individual bucket in the final result
+
+  --skipConfirmation           Skips asking for confirmation before sending transactions
+
+  --skipTxSummary              Whether to skip a summary of changes by each individual batch transaction in the final
+                               result
+
+  --to=to                      (required) List of bucket ids to copy bags to
+```
+
+_See code: [src/commands/leader/copy-bags.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/copy-bags.ts)_
+
 ## `storage-node leader:create-bucket`
 
 Create new storage bucket. Requires storage working group leader permissions.
@@ -409,6 +455,45 @@ OPTIONS
 ```
 
 _See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/delete-bucket.ts)_
+
+## `storage-node leader:empty-bucket`
+
+Removes all storage bags from a given bucket / set of buckets
+
+```
+USAGE
+  $ storage-node leader:empty-bucket
+
+OPTIONS
+  -b, --batchSize=batchSize    [default: 100] Number of extrinsics to send in a single utility.batch call
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
+  -m, --dev                    Use development mode
+  -o, --output=output          Output result to a file (based on the provided path) instead of stdout
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --dryRun                     Assumes all transactions were successful and generates the summary
+
+  --id=id                      (required) Id of the bucket to remove bags from
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
+
+  --skipBucketsSummary         Whether to skip a summary of changes by each individual bucket in the final result
+
+  --skipConfirmation           Skips asking for confirmation before sending transactions
+
+  --skipTxSummary              Whether to skip a summary of changes by each individual batch transaction in the final
+                               result
+```
+
+_See code: [src/commands/leader/empty-bucket.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/empty-bucket.ts)_
 
 ## `storage-node leader:invite-operator`
 
@@ -533,7 +618,7 @@ USAGE
   $ storage-node leader:set-replication
 
 OPTIONS
-  -a, --activeOnly             Only take active buckets into account when calculating replication rate and updating bags
+  -a, --[no-]activeOnly        Only take active buckets into account when calculating replication rate and updating bags
   -b, --batchSize=batchSize    [default: 100] Number of extrinsics to send in a single utility.batch call
   -h, --help                   show CLI help
   -k, --keyFile=keyFile        Path to key file to add to the keyring.
