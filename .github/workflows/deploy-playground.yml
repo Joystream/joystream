@@ -34,7 +34,7 @@ on:
         description: 'SURI of treasury account'
         required: false
         default: '//Alice'
-      initialBalances: 
+      initialBalances:
         description: 'JSON string or http URL to override initial balances and vesting config'
         default: ''
         required: false
@@ -112,7 +112,7 @@ jobs:
             --verbose
 
       - name: Save the endpoints file as an artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: endpoints
           path: devops/ansible/endpoints.json

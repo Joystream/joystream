@@ -39,7 +39,7 @@ jobs:
           tar czvf joystream-node-macos.tar.gz -C ./target/release joystream-node
 
       - name: Temporarily save node binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
           path: joystream-node-macos.tar.gz
@@ -80,7 +80,7 @@ jobs:
           tar -czvf joystream-node-$VERSION_AND_COMMIT-arm64-linux-gnu.tar.gz joystream-node
 
       - name: Retrieve saved MacOS binary
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: joystream-node-macos-${{ steps.compute_shasum.outputs.shasum }}
 
