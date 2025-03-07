@@ -59,7 +59,7 @@ export class ExtrinsicsHelper {
       const multiTx = this.api.tx.multisig.asMultiThreshold1(otherKeys(signers[0]), tx)
       return (await this.sendAndCheck(signers[0], [multiTx], errorMsg))[0]
     }
-    const maxWeight = 1_000_000_000_000
+    const maxWeight = { refTime: `${100e10}`, proofSize: '0' }
     const baseTx = this.api.tx.multisig.approveAsMulti(
       signers.length,
       otherKeys(signers[0]),
@@ -82,7 +82,6 @@ export class ExtrinsicsHelper {
               otherKeys(s),
               { height: inBlockNumber, index: inBlockIndex },
               tx.unwrap().toHex(),
-              false,
               maxWeight
             )
             .signAsync(s, { nonce })
