@@ -150,12 +150,15 @@ There is also an option to run Colossus as [Docker container](../colossus.Docker
 * [`storage-node archive`](#storage-node-archive)
 * [`storage-node help [COMMAND]`](#storage-node-help-command)
 * [`storage-node leader:cancel-invite`](#storage-node-leadercancel-invite)
+* [`storage-node leader:copy-bags`](#storage-node-leadercopy-bags)
 * [`storage-node leader:create-bucket`](#storage-node-leadercreate-bucket)
 * [`storage-node leader:delete-bucket`](#storage-node-leaderdelete-bucket)
+* [`storage-node leader:empty-bucket`](#storage-node-leaderempty-bucket)
 * [`storage-node leader:invite-operator`](#storage-node-leaderinvite-operator)
 * [`storage-node leader:remove-operator`](#storage-node-leaderremove-operator)
 * [`storage-node leader:set-bucket-limits`](#storage-node-leaderset-bucket-limits)
 * [`storage-node leader:set-global-uploading-status`](#storage-node-leaderset-global-uploading-status)
+* [`storage-node leader:set-replication`](#storage-node-leaderset-replication)
 * [`storage-node leader:update-bag-limit`](#storage-node-leaderupdate-bag-limit)
 * [`storage-node leader:update-bags`](#storage-node-leaderupdate-bags)
 * [`storage-node leader:update-blacklist`](#storage-node-leaderupdate-blacklist)
@@ -305,7 +308,7 @@ OPTIONS
       [default: 4] Upload workers number (max async operations in progress).
 ```
 
-_See code: [src/commands/archive.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/archive.ts)_
+_See code: [src/commands/archive.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/archive.ts)_
 
 ## `storage-node help [COMMAND]`
 
@@ -349,7 +352,51 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/cancel-invite.ts)_
+_See code: [src/commands/leader/cancel-invite.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/cancel-invite.ts)_
+
+## `storage-node leader:copy-bags`
+
+Copy all storage bags from a given bucket / set of buckets to a different bucket / set of buckets
+
+```
+USAGE
+  $ storage-node leader:copy-bags
+
+OPTIONS
+  -b, --batchSize=batchSize    [default: 100] Number of extrinsics to send in a single utility.batch call
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
+  -m, --dev                    Use development mode
+  -o, --output=output          Output result to a file (based on the provided path) instead of stdout
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --copies=copies              [default: 1] Number of copies to make (by default each bag is only copied once, to a
+                               single, selected destination bucket)
+
+  --dryRun                     Assumes all transactions were successful and generates the summary
+
+  --from=from                  (required) List of bucket ids to copy bags from
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
+
+  --skipBucketsSummary         Whether to skip a summary of changes by each individual bucket in the final result
+
+  --skipConfirmation           Skips asking for confirmation before sending transactions
+
+  --skipTxSummary              Whether to skip a summary of changes by each individual batch transaction in the final
+                               result
+
+  --to=to                      (required) List of bucket ids to copy bags to
+```
+
+_See code: [src/commands/leader/copy-bags.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/copy-bags.ts)_
 
 ## `storage-node leader:create-bucket`
 
@@ -380,7 +427,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/create-bucket.ts)_
+_See code: [src/commands/leader/create-bucket.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/create-bucket.ts)_
 
 ## `storage-node leader:delete-bucket`
 
@@ -407,7 +454,46 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/delete-bucket.ts)_
+_See code: [src/commands/leader/delete-bucket.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/delete-bucket.ts)_
+
+## `storage-node leader:empty-bucket`
+
+Removes all storage bags from a given bucket / set of buckets
+
+```
+USAGE
+  $ storage-node leader:empty-bucket
+
+OPTIONS
+  -b, --batchSize=batchSize    [default: 100] Number of extrinsics to send in a single utility.batch call
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
+  -m, --dev                    Use development mode
+  -o, --output=output          Output result to a file (based on the provided path) instead of stdout
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --dryRun                     Assumes all transactions were successful and generates the summary
+
+  --id=id                      (required) Id of the bucket to remove bags from
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
+
+  --skipBucketsSummary         Whether to skip a summary of changes by each individual bucket in the final result
+
+  --skipConfirmation           Skips asking for confirmation before sending transactions
+
+  --skipTxSummary              Whether to skip a summary of changes by each individual batch transaction in the final
+                               result
+```
+
+_See code: [src/commands/leader/empty-bucket.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/empty-bucket.ts)_
 
 ## `storage-node leader:invite-operator`
 
@@ -436,7 +522,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/invite-operator.ts)_
+_See code: [src/commands/leader/invite-operator.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/invite-operator.ts)_
 
 ## `storage-node leader:remove-operator`
 
@@ -463,7 +549,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/remove-operator.ts)_
+_See code: [src/commands/leader/remove-operator.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/remove-operator.ts)_
 
 ## `storage-node leader:set-bucket-limits`
 
@@ -493,7 +579,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/set-bucket-limits.ts)_
+_See code: [src/commands/leader/set-bucket-limits.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/set-bucket-limits.ts)_
 
 ## `storage-node leader:set-global-uploading-status`
 
@@ -521,7 +607,47 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/set-global-uploading-status.ts)_
+_See code: [src/commands/leader/set-global-uploading-status.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/set-global-uploading-status.ts)_
+
+## `storage-node leader:set-replication`
+
+Adjusts bag-to-bucket assignments to achieve a given replication rate.
+
+```
+USAGE
+  $ storage-node leader:set-replication
+
+OPTIONS
+  -a, --[no-]activeOnly        Only take active buckets into account when calculating replication rate and updating bags
+  -b, --batchSize=batchSize    [default: 100] Number of extrinsics to send in a single utility.batch call
+  -h, --help                   show CLI help
+  -k, --keyFile=keyFile        Path to key file to add to the keyring.
+  -m, --dev                    Use development mode
+  -o, --output=output          Output result to a file (based on the provided path) instead of stdout
+
+  -p, --password=password      Password to unlock keyfiles. Multiple passwords can be passed, to try against all files.
+                               If not specified a single password can be set in ACCOUNT_PWD environment variable.
+
+  -r, --rate=rate              (required) The target replication rate
+
+  -u, --apiUrl=apiUrl          [default: ws://localhost:9944] Runtime API URL. Mandatory in non-dev environment.
+
+  -y, --accountUri=accountUri  Account URI (optional). If not specified a single key can be set in ACCOUNT_URI
+                               environment variable.
+
+  --dryRun                     Assumes all transactions were successful and generates the summary
+
+  --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
+
+  --skipBucketsSummary         Whether to skip a summary of changes by each individual bucket in the final result
+
+  --skipConfirmation           Skips asking for confirmation before sending transactions
+
+  --skipTxSummary              Whether to skip a summary of changes by each individual batch transaction in the final
+                               result
+```
+
+_See code: [src/commands/leader/set-replication.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/set-replication.ts)_
 
 ## `storage-node leader:update-bag-limit`
 
@@ -548,7 +674,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-bag-limit.ts)_
+_See code: [src/commands/leader/update-bag-limit.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-bag-limit.ts)_
 
 ## `storage-node leader:update-bags`
 
@@ -604,7 +730,7 @@ OPTIONS
       Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bags.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-bags.ts)_
+_See code: [src/commands/leader/update-bags.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-bags.ts)_
 
 ## `storage-node leader:update-blacklist`
 
@@ -633,7 +759,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-blacklist.ts)_
+_See code: [src/commands/leader/update-blacklist.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-blacklist.ts)_
 
 ## `storage-node leader:update-bucket-status`
 
@@ -662,7 +788,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-bucket-status.ts)_
+_See code: [src/commands/leader/update-bucket-status.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-bucket-status.ts)_
 
 ## `storage-node leader:update-data-fee`
 
@@ -689,7 +815,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-data-fee.ts)_
+_See code: [src/commands/leader/update-data-fee.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-data-fee.ts)_
 
 ## `storage-node leader:update-data-object-bloat-bond`
 
@@ -717,7 +843,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-data-object-bloat-bond.ts)_
+_See code: [src/commands/leader/update-data-object-bloat-bond.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-data-object-bloat-bond.ts)_
 
 ## `storage-node leader:update-dynamic-bag-policy`
 
@@ -747,7 +873,7 @@ OPTIONS
   --keyStore=keyStore             Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-dynamic-bag-policy.ts)_
+_See code: [src/commands/leader/update-dynamic-bag-policy.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-dynamic-bag-policy.ts)_
 
 ## `storage-node leader:update-voucher-limits`
 
@@ -776,7 +902,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/leader/update-voucher-limits.ts)_
+_See code: [src/commands/leader/update-voucher-limits.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/leader/update-voucher-limits.ts)_
 
 ## `storage-node operator:accept-invitation`
 
@@ -809,7 +935,7 @@ OPTIONS
   --keyStore=keyStore                            Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/operator/accept-invitation.ts)_
+_See code: [src/commands/operator/accept-invitation.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/operator/accept-invitation.ts)_
 
 ## `storage-node operator:set-metadata`
 
@@ -840,7 +966,7 @@ OPTIONS
   --keyStore=keyStore          Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/operator/set-metadata.ts)_
+_See code: [src/commands/operator/set-metadata.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/operator/set-metadata.ts)_
 
 ## `storage-node server`
 
@@ -914,6 +1040,12 @@ OPTIONS
 
   -z, --logFileChangeFrequency=(yearly|monthly|daily|hourly|none)  [default: daily] Log files update frequency.
 
+  --cleanupBatchSize=cleanupBatchSize                              [default: 10000] Maximum number of objects to process
+                                                                   in a single batch during cleanup.
+
+  --cleanupWorkersNumber=cleanupWorkersNumber                      [default: 100] Cleanup workers number (max async
+                                                                   operations in progress).
+
   --elasticSearchIndexPrefix=elasticSearchIndexPrefix              Elasticsearch index prefix. Node ID will be appended
                                                                    to the prefix. Default: logs-colossus. Can be passed
                                                                    through ELASTIC_INDEX_PREFIX environment variable.
@@ -937,6 +1069,9 @@ OPTIONS
                                                                    If not specified a subfolder under the uploads
                                                                    directory will be used.
 
+  --syncBatchSize=syncBatchSize                                    [default: 10000] Maximum number of objects to process
+                                                                   in a single batch during synchronization.
+
   --syncRetryInterval=syncRetryInterval                            [default: 3] Interval before retrying failed
                                                                    synchronization run (in minutes)
 
@@ -946,7 +1081,7 @@ OPTIONS
                                                                    directory will be used.
 ```
 
-_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/server.ts)_
+_See code: [src/commands/server.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/server.ts)_
 
 ## `storage-node util:cleanup`
 
@@ -981,10 +1116,13 @@ OPTIONS
   -y, --accountUri=accountUri                      Account URI (optional). If not specified a single key can be set in
                                                    ACCOUNT_URI environment variable.
 
+  --cleanupBatchSize=cleanupBatchSize              [default: 10000] Maximum number of objects to process in a single
+                                                   batch during cleanup.
+
   --keyStore=keyStore                              Path to a folder with multiple key files to load into keystore.
 ```
 
-_See code: [src/commands/util/cleanup.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/util/cleanup.ts)_
+_See code: [src/commands/util/cleanup.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/util/cleanup.ts)_
 
 ## `storage-node util:fetch-bucket`
 
@@ -1011,13 +1149,16 @@ OPTIONS
   -t, --syncWorkersTimeout=syncWorkersTimeout        [default: 30] Asset downloading timeout for the syncronization (in
                                                      minutes).
 
+  --syncBatchSize=syncBatchSize                      [default: 10000] Maximum number of objects to process in a single
+                                                     batch.
+
   --tempFolder=tempFolder                            Directory to store tempory files during sync and upload (absolute
                                                      path).
                                                      ,Temporary directory (absolute path). If not specified a subfolder
                                                      under the uploads directory will be used.
 ```
 
-_See code: [src/commands/util/fetch-bucket.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/util/fetch-bucket.ts)_
+_See code: [src/commands/util/fetch-bucket.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/util/fetch-bucket.ts)_
 
 ## `storage-node util:multihash`
 
@@ -1032,7 +1173,7 @@ OPTIONS
   -h, --help       show CLI help
 ```
 
-_See code: [src/commands/util/multihash.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/util/multihash.ts)_
+_See code: [src/commands/util/multihash.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/util/multihash.ts)_
 
 ## `storage-node util:search-archives`
 
@@ -1049,7 +1190,7 @@ OPTIONS
   -o, --dataObjects=dataObjects            (required) List of the data object ids to look for (comma-separated)
 ```
 
-_See code: [src/commands/util/search-archives.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/util/search-archives.ts)_
+_See code: [src/commands/util/search-archives.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/util/search-archives.ts)_
 
 ## `storage-node util:verify-bag-id`
 
@@ -1077,5 +1218,5 @@ OPTIONS
       - dynamic:member:4
 ```
 
-_See code: [src/commands/util/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v4.4.0/src/commands/util/verify-bag-id.ts)_
+_See code: [src/commands/util/verify-bag-id.ts](https://github.com/Joystream/joystream/blob/v4.5.0/src/commands/util/verify-bag-id.ts)_
 <!-- commandsstop -->

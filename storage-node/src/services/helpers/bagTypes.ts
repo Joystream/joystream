@@ -7,6 +7,7 @@ import {
 import { createType, keysOf } from '@joystream/types'
 import ExitCodes from '../../command-base/ExitCodes'
 import { CLIError } from '@oclif/errors'
+import { hexToBigInt } from '@polkadot/util'
 
 /**
  * Special error type for bagId parsing. Extends the CLIError with setting
@@ -49,6 +50,36 @@ export function parseBagId(bagId: string): BagId {
   const parser = new BagIdParser(bagId)
 
   return parser.parse()
+}
+
+/**
+ * Converts a BagId Codec type to string
+ * (compatible with Storage Squid / Orion / Query Node bag id)
+ *
+ * @param bagId Bag id as Codec type
+ * @returns Bag id as string
+ */
+export function stringifyBagId(bagId: BagId): string {
+  if (bagId.isDynamic) {
+    return bagId.asDynamic.isChannel
+      ? `dynamic:channel:${bagId.asDynamic.asChannel.toString()}`
+      : `dynamic:member:${bagId.asDynamic.asMember.toString()}`
+  }
+
+  return bagId.asStatic.isCouncil ? `static:council` : `static:wg:${bagId.asStatic.asWorkingGroup.type.toLowerCase()}`
+}
+
+/**
+ * Compares two bag ids by converting them to a BigInt
+ * (useful for sorting)
+ *
+ * @param idA First bag id
+ * @param idB Second bag id
+ * @returns -1 if idA < idB, 0 if idA == idB, 1 if idA > idA
+ */
+export function cmpBagIds(idA: BagId, idB: BagId): number {
+  const diff = hexToBigInt(idA.toHex()) - hexToBigInt(idB.toHex())
+  return diff < 0 ? -1 : diff > 0 ? 1 : 0
 }
 
 /**

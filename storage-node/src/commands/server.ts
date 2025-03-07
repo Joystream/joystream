@@ -85,7 +85,8 @@ export default class Server extends ApiCommandBase {
     cleanup: flags.boolean({
       char: 'c',
       description: 'Enable cleanup/pruning of no-longer assigned assets.',
-      default: false,
+      // Setting `env` key doesn't work for boolean flags: https://github.com/oclif/core/issues/487
+      default: process.env.CLEANUP === 'true',
     }),
     cleanupBatchSize: flags.integer({
       description: 'Maximum number of objects to process in a single batch during cleanup.',
@@ -95,6 +96,7 @@ export default class Server extends ApiCommandBase {
       char: 'i',
       description: 'Interval between periodic cleanup actions (in minutes)',
       default: 360,
+      env: 'CLEANUP_INTERVAL',
     }),
     cleanupWorkersNumber: flags.integer({
       required: false,
