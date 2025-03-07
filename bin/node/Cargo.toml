@@ -17,83 +17,83 @@ crate-type = ["cdylib", "rlib"]
 # third-party dependencies
 clap = { version = "4.0.9", features = ["derive"], optional = true }
 codec = { package = "parity-scale-codec", version = "3.1.5" }
-serde = { version = "1.0.136", features = ["derive"] }
-jsonrpsee = { version = "0.16.2", features = ["server"] }
-futures = "0.3.21"
-hex-literal = "0.3.4"
-log = "0.4.17"
+serde = { workspace = true, features = ["derive"] }
+jsonrpsee = { workspace = true, features = ["server"] }
+futures = { workspace = true }
+hex-literal = { workspace = true }
+log = { workspace = true }
 rand = "0.8"
-hex = { version = "0.4.2" }
+hex = { workspace = true }
 
 # primitives
-sp-authority-discovery = { package = 'sp-authority-discovery', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-consensus-babe = { package = 'sp-consensus-babe', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+sp-authority-discovery = { workspace = true }
+sp-consensus-babe = { workspace = true }
 grandpa-primitives = { package = "sp-consensus-grandpa", git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-api = { package = 'sp-api', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-core = { package = 'sp-core', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-runtime = { package = 'sp-runtime', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-timestamp = { package = 'sp-timestamp', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-inherents = { package = 'sp-inherents', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-keyring = { package = 'sp-keyring', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-keystore = { package = 'sp-keystore', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-consensus = { package = 'sp-consensus', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-transaction-pool = { package = 'sp-transaction-pool', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-transaction-storage-proof = { package = 'sp-transaction-storage-proof', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-block-builder = { package = 'sp-block-builder', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-io = { package = 'sp-io', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+sp-api = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-timestamp = { workspace = true }
+sp-inherents = { workspace = true }
+sp-keyring = { workspace = true }
+sp-keystore = { workspace = true }
+sp-consensus = { workspace = true }
+sp-transaction-pool = { workspace = true }
+sp-transaction-storage-proof = { workspace = true }
+sp-block-builder = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-io = { workspace = true }
 
 # client dependencies
-sc-client-api = { package = 'sc-client-api', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-chain-spec = { package = 'sc-chain-spec', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus = { package = 'sc-consensus', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-transaction-pool = { package = 'sc-transaction-pool', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-transaction-pool-api = { package = 'sc-transaction-pool-api', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-network = { package = 'sc-network', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-network-common = { package = 'sc-network-common', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-network-sync = { package = 'sc-network-sync', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-slots = { package = 'sc-consensus-slots', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-babe = { package = 'sc-consensus-babe', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-babe-rpc = { package = 'sc-consensus-babe-rpc', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-epochs = { package = 'sc-consensus-epochs', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-grandpa = { package = "sc-consensus-grandpa", git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-grandpa-rpc = { package = 'sc-consensus-grandpa-rpc', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-rpc = { package = 'sc-rpc', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-rpc-api = { package = 'sc-rpc-api', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-rpc-spec-v2 = { package = 'sc-rpc-spec-v2', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-basic-authorship = { package = 'sc-basic-authorship', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-service = { package = 'sc-service', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-telemetry = { package = 'sc-telemetry', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-executor = { package = 'sc-executor', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-authority-discovery = { package = 'sc-authority-discovery', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-sync-state-rpc = { package = 'sc-sync-state-rpc', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-sysinfo = { package = 'sc-sysinfo', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-transaction-payment-rpc = { package = 'pallet-transaction-payment-rpc', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-substrate-frame-rpc-system = { package = 'substrate-frame-rpc-system', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-substrate-state-trie-migration-rpc = { package = 'substrate-state-trie-migration-rpc', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-storage-monitor = { package = 'sc-storage-monitor', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+sc-client-api = { workspace = true }
+sc-chain-spec = { workspace = true }
+sc-consensus = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sc-network = { workspace = true }
+sc-network-common = { workspace = true }
+sc-network-sync = { workspace = true }
+sc-consensus-slots = { workspace = true }
+sc-consensus-babe = { workspace = true }
+sc-consensus-babe-rpc = { workspace = true }
+sc-consensus-epochs = { workspace = true }
+sc-consensus-grandpa = { workspace = true }
+sc-consensus-grandpa-rpc = { workspace = true }
+sc-rpc = { workspace = true }
+sc-rpc-api = { workspace = true }
+sc-rpc-spec-v2 = { workspace = true }
+sc-basic-authorship = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-executor = { workspace = true }
+sc-authority-discovery = { workspace = true }
+sc-sync-state-rpc = { workspace = true }
+sc-sysinfo = { workspace = true }
+pallet-transaction-payment-rpc = { workspace = true }
+substrate-frame-rpc-system = { workspace = true }
+substrate-state-trie-migration-rpc = { workspace = true }
+sc-storage-monitor = { workspace = true }
 
 # frame dependencies
-frame-system = { package = 'frame-system',git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-transaction-payment = { package = 'pallet-transaction-payment', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-transaction-storage = { package = 'pallet-transaction-storage', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+frame-system = { workspace = true }
+frame-system-rpc-runtime-api = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-im-online = { workspace = true }
+pallet-staking = { workspace = true }
+pallet-transaction-storage = { workspace = true }
 
 # node-specific dependencies
-node-runtime = { package = "joystream-node-runtime", path = "../../runtime" }
+node-runtime = { workspace = true }
 
 # overrides
-overrides = { package = "overrides", path = "../overrides" }
+overrides = { workspace = true }
 
 # CLI-specific dependencies
-sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-frame-benchmarking-cli = { package = 'frame-benchmarking-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-frame-benchmarking = { package = 'frame-benchmarking', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-serde_json = "1.0.79"
-node-inspect = { path = "../inspect", optional = true }
-try-runtime-cli = { package = 'try-runtime-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+sc-cli = { workspace = true, optional = true }
+frame-benchmarking-cli = { workspace = true, optional = true }
+frame-benchmarking = { workspace = true }
+serde_json = { workspace = true }
+node-inspect = { workspace = true, optional = true }
+try-runtime-cli = { workspace = true, optional = true }
 
 [target.'cfg(any(target_arch="x86_64", target_arch="aarch64"))'.dependencies]
 sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
@@ -101,41 +101,41 @@ sc-service = { package = 'sc-service', default-features = false, git = 'https://
 sp-trie = { package = 'sp-trie', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
 
 [dev-dependencies]
-sc-keystore = { package = 'sc-keystore', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-client-db = { package = 'sc-client-db', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus = { package = 'sc-consensus', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-babe = { package = 'sc-consensus-babe', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-consensus-epochs = { package = 'sc-consensus-epochs', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-service-test = { package = 'sc-service-test', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-block-builder = { package = 'sc-block-builder', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-tracing = { package = 'sp-tracing', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sp-blockchain = { package = 'sp-blockchain', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-futures = "0.3.21"
-tempfile = "3.1.0"
-assert_cmd = "2.0.2"
-nix = "0.23"
-serde_json = "1.0"
-regex = "1.5.5"
-platforms = "2.0"
-async-std = { version = "1.11.0", features = ["attributes"] }
-soketto = "0.7.1"
-criterion = { version = "0.3.5", features = ["async_tokio"] }
-tokio = { version = "1.17.0", features = ["macros", "time", "parking_lot"] }
-wait-timeout = "0.2"
+sc-keystore = { workspace = true }
+sc-client-db = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-babe = { workspace = true }
+sc-consensus-epochs = { workspace = true }
+sc-service-test = { workspace = true }
+sc-block-builder = { workspace = true }
+sp-tracing = { workspace = true }
+sp-blockchain = { workspace = true }
+futures = { workspace = true }
+tempfile = { workspace = true }
+assert_cmd = { workspace = true }
+nix = { workspace = true }
+serde_json = { workspace = true }
+regex = { workspace = true }
+platforms = { workspace = true }
+async-std = { workspace = true, features = ["attributes"] }
+soketto = { workspace = true }
+criterion = { workspace = true, features = ["async_tokio"] }
+tokio = { workspace = true, features = ["macros", "time", "parking_lot"] }
+wait-timeout = { workspace = true }
 remote-externalities = { package = 'frame-remote-externalities', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-timestamp = { package = 'pallet-timestamp', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+pallet-timestamp = { workspace = true }
 
 [build-dependencies]
 clap = { version = "4.0.9", optional = true }
-clap_complete = { version = "4.0.2", optional = true }
-frame-benchmarking-cli = { package = 'frame-benchmarking-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-substrate-build-script-utils = { package = 'substrate-build-script-utils', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-substrate-frame-cli = { package = 'substrate-frame-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-sc-cli = { package = 'sc-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-pallet-balances = { package = 'pallet-balances', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-node-inspect = { path = "../inspect", optional = true }
-sc-storage-monitor = { package = 'sc-storage-monitor', git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
-try-runtime-cli = { package = 'try-runtime-cli', optional = true, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9'}
+clap_complete = { workspace = true, optional = true }
+frame-benchmarking-cli = { workspace = true, optional = true }
+substrate-build-script-utils = { workspace = true, optional = true }
+substrate-frame-cli = { workspace = true, optional = true }
+sc-cli = { workspace = true, optional = true }
+pallet-balances = { workspace = true }
+node-inspect = { workspace = true, optional = true }
+sc-storage-monitor = { workspace = true }
+try-runtime-cli = { workspace = true, optional = true }
 
 [features]
 default = ["cli"]
