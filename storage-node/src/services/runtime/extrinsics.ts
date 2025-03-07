@@ -6,7 +6,11 @@ import { timeout } from 'promise-timeout'
 import logger from '../../services/logger'
 import { parseBagId } from '../helpers/bagTypes'
 import { AcceptPendingDataObjectsParams } from '../sync/acceptPendingObjects'
-import { formatDispatchError, getEvent, getEvents, sendAndFollowNamedTx } from './api'
+import { formatDispatchError, getEvent, getEvents, isEvent, sendAndFollowNamedTx } from './api'
+import { ISubmittableResult } from '@polkadot/types/types'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { Call } from '@polkadot/types/interfaces'
+import { Vec } from '@polkadot/types-codec'
 
 /**
  * Creates storage bucket.
@@ -107,27 +111,52 @@ export async function updateStorageBucketsForBags(
     const txBatch = batchFn(txs)
 
     failedCalls = await sendAndFollowNamedTx(api, account, txBatch, (result) => {
-      const [batchCompletedEvent] = getEvents(result, 'utility', ['BatchCompleted'])
-      if (batchCompletedEvent) {
-        return []
-      }
-
-      // find all the failed calls based on their index
-      const events = getEvents(result, 'utility', ['ItemCompleted', 'ItemFailed'])
-      return events
-        .map((e, i) => {
-          if (e.method === 'ItemFailed') {
-            return {
-              args: txs[i].args.toString(),
-              error: formatDispatchError(api, e.data[0]),
-            }
-          }
-        })
-        .filter(Boolean)
+      const batchResults = getBatchResults(txBatch, api, result)
+      return batchResults.flatMap((r, i) => ('error' in r ? [{ args: txs[i].args.toString(), error: r.error }] : []))
     })
   })
 
   return [success, failedCalls]
+}
+
+export type ParsedBatchCallResult = { success: true } | { error: string }
+
+/**
+ * Extracts individual call results from an utility.(batch|forceBatch|batchAll)
+ * extrinsic result.
+ *
+ * @param tx The utility.(batch|forceBatch|batchAll) extrinsic
+ * @param api @polkadot/api instance
+ * @param result Extrinsic result
+ *
+ * @returns An array of parsed results
+ */
+export function getBatchResults(
+  tx: SubmittableExtrinsic<'promise'>,
+  api: ApiPromise,
+  result: ISubmittableResult
+): ParsedBatchCallResult[] {
+  const callsNum = (tx.args[0] as Vec<Call>).length
+  let results: ParsedBatchCallResult[] = []
+  for (const { event } of result.events) {
+    if (isEvent(event, 'utility', 'ItemFailed')) {
+      const [dispatchError] = event.data
+      results.push({ error: formatDispatchError(api, dispatchError) })
+    }
+    if (isEvent(event, 'utility', 'ItemCompleted')) {
+      results.push({ success: true })
+    }
+  }
+  if (results.length < callsNum) {
+    results = [
+      ...results,
+      ...Array.from({ length: callsNum - results.length }, () => ({
+        error: 'Interrupted',
+      })),
+    ]
+  }
+
+  return results
 }
 
 /**

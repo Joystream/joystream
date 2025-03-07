@@ -5618,6 +5618,13 @@
   resolved "https://registry.npmjs.org/@types/chai/-/chai-4.3.1.tgz"
   integrity sha512-/zPMqDkzSZ8t3VtxOa4KPq7uzzW978M9Tvh+j7GHKuo6k6GTLxPJ4J5gE5cjfJ26pnXst0N5Hax8Sr0T2Mi9zQ==
 
+"@types/cli-progress@^3.11.6":
+  version "3.11.6"
+  resolved "https://registry.yarnpkg.com/@types/cli-progress/-/cli-progress-3.11.6.tgz#94b334ebe4190f710e51c1bf9b4fedb681fa9e45"
+  integrity sha512-cE3+jb9WRlu+uOSAugewNpITJDt1VF8dHOopPO4IABFc3SXYL5WE/+PTz/FCdZRRfIujiWW3n3aMbv1eIGVRWA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/cli-progress@^3.9.1":
   version "3.11.0"
   resolved "https://registry.npmjs.org/@types/cli-progress/-/cli-progress-3.11.0.tgz"
@@ -8779,6 +8786,13 @@ cli-highlight@^2.1.11:
     parse5 "^5.1.1"
     parse5-htmlparser2-tree-adapter "^6.0.0"
     yargs "^16.0.0"
+
+cli-progress@^3.12.0:
+  version "3.12.0"
+  resolved "https://registry.yarnpkg.com/cli-progress/-/cli-progress-3.12.0.tgz#807ee14b66bcc086258e444ad0f19e7d42577942"
+  integrity sha512-tRkV3HJ1ASwm19THiiLIXLO7Im7wlTuKnvkYaTkyoAPefqjNg7W7DHKUlGRxy9vxDvbyCYQkQozvptuMkGCg8A==
+  dependencies:
+    string-width "^4.2.3"
 
 cli-progress@^3.4.0, cli-progress@^3.9.0:
   version "3.11.0"

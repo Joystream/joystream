@@ -5,7 +5,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { TypeRegistry } from '@polkadot/types'
 import type { Index } from '@polkadot/types/interfaces/runtime'
 import { DispatchError } from '@polkadot/types/interfaces/system'
-import { IEvent, ISubmittableResult } from '@polkadot/types/types'
+import { Codec, IEvent, ISubmittableResult } from '@polkadot/types/types'
 import { formatBalance } from '@polkadot/util'
 import AwaitLock from 'await-lock'
 import stringify from 'fast-safe-stringify'
@@ -245,4 +245,12 @@ export function getEvents<
   EventType = ApiPromise['events'][S][M] extends AugmentedEvent<'promise', infer T> ? IEvent<T> : never
 >(result: SubmittableResult, section: S, eventNames: M[]): EventType[] {
   return result.filterRecords(section, eventNames).map((e) => e.event as unknown as EventType)
+}
+
+export function isEvent<
+  S extends keyof ApiPromise['events'] & string,
+  M extends keyof ApiPromise['events'][S] & string,
+  EventData extends Codec[] = ApiPromise['events'][S][M] extends AugmentedEvent<'promise', infer T> ? T : Codec[]
+>(event: IEvent<any>, section: S, method: M): event is IEvent<EventData> {
+  return event.section === section && event.method === method
 }

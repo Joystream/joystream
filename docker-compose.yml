@@ -8,8 +8,8 @@ services:
       - chain-data:/data
     environment:
       - CHAIN=${CHAIN}
-    command: "--chain ${CHAIN:-dev} --alice --validator --pruning=archive --unsafe-ws-external --unsafe-rpc-external
-      --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data --no-hardware-benchmarks"
+    command: '--chain ${CHAIN:-dev} --alice --validator --pruning=archive --unsafe-ws-external --unsafe-rpc-external
+      --rpc-methods Safe --rpc-cors=all --log runtime --base-path /data --no-hardware-benchmarks'
     ports:
       - 9944:9944
       - 9933:9933
@@ -35,16 +35,25 @@ services:
       - ACCOUNT_URI=${COLOSSUS_1_TRANSACTOR_URI}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
       - OTEL_RESOURCE_ATTRIBUTES=service.name=colossus-1,deployment.environment=production
+      - CLEANUP
+      - CLEANUP_INTERVAL
+      - CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD
+      - CLEANUP_MIN_REPLICATION_THRESHOLD
     entrypoint: ['/joystream/entrypoints/storage.sh']
-    command: [
-      'server', '--worker=${COLOSSUS_1_WORKER_ID}', '--port=3333', '--uploads=/data/uploads/',
-      '--sync', '--syncInterval=1',
-      '--storageSquidEndpoint=${COLOSSUS_STORAGE_SQUID_URL}',
-      '--apiUrl=${JOYSTREAM_NODE_WS}',
-      '--logFilePath=/logs',
-      '--tempFolder=/data/temp/',
-      '--pendingFolder=/data/pending/'
-    ]
+    command:
+      [
+        'server',
+        '--worker=${COLOSSUS_1_WORKER_ID}',
+        '--port=3333',
+        '--uploads=/data/uploads/',
+        '--sync',
+        '--syncInterval=1',
+        '--storageSquidEndpoint=${COLOSSUS_STORAGE_SQUID_URL}',
+        '--apiUrl=${JOYSTREAM_NODE_WS}',
+        '--logFilePath=/logs',
+        '--tempFolder=/data/temp/',
+        '--pendingFolder=/data/pending/',
+      ]
 
   distributor-1:
     image: node:18
@@ -68,7 +77,7 @@ services:
     environment:
       JOYSTREAM_DISTRIBUTOR__ID: distributor-1
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__STORAGE_SQUID: ${DISTRIBUTOR_STORAGE_SQUID_URL}
-      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_1_ACCOUNT_URI}\"}]"
+      JOYSTREAM_DISTRIBUTOR__KEYS: '[{"suri":"${DISTRIBUTOR_1_ACCOUNT_URI}"}]'
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_1_WORKER_ID}
       JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
       JOYSTREAM_DISTRIBUTOR__OPERATOR_API__PORT: 4334
@@ -105,22 +114,25 @@ services:
     environment:
       # ACCOUNT_URI overrides command line arg --accountUri
       - ACCOUNT_URI=${COLOSSUS_2_TRANSACTOR_URI}
-      # Env that allows testing cleanup
-      - CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD=10
-      - CLEANUP_MIN_REPLICATION_THRESHOLD=1
+      - CLEANUP
+      - CLEANUP_INTERVAL
+      - CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD
+      - CLEANUP_MIN_REPLICATION_THRESHOLD
     entrypoint: ['yarn', 'storage-node']
-    command: [
-      'server', '--worker=${COLOSSUS_2_WORKER_ID}', '--port=3333', '--uploads=/data/uploads',
-      '--sync', '--syncInterval=1',
-      '--storageSquidEndpoint=${COLOSSUS_STORAGE_SQUID_URL}',
-      '--apiUrl=${JOYSTREAM_NODE_WS}',
-      '--logFilePath=/logs',
-      '--tempFolder=/data/temp/',
-      '--pendingFolder=/data/pending/',
-      # Use cleanup on colossus-2 for testing purposes
-      '--cleanup',
-      '--cleanupInterval=1'
-    ]
+    command:
+      [
+        'server',
+        '--worker=${COLOSSUS_2_WORKER_ID}',
+        '--port=3333',
+        '--uploads=/data/uploads',
+        '--sync',
+        '--syncInterval=1',
+        '--storageSquidEndpoint=${COLOSSUS_STORAGE_SQUID_URL}',
+        '--apiUrl=${JOYSTREAM_NODE_WS}',
+        '--logFilePath=/logs',
+        '--tempFolder=/data/temp/',
+        '--pendingFolder=/data/pending/',
+      ]
 
   distributor-2:
     image: node:18
@@ -144,7 +156,7 @@ services:
     environment:
       JOYSTREAM_DISTRIBUTOR__ID: distributor-2
       JOYSTREAM_DISTRIBUTOR__ENDPOINTS__STORAGE_SQUID: ${DISTRIBUTOR_STORAGE_SQUID_URL}
-      JOYSTREAM_DISTRIBUTOR__KEYS: "[{\"suri\":\"${DISTRIBUTOR_2_ACCOUNT_URI}\"}]"
+      JOYSTREAM_DISTRIBUTOR__KEYS: '[{"suri":"${DISTRIBUTOR_2_ACCOUNT_URI}"}]'
       JOYSTREAM_DISTRIBUTOR__WORKER_ID: ${DISTRIBUTOR_2_WORKER_ID}
       JOYSTREAM_DISTRIBUTOR__PUBLIC_API__PORT: 3334
       JOYSTREAM_DISTRIBUTOR__OPERATOR_API__PORT: 4334
@@ -192,8 +204,8 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=${TELEMETRY_ENDPOINT}
       - OTEL_RESOURCE_ATTRIBUTES=service.name=query-node,deployment.environment=production
     ports:
-      - "${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}"
-      - "127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}"
+      - '${GRAPHQL_SERVER_PORT}:${GRAPHQL_SERVER_PORT}'
+      - '127.0.0.1:${PROCESSOR_STATE_APP_PORT}:${PROCESSOR_STATE_APP_PORT}'
     depends_on:
       - db
     volumes:
@@ -275,7 +287,7 @@ services:
       - PORT=${HYDRA_INDEXER_GATEWAY_PORT}
       - PGSSLMODE=disable
     ports:
-      - "${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}"
+      - '${HYDRA_INDEXER_GATEWAY_PORT}:${HYDRA_INDEXER_GATEWAY_PORT}'
     depends_on:
       - db
       - redis
@@ -285,7 +297,7 @@ services:
     container_name: redis
     restart: unless-stopped
     ports:
-      - "127.0.0.1:6379:6379"
+      - '127.0.0.1:6379:6379'
 
   faucet:
     image: joystream/faucet:carthage
@@ -304,7 +316,7 @@ services:
       - BALANCE_CREDIT=${BALANCE_CREDIT}
       - BALANCE_LOCKED=${BALANCE_LOCKED}
     ports:
-      - "3002:3002"
+      - '3002:3002'
 
   # PostgerSQL database for Orion
   orion-db:
@@ -437,10 +449,7 @@ services:
     environment:
       DATABASE_MAX_CONNECTIONS: 5
       RUST_LOG: 'actix_web=info,actix_server=info'
-    command: [
-        '--database-url',
-        'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive',
-      ]
+    command: ['--database-url', 'postgres://postgres:postgres@orion_archive_db:${ARCHIVE_DB_PORT}/squid-archive']
     ports:
       - '127.0.0.1:${ARCHIVE_GATEWAY_PORT}:8000'
       - '[::1]:${ARCHIVE_GATEWAY_PORT}:8000'
