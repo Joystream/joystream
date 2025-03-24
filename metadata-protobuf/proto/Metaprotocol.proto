@@ -37,6 +37,30 @@ message CreateComment {
     required string body = 3;
 }
 
+// create comment for creator token
+message CreateTokenComment {
+    // ID of the token
+    required uint64 token_id = 1;
+
+    // ID of comment member wants to reply (empty if new comment is parent comment)
+    optional string parent_comment_id = 2;
+
+    // Comment text
+    required string body = 3;
+}
+
+// create comment for video category
+message CreateCategoryComment {
+    // ID of the category
+    required uint64 category_id = 1;
+
+    // ID of comment member wants to reply (empty if new comment is parent comment)
+    optional string parent_comment_id = 2;
+
+    // Comment text
+    required string body = 3;
+}
+
 // edit comment by author
 message EditComment {
     // ID of the comment whose text is being edited
