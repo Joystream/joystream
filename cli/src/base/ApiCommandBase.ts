@@ -96,6 +96,14 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         apiUri = await this.promptForApiUri()
       }
 
+      if (apiUri.startsWith('wss://rpc.joystream.org:9944')) {
+        // Uses old mainnet endpoint - switch to the new one
+        this.warn('Old API endpoint detected: wss://rpc.joystream.org:9944')
+        this.log('Switching to wss://rpc.joystream.org...')
+        apiUri = 'wss://rpc.joystream.org'
+        await this.setPreservedState({ apiUri })
+      }
+
       // Query node api
       let queryNodeUri: string | null | undefined = this.getPreservedState().queryNodeUri
       if (this.requiresQueryNode && !queryNodeUri) {
@@ -141,8 +149,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
           value: 'ws://localhost:9944',
         },
         {
-          name: 'Current Testnet official Joystream node (wss://rpc.joystream.org:9944/)',
-          value: 'wss://rpc.joystream.org:9944/',
+          name: 'Joystream mainnet node by Jsgenesis (wss://rpc.joystream.org)',
+          value: 'wss://rpc.joystream.org',
         },
         {
           name: 'Custom endpoint',
