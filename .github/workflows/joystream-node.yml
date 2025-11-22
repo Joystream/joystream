@@ -67,7 +67,7 @@ jobs:
           FILES: |
             Cargo.lock
             Cargo.toml
-  
+
       - name: Toolchains
         run: |
           ./setup.sh
@@ -79,25 +79,25 @@ jobs:
         if: env.GIT_DIFF
       - name: Staging Runtime
         env:
-          RUNTIME_PROFILE: "STAGING"
+          RUNTIME_PROFILE: 'STAGING'
         run: |
           yarn cargo-checks && yarn cargo-build
         if: env.GIT_DIFF
       - name: Playground Runtime
         env:
-          RUNTIME_PROFILE: "PLAYGROUND"
+          RUNTIME_PROFILE: 'PLAYGROUND'
         run: |
           yarn cargo-checks && yarn cargo-build
         if: env.GIT_DIFF
       - name: Testing Runtime
         env:
-          RUNTIME_PROFILE: "TESTING"
+          RUNTIME_PROFILE: 'TESTING'
         run: |
           yarn cargo-checks && yarn cargo-build
         if: env.GIT_DIFF
       - name: Fast Production Runtime
         env:
-          RUNTIME_PROFILE: "FAST-PROD"
+          RUNTIME_PROFILE: 'FAST-PROD'
         run: |
           yarn cargo-checks && yarn cargo-build
         if: env.GIT_DIFF
@@ -133,7 +133,7 @@ jobs:
             --runtime ./target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.compressed.wasm \
             on-runtime-upgrade \
             live \
-            --uri wss://rpc.joystream.org:9944/
+            --uri wss://rpc.joystream.org
         if: env.GIT_DIFF
       - name: run_migrations test
         run: |
