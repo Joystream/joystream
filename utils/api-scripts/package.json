@@ -20,6 +20,8 @@
     "@polkadot/types": "10.7.1",
     "@polkadot/util": "^12.6.2",
     "@polkadot/util-crypto": "^12.6.2",
+    "@substrate/txwrapper-substrate": "6.0.1",
+    "@substrate/txwrapper-registry": "6.0.1",
     "@types/bn.js": "^5.1.0",
     "bfj": "^8.0.0",
     "bn.js": "^5.2.1"

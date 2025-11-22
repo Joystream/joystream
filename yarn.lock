@@ -5409,6 +5409,14 @@
     "@substrate/txwrapper-core" "^6.0.1"
     "@substrate/txwrapper-substrate" "^6.0.1"
 
+"@substrate/txwrapper-registry@6.0.1":
+  version "6.0.1"
+  resolved "https://registry.yarnpkg.com/@substrate/txwrapper-registry/-/txwrapper-registry-6.0.1.tgz#0f76c38a8df1a9d637eded70ccff3629ba87e5a4"
+  integrity sha512-4vcOpZDlDfN1SlBTEZFawWE6qobWbN/Eydx2Cpy5+BxIpH+1+8LZS0LfPOwLog19ePrX6UhvVLw6uZWTlrZzmw==
+  dependencies:
+    "@polkadot/networks" "^12.2.1"
+    "@substrate/txwrapper-core" "^6.0.1"
+
 "@substrate/txwrapper-substrate@6.0.1", "@substrate/txwrapper-substrate@^6.0.1":
   version "6.0.1"
   resolved "https://registry.npmjs.org/@substrate/txwrapper-substrate/-/txwrapper-substrate-6.0.1.tgz"
