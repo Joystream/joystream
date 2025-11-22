@@ -38,6 +38,7 @@ if [ "${NO_QN}" != true ]; then
 fi
 
 if [ "${NO_STORAGE}" != true ]; then
+  export CLEANUP_INTERVAL
   ./start-storage.sh
 fi
 

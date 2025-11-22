@@ -152,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'storageSync']
+        scenario: ['full', 'setupNewChain', 'setupNewChainMultiStorage', 'bonding', 'storage']
         include:
           - scenario: 'full'
             no_storage: 'false'
@@ -160,6 +160,8 @@ jobs:
             no_storage: 'true'
           - scenario: 'setupNewChainMultiStorage'
             no_storage: 'true'
+          - scenario: 'storage'
+            cleanup_interval: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -182,4 +184,5 @@ jobs:
         run: |
           export RUNTIME=${{ needs.build_images.outputs.runtime }}
           export NO_STORAGE=${{ matrix.no_storage }}
+          export CLEANUP_INTERVAL=${{ matrix.cleanup_interval }}
           tests/network-tests/run-tests.sh ${{ matrix.scenario }}

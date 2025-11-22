@@ -22,8 +22,6 @@ import failToElect from '../flows/council/failToElect'
 import exactExecutionBlock from '../flows/proposals/exactExecutionBlock'
 import expireProposal from '../flows/proposals/expireProposal'
 import proposalsDiscussion from '../flows/proposalsDiscussion'
-import initDistributionBucket from '../flows/clis/initDistributionBucket'
-import initStorageBucket from '../flows/clis/initStorageBucket'
 import channelsAndVideos from '../flows/clis/channelsAndVideos'
 import { scenario } from '../Scenario'
 import activeVideoCounters from '../flows/content/activeVideoCounters'
@@ -42,7 +40,6 @@ import { updateApp } from '../flows/content/updateApp'
 import curatorModerationActions from '../flows/content/curatorModerationActions'
 import collaboratorAndCuratorPermissions from '../flows/content/collaboratorAndCuratorPermissions'
 import updateValidatorVerificationStatus from '../flows/membership/updateValidatorVerifications'
-import { storageCleanup } from '../flows/storage/storageCleanup'
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 scenario('Full', async ({ job }) => {
@@ -113,21 +110,10 @@ scenario('Full', async ({ job }) => {
     'curators and collaborators permissions',
     collaboratorAndCuratorPermissions
   ).after(curatorModerationActionsJob)
-  const directChannelPaymentJob = job('direct channel payment by members', directChannelPayment).after(
-    collaboratorAndCuratorPermissionsJob
-  )
+  job('direct channel payment by members', directChannelPayment).after(collaboratorAndCuratorPermissionsJob)
 
   // Apps
   job('create app', createApp).after(hireLeads)
   job('update app', updateApp).after(hireLeads)
   job('create app actions', createAppActions).after(hireLeads)
-
-  const contentDirectoryJob = directChannelPaymentJob // keep updated to last job above
-
-  // Storage cleanup
-  const storageCleanupJob = job('storage cleanup', storageCleanup).after(contentDirectoryJob)
-  // Storage & distribution CLIs
-  job('init storage and distribution buckets via CLI', [initDistributionBucket, initStorageBucket]).after(
-    storageCleanupJob
-  )
 })

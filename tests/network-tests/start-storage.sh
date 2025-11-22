@@ -13,6 +13,19 @@ export COLOSSUS_1_URL="http://${HOST_IP}:3333"
 export DISTRIBUTOR_1_URL="http://${HOST_IP}:3334"
 export COLOSSUS_2_URL="http://${HOST_IP}:3335"
 export DISTRIBUTOR_2_URL="http://${HOST_IP}:3336"
+
+if [ ! -z "$CLEANUP_INTERVAL" ]; then
+    # Cleanup testing configuration
+    export CLEANUP="true"
+    export CLEANUP_INTERVAL
+    export CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD=10 # 10 seconds
+    export CLEANUP_MIN_REPLICATION_THRESHOLD=1
+    echo "Cleanup enabled!"
+    echo "Cleanup interval: ${CLEANUP_INTERVAL}m"
+    echo "New object expiration period: ${CLEANUP_NEW_OBJECT_EXPIRATION_PERIOD}s"
+    echo "Min. replication threshold: ${CLEANUP_MIN_REPLICATION_THRESHOLD}"
+fi
+
 $THIS_DIR/run-test-scenario.sh initStorageAndDistribution
 
 # give QN time to catch up so nodes can get their initial state
