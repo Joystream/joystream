@@ -338,7 +338,7 @@ export class NetworkingService {
 
       availabilityQueue.on('end', () => {
         if (!objectDownloadQueue.length) {
-          fail(`Failed to download object ${objectId} from any availablable storage provider`)
+          fail(`Failed to download object ${objectId} from any available storage provider`)
         }
       })
 
@@ -350,7 +350,7 @@ export class NetworkingService {
         if (availabilityQueue.length) {
           availabilityQueue.start()
         } else {
-          fail(`Failed to download object ${objectId} from any availablable storage provider`)
+          fail(`Failed to download object ${objectId} from any available storage provider`)
         }
       })
 
