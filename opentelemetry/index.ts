@@ -1,7 +1,12 @@
 import { DiagConsoleLogger, DiagLogLevel, diag } from '@opentelemetry/api'
 import { NodeSDK } from '@opentelemetry/sdk-node'
 import 'dotenv/config'
-import { DefaultInstrumentation, DistributorNodeInstrumentation, StorageNodeInstrumentation } from './instrumentations'
+import {
+  DefaultInstrumentation,
+  DistributorNodeInstrumentation,
+  GraphqlServerInstrumentation,
+  StorageNodeInstrumentation,
+} from './instrumentations'
 
 // For troubleshooting, set the log level to DiagLogLevel.DEBUG
 diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.INFO)
@@ -18,7 +23,7 @@ function addInstrumentation() {
       instrumentation = StorageNodeInstrumentation
       diag.info(`Loaded Application Instrumentation: "Storage Node"`)
     } else if (applicationName === 'query-node') {
-      instrumentation = DefaultInstrumentation
+      instrumentation = GraphqlServerInstrumentation
       diag.info(`Loaded Application Instrumentation: "Query Node"`)
     } else {
       instrumentation = DefaultInstrumentation
