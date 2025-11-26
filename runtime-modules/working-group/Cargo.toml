@@ -12,24 +12,24 @@ codec = { package = 'parity-scale-codec', version = '3.1.2', default-features = 
 scale-info = { version = "2.1.1", default-features = false, features = [
 	"derive",
 ] }
-sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+vesting = { package = 'pallet-vesting', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
 common = { package = 'pallet-common', default-features = false, path = '../common' }
-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
 staking-handler = { package = 'pallet-staking-handler', default-features = false, path = '../staking-handler' }
 
 # Benchmarking
-frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9', optional = true }
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0', optional = true }
 membership = { package = 'pallet-membership', default-features = false, path = '../membership', optional = true }
 
 [dev-dependencies]
-sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
 membership = { package = 'pallet-membership', default-features = false, path = '../membership' }
 
 [features]
