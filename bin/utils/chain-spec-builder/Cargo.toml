@@ -11,9 +11,9 @@ async-std = {version = "1.9.0", features = ["attributes"]}
 futures-util = "0.3.15"
 clap = { version = "3.1.18", features = ["derive"] }
 rand = "0.8"
-sc-keystore = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sc-telemetry = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sc-chain-spec = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-core = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
-sp-keystore = { git = 'https://github.com/joystream/substrate.git', rev = '1d0eefca86ef31b9e7727df01a6ed23ad65491e9' }
+sc-keystore = { git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sc-telemetry = { git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sc-chain-spec = { git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sp-core = { git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
+sp-keystore = { git = 'https://github.com/paritytech/polkadot-sdk.git', tag = 'polkadot-v1.7.0' }
 joystream-node = { path = "../../node" }
